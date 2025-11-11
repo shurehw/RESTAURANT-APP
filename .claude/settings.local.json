@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(supabase:*)",
+      "Bash(npm install:*)",
+      "Bash(docker:*)",
+      "Bash(copy .env.example .env.local)",
+      "Bash(npm run dev:*)",
+      "Bash(del middleware.ts)",
+      "Bash(npx shadcn@latest add:*)",
+      "Read(//c/Users/JacobShure/Downloads/**)",
+      "Bash(copy:*)",
+      "Bash(ls:*)",
+      "Bash(move apppage.tsx \"app\\(dashboard)\\page.tsx\")",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(psql:*)",
+      "Bash(npx supabase db reset:*)",
+      "Bash(del \"supabase\\migrations\\006_pricing_and_pos.sql\")",
+      "Bash(del \"c:\\Users\\JacobShure\\RESTAURANT APP\\app\\budget\\page.tsx\")",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(move:*)",
+      "Bash(unzip:*)",
+      "Bash(npx supabase db diff:*)",
+      "Bash(start http://localhost:3000/admin/customers)",
+      "Bash(grep:*)",
+      "Bash(npx supabase db execute:*)",
+      "Bash(del \"app\\(dashboard)\\admin\\customers\" /s /q)",
+      "Bash(del \"app\\(dashboard)\\admin\\venues\" /s /q)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)",
+      "Bash(findstr:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,160 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Search, Plus, Check } from 'lucide-react';
+
+interface InvoiceLineMapperProps {
+  line: {
+    id: string;
+    description: string;
+    qty: number;
+    unit_cost: number;
+    line_total: number;
+  };
+  vendorId: string;
+}
+
+export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showCreateNew, setShowCreateNew] = useState(false);
+
+  // Search for matching items
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/items/search?q=${encodeURIComponent(searchQuery)}&vendor_id=${vendorId}`);
+      const data = await response.json();
+      setSuggestions(data.items || []);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Map line to selected item
+  const handleMapItem = async (itemId: string) => {
+    try {
+      const response = await fetch(`/api/invoices/lines/${line.id}/map`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId }),
+      });
+
+      if (response.ok) {
+        window.location.reload(); // Refresh to show updated mapping
+      }
+    } catch (error) {
+      console.error('Map error:', error);
+    }
+  };
+
+  return (
+    <Card className="p-4 border-l-4 border-brass">
+      <div className="grid grid-cols-12 gap-4">
+        {/* Line Item Details */}
+        <div className="col-span-6">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-brass/10 flex items-center justify-center flex-shrink-0 mt-1">
+              <span className="text-xs font-semibold text-brass">?</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm mb-1">{line.description}</div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                <span>Qty: {line.qty}</span>
+                <span>Unit: ${line.unit_cost?.toFixed(2)}</span>
+                <span className="font-semibold">Total: ${line.line_total?.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search & Map */}
+        <div className="col-span-6">
+          <div className="space-y-3">
+            {/* Search Input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Search for existing item..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-1 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleSearch}
+                disabled={isSearching}
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {suggestions.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors ${
+                      selectedItemId === item.id
+                        ? 'border-brass bg-brass/10'
+                        : 'border-border hover:bg-muted'
+                    }`}
+                    onClick={() => setSelectedItemId(item.id)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{item.name}</div>
+                      <div className="text-xs text-muted-foreground font-mono">{item.sku}</div>
+                    </div>
+                    {selectedItemId === item.id && (
+                      <Check className="w-4 h-4 text-brass flex-shrink-0 ml-2" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {selectedItemId && (
+                <Button
+                  size="sm"
+                  variant="brass"
+                  className="flex-1"
+                  onClick={() => handleMapItem(selectedItemId)}
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Map to Selected Item
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowCreateNew(true)}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Create New Item
+              </Button>
+            </div>
+
+            {/* AI Suggestion (placeholder) */}
+            <div className="text-xs text-muted-foreground italic">
+              💡 Tip: Search uses fuzzy matching to find similar items
+            </div>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
