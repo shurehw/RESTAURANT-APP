@@ -8,14 +8,14 @@ import { rateLimit } from '@/lib/rate-limit';
 // GET /api/messages/[channelId] - Get messages for a channel
 export async function GET(
   request: NextRequest,
-  { params }: { params: { channelId: string } }
+  { params }: { params: Promise<{ channelId: string }> }
 ) {
   return guard(async () => {
     rateLimit(request, ':messages-list');
     const user = await requireUser();
     const { venueIds } = await getUserOrgAndVenues(user.id);
 
-    const { channelId } = params;
+    const { channelId } = await params;
 
     // Validate UUID format
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(channelId)) {

@@ -16,7 +16,7 @@ const applyTemplateSchema = z.object({
 // POST /api/schedule/templates/[templateId]/apply - Apply template to week
 export async function POST(
   request: NextRequest,
-  { params }: { params: { templateId: string } }
+  { params }: { params: Promise<{ templateId: string }> }
 ) {
   return guard(async () => {
     rateLimit(request, ':template-apply');
@@ -27,7 +27,7 @@ export async function POST(
 
       assertRole(role, ['owner', 'admin', 'manager']);
 
-      const { templateId } = params;
+      const { templateId } = await params;
 
       // Validate UUID format
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(templateId)) {

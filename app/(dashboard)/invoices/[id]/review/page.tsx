@@ -12,12 +12,13 @@ import { InvoiceLineMapper } from "@/components/invoices/InvoiceLineMapper";
 import { redirect } from "next/navigation";
 
 interface Props {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function InvoiceReviewPage({ params }: Props) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // Fetch invoice with vendor and venue
@@ -28,7 +29,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
       vendor:vendors(id, name),
       venue:venues(id, name)
     `)
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!invoice) {
@@ -42,7 +43,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
       *,
       item:items(id, name, sku)
     `)
-    .eq("invoice_id", params.id)
+    .eq("invoice_id", id)
     .order("created_at", { ascending: true });
 
   const allLines = lines || [];

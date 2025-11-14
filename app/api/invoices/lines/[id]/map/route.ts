@@ -8,7 +8,7 @@ import { validate, uuid } from '@/lib/validate';
 import { z } from 'zod';
 
 interface RouteContext {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 const mapSchema = z.object({
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const body = await request.json();
     const validated = validate(mapSchema, body);
-    const lineId = context.params.id;
+    const { id: lineId } = await context.params;
 
     if (!/^[0-9a-f-]{36}$/i.test(lineId)) {
       throw { status: 400, code: 'INVALID_UUID' };
