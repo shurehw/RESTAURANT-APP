@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation';
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: { week?: string };
+  searchParams: Promise<{ week?: string }>;
 }) {
   const supabase = await createClient();
 
@@ -28,7 +28,8 @@ export default async function SchedulePage({
   const venueId = venues[0].id;
 
   // Get week start (default to current week)
-  const weekStart = searchParams.week || getCurrentWeekStart();
+  const { week } = await searchParams;
+  const weekStart = week || getCurrentWeekStart();
 
   // Fetch schedule for this week
   const { data: schedule } = await supabase
