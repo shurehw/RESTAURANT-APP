@@ -36,13 +36,13 @@ export default async function InvoicesPage() {
       total_variance_pct,
       variance_severity,
       purchase_order_id,
-      vendor:vendors(name),
-      venue:venues(name),
+      vendor:vendors!inner(name),
+      venue:venues!inner(name),
       purchase_orders:purchase_order_id(order_number)
     `
     )
     .order("invoice_date", { ascending: false })
-    .limit(50);
+    .limit(50) as any;
 
   const { data: venues } = await supabase
     .from("venues")
