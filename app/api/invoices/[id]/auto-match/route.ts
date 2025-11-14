@@ -259,7 +259,7 @@ async function findCandidatePOs(
 
   if (error || !data) return [];
 
-  return data.map(po => ({
+  return data.map((po: any) => ({
     ...po,
     items: po.purchase_order_items.map((item: any) => ({
       id: item.id,

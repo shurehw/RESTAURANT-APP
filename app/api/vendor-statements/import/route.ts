@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    const { statement_id, total_lines, matched_lines, unmatched_lines, review_required } = data;
+    const { statement_id, total_lines, matched_lines, unmatched_lines, review_required } = data as any;
 
     return NextResponse.json({
       success: true,

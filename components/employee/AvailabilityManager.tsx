@@ -48,7 +48,7 @@ export function AvailabilityManager({ employee }: { employee: any }) {
       const data = await response.json();
 
       // Initialize all combinations with existing data
-      const availMap = new Map(
+      const availMap = new Map<string, boolean>(
         data.availability?.map((a: Availability) => [
           `${a.day_of_week}-${a.shift_type}`,
           a.is_available,
@@ -59,10 +59,11 @@ export function AvailabilityManager({ employee }: { employee: any }) {
       for (const day of DAYS) {
         for (const shift of SHIFT_TYPES) {
           const key = `${day.value}-${shift.value}`;
+          const isAvailable = availMap.get(key);
           fullAvailability.push({
             day_of_week: day.value,
             shift_type: shift.value,
-            is_available: availMap.get(key) ?? true, // Default to available
+            is_available: isAvailable !== undefined ? isAvailable : true, // Default to available
           });
         }
       }

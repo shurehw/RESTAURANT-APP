@@ -24,6 +24,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: process.cwd(),
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',

@@ -299,7 +299,7 @@ export function TimeClockKiosk() {
                       Currently Clocked In • {clockStatus.hoursWorked.toFixed(2)}h
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="text-lg px-4 py-2">
+                    <Badge variant="outline" className="text-lg px-4 py-2">
                       Not Clocked In
                     </Badge>
                   )}

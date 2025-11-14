@@ -5,8 +5,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { formatCurrency } from "@/lib/utils";
-import { DailyPerformanceCard } from "@/components/dashboard/DailyPerformanceCard";
-import { ExceptionsPanel } from "@/components/dashboard/ExceptionsPanel";
 import { ContextBand } from "@/components/ui/ContextBand";
 
 export default async function DashboardPage() {
@@ -40,12 +38,6 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* OpsOS Intelligence Components */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <DailyPerformanceCard venueId={venues?.[0]?.id} />
-          <ExceptionsPanel venueId={venues?.[0]?.id} />
-        </div>
-
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <MetricCard
@@ -57,13 +49,13 @@ export default async function DashboardPage() {
           title="Pending Approval"
           value={pendingInvoices || 0}
           subtitle="Requires action"
-          alert={pendingInvoices && pendingInvoices > 0}
+          alert={!!(pendingInvoices && pendingInvoices > 0)}
         />
         <MetricCard
           title="Active Alerts"
           value={alertCount || 0}
           subtitle="Unacknowledged"
-          alert={alertCount && alertCount > 0}
+          alert={!!(alertCount && alertCount > 0)}
         />
       </div>
 

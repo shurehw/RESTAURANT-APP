@@ -9,7 +9,7 @@ import { normalizeOCR } from '@/lib/ocr/normalize';
 
 export async function POST(request: NextRequest) {
   return guard(async () => {
-    rateLimit(request, ':invoice-ocr');
+    await rateLimit(request, ':invoice-ocr');
     const user = await requireUser();
     const { venueIds } = await getUserOrgAndVenues(user.id);
 
@@ -22,13 +22,44 @@ export async function POST(request: NextRequest) {
 
     assertVenueAccess(venueId, venueIds);
 
+    // File size validation: 10MB limit
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      throw {
+        status: 400,
+        code: 'FILE_TOO_LARGE',
+        message: `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
+      };
+    }
+
+    // MIME type validation
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
-      throw { status: 400, code: 'INVALID_TYPE', message: 'Invalid file type' };
+      throw {
+        status: 400,
+        code: 'INVALID_TYPE',
+        message: `Invalid file type: ${file.type}. Allowed: ${validTypes.join(', ')}`,
+      };
     }
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // Additional validation: Check magic bytes to prevent MIME spoofing
+    const magicBytes = buffer.slice(0, 4).toString('hex');
+    const validMagicBytes = [
+      'ffd8ff', // JPEG
+      '89504e47', // PNG
+      '52494646', // WEBP (RIFF)
+    ];
+    const isValidMagic = validMagicBytes.some((magic) => magicBytes.startsWith(magic));
+    if (!isValidMagic) {
+      throw {
+        status: 400,
+        code: 'INVALID_FILE_FORMAT',
+        message: 'File content does not match declared MIME type',
+      };
+    }
 
     const { invoice: rawInvoice } = await extractInvoiceWithClaude(buffer, file.type);
     const supabase = await createClient();

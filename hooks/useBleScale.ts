@@ -51,8 +51,8 @@ export function useBleScale(config: BleScaleConfig = {}) {
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const deviceRef = useRef<BluetoothDevice | null>(null);
-  const characteristicRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null);
+  const deviceRef = useRef<any>(null);
+  const characteristicRef = useRef<any>(null);
 
   const fullConfig = { ...DEFAULT_CONFIG, ...config };
 
@@ -65,12 +65,12 @@ export function useBleScale(config: BleScaleConfig = {}) {
 
     try {
       // Check if Web Bluetooth is available
-      if (!navigator.bluetooth) {
+      if (!(navigator as any).bluetooth) {
         throw new Error('Web Bluetooth not supported in this browser. Use Chrome, Edge, or Safari on iOS 16.4+');
       }
 
       // Request device
-      const device = await navigator.bluetooth.requestDevice({
+      const device = await (navigator as any).bluetooth.requestDevice({
         filters: [{ services: [fullConfig.serviceUuid] }],
         optionalServices: [fullConfig.serviceUuid]
       });
@@ -102,7 +102,7 @@ export function useBleScale(config: BleScaleConfig = {}) {
 
       // Listen for weight updates
       characteristic.addEventListener('characteristicvaluechanged', (event: Event) => {
-        const target = event.target as BluetoothRemoteGATTCharacteristic;
+        const target = event.target as any;
         const dataView = target.value!;
 
         try {

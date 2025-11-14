@@ -108,7 +108,7 @@ export function BriefingDisplay({ data }: { data: BriefingData }) {
                     <div className="text-sm text-gray-500">Forecast updated</div>
                   </div>
                   <Badge
-                    variant={isIncrease ? 'default' : 'secondary'}
+                    variant={isIncrease ? 'default' : 'outline'}
                     className={
                       isIncrease
                         ? 'bg-green-100 text-green-800'
@@ -162,7 +162,7 @@ export function BriefingDisplay({ data }: { data: BriefingData }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <Badge
-                      variant={adj.type === 'cut' ? 'destructive' : 'default'}
+                      variant={adj.type === 'cut' ? 'error' : 'default'}
                     >
                       {adj.type === 'cut' ? 'CUT' : 'ADD'}
                     </Badge>

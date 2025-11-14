@@ -24,7 +24,6 @@ interface Requirement {
   id: string;
   business_date: string;
   shift_type: string;
-  position: string;
   employees_needed: number;
   hours_per_employee: number;
   total_hours: number;

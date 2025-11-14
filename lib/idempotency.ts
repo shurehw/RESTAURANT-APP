@@ -42,15 +42,17 @@ export async function withIdempotency(
   const body = await cloned.json().catch(() => ({}));
 
   // Store response (fire and forget)
-  await supabase
+  supabase
     .from('http_idempotency')
     .insert({
       key,
       response: body,
       status: cloned.status,
     })
-    .catch((err) => {
-      console.error('Failed to store idempotency key:', err);
+    .then((result) => {
+      if (result.error) {
+        console.error('Failed to store idempotency key:', result.error);
+      }
     });
 
   return res;

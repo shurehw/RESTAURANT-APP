@@ -33,7 +33,21 @@
       "Bash(pip install:*)",
       "Bash(git remote add:*)",
       "Bash(git add:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit: OpsOS Restaurant Intelligence Platform\n\nComplete MVP implementation with Intelligence Layer integration:\n- Auto-receiving and perpetual inventory system\n- Recipe→Inventory→COGS integration with real-time processing\n- Labor forecasting and efficiency tracking\n- Real-time P&L with daily performance metrics\n- Exception-first workflow with automated alerts\n- Multi-tenant architecture with RLS policies\n- OpsOS visual identity (industrial, ledger-like UI)\n- IBM Plex Sans typography, ledger gold accents\n- Sharp 4px corners, 2px dot grid texture\n- Complete database migrations (001-043)\n- Python ML services for demand forecasting\n- POS integration (Square, Toast, R365)\n- Team messaging and time clock systems\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(code .)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo set-default:*)",
+      "Bash(gh api:*)",
+      "Bash(npm audit:*)",
+      "Bash(git commit:*)",
+      "Bash(npm run build:*)",
+      "Bash(tee:*)",
+      "Bash(git log:*)",
+      "Bash(npx vercel:*)"
     ],
     "deny": [],
     "ask": []

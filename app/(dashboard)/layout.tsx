@@ -17,6 +17,8 @@ import {
   BarChart3,
   Calendar,
   Bot,
+  CheckSquare,
+  TrendingUp,
 } from "lucide-react";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
@@ -80,6 +82,9 @@ function Sidebar() {
           <NavLink href="/invoices" icon={<FileText className="w-5 h-5" />}>
             Invoices
           </NavLink>
+          <NavLink href="/reconciliation" icon={<CheckSquare className="w-5 h-5" />}>
+            Reconciliation
+          </NavLink>
           <NavLink href="/vendors" icon={<Users className="w-5 h-5" />}>
             Vendors
           </NavLink>
@@ -118,6 +123,9 @@ function Sidebar() {
           </NavLink>
           <NavLink href="/budget" icon={<DollarSign className="w-5 h-5" />}>
             Budget
+          </NavLink>
+          <NavLink href="/savings" icon={<TrendingUp className="w-5 h-5" />}>
+            Savings
           </NavLink>
           <NavLink href="/reports" icon={<BarChart3 className="w-5 h-5" />}>
             Reports

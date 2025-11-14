@@ -255,7 +255,7 @@ export function ScheduleCalendar({ schedule, venueId, weekStart }: Props) {
                 schedule.status === 'published'
                   ? 'default'
                   : schedule.status === 'locked'
-                  ? 'secondary'
+                  ? 'sage'
                   : 'outline'
               }
               className="capitalize"
