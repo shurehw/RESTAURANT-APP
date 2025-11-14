@@ -1,78 +1,93 @@
 import { NextRequest } from 'next/server';
+import { Redis } from '@upstash/redis';
 
 /**
- * Simple in-memory rate limiter using token bucket algorithm
- * For production, replace with Redis/Upstash
+ * Distributed rate limiter using Upstash Redis
+ * Implements sliding window algorithm for accurate rate limiting
  */
 
-type Bucket = {
-  tokens: number;
-  lastRefill: number;
-};
+// Initialize Redis client
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-const buckets = new Map<string, Bucket>();
-
-const WINDOW_MS = 60_000; // 1 minute
-const CAPACITY = 100; // requests per window
-const REFILL_PER_MS = CAPACITY / WINDOW_MS;
+const WINDOW_SECONDS = 60; // 1 minute window
+const MAX_REQUESTS = 100; // requests per window
 
 /**
- * Rate limit middleware
+ * Rate limit middleware using Upstash Redis
  * Throws 429 if rate limit exceeded
  *
  * @param req - Next.js request
  * @param keyExtra - Additional key suffix for per-endpoint limits
  */
-export function rateLimit(req: NextRequest, keyExtra = ''): void {
+export async function rateLimit(req: NextRequest, keyExtra = ''): Promise<void> {
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0] ||
     req.headers.get('x-real-ip') ||
     'ip-unknown';
 
-  const key = `${ip}${keyExtra}`;
+  const key = `ratelimit:${ip}${keyExtra}`;
   const now = Date.now();
+  const windowStart = now - WINDOW_SECONDS * 1000;
 
-  let bucket = buckets.get(key);
+  // Use Redis pipeline for atomic operations
+  const pipeline = redis.pipeline();
 
-  if (!bucket) {
-    bucket = { tokens: CAPACITY, lastRefill: now };
-    buckets.set(key, bucket);
-  }
+  // Remove old entries outside the sliding window
+  pipeline.zremrangebyscore(key, 0, windowStart);
 
-  // Refill tokens based on time elapsed
-  const elapsed = now - bucket.lastRefill;
-  const refill = elapsed * REFILL_PER_MS;
-  bucket.tokens = Math.min(CAPACITY, bucket.tokens + refill);
-  bucket.lastRefill = now;
+  // Count requests in current window
+  pipeline.zcard(key);
 
-  // Check if request allowed
-  if (bucket.tokens < 1) {
+  // Add current request with timestamp
+  pipeline.zadd(key, { score: now, member: `${now}:${Math.random()}` });
+
+  // Set expiry to cleanup old keys
+  pipeline.expire(key, WINDOW_SECONDS * 2);
+
+  const results = await pipeline.exec();
+  const requestCount = (results[1] as number) || 0;
+
+  if (requestCount >= MAX_REQUESTS) {
     throw {
       status: 429,
       code: 'RATE_LIMIT_EXCEEDED',
       message: 'Too many requests',
       details: {
-        retry_after: 60,
-        limit: `${CAPACITY} requests per minute`,
+        retry_after: WINDOW_SECONDS,
+        limit: `${MAX_REQUESTS} requests per ${WINDOW_SECONDS} seconds`,
       },
     };
   }
-
-  // Consume token
-  bucket.tokens -= 1;
-  buckets.set(key, bucket);
 }
 
 /**
- * Cleanup old buckets every 5 minutes
+ * Check rate limit without consuming a token
+ * Useful for displaying remaining quota to users
  */
-setInterval(() => {
-  const now = Date.now();
-  const staleThreshold = now - WINDOW_MS * 5;
+export async function checkRateLimit(
+  req: NextRequest,
+  keyExtra = ''
+): Promise<{ remaining: number; limit: number; resetAt: Date }> {
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0] ||
+    req.headers.get('x-real-ip') ||
+    'ip-unknown';
 
-  for (const [key, bucket] of buckets.entries()) {
-    if (bucket.lastRefill < staleThreshold) {
-      buckets.delete(key);
-    }
-  }
-}, 300_000);
+  const key = `ratelimit:${ip}${keyExtra}`;
+  const now = Date.now();
+  const windowStart = now - WINDOW_SECONDS * 1000;
+
+  // Count requests in current window
+  const requestCount = await redis.zcount(key, windowStart, now);
+  const remaining = Math.max(0, MAX_REQUESTS - requestCount);
+  const resetAt = new Date(now + WINDOW_SECONDS * 1000);
+
+  return {
+    remaining,
+    limit: MAX_REQUESTS,
+    resetAt,
+  };
+}

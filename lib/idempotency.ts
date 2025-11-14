@@ -1,8 +1,9 @@
-import { createClient as createServiceClient } from '@supabase/supabase-js';
+import { createClient } from '@/lib/supabase/server';
 
 /**
  * Idempotency middleware for POST endpoints
  * Caches responses using Idempotency-Key header
+ * Note: Requires user to be authenticated
  */
 export async function withIdempotency(
   req: Request,
@@ -15,10 +16,7 @@ export async function withIdempotency(
     return handler();
   }
 
-  const supabase = createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = await createClient();
 
   // Check for existing response
   const { data: found } = await supabase
