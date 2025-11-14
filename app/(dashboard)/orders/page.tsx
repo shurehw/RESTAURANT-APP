@@ -17,11 +17,11 @@ export default async function OrdersPage() {
       delivery_date,
       status,
       total_amount,
-      vendor:vendors(name),
-      venue:venues(name)
+      vendor:vendors!inner(name),
+      venue:venues!inner(name)
     `)
     .order("order_date", { ascending: false })
-    .limit(50);
+    .limit(50) as any;
 
   const { data: vendors } = await supabase
     .from("vendors")
