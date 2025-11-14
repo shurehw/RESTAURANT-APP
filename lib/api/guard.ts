@@ -5,9 +5,23 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { ApiError } from '@/lib/api-errors';
 
 type GuardHandler = () => Promise<NextResponse>;
+
+/**
+ * Custom API Error class for throwing structured errors
+ */
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    public code: string,
+    message: string,
+    public details?: Record<string, any>
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
 
 /**
  * Wraps API route handlers with error handling and auth verification
@@ -31,7 +45,7 @@ export async function guard(handler: GuardHandler): Promise<NextResponse> {
     // Handle ApiError instances
     if (error instanceof ApiError) {
       return NextResponse.json(
-        { error: error.message, code: error.code },
+        { error: error.message, code: error.code, details: error.details },
         { status: error.status }
       );
     }
