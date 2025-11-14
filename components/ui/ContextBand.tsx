@@ -7,6 +7,7 @@
  */
 
 import { Calendar, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ContextBandProps {
   venueName: string;
@@ -21,6 +22,16 @@ export function ContextBand({
   additionalContext,
   className = '',
 }: ContextBandProps) {
+  const [iconStroke, setIconStroke] = useState(1.25);
+
+  useEffect(() => {
+    // Safe client-side only access to getComputedStyle
+    const stroke = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--icon-stroke') || '1.25'
+    );
+    setIconStroke(stroke);
+  }, []);
+
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
     return d.toLocaleDateString('en-US', {
@@ -48,7 +59,7 @@ export function ContextBand({
               <MapPin
                 className="text-gray-500"
                 size={16}
-                strokeWidth={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--icon-stroke') || '1.25')}
+                strokeWidth={iconStroke}
               />
               <span className="text-sm font-medium text-gray-900">{venueName}</span>
             </div>
@@ -58,7 +69,7 @@ export function ContextBand({
               <Calendar
                 className="text-gray-500"
                 size={16}
-                strokeWidth={parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--icon-stroke') || '1.25')}
+                strokeWidth={iconStroke}
               />
               <span className="text-sm text-gray-700">{formatDate(date)}</span>
             </div>
