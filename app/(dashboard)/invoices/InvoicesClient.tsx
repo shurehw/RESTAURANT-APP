@@ -225,7 +225,9 @@ function MatchConfidenceBadge({
         {confidence}
       </Badge>
       {autoApproved && (
-        <Zap className="w-3 h-3 text-opsos-brass-500" title="Auto-approved" />
+        <span title="Auto-approved">
+          <Zap className="w-3 h-3 text-opsos-brass-500" />
+        </span>
       )}
     </div>
   );
