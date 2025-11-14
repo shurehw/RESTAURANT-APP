@@ -25,7 +25,7 @@ export default async function InventoryPage() {
       count_date,
       status,
       counted_by,
-      venue:venues(name)
+      venue:venues!inner(name)
     `)
     .order("count_date", { ascending: false })
     .limit(50);
@@ -65,7 +65,7 @@ export default async function InventoryPage() {
                 <TableCell className="font-mono">
                   {new Date(count.count_date).toLocaleDateString()}
                 </TableCell>
-                <TableCell>{count.venue?.name || "—"}</TableCell>
+                <TableCell>{(count.venue as any)?.name || "—"}</TableCell>
                 <TableCell>{count.counted_by || "—"}</TableCell>
                 <TableCell>
                   <StatusBadge status={count.status} />
