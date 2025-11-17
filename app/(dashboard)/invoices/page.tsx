@@ -22,17 +22,13 @@ export default async function InvoicesPage() {
   const supabase = await createClient();
 
   // Check auth
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return <div className="p-8 text-red-600">Not authenticated</div>;
-  }
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
   // DEBUG: Check org membership
-  const { data: orgUsers } = await supabase
+  const { data: orgUsers } = user ? await supabase
     .from('organization_users')
     .select('organization_id, role')
-    .eq('user_id', user.id);
+    .eq('user_id', user.id) : { data: null };
 
   const { data: invoices, error } = await supabase
     .from("invoices")
@@ -57,39 +53,37 @@ export default async function InvoicesPage() {
     .order("invoice_date", { ascending: false })
     .limit(50) as any;
 
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="text-red-600 mb-4">Error: {error.message}</div>
-        <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto">
-          {JSON.stringify({ user: user.email, orgUsers, error }, null, 2)}
-        </pre>
-      </div>
-    );
-  }
-
   const { data: venues } = await supabase
     .from("venues")
     .select("id, name")
     .eq("is_active", true);
 
-  // DEBUG: Show info if no invoices
-  if (!invoices || invoices.length === 0) {
-    return (
-      <div className="p-8">
-        <h1 className="text-2xl mb-4">Debug Info</h1>
-        <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto">
-          {JSON.stringify({
-            user: { id: user.id, email: user.email },
-            orgMemberships: orgUsers,
-            venues: venues,
-            invoicesCount: 0,
-            message: 'No invoices returned from query'
-          }, null, 2)}
-        </pre>
-      </div>
-    );
-  }
-
-  return <InvoicesClient invoices={invoices || []} venues={venues || []} />;
+  // ALWAYS show debug info
+  return (
+    <div className="p-8">
+      <h1 className="text-2xl mb-4 font-bold">Invoice Debug Info</h1>
+      <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-screen">
+        {JSON.stringify({
+          auth: {
+            authenticated: !!user,
+            user: user ? { id: user.id, email: user.email } : null,
+            authError: authError?.message
+          },
+          orgMemberships: orgUsers,
+          venues: venues,
+          invoices: {
+            count: invoices?.length || 0,
+            error: error?.message,
+            data: invoices?.map((inv: any) => ({
+              id: inv.id,
+              number: inv.invoice_number,
+              vendor: inv.vendor?.name,
+              venue: inv.venue?.name,
+              amount: inv.total_amount
+            }))
+          }
+        }, null, 2)}
+      </pre>
+    </div>
+  );
 }
