@@ -21,7 +21,7 @@ import { Download, Check } from "lucide-react";
 export default async function InvoicesPage() {
   const supabase = await createClient();
 
-  const { data: invoices } = await supabase
+  const { data: invoices, error } = await supabase
     .from("invoices")
     .select(
       `
@@ -43,6 +43,17 @@ export default async function InvoicesPage() {
     )
     .order("invoice_date", { ascending: false })
     .limit(50) as any;
+
+  // Debug logging
+  console.log('[INVOICES PAGE] Query result:', {
+    count: invoices?.length || 0,
+    error: error?.message,
+    invoices: invoices?.map(i => ({
+      number: i.invoice_number,
+      vendor: i.vendor?.name,
+      venue: i.venue?.name
+    }))
+  });
 
   const { data: venues } = await supabase
     .from("venues")
