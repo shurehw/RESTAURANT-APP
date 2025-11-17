@@ -52,7 +52,8 @@
       "Bash(npx supabase:*)",
       "Read(//c/Users/JacobShure/JBS life/**)",
       "Bash(git checkout:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": []
