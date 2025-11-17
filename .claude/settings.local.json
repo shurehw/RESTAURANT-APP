@@ -47,7 +47,10 @@
       "Bash(npm run build:*)",
       "Bash(tee:*)",
       "Bash(git log:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(bash:*)",
+      "Bash(npx supabase:*)",
+      "Read(//c/Users/JacobShure/JBS life/**)"
     ],
     "deny": [],
     "ask": []
