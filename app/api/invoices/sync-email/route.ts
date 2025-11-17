@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   return guard(async () => {
     const user = await requireUser();
     const supabase = await createClient();
-    const { organizationId, venueIds } = await getUserOrgAndVenues(user.id);
+    const { orgId, venueIds } = await getUserOrgAndVenues(user.id);
 
     const body = await request.json();
     const { venueId, limit = 20 } = body;
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         const { data: existing } = await supabase
           .from('synced_emails')
           .select('id, processed')
-          .eq('organization_id', organizationId)
+          .eq('organization_id', orgId)
           .eq('email_message_id', email.id)
           .single();
 
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
             .from('synced_emails')
             .insert({
               email_sync_config_id: null, // TODO: Link to config
-              organization_id: organizationId,
+              organization_id: orgId,
               email_message_id: email.id,
               email_subject: email.subject,
               email_from: email.from?.emailAddress?.address,
