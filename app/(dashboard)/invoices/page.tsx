@@ -21,6 +21,13 @@ import { Download, Check } from "lucide-react";
 export default async function InvoicesPage() {
   const supabase = await createClient();
 
+  // Check auth
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return <div className="p-8 text-red-600">Not authenticated</div>;
+  }
+
   const { data: invoices, error } = await supabase
     .from("invoices")
     .select(
@@ -44,16 +51,9 @@ export default async function InvoicesPage() {
     .order("invoice_date", { ascending: false })
     .limit(50) as any;
 
-  // Debug logging
-  console.log('[INVOICES PAGE] Query result:', {
-    count: invoices?.length || 0,
-    error: error?.message,
-    invoices: invoices?.map((i: any) => ({
-      number: i.invoice_number,
-      vendor: i.vendor?.name,
-      venue: i.venue?.name
-    }))
-  });
+  if (error) {
+    return <div className="p-8 text-red-600">Error: {error.message}</div>;
+  }
 
   const { data: venues } = await supabase
     .from("venues")
