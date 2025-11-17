@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -42,6 +43,7 @@ interface InvoicesClientProps {
 }
 
 export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleAutoMatch = async (invoiceId: string) => {
@@ -165,7 +167,11 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
                         Approve
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => router.push(`/invoices/${invoice.id}/review`)}
+                    >
                       View
                     </Button>
                   </div>
