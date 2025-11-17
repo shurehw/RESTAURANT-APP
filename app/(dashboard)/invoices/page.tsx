@@ -48,7 +48,7 @@ export default async function InvoicesPage() {
   console.log('[INVOICES PAGE] Query result:', {
     count: invoices?.length || 0,
     error: error?.message,
-    invoices: invoices?.map(i => ({
+    invoices: invoices?.map((i: any) => ({
       number: i.invoice_number,
       vendor: i.vendor?.name,
       venue: i.venue?.name
