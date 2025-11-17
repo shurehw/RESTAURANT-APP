@@ -132,9 +132,11 @@ export async function POST(request: NextRequest) {
 
         await supabase.from('invoice_lines').insert(lineInserts);
 
-        // Record synced email
-        await supabase.rpc('mark_email_processed', {
-          p_synced_email_id: existing?.id || (await supabase
+        // Record synced email (create if doesn't exist)
+        let syncedEmailId = existing?.id;
+
+        if (!syncedEmailId) {
+          const { data: syncedEmailData } = await supabase
             .from('synced_emails')
             .insert({
               email_sync_config_id: null, // TODO: Link to config
@@ -145,7 +147,26 @@ export async function POST(request: NextRequest) {
               email_received_at: email.receivedDateTime,
             })
             .select('id')
-            .single()).data!.id,
+            .single();
+
+          syncedEmailId = syncedEmailData!.id;
+        }
+
+        // Save attachment metadata
+        await supabase.from('email_attachments').insert({
+          synced_email_id: syncedEmailId,
+          attachment_name: attachment.name,
+          attachment_type: attachment.contentType,
+          attachment_size_bytes: fileBuffer.length,
+          storage_path: uploadData?.path || null,
+          storage_url: fileUrl,
+          processed: true,
+          ocr_confidence: normalized.ocrConfidence,
+        });
+
+        // Mark email as processed
+        await supabase.rpc('mark_email_processed', {
+          p_synced_email_id: syncedEmailId,
           p_invoice_id: invoiceData.id,
         });
 
