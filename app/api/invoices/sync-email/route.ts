@@ -19,16 +19,7 @@ export async function POST(request: NextRequest) {
     const { orgId, venueIds } = await getUserOrgAndVenues(user.id);
 
     const body = await request.json();
-    const { venueId, limit = 20 } = body;
-
-    if (!venueId) {
-      throw { status: 400, code: 'NO_VENUE', message: 'venue_id is required' };
-    }
-
-    // Verify user has access to this venue
-    if (!venueIds.includes(venueId)) {
-      throw { status: 403, code: 'FORBIDDEN', message: 'No access to this venue' };
-    }
+    const { venueId: requestedVenueId, limit = 20 } = body;
 
     // Search for invoice emails
     const emails = await searchInvoiceEmails(limit);
@@ -86,6 +77,14 @@ export async function POST(request: NextRequest) {
         // Normalize and match to vendors/items
         const normalized = await normalizeOCR(rawInvoice, supabase);
 
+        // Determine venue ID: use auto-detected, fallback to requested, or use first available
+        let venueId = normalized.venueId || requestedVenueId || venueIds[0];
+
+        // Verify user has access to this venue
+        if (!venueIds.includes(venueId)) {
+          throw { status: 403, code: 'FORBIDDEN', message: `No access to venue ${normalized.venueName || venueId}` };
+        }
+
         // Upload file to storage
         const fileName = `${Date.now()}-${attachment.name}`;
         const { data: uploadData } = await supabase.storage
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
             ocr_confidence: normalized.ocrConfidence,
             ocr_raw_json: rawInvoice,
             image_url: fileUrl,
-            notes: `Imported from email: ${email.subject}\nFrom: ${email.from?.emailAddress?.address}`,
+            notes: `Imported from email: ${email.subject}\nFrom: ${email.from?.emailAddress?.address}\n${normalized.venueName ? `Venue: ${normalized.venueName}` : ''}${normalized.warnings.length > 0 ? `\n\nWarnings:\n- ${normalized.warnings.join('\n- ')}` : ''}`,
           })
           .select('id')
           .single();

@@ -12,6 +12,11 @@ export interface RawOCRInvoice {
   dueDate?: string;
   totalAmount: number;
   confidence: number;
+  deliveryLocation?: {
+    name?: string;
+    address?: string;
+    confidence: number;
+  } | null;
   lineItems: Array<{
     itemCode?: string;
     description: string;
@@ -25,6 +30,8 @@ export interface RawOCRInvoice {
 export interface NormalizedInvoice {
   vendorName: string;
   vendorId?: string; // resolved from alias
+  venueId?: string; // resolved from delivery location
+  venueName?: string; // matched venue name
   invoiceNumber?: string;
   invoiceDate: string; // ISO
   dueDate?: string;
@@ -99,6 +106,46 @@ async function resolveVendor(
 
   if (error || !data) return null;
   return data;
+}
+
+/**
+ * Resolves venue from delivery location name.
+ * Matches against venue names (case-insensitive, fuzzy).
+ */
+async function resolveVenue(
+  deliveryLocation: { name?: string; address?: string; confidence: number } | null | undefined,
+  supabase: SupabaseClient
+): Promise<{ id: string; name: string } | null> {
+  if (!deliveryLocation || !deliveryLocation.name) return null;
+
+  const locationName = deliveryLocation.name.toLowerCase().trim();
+  if (!locationName) return null;
+
+  // Try exact name match first
+  const { data: exactMatch } = await supabase
+    .from('venues')
+    .select('id, name')
+    .ilike('name', locationName)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (exactMatch) return exactMatch;
+
+  // Try fuzzy match (contains any keyword from venue name)
+  const keywords = locationName.split(/\s+/).filter((k) => k.length > 3);
+  for (const keyword of keywords) {
+    const { data: fuzzyMatch } = await supabase
+      .from('venues')
+      .select('id, name')
+      .ilike('name', `%${keyword}%`)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle();
+
+    if (fuzzyMatch) return fuzzyMatch;
+  }
+
+  return null;
 }
 
 /**
@@ -200,7 +247,15 @@ export async function normalizeOCR(
     );
   }
 
-  // 2. Normalize dates
+  // 2. Resolve venue from delivery location
+  const venue = await resolveVenue(raw.deliveryLocation, supabase);
+  if (raw.deliveryLocation && !venue) {
+    warnings.push(
+      `Delivery location "${raw.deliveryLocation.name || 'unknown'}" could not be matched to a venue.`
+    );
+  }
+
+  // 3. Normalize dates
   const invoiceDate = normalizeDate(raw.invoiceDate);
   const dueDate = raw.dueDate ? normalizeDate(raw.dueDate) : undefined;
 
@@ -250,6 +305,8 @@ export async function normalizeOCR(
   return {
     vendorName: raw.vendor.trim(),
     vendorId: vendor?.id,
+    venueId: venue?.id,
+    venueName: venue?.name,
     invoiceNumber: raw.invoiceNumber?.trim(),
     invoiceDate,
     dueDate,
