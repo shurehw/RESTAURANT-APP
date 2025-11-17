@@ -21,6 +21,11 @@ Analyze this invoice image and extract the following information in JSON format:
   "dueDate": "Due date in YYYY-MM-DD format (if present)",
   "totalAmount": 0.00,
   "confidence": 0.95,
+  "deliveryLocation": {
+    "name": "Business/venue name if shown (e.g., 'Delilah LA', 'Nice Guy LA', 'The Henry')",
+    "address": "Delivery address if shown",
+    "confidence": 0.95
+  },
   "lineItems": [
     {
       "itemCode": "Vendor's item/SKU code (if present)",
@@ -35,6 +40,7 @@ Analyze this invoice image and extract the following information in JSON format:
 
 IMPORTANT:
 - Extract ALL line items from the invoice
+- Look for "Ship To:", "Deliver To:", "Location:", or similar fields to identify the delivery location
 - For each line item, extract the vendor's item code/SKU if visible (usually a number like "12345" or code like "SYS-BEEF-001")
 - Include the complete item description as it appears on the invoice
 - Use exact vendor name as printed on the invoice
@@ -44,6 +50,7 @@ IMPORTANT:
 - For each line item, include quantity, unit price, and line total
 - If you cannot extract a field with confidence, set confidence < 0.7
 - If no item code is visible, set itemCode to null
+- If no delivery location is found, set deliveryLocation to null
 
 Return ONLY the JSON object, no other text.`;
 
