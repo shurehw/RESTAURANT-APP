@@ -50,7 +50,8 @@
       "Bash(npx vercel:*)",
       "Bash(bash:*)",
       "Bash(npx supabase:*)",
-      "Read(//c/Users/JacobShure/JBS life/**)"
+      "Read(//c/Users/JacobShure/JBS life/**)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
