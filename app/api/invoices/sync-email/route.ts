@@ -4,7 +4,7 @@ import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
 import { searchInvoiceEmails, getEmailAttachments, downloadAttachment, markEmailAsRead } from '@/lib/microsoft-graph';
-import { extractInvoiceWithClaude } from '@/lib/ocr/claude';
+import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claude';
 import { normalizeOCR } from '@/lib/ocr/normalize';
 
 /**
@@ -57,41 +57,44 @@ export async function POST(request: NextRequest) {
         // Get attachments
         const attachments = await getEmailAttachments(email.id);
 
-        // Filter for image attachments (invoice scans)
-        const imageAttachments = attachments.filter((att: any) => {
+        // Filter for invoice attachments (PDFs and images)
+        const invoiceAttachments = attachments.filter((att: any) => {
           const contentType = att.contentType?.toLowerCase() || '';
-          return contentType.includes('image') ||
+          return contentType.includes('pdf') ||
+                 contentType.includes('image') ||
                  contentType.includes('jpeg') ||
                  contentType.includes('png') ||
                  contentType.includes('jpg');
         });
 
-        if (imageAttachments.length === 0) {
-          continue; // Skip emails without image attachments
+        if (invoiceAttachments.length === 0) {
+          continue; // Skip emails without invoice attachments
         }
 
-        // Process first image attachment
-        const attachment = imageAttachments[0];
-        const imageBuffer = await downloadAttachment(email.id, attachment.id);
+        // Process first attachment
+        const attachment = invoiceAttachments[0];
+        const fileBuffer = await downloadAttachment(email.id, attachment.id);
 
         // Extract invoice data using Claude OCR
-        const { invoice: rawInvoice } = await extractInvoiceWithClaude(
-          imageBuffer,
-          attachment.contentType || 'image/jpeg'
-        );
+        const contentType = attachment.contentType?.toLowerCase() || '';
+        const isPDF = contentType.includes('pdf');
+
+        const { invoice: rawInvoice } = isPDF
+          ? await extractInvoiceFromPDF(fileBuffer)
+          : await extractInvoiceWithClaude(fileBuffer, attachment.contentType || 'image/jpeg');
 
         // Normalize and match to vendors/items
         const normalized = await normalizeOCR(rawInvoice, supabase);
 
-        // Upload image to storage
+        // Upload file to storage
         const fileName = `${Date.now()}-${attachment.name}`;
         const { data: uploadData } = await supabase.storage
           .from('opsos-invoices')
-          .upload(`email-sync/${fileName}`, imageBuffer, {
-            contentType: attachment.contentType || 'image/jpeg',
+          .upload(`email-sync/${fileName}`, fileBuffer, {
+            contentType: attachment.contentType || (isPDF ? 'application/pdf' : 'image/jpeg'),
           });
 
-        const imageUrl = uploadData
+        const fileUrl = uploadData
           ? supabase.storage.from('opsos-invoices').getPublicUrl(uploadData.path).data.publicUrl
           : null;
 
@@ -108,7 +111,7 @@ export async function POST(request: NextRequest) {
             status: 'draft',
             ocr_confidence: normalized.ocrConfidence,
             ocr_raw_json: rawInvoice,
-            image_url: imageUrl,
+            image_url: fileUrl,
             notes: `Imported from email: ${email.subject}\nFrom: ${email.from?.emailAddress?.address}`,
           })
           .select('id')
@@ -155,7 +158,7 @@ export async function POST(request: NextRequest) {
           emailSubject: email.subject,
           vendor: normalized.vendorName,
           total: normalized.totalAmount,
-          imageUrl,
+          fileUrl,
         });
       } catch (error: any) {
         console.error(`Error processing email ${email.id}:`, error);

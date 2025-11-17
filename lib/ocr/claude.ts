@@ -109,12 +109,56 @@ export async function extractInvoiceWithClaude(
 }
 
 /**
- * Extracts invoice data from a PDF using Claude vision API
+ * Extracts invoice data from a PDF using Claude document API
  */
 export async function extractInvoiceFromPDF(
   pdfData: Buffer
 ): Promise<OCRResult> {
-  // For PDFs, we need to convert to images first
-  // This is a placeholder - in production you'd use pdf2image or similar
-  throw new Error('PDF extraction not yet implemented. Please convert PDF to image first.');
+  const base64PDF = pdfData.toString('base64');
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 4096,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: base64PDF,
+            },
+          },
+          {
+            type: 'text',
+            text: OCR_PROMPT,
+          },
+        ],
+      },
+    ],
+  });
+
+  const textContent = message.content.find((block) => block.type === 'text');
+  if (!textContent || textContent.type !== 'text') {
+    throw new Error('No text response from Claude');
+  }
+
+  const rawResponse = textContent.text;
+
+  // Extract JSON from response (handle markdown code blocks)
+  let jsonText = rawResponse.trim();
+  if (jsonText.startsWith('```json')) {
+    jsonText = jsonText.replace(/^```json\n/, '').replace(/\n```$/, '');
+  } else if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
+  }
+
+  const invoice: RawOCRInvoice = JSON.parse(jsonText);
+
+  return {
+    invoice,
+    rawResponse,
+  };
 }
