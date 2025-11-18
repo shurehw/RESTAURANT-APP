@@ -62,6 +62,43 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     }
   };
 
+  // Create new item and map to it
+  const handleCreateAndMap = async () => {
+    if (!newItemName.trim()) return;
+
+    try {
+      // Create the new item
+      const createResponse = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newItemName,
+          sku: newItemSKU || `AUTO-${Date.now()}`,
+          category: newItemCategory || 'uncategorized',
+          base_uom: newItemUOM || 'unit',
+        }),
+      });
+
+      if (!createResponse.ok) {
+        alert('Failed to create item');
+        return;
+      }
+
+      const { item } = await createResponse.json();
+
+      // Map the line to the new item
+      await handleMapItem(item.id);
+    } catch (error) {
+      console.error('Create error:', error);
+      alert('Error creating item');
+    }
+  };
+
+  const [newItemName, setNewItemName] = useState(line.description);
+  const [newItemSKU, setNewItemSKU] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('');
+  const [newItemUOM, setNewItemUOM] = useState('unit');
+
   return (
     <Card className="p-4 border-l-4 border-brass">
       <div className="grid grid-cols-12 gap-4">
@@ -185,6 +222,95 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
             {suggestions.length > 0 && (
               <div className="text-xs text-muted-foreground italic">
                 💡 Tip: Click a suggestion to select it, or search for other items
+              </div>
+            )}
+
+            {/* Create New Item Form */}
+            {showCreateNew && (
+              <div className="mt-4 p-4 border-2 border-brass rounded-md bg-brass/5">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm">Create New Item</h4>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowCreateNew(false)}
+                  >
+                    ×
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">
+                      Item Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newItemName}
+                      onChange={(e) => setNewItemName(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        SKU
+                      </label>
+                      <input
+                        type="text"
+                        value={newItemSKU}
+                        onChange={(e) => setNewItemSKU(e.target.value)}
+                        placeholder="Auto-generated"
+                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        UOM
+                      </label>
+                      <select
+                        value={newItemUOM}
+                        onChange={(e) => setNewItemUOM(e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      >
+                        <option value="unit">Unit</option>
+                        <option value="lb">Pound (lb)</option>
+                        <option value="oz">Ounce (oz)</option>
+                        <option value="gal">Gallon (gal)</option>
+                        <option value="qt">Quart (qt)</option>
+                        <option value="pt">Pint (pt)</option>
+                        <option value="L">Liter (L)</option>
+                        <option value="case">Case</option>
+                        <option value="box">Box</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">
+                      Category
+                    </label>
+                    <input
+                      type="text"
+                      value={newItemCategory}
+                      onChange={(e) => setNewItemCategory(e.target.value)}
+                      placeholder="e.g. Beverages, Produce"
+                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                    />
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    variant="brass"
+                    onClick={handleCreateAndMap}
+                    disabled={!newItemName.trim()}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Create & Map Item
+                  </Button>
+                </div>
               </div>
             )}
           </div>
