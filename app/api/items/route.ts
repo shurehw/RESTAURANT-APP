@@ -20,13 +20,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate category is a valid enum value
+    const validCategories = ['beverage', 'packaging', 'food'];
+    const itemCategory = validCategories.includes(category?.toLowerCase())
+      ? category.toLowerCase()
+      : 'food';
+
     // Create the item
     const { data: item, error } = await supabase
       .from('items')
       .insert({
         name,
         sku,
-        category: category || 'uncategorized',
+        category: itemCategory,
         base_uom: base_uom || 'unit',
         is_active: true,
       })
