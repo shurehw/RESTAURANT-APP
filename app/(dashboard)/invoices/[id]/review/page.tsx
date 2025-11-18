@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { CheckCircle2, AlertCircle, XCircle } from "lucide-react";
 import { InvoiceLineMapper } from "@/components/invoices/InvoiceLineMapper";
+import { InvoiceReviewActions } from "@/components/invoices/InvoiceReviewActions";
+import { InvoicePDFModal } from "@/components/invoices/InvoicePDFModal";
 import { redirect } from "next/navigation";
 
 interface Props {
@@ -67,21 +69,23 @@ export default async function InvoiceReviewPage({ params }: Props) {
           </div>
 
           <div className="flex gap-3">
+            {invoice.storage_path && (
+              <InvoicePDFModal invoiceId={id} />
+            )}
             <Button variant="outline" asChild>
               <a href="/invoices">Cancel</a>
             </Button>
-            {unmappedLines.length === 0 && (
-              <Button variant="brass">
-                Approve & Save
-              </Button>
-            )}
+            <InvoiceReviewActions
+              invoiceId={id}
+              allMapped={unmappedLines.length === 0}
+            />
           </div>
         </div>
       </div>
 
       {/* Invoice Summary */}
       <Card className="p-6 mb-6">
-        <div className="grid grid-cols-4 gap-6">
+        <div className="grid grid-cols-6 gap-6">
           <div>
             <div className="text-sm text-muted-foreground mb-1">Vendor</div>
             <div className="font-semibold">{invoice.vendor?.name || "Unknown"}</div>
@@ -93,6 +97,14 @@ export default async function InvoiceReviewPage({ params }: Props) {
           <div>
             <div className="text-sm text-muted-foreground mb-1">Date</div>
             <div>{new Date(invoice.invoice_date).toLocaleDateString()}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Terms</div>
+            <div>{invoice.payment_terms || "—"}</div>
+          </div>
+          <div>
+            <div className="text-sm text-muted-foreground mb-1">Due Date</div>
+            <div>{invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : "—"}</div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1">Total</div>
