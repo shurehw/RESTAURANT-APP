@@ -94,10 +94,50 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     }
   };
 
+  // Parse UOM from description (e.g., "3L", "10L", "5 gal")
+  const parseUOMFromDescription = (desc: string): string => {
+    const normalized = desc.toLowerCase();
+
+    // Common patterns
+    if (/(\d+\s*l\b|liter)/i.test(normalized)) return 'L';
+    if (/(\d+\s*gal\b|gallon)/i.test(normalized)) return 'gal';
+    if (/(\d+\s*qt\b|quart)/i.test(normalized)) return 'qt';
+    if (/(\d+\s*pt\b|pint)/i.test(normalized)) return 'pt';
+    if (/(\d+\s*oz\b|ounce)/i.test(normalized)) return 'oz';
+    if (/(\d+\s*lb\b|pound)/i.test(normalized)) return 'lb';
+    if (/case/i.test(normalized)) return 'case';
+    if (/box/i.test(normalized)) return 'box';
+    if (/each/i.test(normalized)) return 'unit';
+
+    return 'unit';
+  };
+
+  // Parse category from description
+  const parseCategoryFromDescription = (desc: string): string => {
+    const normalized = desc.toLowerCase();
+
+    // Beverages
+    if (/juice|soda|water|tea|coffee|milk|cream/.test(normalized)) return 'Beverages';
+
+    // Produce
+    if (/orange|lemon|lime|grapefruit|apple|banana|lettuce|tomato|onion|pepper/.test(normalized)) return 'Produce';
+
+    // Dairy
+    if (/cheese|butter|yogurt|cream|milk/.test(normalized)) return 'Dairy';
+
+    // Meat & Seafood
+    if (/chicken|beef|pork|fish|shrimp|salmon|steak/.test(normalized)) return 'Meat & Seafood';
+
+    // Dry Goods
+    if (/flour|sugar|rice|pasta|beans/.test(normalized)) return 'Dry Goods';
+
+    return '';
+  };
+
   const [newItemName, setNewItemName] = useState(line.description);
   const [newItemSKU, setNewItemSKU] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState('');
-  const [newItemUOM, setNewItemUOM] = useState('unit');
+  const [newItemCategory, setNewItemCategory] = useState(parseCategoryFromDescription(line.description));
+  const [newItemUOM, setNewItemUOM] = useState(parseUOMFromDescription(line.description));
 
   return (
     <Card className="p-4 border-l-4 border-brass">
