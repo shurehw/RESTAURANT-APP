@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { guard } from '@/lib/route-guard';
-import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues } from '@/lib/tenant';
-import { rateLimit } from '@/lib/rate-limit';
+import { guard } from '@/lib/api/guard';
 
 export async function GET(request: NextRequest) {
   return guard(async () => {
-    await rateLimit(request, ':items-search');
-    const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const supabase = await createClient();
 
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q')?.trim();
@@ -21,8 +16,6 @@ export async function GET(request: NextRequest) {
     if (!query || query.length < 2) {
       return NextResponse.json({ items: [], recipes: [] });
     }
-
-    const supabase = await createClient();
 
     // Use trigram similarity search for fuzzy matching (from migration 058)
     // This leverages the GIN indexes we created on name and SKU
