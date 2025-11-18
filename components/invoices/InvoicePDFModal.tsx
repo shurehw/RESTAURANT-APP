@@ -25,7 +25,12 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
       const response = await fetch(`/api/invoices/${invoiceId}/pdf-url`);
       if (response.ok) {
         const data = await response.json();
+        console.log("PDF URL:", data.url);
         setPdfUrl(data.url);
+      } else {
+        console.error("Failed to load PDF:", response.status, response.statusText);
+        const errorData = await response.json();
+        console.error("Error details:", errorData);
       }
     } catch (error) {
       console.error("Error loading PDF:", error);
@@ -42,8 +47,8 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
       </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
-          <div className="relative w-full h-full max-w-7xl max-h-[95vh] m-4 bg-white rounded-lg shadow-xl flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+          <div className="relative w-full max-w-4xl h-[85vh] bg-white rounded-lg shadow-xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-lg font-semibold">Original Invoice</h2>
