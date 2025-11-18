@@ -94,6 +94,44 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     }
   };
 
+  // Normalize item name by removing size/unit info
+  const normalizeItemName = (desc: string): string => {
+    let normalized = desc;
+
+    // Remove common unit patterns (3L, 10L, 5 gal, etc.)
+    normalized = normalized.replace(/\b\d+\s*(l|liter|liters|gal|gallon|gallons|qt|quart|quarts|pt|pint|pints|oz|ounce|ounces|lb|pound|pounds)\b/gi, '');
+
+    // Remove "bib" (bag-in-box)
+    normalized = normalized.replace(/\bbib\b/gi, '');
+
+    // Remove extra whitespace
+    normalized = normalized.replace(/\s+/g, ' ').trim();
+
+    // Capitalize properly
+    // e.g., "ORANGE 100% Cold Pressed" → "Orange Juice - Cold Pressed"
+    const words = normalized.split(' ');
+    const cleaned = words.map((word, idx) => {
+      // Keep % and special chars as-is
+      if (word.includes('%')) return word;
+
+      // Capitalize first letter of each word
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+
+    // Add "Juice" if it's a fruit and doesn't already have it
+    if (/(orange|lemon|lime|grapefruit|pineapple|apple|cranberry)/i.test(cleaned) && !/juice/i.test(cleaned)) {
+      const fruit = cleaned.match(/(orange|lemon|lime|grapefruit|pineapple|apple|cranberry)/i)?.[0];
+      if (fruit) {
+        // Replace "ORANGE 100% Cold Pressed" with "Orange Juice - Cold Pressed 100%"
+        const fruitCapitalized = fruit.charAt(0).toUpperCase() + fruit.slice(1).toLowerCase();
+        const rest = cleaned.replace(new RegExp(fruit, 'i'), '').trim();
+        return rest ? `${fruitCapitalized} Juice - ${rest}` : `${fruitCapitalized} Juice`;
+      }
+    }
+
+    return cleaned;
+  };
+
   // Parse UOM from description (e.g., "3L", "10L", "5 gal")
   const parseUOMFromDescription = (desc: string): string => {
     const normalized = desc.toLowerCase();
@@ -141,7 +179,7 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     return '';
   };
 
-  const [newItemName, setNewItemName] = useState(line.description);
+  const [newItemName, setNewItemName] = useState(normalizeItemName(line.description));
   const [newItemSKU, setNewItemSKU] = useState('');
   const [newItemCategory, setNewItemCategory] = useState(parseCategoryFromDescription(line.description));
   const [newItemUOM, setNewItemUOM] = useState(parseUOMFromDescription(line.description));
