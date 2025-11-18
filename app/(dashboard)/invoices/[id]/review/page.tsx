@@ -7,10 +7,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, XCircle, List } from "lucide-react";
 import { InvoiceLineMapper } from "@/components/invoices/InvoiceLineMapper";
 import { InvoiceReviewActions } from "@/components/invoices/InvoiceReviewActions";
 import { InvoicePDFModal } from "@/components/invoices/InvoicePDFModal";
+import { BulkItemMapper } from "@/components/invoices/BulkItemMapper";
 import { redirect } from "next/navigation";
 
 interface Props {
@@ -171,20 +172,37 @@ export default async function InvoiceReviewPage({ params }: Props) {
       {/* Unmapped Items Section */}
       {unmappedLines.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-brass" />
-            Items Needing Review ({unmappedLines.length})
-          </h2>
-
-          <div className="space-y-4">
-            {unmappedLines.map((line) => (
-              <InvoiceLineMapper
-                key={line.id}
-                line={line}
-                vendorId={invoice.vendor_id}
-              />
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-brass" />
+              Items Needing Review ({unmappedLines.length})
+            </h2>
           </div>
+
+          {/* Bulk Mapping Table */}
+          <div className="mb-6">
+            <BulkItemMapper
+              lines={unmappedLines}
+              vendorId={invoice.vendor_id}
+            />
+          </div>
+
+          {/* Individual Item Cards (collapsed by default) */}
+          <details className="group">
+            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center gap-2">
+              <List className="w-4 h-4" />
+              Show individual item cards
+            </summary>
+            <div className="space-y-4">
+              {unmappedLines.map((line) => (
+                <InvoiceLineMapper
+                  key={line.id}
+                  line={line}
+                  vendorId={invoice.vendor_id}
+                />
+              ))}
+            </div>
+          </details>
         </div>
       )}
 
