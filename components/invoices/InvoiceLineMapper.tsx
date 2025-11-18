@@ -116,8 +116,15 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const parseCategoryFromDescription = (desc: string): string => {
     const normalized = desc.toLowerCase();
 
-    // Beverages
-    if (/juice|soda|water|tea|coffee|milk|cream/.test(normalized)) return 'Beverages';
+    // Bar Consumables (mixers, juices for cocktails)
+    if (/juice.*cold pressed|mixer|tonic|soda water|simple syrup|bitters/.test(normalized)) return 'Bar Consumables';
+    if (/(orange|lemon|lime|grapefruit|pineapple).*juice/i.test(normalized)) return 'Bar Consumables';
+
+    // Wine & Spirits
+    if (/wine|vodka|gin|rum|whiskey|tequila|beer/.test(normalized)) return 'Wine & Spirits';
+
+    // Beverages (non-alcoholic retail)
+    if (/soda|water|tea|coffee|milk|cream/.test(normalized)) return 'Beverages';
 
     // Produce
     if (/orange|lemon|lime|grapefruit|apple|banana|lettuce|tomato|onion|pepper/.test(normalized)) return 'Produce';
