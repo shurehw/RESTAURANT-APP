@@ -15,7 +15,7 @@ export async function POST(
       .from('invoices')
       .update({
         status: 'approved',
-        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id);
 
