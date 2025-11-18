@@ -156,32 +156,20 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   };
 
   // Parse category from description
+  // Valid enum values: 'beverage', 'packaging', 'food'
   const parseCategoryFromDescription = (desc: string): string => {
     const normalized = desc.toLowerCase();
 
-    // Bar Consumables (mixers, juices for cocktails)
-    if (/juice.*cold pressed|mixer|tonic|soda water|simple syrup|bitters/.test(normalized)) return 'Bar Consumables';
-    if (/(orange|lemon|lime|grapefruit|pineapple).*juice/i.test(normalized)) return 'Bar Consumables';
+    // Beverages (juices, mixers, sodas, alcohol)
+    if (/juice|mixer|tonic|soda|water|tea|coffee|wine|vodka|gin|rum|whiskey|tequila|beer/.test(normalized)) return 'beverage';
 
-    // Wine & Spirits
-    if (/wine|vodka|gin|rum|whiskey|tequila|beer/.test(normalized)) return 'Wine & Spirits';
+    // Packaging
+    if (/bag|box|container|cup|lid|straw|napkin|foil|wrap/.test(normalized)) return 'packaging';
 
-    // Beverages (non-alcoholic retail)
-    if (/soda|water|tea|coffee|milk|cream/.test(normalized)) return 'Beverages';
+    // Food (everything else - produce, dairy, meat, dry goods)
+    if (/orange|lemon|lime|grapefruit|apple|banana|lettuce|tomato|onion|pepper|cheese|butter|yogurt|cream|milk|chicken|beef|pork|fish|shrimp|salmon|steak|flour|sugar|rice|pasta|beans/.test(normalized)) return 'food';
 
-    // Produce
-    if (/orange|lemon|lime|grapefruit|apple|banana|lettuce|tomato|onion|pepper/.test(normalized)) return 'Produce';
-
-    // Dairy
-    if (/cheese|butter|yogurt|cream|milk/.test(normalized)) return 'Dairy';
-
-    // Meat & Seafood
-    if (/chicken|beef|pork|fish|shrimp|salmon|steak/.test(normalized)) return 'Meat & Seafood';
-
-    // Dry Goods
-    if (/flour|sugar|rice|pasta|beans/.test(normalized)) return 'Dry Goods';
-
-    return '';
+    return 'food'; // Default to food
   };
 
   // Parse pack size from description (e.g., "10L bib" → "10L Bag-in-Box")
