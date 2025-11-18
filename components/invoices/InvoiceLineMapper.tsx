@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Check } from 'lucide-react';
+import { Search, Plus, Check, Sparkles } from 'lucide-react';
 
 interface InvoiceLineMapperProps {
   line: {
@@ -18,11 +18,16 @@ interface InvoiceLineMapperProps {
 }
 
 export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(line.description);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showCreateNew, setShowCreateNew] = useState(false);
+
+  // Auto-search on mount
+  useEffect(() => {
+    handleSearch();
+  }, []);
 
   // Search for matching items
   const handleSearch = async () => {
@@ -100,10 +105,18 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
               </Button>
             </div>
 
+            {/* AI Suggestions Header */}
+            {suggestions.length > 0 && (
+              <div className="flex items-center gap-2 text-xs font-medium text-opsos-sage-700 mb-1">
+                <Sparkles className="w-3 h-3 text-brass" />
+                <span>AI Suggested Matches</span>
+              </div>
+            )}
+
             {/* Suggestions */}
             {suggestions.length > 0 && (
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {suggestions.map((item) => (
+                {suggestions.slice(0, 5).map((item, idx) => (
                   <div
                     key={item.id}
                     className={`flex items-center justify-between p-2 rounded-md border cursor-pointer transition-colors ${
@@ -114,7 +127,12 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     onClick={() => setSelectedItemId(item.id)}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{item.name}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium truncate">{item.name}</div>
+                        {idx === 0 && (
+                          <Badge variant="sage" className="text-xs">Best Match</Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground font-mono">{item.sku}</div>
                     </div>
                     {selectedItemId === item.id && (
@@ -122,6 +140,21 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* No matches found */}
+            {!isSearching && suggestions.length === 0 && searchQuery && (
+              <div className="p-3 rounded-md bg-orange-50 border border-orange-200">
+                <div className="flex items-start gap-2">
+                  <Sparkles className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <div className="font-medium text-orange-900 mb-1">No matching items found</div>
+                    <div className="text-xs text-orange-700">
+                      Recommendation: Create a new item for "{line.description}"
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -148,10 +181,12 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
               </Button>
             </div>
 
-            {/* AI Suggestion (placeholder) */}
-            <div className="text-xs text-muted-foreground italic">
-              💡 Tip: Search uses fuzzy matching to find similar items
-            </div>
+            {/* Help Text */}
+            {suggestions.length > 0 && (
+              <div className="text-xs text-muted-foreground italic">
+                💡 Tip: Click a suggestion to select it, or search for other items
+              </div>
+            )}
           </div>
         </div>
       </div>
