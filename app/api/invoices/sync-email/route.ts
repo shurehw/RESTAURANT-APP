@@ -87,15 +87,16 @@ export async function POST(request: NextRequest) {
 
         // Upload file to storage
         const fileName = `${Date.now()}-${attachment.name}`;
-        const { data: uploadData } = await supabase.storage
-          .from('opsos-invoices')
-          .upload(`email-sync/${fileName}`, fileBuffer, {
+        const storagePath = `email-sync/${fileName}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('invoices')
+          .upload(storagePath, fileBuffer, {
             contentType: attachment.contentType || (isPDF ? 'application/pdf' : 'image/jpeg'),
           });
 
-        const fileUrl = uploadData
-          ? supabase.storage.from('opsos-invoices').getPublicUrl(uploadData.path).data.publicUrl
-          : null;
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+        }
 
         // Create invoice record
         const { data: invoiceData, error: invoiceError } = await supabase
@@ -107,10 +108,11 @@ export async function POST(request: NextRequest) {
             invoice_date: normalized.invoiceDate,
             due_date: normalized.dueDate,
             total_amount: normalized.totalAmount,
+            payment_terms: normalized.paymentTerms,
             status: 'draft',
             ocr_confidence: normalized.ocrConfidence,
             ocr_raw_json: rawInvoice,
-            image_url: fileUrl,
+            storage_path: uploadData?.path || storagePath,
             notes: `Imported from email: ${email.subject}\nFrom: ${email.from?.emailAddress?.address}\n${normalized.venueName ? `Venue: ${normalized.venueName}` : ''}${normalized.warnings.length > 0 ? `\n\nWarnings:\n- ${normalized.warnings.join('\n- ')}` : ''}`,
           })
           .select('id')
@@ -157,8 +159,7 @@ export async function POST(request: NextRequest) {
           attachment_name: attachment.name,
           attachment_type: attachment.contentType,
           attachment_size_bytes: fileBuffer.length,
-          storage_path: uploadData?.path || null,
-          storage_url: fileUrl,
+          storage_path: uploadData?.path || storagePath,
           processed: true,
           ocr_confidence: normalized.ocrConfidence,
         });
@@ -178,7 +179,7 @@ export async function POST(request: NextRequest) {
           emailSubject: email.subject,
           vendor: normalized.vendorName,
           total: normalized.totalAmount,
-          fileUrl,
+          storagePath: uploadData?.path || storagePath,
         });
       } catch (error: any) {
         console.error(`Error processing email ${email.id}:`, error);
