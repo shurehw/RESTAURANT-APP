@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
             invoice_date: normalized.invoiceDate,
             due_date: normalized.dueDate,
             total_amount: normalized.totalAmount,
-            payment_terms: normalized.paymentTerms,
             status: 'draft',
             ocr_confidence: normalized.ocrConfidence,
             ocr_raw_json: rawInvoice,
