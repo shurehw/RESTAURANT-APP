@@ -67,12 +67,17 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     if (!newItemName.trim()) return;
 
     try {
+      // Construct full item name with pack size
+      const fullItemName = newItemPackSize
+        ? `${newItemName} (${newItemPackSize})`
+        : newItemName;
+
       // Create the new item
       const createResponse = await fetch('/api/items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: newItemName,
+          name: fullItemName,
           sku: newItemSKU || `AUTO-${Date.now()}`,
           category: newItemCategory || 'uncategorized',
           base_uom: newItemUOM || 'unit',
@@ -179,10 +184,30 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     return '';
   };
 
+  // Parse pack size from description (e.g., "10L bib" → "10L Bag-in-Box")
+  const parsePackSizeFromDescription = (desc: string): string => {
+    const normalized = desc.toLowerCase();
+
+    // Look for size + unit + "bib"
+    const bibMatch = normalized.match(/(\d+\s*l)\s*bib/i);
+    if (bibMatch) {
+      return `${bibMatch[1].toUpperCase()} Bag-in-Box`;
+    }
+
+    // Look for just the size
+    const sizeMatch = normalized.match(/(\d+\s*(l|liter|gal|gallon|oz|lb))/i);
+    if (sizeMatch) {
+      return sizeMatch[1].toUpperCase();
+    }
+
+    return '';
+  };
+
   const [newItemName, setNewItemName] = useState(normalizeItemName(line.description));
   const [newItemSKU, setNewItemSKU] = useState('');
   const [newItemCategory, setNewItemCategory] = useState(parseCategoryFromDescription(line.description));
   const [newItemUOM, setNewItemUOM] = useState(parseUOMFromDescription(line.description));
+  const [newItemPackSize, setNewItemPackSize] = useState(parsePackSizeFromDescription(line.description));
 
   return (
     <Card className="p-4 border-l-4 border-brass">
@@ -373,17 +398,37 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1">
-                      Category
-                    </label>
-                    <input
-                      type="text"
-                      value={newItemCategory}
-                      onChange={(e) => setNewItemCategory(e.target.value)}
-                      placeholder="e.g. Beverages, Produce"
-                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        value={newItemCategory}
+                        onChange={(e) => setNewItemCategory(e.target.value)}
+                        placeholder="e.g. Bar Consumables"
+                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        Pack Size
+                      </label>
+                      <input
+                        type="text"
+                        value={newItemPackSize}
+                        onChange={(e) => setNewItemPackSize(e.target.value)}
+                        placeholder="e.g. 10L Bag-in-Box"
+                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded p-2">
+                    💡 <strong>Item Name:</strong> {newItemName}
+                    {newItemPackSize && ` (${newItemPackSize})`}
                   </div>
 
                   <Button
