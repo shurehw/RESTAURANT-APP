@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { guard, requireUser } from '@/lib/api/guard';
+import { guard } from '@/lib/api/guard';
 
 /**
  * POST /api/items
@@ -8,7 +8,6 @@ import { guard, requireUser } from '@/lib/api/guard';
  */
 export async function POST(request: NextRequest) {
   return guard(async () => {
-    const user = await requireUser();
     const supabase = await createClient();
 
     const body = await request.json();
