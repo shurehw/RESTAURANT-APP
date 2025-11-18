@@ -203,11 +203,18 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     return '';
   };
 
+  // Parse pack quantity (e.g., "10L" → 10)
+  const parsePackQuantity = (desc: string): string => {
+    const match = desc.match(/(\d+)\s*(l|liter|gal|gallon|oz|lb)/i);
+    return match ? match[1] : '';
+  };
+
   const [newItemName, setNewItemName] = useState(normalizeItemName(line.description));
   const [newItemSKU, setNewItemSKU] = useState('');
   const [newItemCategory, setNewItemCategory] = useState(parseCategoryFromDescription(line.description));
   const [newItemUOM, setNewItemUOM] = useState(parseUOMFromDescription(line.description));
   const [newItemPackSize, setNewItemPackSize] = useState(parsePackSizeFromDescription(line.description));
+  const [newItemPackQty, setNewItemPackQty] = useState(parsePackQuantity(line.description));
 
   return (
     <Card className="p-4 border-l-4 border-brass">
@@ -362,7 +369,7 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground block mb-1">
                         SKU
@@ -372,6 +379,19 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                         value={newItemSKU}
                         onChange={(e) => setNewItemSKU(e.target.value)}
                         placeholder="Auto-generated"
+                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        Pack Qty
+                      </label>
+                      <input
+                        type="text"
+                        value={newItemPackQty}
+                        onChange={(e) => setNewItemPackQty(e.target.value)}
+                        placeholder="e.g. 10"
                         className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                       />
                     </div>
@@ -429,6 +449,11 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                   <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded p-2">
                     💡 <strong>Item Name:</strong> {newItemName}
                     {newItemPackSize && ` (${newItemPackSize})`}
+                    {newItemPackQty && newItemUOM && (
+                      <div className="mt-1">
+                        <strong>Sellable Quantity:</strong> {newItemPackQty} {newItemUOM} per unit
+                      </div>
+                    )}
                   </div>
 
                   <Button
