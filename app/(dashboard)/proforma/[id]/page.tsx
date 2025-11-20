@@ -5,8 +5,9 @@ import { ProformaProjectClient } from "@/components/proforma/ProformaProjectClie
 export default async function ProformaProjectPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id } = await params;
   const supabase = await createClient();
 
   const {
@@ -56,7 +57,7 @@ export default async function ProformaProjectPage({
       )
     `
     )
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("org_id", orgUsers.organization_id)
     .single();
 
