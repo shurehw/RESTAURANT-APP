@@ -165,7 +165,7 @@ export default async function VendorDetailPage({ params }: Props) {
                     <Badge
                       variant={
                         form.status === 'approved' ? 'sage' :
-                        form.status === 'rejected' ? 'destructive' :
+                        form.status === 'rejected' ? 'error' :
                         'default'
                       }
                     >
