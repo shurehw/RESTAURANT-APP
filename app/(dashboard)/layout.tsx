@@ -19,6 +19,7 @@ import {
   Bot,
   CheckSquare,
   TrendingUp,
+  Calculator,
 } from "lucide-react";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
@@ -141,6 +142,9 @@ function Sidebar() {
           </NavLink>
           <NavLink href="/budget" icon={<DollarSign className="w-5 h-5" />}>
             Budget
+          </NavLink>
+          <NavLink href="/proforma" icon={<Calculator className="w-5 h-5" />}>
+            Proforma
           </NavLink>
           <NavLink href="/savings" icon={<TrendingUp className="w-5 h-5" />}>
             Savings
