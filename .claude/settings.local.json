@@ -53,7 +53,14 @@
       "Read(//c/Users/JacobShure/JBS life/**)",
       "Bash(git checkout:*)",
       "Bash(git pull:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(start http://localhost:3000)",
+      "Bash(netstat:*)",
+      "Bash(start http://localhost:3002)",
+      "Bash(dir:*)",
+      "Bash(start http://localhost:3002/login)",
+      "Bash(taskkill:*)",
+      "Bash(npx kill-port:*)"
     ],
     "deny": [],
     "ask": []

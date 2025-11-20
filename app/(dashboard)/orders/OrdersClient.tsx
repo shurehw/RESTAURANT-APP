@@ -20,6 +20,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Plus, ShoppingCart, Trash2, Search } from "lucide-react";
+import { createOrder } from "@/app/actions/orders";
+import { searchItems, ItemSearchResult } from "@/app/actions/items";
+import { toast } from "sonner";
+import { useTransition } from "react";
 
 type Order = {
   id: string;
@@ -42,13 +46,7 @@ type Venue = {
   name: string;
 };
 
-type Item = {
-  id: string;
-  sku: string;
-  name: string;
-  category: string;
-  base_uom: string;
-};
+type Item = ItemSearchResult;
 
 type OrderItem = {
   item_id: string;
@@ -63,10 +61,9 @@ interface OrdersClientProps {
   orders: Order[];
   vendors: Vendor[];
   venues: Venue[];
-  items: Item[];
 }
 
-export function OrdersClient({ orders, vendors, venues, items }: OrdersClientProps) {
+export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
   const [open, setOpen] = useState(false);
   const [vendorId, setVendorId] = useState("");
   const [venueId, setVenueId] = useState("");
@@ -75,11 +72,29 @@ export function OrdersClient({ orders, vendors, venues, items }: OrdersClientPro
   const [searchTerm, setSearchTerm] = useState("");
   const [showItemSearch, setShowItemSearch] = useState(false);
 
-  const filteredItems = items.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.sku.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [searchResults, setSearchResults] = useState<Item[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
+  // Debounced search effect could be added here, but for simplicity we'll just search on change for now
+  // or use a small timeout.
+  const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+
+    if (value.length >= 2) {
+      setIsSearching(true);
+      try {
+        const results = await searchItems(value);
+        setSearchResults(results);
+      } catch (err) {
+        console.error("Failed to search items", err);
+      } finally {
+        setIsSearching(false);
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
 
   const addItem = (item: Item) => {
     const existing = orderItems.find((oi) => oi.item_id === item.id);
@@ -125,14 +140,30 @@ export function OrdersClient({ orders, vendors, venues, items }: OrdersClientPro
     0
   );
 
+  const [isPending, startTransition] = useTransition();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: API call to create order
-    console.log({
-      vendor_id: vendorId,
-      venue_id: venueId,
-      delivery_date: deliveryDate,
-      items: orderItems,
+
+    const formData = new FormData();
+    formData.append("vendor_id", vendorId);
+    formData.append("venue_id", venueId);
+    formData.append("delivery_date", deliveryDate);
+    formData.append("items", JSON.stringify(orderItems));
+
+    startTransition(async () => {
+      const result = await createOrder({} as any, formData);
+
+      if (result.error) {
+        toast.error(result.error);
+        if (result.validationErrors) {
+          console.error("Validation errors:", result.validationErrors);
+        }
+      } else if (result.success) {
+        toast.success("Order created successfully");
+        setOpen(false);
+        resetForm();
+      }
     });
   };
 
@@ -245,13 +276,18 @@ export function OrdersClient({ orders, vendors, venues, items }: OrdersClientPro
                         placeholder="Search items by name or SKU..."
                         className="w-full pl-10 pr-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={handleSearchChange}
                         autoFocus
                       />
                     </div>
                     {searchTerm && (
                       <div className="max-h-60 overflow-y-auto border rounded-md bg-white">
-                        {filteredItems.slice(0, 20).map((item) => (
+                        {isSearching && (
+                          <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                            Searching...
+                          </div>
+                        )}
+                        {!isSearching && searchResults.map((item) => (
                           <button
                             key={item.id}
                             type="button"
@@ -269,7 +305,7 @@ export function OrdersClient({ orders, vendors, venues, items }: OrdersClientPro
                             </div>
                           </button>
                         ))}
-                        {searchTerm && filteredItems.length === 0 && (
+                        {!isSearching && searchTerm.length >= 2 && searchResults.length === 0 && (
                           <div className="px-3 py-4 text-center text-sm text-muted-foreground">
                             No items found
                           </div>
@@ -378,8 +414,8 @@ export function OrdersClient({ orders, vendors, venues, items }: OrdersClientPro
                 >
                   Cancel
                 </Button>
-                <Button type="submit" variant="brass" disabled={orderItems.length === 0}>
-                  Create Order
+                <Button type="submit" variant="brass" disabled={orderItems.length === 0 || isPending}>
+                  {isPending ? "Creating..." : "Create Order"}
                 </Button>
               </div>
             </form>

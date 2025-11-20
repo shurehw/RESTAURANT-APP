@@ -103,21 +103,30 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const normalizeItemName = (desc: string): string => {
     let normalized = desc;
 
-    // Remove common unit patterns (3L, 10L, 5 gal, etc.)
-    normalized = normalized.replace(/\b\d+\s*(l|liter|liters|gal|gallon|gallons|qt|quart|quarts|pt|pint|pints|oz|ounce|ounces|lb|pound|pounds)\b/gi, '');
+    // Remove vendor item codes (Pitt# 7, SKU:123, Code:ABC, etc.)
+    normalized = normalized.replace(/\b(pitt#?|sku:?|code:?|item#?)\s*\d+\b/gi, '');
 
-    // Remove "bib" (bag-in-box)
-    normalized = normalized.replace(/\bbib\b/gi, '');
+    // Remove pack/case counts (4/1, 6/4, etc. at end of string)
+    normalized = normalized.replace(/\b\d+\/\d+\s*(gal|l|oz|lb|cs|case|box|ea|each)?\b/gi, '');
 
-    // Remove extra whitespace
+    // Remove common unit patterns (3L, 10L, 5 gal, 1/10 LT CS, etc.)
+    normalized = normalized.replace(/\b\d+\/?\d*\s*(l|lt|liter|liters|gal|gallon|gallons|qt|quart|quarts|pt|pint|pints|oz|ounce|ounces|lb|pound|pounds|cs|case|box|ea|each)\b/gi, '');
+
+    // Remove "bib" (bag-in-box) and "bc" (bulk container)
+    normalized = normalized.replace(/\b(bib|bc|bag-in-box)\b/gi, '');
+
+    // Remove extra whitespace and punctuation
     normalized = normalized.replace(/\s+/g, ' ').trim();
+    normalized = normalized.replace(/^[-\s]+|[-\s]+$/g, '');
 
-    // Capitalize properly
-    // e.g., "ORANGE 100% Cold Pressed" → "Orange Juice - Cold Pressed"
+    // Capitalize properly - handle special cases
     const words = normalized.split(' ');
     const cleaned = words.map((word, idx) => {
       // Keep % and special chars as-is
       if (word.includes('%')) return word;
+
+      // Keep all-caps acronyms (EVOO, USDA, etc.)
+      if (word.length <= 4 && word === word.toUpperCase()) return word;
 
       // Capitalize first letter of each word
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -127,30 +136,34 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     if (/(orange|lemon|lime|grapefruit|pineapple|apple|cranberry)/i.test(cleaned) && !/juice/i.test(cleaned)) {
       const fruit = cleaned.match(/(orange|lemon|lime|grapefruit|pineapple|apple|cranberry)/i)?.[0];
       if (fruit) {
-        // Replace "ORANGE 100% Cold Pressed" with "Orange Juice - Cold Pressed 100%"
         const fruitCapitalized = fruit.charAt(0).toUpperCase() + fruit.slice(1).toLowerCase();
         const rest = cleaned.replace(new RegExp(fruit, 'i'), '').trim();
         return rest ? `${fruitCapitalized} Juice - ${rest}` : `${fruitCapitalized} Juice`;
       }
     }
 
+    // Add "Oil" for EVOO if missing
+    if (/evoo/i.test(cleaned) && !/oil/i.test(cleaned)) {
+      return cleaned.replace(/evoo/i, 'EVOO (Extra Virgin Olive Oil)');
+    }
+
     return cleaned;
   };
 
-  // Parse UOM from description (e.g., "3L", "10L", "5 gal")
+  // Parse UOM from description (e.g., "3L", "10L", "5 gal", "1/10 LT CS")
   const parseUOMFromDescription = (desc: string): string => {
     const normalized = desc.toLowerCase();
 
-    // Common patterns
-    if (/(\d+\s*l\b|liter)/i.test(normalized)) return 'L';
+    // Check for specific patterns in order of priority
+    if (/(\d+\s*(l|lt)\b|liter)/i.test(normalized)) return 'L';
     if (/(\d+\s*gal\b|gallon)/i.test(normalized)) return 'gal';
     if (/(\d+\s*qt\b|quart)/i.test(normalized)) return 'qt';
     if (/(\d+\s*pt\b|pint)/i.test(normalized)) return 'pt';
     if (/(\d+\s*oz\b|ounce)/i.test(normalized)) return 'oz';
     if (/(\d+\s*lb\b|pound)/i.test(normalized)) return 'lb';
-    if (/case/i.test(normalized)) return 'case';
+    if (/(cs\b|case)/i.test(normalized)) return 'case';
     if (/box/i.test(normalized)) return 'box';
-    if (/each/i.test(normalized)) return 'unit';
+    if (/(ea\b|each)/i.test(normalized)) return 'unit';
 
     return 'unit';
   };
@@ -212,12 +225,62 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     return match ? match[1] : '';
   };
 
-  const [newItemName, setNewItemName] = useState(normalizeItemName(line.description));
+  const [newItemName, setNewItemName] = useState('');
   const [newItemSKU, setNewItemSKU] = useState('');
-  const [newItemCategory, setNewItemCategory] = useState(parseCategoryFromDescription(line.description));
-  const [newItemUOM, setNewItemUOM] = useState(parseUOMFromDescription(line.description));
-  const [newItemPackSize, setNewItemPackSize] = useState(parsePackSizeFromDescription(line.description));
-  const [newItemPackQty, setNewItemPackQty] = useState(parsePackQuantity(line.description));
+  const [newItemCategory, setNewItemCategory] = useState('');
+  const [newItemUOM, setNewItemUOM] = useState('');
+  const [newItemPackSize, setNewItemPackSize] = useState('');
+  const [outerPackQty, setOuterPackQty] = useState('');
+  const [innerPackQty, setInnerPackQty] = useState('');
+  const [innerPackUom, setInnerPackUom] = useState('');
+  const [isNormalizing, setIsNormalizing] = useState(false);
+
+  // AI-powered normalization when Create New Item is opened
+  useEffect(() => {
+    if (showCreateNew && !newItemName) {
+      normalizeWithAI();
+    }
+  }, [showCreateNew]);
+
+  const normalizeWithAI = async () => {
+    setIsNormalizing(true);
+    try {
+      const response = await fetch('/api/items/normalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: line.description }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setNewItemName(data.name || normalizeItemName(line.description));
+        setNewItemSKU(data.sku || '');
+        setNewItemCategory(data.category || parseCategoryFromDescription(line.description));
+        setNewItemUOM(data.uom || parseUOMFromDescription(line.description));
+        setNewItemPackSize(data.packSize || parsePackSizeFromDescription(line.description));
+        setOuterPackQty(data.outerPackQty || '1');
+        setInnerPackQty(data.innerPackQty || parsePackQuantity(line.description));
+        setInnerPackUom(data.innerPackUom || parseUOMFromDescription(line.description));
+      } else {
+        // Fallback to regex-based normalization
+        setNewItemName(normalizeItemName(line.description));
+        setNewItemCategory(parseCategoryFromDescription(line.description));
+        setNewItemUOM(parseUOMFromDescription(line.description));
+        setNewItemPackSize(parsePackSizeFromDescription(line.description));
+        setNewItemPackQty(parsePackQuantity(line.description));
+      }
+    } catch (error) {
+      console.error('AI normalization error:', error);
+      // Fallback to regex-based normalization
+      setNewItemName(normalizeItemName(line.description));
+      setNewItemCategory(parseCategoryFromDescription(line.description));
+      setNewItemUOM(parseUOMFromDescription(line.description));
+      setNewItemPackSize(parsePackSizeFromDescription(line.description));
+      setNewItemPackQty(parsePackQuantity(line.description));
+    } finally {
+      setIsNormalizing(false);
+    }
+  };
 
   return (
     <Card className="p-4 border-l-4 border-brass">
@@ -349,7 +412,10 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
             {showCreateNew && (
               <div className="mt-4 p-4 border-2 border-brass rounded-md bg-brass/5">
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-sm">Create New Item</h4>
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-brass" />
+                    Create New Item {isNormalizing && '(AI Processing...)'}
+                  </h4>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -359,8 +425,14 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                   </Button>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
+                {isNormalizing ? (
+                  <div className="py-8 text-center">
+                    <div className="animate-spin w-8 h-8 border-4 border-brass border-t-transparent rounded-full mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">AI is normalizing item details...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
                     <label className="text-xs font-medium text-muted-foreground block mb-1">
                       Item Name *
                     </label>
@@ -372,52 +444,68 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        SKU
-                      </label>
-                      <input
-                        type="text"
-                        value={newItemSKU}
-                        onChange={(e) => setNewItemSKU(e.target.value)}
-                        placeholder="Auto-generated"
-                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">
+                      SKU (AI Generated)
+                    </label>
+                    <input
+                      type="text"
+                      value={newItemSKU}
+                      onChange={(e) => setNewItemSKU(e.target.value)}
+                      placeholder="Auto-generated"
+                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        Pack Qty
-                      </label>
-                      <input
-                        type="text"
-                        value={newItemPackQty}
-                        onChange={(e) => setNewItemPackQty(e.target.value)}
-                        placeholder="e.g. 10"
-                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                      />
-                    </div>
+                  {/* Pack Info - Outer/Inner */}
+                  <div className="border border-brass/30 rounded-md p-3 bg-brass/5">
+                    <div className="text-xs font-semibold text-brass mb-2">Pack Breakdown (for recipes)</div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">
+                          Outer Pack (Case Qty)
+                        </label>
+                        <input
+                          type="number"
+                          value={outerPackQty}
+                          onChange={(e) => setOuterPackQty(e.target.value)}
+                          placeholder="e.g. 4 (for 4/1 gal)"
+                          className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">How many units per case</p>
+                      </div>
 
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        UOM
-                      </label>
-                      <select
-                        value={newItemUOM}
-                        onChange={(e) => setNewItemUOM(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                      >
-                        <option value="unit">Unit</option>
-                        <option value="lb">Pound (lb)</option>
-                        <option value="oz">Ounce (oz)</option>
-                        <option value="gal">Gallon (gal)</option>
-                        <option value="qt">Quart (qt)</option>
-                        <option value="pt">Pint (pt)</option>
-                        <option value="L">Liter (L)</option>
-                        <option value="case">Case</option>
-                        <option value="box">Box</option>
-                      </select>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground block mb-1">
+                          Inner Pack Size
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={innerPackQty}
+                            onChange={(e) => setInnerPackQty(e.target.value)}
+                            placeholder="e.g. 1"
+                            className="w-20 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                          />
+                          <select
+                            value={innerPackUom}
+                            onChange={(e) => setInnerPackUom(e.target.value)}
+                            className="flex-1 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                          >
+                            <option value="gal">Gallon</option>
+                            <option value="L">Liter</option>
+                            <option value="lb">Pound</option>
+                            <option value="oz">Ounce</option>
+                            <option value="qt">Quart</option>
+                            <option value="pt">Pint</option>
+                            <option value="unit">Unit/Each</option>
+                          </select>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Size of each individual unit</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                      <strong>Example:</strong> "4/1 GAL" = {outerPackQty || '4'} cases × {innerPackQty || '1'} {innerPackUom || 'gal'} each
                     </div>
                   </div>
 
@@ -468,7 +556,8 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     <Plus className="w-4 h-4 mr-1" />
                     Create & Map Item
                   </Button>
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

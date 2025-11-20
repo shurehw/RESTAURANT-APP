@@ -69,7 +69,7 @@ export async function extractInvoiceWithClaude(
   const base64Image = imageData.toString('base64');
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5-20250929',
     max_tokens: 4096,
     messages: [
       {
@@ -124,7 +124,7 @@ export async function extractInvoiceFromPDF(
   const base64PDF = pdfData.toString('base64');
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5-20250929',
     max_tokens: 4096,
     messages: [
       {

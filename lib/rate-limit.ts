@@ -23,6 +23,11 @@ const MAX_REQUESTS = 100; // requests per window
  * @param keyExtra - Additional key suffix for per-endpoint limits
  */
 export async function rateLimit(req: NextRequest, keyExtra = ''): Promise<void> {
+  // Skip rate limiting in development if Redis not configured
+  if (process.env.NODE_ENV === 'development' && (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)) {
+    return;
+  }
+
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0] ||
     req.headers.get('x-real-ip') ||

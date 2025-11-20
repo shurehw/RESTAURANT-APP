@@ -4,7 +4,7 @@ import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { rateLimit } from '@/lib/rate-limit';
-import { extractInvoiceWithClaude } from '@/lib/ocr/claude';
+import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claude';
 import { normalizeOCR } from '@/lib/ocr/normalize';
 
 export async function POST(request: NextRequest) {
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // MIME type validation
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
       throw {
         status: 400,
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       'ffd8ff', // JPEG
       '89504e47', // PNG
       '52494646', // WEBP (RIFF)
+      '25504446', // PDF (%PDF)
     ];
     const isValidMagic = validMagicBytes.some((magic) => magicBytes.startsWith(magic));
     if (!isValidMagic) {
@@ -61,9 +62,42 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const { invoice: rawInvoice } = await extractInvoiceWithClaude(buffer, file.type);
+    // Handle PDF or image
+    const isPDF = file.type === 'application/pdf';
+    const { invoice: rawInvoice } = isPDF
+      ? await extractInvoiceFromPDF(buffer)
+      : await extractInvoiceWithClaude(buffer, file.type);
     const supabase = await createClient();
     const normalized = await normalizeOCR(rawInvoice, supabase);
+
+    // If vendor not found, create it
+    let vendorId = normalized.vendorId;
+    if (!vendorId && normalized.vendorName) {
+      // Import normalizeVendorName from normalize.ts
+      const normalizedName = normalized.vendorName
+        .toLowerCase()
+        .replace(/[,\.]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      const { data: newVendor, error: vendorError } = await supabase
+        .from('vendors')
+        .insert({
+          name: normalized.vendorName,
+          normalized_name: normalizedName,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
+
+      if (vendorError) {
+        console.error('Failed to create vendor:', vendorError);
+        throw { status: 500, code: 'VENDOR_CREATE_FAILED', message: `Failed to create vendor: ${vendorError.message}` };
+      }
+
+      vendorId = newVendor.id;
+    }
 
     const fileName = `${Date.now()}-${file.name}`;
     const { data: uploadData } = await supabase.storage
@@ -74,27 +108,20 @@ export async function POST(request: NextRequest) {
       ? supabase.storage.from('opsos-invoices').getPublicUrl(uploadData.path).data.publicUrl
       : null;
 
-    const { data: invoiceData, error: invoiceError } = await supabase
-      .from('invoices')
-      .insert({
-        venue_id: venueId,
-        vendor_id: normalized.vendorId,
-        invoice_number: normalized.invoiceNumber,
-        invoice_date: normalized.invoiceDate,
-        due_date: normalized.dueDate,
-        total_amount: normalized.totalAmount,
-        status: 'draft',
-        ocr_confidence: normalized.ocrConfidence,
-        ocr_raw_json: rawInvoice,
-        image_url: imageUrl,
-      })
-      .select('id')
-      .single();
+    // Prepare data for RPC
+    const invoicePayload = {
+      venue_id: venueId,
+      vendor_id: vendorId,
+      invoice_number: normalized.invoiceNumber,
+      invoice_date: normalized.invoiceDate,
+      due_date: normalized.dueDate,
+      total_amount: normalized.totalAmount,
+      ocr_confidence: normalized.ocrConfidence,
+      ocr_raw_json: rawInvoice,
+      image_url: imageUrl,
+    };
 
-    if (invoiceError) throw invoiceError;
-
-    const lineInserts = normalized.lines.map((line) => ({
-      invoice_id: invoiceData.id,
+    const linesPayload = normalized.lines.map((line) => ({
       item_id: line.itemId,
       description: line.description,
       quantity: line.qty,
@@ -103,17 +130,26 @@ export async function POST(request: NextRequest) {
       ocr_confidence: line.ocrConfidence,
     }));
 
-    await supabase.from('invoice_lines').insert(lineInserts);
+    // Call RPC
+    const { data: invoiceId, error: rpcError } = await supabase.rpc(
+      'create_invoice_with_lines',
+      {
+        invoice_data: invoicePayload,
+        lines_data: linesPayload,
+      }
+    );
+
+    if (rpcError) throw rpcError;
 
     const needsReview = normalized.lines.some(l => l.matchType === 'none');
     return NextResponse.json({
       success: true,
-      invoiceId: invoiceData.id,
+      invoiceId: invoiceId,
       normalized,
       warnings: normalized.warnings,
       imageUrl,
       needsReview,
-      reviewUrl: `/invoices/${invoiceData.id}/review`,
+      reviewUrl: `/invoices/${invoiceId}/review`,
     });
   });
 }

@@ -179,30 +179,16 @@ export default async function InvoiceReviewPage({ params }: Props) {
             </h2>
           </div>
 
-          {/* Bulk Mapping Table */}
-          <div className="mb-6">
-            <BulkItemMapper
-              lines={unmappedLines}
-              vendorId={invoice.vendor_id}
-            />
+          {/* Individual Item Cards */}
+          <div className="space-y-4">
+            {unmappedLines.map((line) => (
+              <InvoiceLineMapper
+                key={line.id}
+                line={line}
+                vendorId={invoice.vendor_id}
+              />
+            ))}
           </div>
-
-          {/* Individual Item Cards (collapsed by default) */}
-          <details className="group">
-            <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center gap-2">
-              <List className="w-4 h-4" />
-              Show individual item cards
-            </summary>
-            <div className="space-y-4">
-              {unmappedLines.map((line) => (
-                <InvoiceLineMapper
-                  key={line.id}
-                  line={line}
-                  vendorId={invoice.vendor_id}
-                />
-              ))}
-            </div>
-          </details>
         </div>
       )}
 

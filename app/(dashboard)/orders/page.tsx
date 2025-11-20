@@ -26,26 +26,20 @@ export default async function OrdersPage() {
   const { data: vendors } = await supabase
     .from("vendors")
     .select("id, name")
-    .eq("is_active", true)
-    .order("name");
+    .order("name")
+    .limit(1000);
 
   const { data: venues } = await supabase
     .from("venues")
     .select("id, name")
-    .eq("is_active", true);
-
-  const { data: items } = await supabase
-    .from("items")
-    .select("id, sku, name, category, base_uom")
-    .eq("is_active", true)
-    .order("name");
+    .order("name")
+    .limit(1000);
 
   return (
     <OrdersClient
       orders={orders || []}
       vendors={vendors || []}
       venues={venues || []}
-      items={items || []}
     />
   );
 }
