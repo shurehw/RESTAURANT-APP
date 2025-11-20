@@ -13,7 +13,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { InvoiceUploadButton } from "@/components/invoices/InvoiceUploadButton";
-import { Download, Check, AlertCircle, CheckCircle, Zap } from "lucide-react";
+import { Download, Check, AlertCircle, CheckCircle, Zap, List } from "lucide-react";
+import Link from "next/link";
 
 type Invoice = {
   id: string;
@@ -89,6 +90,12 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
 
         {/* Actions */}
         <div className="flex gap-3">
+          <Button variant="outline" asChild>
+            <Link href="/invoices/bulk-review">
+              <List className="w-4 h-4 mr-2" />
+              Bulk Item Mapping
+            </Link>
+          </Button>
           <InvoiceUploadButton venues={venues || []} />
           <Button variant="brass">
             <Download className="w-4 h-4" />

@@ -1,7 +1,8 @@
 'use client';
 
-import { Users, Settings, UserCircle, Building2 } from 'lucide-react';
+import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
+import { createClient } from '@/lib/supabase/client';
 
 interface TopbarActionsProps {
   venues: Array<{ id: string; name: string }>;
@@ -22,6 +23,12 @@ export function TopbarActions({ venues }: TopbarActionsProps) {
   const handleProfile = () => {
     // TODO: Navigate to profile page or show dropdown
     console.log('Profile clicked');
+  };
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/login';
   };
 
   return (
@@ -74,6 +81,15 @@ export function TopbarActions({ venues }: TopbarActionsProps) {
         title="Profile"
       >
         <UserCircle className="w-5 h-5" />
+      </button>
+
+      {/* Logout */}
+      <button
+        onClick={handleLogout}
+        className="p-2 text-opsos-sage-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+        title="Logout"
+      >
+        <LogOut className="w-5 h-5" />
       </button>
     </div>
   );

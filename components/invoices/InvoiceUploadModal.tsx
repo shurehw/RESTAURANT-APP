@@ -30,6 +30,10 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingApproval, setPendingApproval] = useState<{
+    newVendor?: string;
+    warnings?: string[];
+  } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -38,12 +42,16 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
       setError(null);
       setResult(null);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Create preview (only for images, not PDFs)
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setPreview(null); // No preview for PDFs
+      }
     }
   };
 
@@ -126,7 +134,7 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
             <label className="block text-sm font-medium mb-2">Invoice Image</label>
             <input
               type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp"
+              accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
               onChange={handleFileChange}
               className="block w-full text-sm text-slate-500
                 file:mr-4 file:py-2 file:px-4
@@ -138,7 +146,7 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
               required
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Supported formats: JPEG, PNG, WebP
+              Supported formats: JPEG, PNG, WebP, PDF
             </p>
           </div>
 
