@@ -13,10 +13,10 @@ import { useRouter } from "next/navigation";
 
 interface VendorOnboardingFormProps {
   vendor: any;
-  token: string;
+  vendorId: string;
 }
 
-export function VendorOnboardingForm({ vendor, token }: VendorOnboardingFormProps) {
+export function VendorOnboardingForm({ vendor, vendorId }: VendorOnboardingFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -73,7 +73,7 @@ export function VendorOnboardingForm({ vendor, token }: VendorOnboardingFormProp
     try {
       // Create FormData for file uploads
       const formData = new FormData();
-      formData.append('token', token);
+      formData.append('vendorId', vendorId);
       formData.append('formType', formType);
       formData.append('entityType', entityType);
       formData.append('legalName', legalName);
