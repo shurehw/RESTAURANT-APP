@@ -52,18 +52,24 @@ export default function VendorOnboardingLandingPage() {
         {/* Header */}
         <div className="bg-white border-b border-border">
           <div className="max-w-4xl mx-auto px-6 py-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-brass flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-white" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-brass flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">Vendor Profile Setup</h1>
+                  <p className="text-sm text-muted-foreground">
+                    {isNewVendor
+                      ? "Complete your information to register as a new vendor"
+                      : "Please complete your vendor information for payment processing"
+                    }
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold">Vendor Profile Setup</h1>
-                <p className="text-sm text-muted-foreground">
-                  {isNewVendor
-                    ? "Complete your information to register as a new vendor"
-                    : "Please complete your vendor information for payment processing"
-                  }
-                </p>
+              <div className="text-right">
+                <p className="text-xs font-medium text-brass">POWERED BY OpsOS</p>
+                <p className="text-sm font-semibold text-opsos-sage">The h.wood Group</p>
               </div>
             </div>
           </div>
@@ -97,7 +103,13 @@ export default function VendorOnboardingLandingPage() {
 
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold mb-2">Vendor Profile Setup</h1>
+          <div className="mb-4">
+            <p className="text-xs font-medium text-brass mb-1">POWERED BY</p>
+            <h2 className="text-lg font-bold">OpsOS</h2>
+            <p className="text-xs text-muted-foreground mt-2">for</p>
+            <h3 className="text-xl font-bold text-opsos-sage">The h.wood Group</h3>
+          </div>
+          <h1 className="text-2xl font-bold mb-2 mt-6">Vendor Profile Setup</h1>
           <p className="text-sm text-muted-foreground">
             Enter your email address to access your vendor profile form
           </p>
