@@ -100,7 +100,7 @@ export default async function BulkReviewPage() {
       )}
 
       {/* Groups by vendor */}
-      {vendorGroups.map((group) => (
+      {vendorGroups.map((group: { vendorId: string; vendorName: string; lines: any[] }) => (
         <div key={group.vendorId} className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-xl font-semibold">{group.vendorName}</h2>
