@@ -6,6 +6,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     let vendorId = formData.get('vendorId') as string;
     const isNewVendor = formData.get('isNewVendor') === 'true';
+    const organizationId = formData.get('organizationId') as string;
     const supabase = await createClient();
 
     // If new vendor, create the vendor record first
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
         .insert({
           name: companyName,
           email: remittanceEmail,
+          organization_id: organizationId,
           status: 'pending', // New vendors start as pending approval
         })
         .select()

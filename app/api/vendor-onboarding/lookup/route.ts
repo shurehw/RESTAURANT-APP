@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const { email, organizationId } = await request.json();
 
     if (!email) {
       return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Look up vendor by email (check both primary email and remittance email in profile)
+    // Look up vendor by email within the organization
     const { data: vendors, error } = await supabase
       .from('vendors')
       .select(`
@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
           remittance_email
         )
       `)
+      .eq('organization_id', organizationId)
       .or(`email.eq.${email},vendor_profiles.remittance_email.eq.${email}`)
       .limit(1);
 
