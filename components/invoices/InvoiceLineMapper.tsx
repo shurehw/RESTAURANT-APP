@@ -275,7 +275,6 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
       setNewItemCategory(parseCategoryFromDescription(line.description));
       setNewItemUOM(parseUOMFromDescription(line.description));
       setNewItemPackSize(parsePackSizeFromDescription(line.description));
-      setNewItemPackQty(parsePackQuantity(line.description));
     } finally {
       setIsNormalizing(false);
     }
