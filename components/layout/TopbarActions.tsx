@@ -2,13 +2,16 @@
 
 import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
+import { VendorOnboardingLinkDisplay } from './VendorOnboardingLinkDisplay';
 import { createClient } from '@/lib/supabase/client';
 
 interface TopbarActionsProps {
   venues: Array<{ id: string; name: string }>;
+  organizationSlug?: string;
+  organizationName?: string;
 }
 
-export function TopbarActions({ venues }: TopbarActionsProps) {
+export function TopbarActions({ venues, organizationSlug, organizationName }: TopbarActionsProps) {
   const showVenueSelector = venues.length > 1;
 
   const handleTeamSettings = () => {
@@ -33,6 +36,14 @@ export function TopbarActions({ venues }: TopbarActionsProps) {
 
   return (
     <div className="flex items-center gap-3">
+      {/* Vendor Onboarding Link */}
+      {organizationSlug && organizationName && (
+        <VendorOnboardingLinkDisplay
+          organizationSlug={organizationSlug}
+          organizationName={organizationName}
+        />
+      )}
+
       {/* Venue Selector (only if multiple venues) */}
       {showVenueSelector && (
         <div className="flex items-center gap-2 px-3 py-1.5 border border-opsos-sage-300 rounded-md bg-white hover:bg-opsos-sage-50 transition-colors">
