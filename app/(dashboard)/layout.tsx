@@ -30,6 +30,20 @@ export default async function DashboardLayout({
 }) {
   const supabase = await createClient();
 
+  // Get current user's organization
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: userData } = await supabase
+    .from("users")
+    .select("organization_id")
+    .eq("id", user?.id)
+    .single();
+
+  const { data: organization } = await supabase
+    .from("organizations")
+    .select("id, name, slug")
+    .eq("id", userData?.organization_id)
+    .single();
+
   // Fetch venues for topbar selector
   const { data: venues } = await supabase
     .from("venues")
@@ -44,7 +58,11 @@ export default async function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col">
         {/* Topbar */}
-        <Topbar venues={venues || []} />
+        <Topbar
+          venues={venues || []}
+          organizationSlug={organization?.slug}
+          organizationName={organization?.name}
+        />
 
         {/* Page Content */}
         <main className="flex-1 p-8">{children}</main>
@@ -174,11 +192,19 @@ function NavSection({
   );
 }
 
-function Topbar({ venues }: { venues: Array<{ id: string; name: string }> }) {
+function Topbar({ venues, organizationSlug, organizationName }: {
+  venues: Array<{ id: string; name: string }>;
+  organizationSlug?: string;
+  organizationName?: string;
+}) {
   return (
     <header className="h-24 border-b-2 border-brass bg-white px-8">
       <div className="h-full flex items-center justify-end">
-        <TopbarActions venues={venues} />
+        <TopbarActions
+          venues={venues}
+          organizationSlug={organizationSlug}
+          organizationName={organizationName}
+        />
       </div>
     </header>
   );
