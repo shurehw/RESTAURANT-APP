@@ -13,10 +13,11 @@ import { useRouter } from "next/navigation";
 
 interface VendorOnboardingFormProps {
   vendor: any;
-  vendorId: string;
+  vendorId?: string;
+  isNewVendor?: boolean;
 }
 
-export function VendorOnboardingForm({ vendor, vendorId }: VendorOnboardingFormProps) {
+export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false }: VendorOnboardingFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,7 +27,7 @@ export function VendorOnboardingForm({ vendor, vendorId }: VendorOnboardingFormP
   // Form state
   const [entityType, setEntityType] = useState<'individual' | 'company'>('company');
   const [legalName, setLegalName] = useState('');
-  const [companyName, setCompanyName] = useState(vendor.name);
+  const [companyName, setCompanyName] = useState(vendor?.name || '');
 
   // Address
   const [addressLine1, setAddressLine1] = useState('');
@@ -38,7 +39,7 @@ export function VendorOnboardingForm({ vendor, vendorId }: VendorOnboardingFormP
   // Contact
   const [contactFirstName, setContactFirstName] = useState('');
   const [contactLastName, setContactLastName] = useState('');
-  const [remittanceEmail, setRemittanceEmail] = useState(vendor.email || '');
+  const [remittanceEmail, setRemittanceEmail] = useState(vendor?.email || '');
 
   // Banking
   const [bankName, setBankName] = useState('');
@@ -73,7 +74,8 @@ export function VendorOnboardingForm({ vendor, vendorId }: VendorOnboardingFormP
     try {
       // Create FormData for file uploads
       const formData = new FormData();
-      formData.append('vendorId', vendorId);
+      formData.append('vendorId', vendorId || '');
+      formData.append('isNewVendor', isNewVendor.toString());
       formData.append('formType', formType);
       formData.append('entityType', entityType);
       formData.append('legalName', legalName);
