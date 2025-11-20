@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Users, Phone, Mail } from "lucide-react";
+import Link from "next/link";
 
 export default async function VendorsPage() {
   const supabase = await createClient();
@@ -58,7 +59,11 @@ export default async function VendorsPage() {
           <TableBody>
             {vendors?.map((vendor) => (
               <TableRow key={vendor.id}>
-                <TableCell className="font-medium">{vendor.name}</TableCell>
+                <TableCell className="font-medium">
+                  <Link href={`/vendors/${vendor.id}`} className="hover:text-brass transition-colors">
+                    {vendor.name}
+                  </Link>
+                </TableCell>
                 <TableCell>{vendor.contact_name || "—"}</TableCell>
                 <TableCell>
                   {vendor.phone ? (
@@ -87,8 +92,10 @@ export default async function VendorsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    View
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/vendors/${vendor.id}`}>
+                      View
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>
