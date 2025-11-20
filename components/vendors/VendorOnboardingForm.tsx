@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SignaturePad } from "@/components/ui/signature-pad";
 import { Building2, User, MapPin, CreditCard, Upload, Check, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -59,6 +60,7 @@ export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false }: 
 
   // Authorization
   const [signatureName, setSignatureName] = useState('');
+  const [signatureData, setSignatureData] = useState('');
   const [signatureDate, setSignatureDate] = useState(new Date().toISOString().split('T')[0]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
@@ -99,6 +101,7 @@ export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false }: 
       formData.append('accountType', accountType);
       formData.append('accountNumberLast4', accountNumberLast4);
       formData.append('signatureName', signatureName);
+      formData.append('signatureData', signatureData);
       formData.append('signatureDate', signatureDate);
 
       if (voidedCheckFile) {
@@ -504,26 +507,37 @@ export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false }: 
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="signatureName">Full Name (Signature) *</Label>
-              <Input
-                id="signatureName"
-                value={signatureName}
-                onChange={(e) => setSignatureName(e.target.value)}
-                placeholder="Type your full name"
-                required
+              <Label>Draw Your Signature *</Label>
+              <SignaturePad
+                value={signatureData}
+                onChange={setSignatureData}
+                className="mt-2"
               />
             </div>
-            <div>
-              <Label htmlFor="signatureDate">Date *</Label>
-              <Input
-                id="signatureDate"
-                type="date"
-                value={signatureDate}
-                onChange={(e) => setSignatureDate(e.target.value)}
-                required
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="signatureName">Full Name (Signature) *</Label>
+                <Input
+                  id="signatureName"
+                  value={signatureName}
+                  onChange={(e) => setSignatureName(e.target.value)}
+                  placeholder="Type your full name"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="signatureDate">Date *</Label>
+                <Input
+                  id="signatureDate"
+                  type="date"
+                  value={signatureDate}
+                  onChange={(e) => setSignatureDate(e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
