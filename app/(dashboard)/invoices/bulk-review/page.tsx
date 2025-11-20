@@ -49,7 +49,7 @@ export default async function BulkReviewPage() {
     return acc;
   }, {} as Record<string, { vendorId: string; vendorName: string; lines: any[] }>);
 
-  const vendorGroups = Object.values(linesByVendor);
+  const vendorGroups: { vendorId: string; vendorName: string; lines: any[] }[] = Object.values(linesByVendor);
 
   return (
     <div>
@@ -100,7 +100,7 @@ export default async function BulkReviewPage() {
       )}
 
       {/* Groups by vendor */}
-      {vendorGroups.map((group: { vendorId: string; vendorName: string; lines: any[] }) => (
+      {vendorGroups.map((group) => (
         <div key={group.vendorId} className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-xl font-semibold">{group.vendorName}</h2>
