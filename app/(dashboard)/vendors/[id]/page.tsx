@@ -12,6 +12,7 @@ import { ArrowLeft, Building2, FileText, CreditCard, History } from "lucide-reac
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { VendorProfileForm } from "@/components/vendors/VendorProfileForm";
+import { GenerateOnboardingLink } from "@/components/vendors/GenerateOnboardingLink";
 
 interface Props {
   params: Promise<{
@@ -76,9 +77,12 @@ export default async function VendorDetailPage({ params }: Props) {
             </p>
           </div>
 
-          <Badge variant={vendor.is_active ? "sage" : "default"} className="text-sm">
-            {vendor.is_active ? "Active" : "Inactive"}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <GenerateOnboardingLink vendorId={vendor.id} vendorName={vendor.name} />
+            <Badge variant={vendor.is_active ? "sage" : "default"} className="text-sm">
+              {vendor.is_active ? "Active" : "Inactive"}
+            </Badge>
+          </div>
         </div>
       </div>
 
