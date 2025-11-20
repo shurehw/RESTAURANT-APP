@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
       vendor_id: vendorId,
       form_type: formData.get('formType') as string,
       authorized_by: formData.get('signatureName') as string,
-      signature_data: formData.get('signatureName') as string, // In production, use proper signature capture
+      signature_data: formData.get('signatureData') as string,
       signature_date: formData.get('signatureDate') as string,
       status: 'pending',
       created_at: new Date().toISOString(),
