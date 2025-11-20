@@ -4,25 +4,22 @@ import { createClient } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const token = formData.get('token') as string;
+    const vendorId = formData.get('vendorId') as string;
     const supabase = await createClient();
 
-    // Validate token
-    const { data: invitation } = await supabase
-      .from('vendor_onboarding_invitations')
-      .select('*, vendor:vendors(*)')
-      .eq('token', token)
-      .eq('status', 'pending')
+    // Validate vendor exists
+    const { data: vendor } = await supabase
+      .from('vendors')
+      .select('id')
+      .eq('id', vendorId)
       .single();
 
-    if (!invitation) {
+    if (!vendor) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
+        { error: 'Invalid vendor ID' },
         { status: 400 }
       );
     }
-
-    const vendorId = invitation.vendor_id;
 
     // Upload files to storage
     let voidedCheckUrl = null;
@@ -108,17 +105,6 @@ export async function POST(request: NextRequest) {
       .insert(achFormData);
 
     if (achError) throw achError;
-
-    // Mark invitation as submitted
-    const { error: invitationError } = await supabase
-      .from('vendor_onboarding_invitations')
-      .update({
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-      })
-      .eq('id', invitation.id);
-
-    if (invitationError) throw invitationError;
 
     return NextResponse.json({ success: true });
   } catch (error) {
