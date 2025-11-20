@@ -17,6 +17,7 @@ export default function VendorOnboardingLandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [vendor, setVendor] = useState<any>(null);
+  const [isNewVendor, setIsNewVendor] = useState(false);
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,8 +45,8 @@ export default function VendorOnboardingLandingPage() {
     }
   };
 
-  // Show form if vendor found
-  if (vendor) {
+  // Show form if vendor found or new vendor
+  if (vendor || isNewVendor) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-opsos-sage-50 to-brass/5">
         {/* Header */}
@@ -58,7 +59,10 @@ export default function VendorOnboardingLandingPage() {
               <div>
                 <h1 className="text-2xl font-bold">Vendor Profile Setup</h1>
                 <p className="text-sm text-muted-foreground">
-                  Please complete your vendor information for payment processing
+                  {isNewVendor
+                    ? "Complete your information to register as a new vendor"
+                    : "Please complete your vendor information for payment processing"
+                  }
                 </p>
               </div>
             </div>
@@ -69,7 +73,8 @@ export default function VendorOnboardingLandingPage() {
         <div className="max-w-4xl mx-auto px-6 py-8">
           <VendorOnboardingForm
             vendor={vendor}
-            vendorId={vendor.id}
+            vendorId={vendor?.id}
+            isNewVendor={isNewVendor}
           />
         </div>
 
@@ -141,9 +146,18 @@ export default function VendorOnboardingLandingPage() {
 
         {/* Help Text */}
         <div className="mt-6 pt-6 border-t border-border text-center">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground mb-3">
             Need help? Contact your representative for assistance.
           </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setIsNewVendor(true)}
+            className="w-full"
+          >
+            New Vendor? Register Here
+          </Button>
         </div>
       </div>
     </div>

@@ -4,21 +4,41 @@ import { createClient } from '@/lib/supabase/server';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const vendorId = formData.get('vendorId') as string;
+    let vendorId = formData.get('vendorId') as string;
+    const isNewVendor = formData.get('isNewVendor') === 'true';
     const supabase = await createClient();
 
-    // Validate vendor exists
-    const { data: vendor } = await supabase
-      .from('vendors')
-      .select('id')
-      .eq('id', vendorId)
-      .single();
+    // If new vendor, create the vendor record first
+    if (isNewVendor) {
+      const companyName = formData.get('companyName') as string;
+      const remittanceEmail = formData.get('remittanceEmail') as string;
 
-    if (!vendor) {
-      return NextResponse.json(
-        { error: 'Invalid vendor ID' },
-        { status: 400 }
-      );
+      const { data: newVendor, error: vendorError } = await supabase
+        .from('vendors')
+        .insert({
+          name: companyName,
+          email: remittanceEmail,
+          status: 'pending', // New vendors start as pending approval
+        })
+        .select()
+        .single();
+
+      if (vendorError) throw vendorError;
+      vendorId = newVendor.id;
+    } else {
+      // Validate vendor exists
+      const { data: vendor } = await supabase
+        .from('vendors')
+        .select('id')
+        .eq('id', vendorId)
+        .single();
+
+      if (!vendor) {
+        return NextResponse.json(
+          { error: 'Invalid vendor ID' },
+          { status: 400 }
+        );
+      }
     }
 
     // Upload files to storage
