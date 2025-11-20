@@ -538,11 +538,6 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                   <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded p-2">
                     💡 <strong>Item Name:</strong> {newItemName}
                     {newItemPackSize && ` (${newItemPackSize})`}
-                    {newItemPackQty && newItemUOM && (
-                      <div className="mt-1">
-                        <strong>Sellable Quantity:</strong> {newItemPackQty} {newItemUOM} per unit
-                      </div>
-                    )}
                   </div>
 
                   <Button
