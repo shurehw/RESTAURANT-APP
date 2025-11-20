@@ -29,7 +29,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             <Building2 className="w-5 h-5 text-[#F4A949]" />
             <h3 className="font-semibold text-zinc-50">{project.name}</h3>
           </div>
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="outline" className="text-xs">
             {CONCEPT_LABELS[project.concept_type] || project.concept_type}
           </Badge>
         </div>
