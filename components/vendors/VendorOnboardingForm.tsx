@@ -16,9 +16,10 @@ interface VendorOnboardingFormProps {
   vendor: any;
   vendorId?: string;
   isNewVendor?: boolean;
+  organizationId?: string;
 }
 
-export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false }: VendorOnboardingFormProps) {
+export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false, organizationId }: VendorOnboardingFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -78,6 +79,7 @@ export function VendorOnboardingForm({ vendor, vendorId, isNewVendor = false }: 
       const formData = new FormData();
       formData.append('vendorId', vendorId || '');
       formData.append('isNewVendor', isNewVendor.toString());
+      formData.append('organizationId', organizationId || '');
       formData.append('formType', formType);
       formData.append('entityType', entityType);
       formData.append('legalName', legalName);

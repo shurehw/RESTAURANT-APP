@@ -1,8 +1,3 @@
-/**
- * Generic Vendor Onboarding Landing Page
- * Single link for all vendors - they enter their email/code to identify themselves
- */
-
 "use client";
 
 import { useState } from "react";
@@ -12,7 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Building2, ArrowRight } from "lucide-react";
 import { VendorOnboardingForm } from "@/components/vendors/VendorOnboardingForm";
 
-export default function VendorOnboardingLandingPage() {
+interface VendorOnboardingClientProps {
+  organizationId: string;
+  organizationName: string;
+}
+
+export function VendorOnboardingClient({ organizationId, organizationName }: VendorOnboardingClientProps) {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,7 +28,7 @@ export default function VendorOnboardingLandingPage() {
       const response = await fetch("/api/vendor-onboarding/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, organizationId }),
       });
 
       if (response.ok) {
@@ -69,7 +69,7 @@ export default function VendorOnboardingLandingPage() {
               </div>
               <div className="text-right">
                 <p className="text-xs font-medium text-brass">POWERED BY OpsOS</p>
-                <p className="text-sm font-semibold text-opsos-sage">The h.wood Group</p>
+                <p className="text-sm font-semibold text-opsos-sage">{organizationName}</p>
               </div>
             </div>
           </div>
@@ -81,6 +81,7 @@ export default function VendorOnboardingLandingPage() {
             vendor={vendor}
             vendorId={vendor?.id}
             isNewVendor={isNewVendor}
+            organizationId={organizationId}
           />
         </div>
 
@@ -107,7 +108,7 @@ export default function VendorOnboardingLandingPage() {
             <p className="text-xs font-medium text-brass mb-1">POWERED BY</p>
             <h2 className="text-lg font-bold">OpsOS</h2>
             <p className="text-xs text-muted-foreground mt-2">for</p>
-            <h3 className="text-xl font-bold text-opsos-sage">The h.wood Group</h3>
+            <h3 className="text-xl font-bold text-opsos-sage">{organizationName}</h3>
           </div>
           <h1 className="text-2xl font-bold mb-2 mt-6">Vendor Profile Setup</h1>
           <p className="text-sm text-muted-foreground">
