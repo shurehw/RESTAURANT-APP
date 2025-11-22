@@ -119,7 +119,7 @@ export function RevenueAssumptions({
   const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   // Calculate current total percentage
-  const totalDayPct = formData.day_of_week_distribution.reduce((sum, val) => sum + val, 0);
+  const totalDayPct = formData.day_of_week_distribution.reduce((sum: number, val: number) => sum + val, 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
