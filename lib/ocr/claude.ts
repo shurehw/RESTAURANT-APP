@@ -68,6 +68,9 @@ export async function extractInvoiceWithClaude(
 ): Promise<OCRResult> {
   const base64Image = imageData.toString('base64');
 
+  // Normalize MIME type: image/jpg -> image/jpeg
+  const normalizedMimeType = mimeType === 'image/jpg' ? 'image/jpeg' : mimeType;
+
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 4096,
@@ -79,7 +82,7 @@ export async function extractInvoiceWithClaude(
             type: 'image',
             source: {
               type: 'base64',
-              media_type: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+              media_type: normalizedMimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
               data: base64Image,
             },
           },

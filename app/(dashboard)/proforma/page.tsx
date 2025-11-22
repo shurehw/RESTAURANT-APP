@@ -13,12 +13,13 @@ export default async function ProformaPage() {
     redirect("/login");
   }
 
-  // Get user's organization
+  // Get user's organizations (they may have multiple)
   const { data: orgUsers } = await supabase
     .from("organization_users")
     .select("organization_id")
     .eq("user_id", user.id)
     .eq("is_active", true)
+    .limit(1)
     .single();
 
   if (!orgUsers?.organization_id) {
