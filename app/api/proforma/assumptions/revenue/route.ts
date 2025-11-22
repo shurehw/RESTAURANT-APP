@@ -50,6 +50,9 @@ export async function POST(request: Request) {
           // Seasonality
           seasonality_curve: body.seasonality_curve,
           seasonality_preset: body.seasonality_preset,
+
+          // Day of Week Distribution
+          day_of_week_distribution: body.day_of_week_distribution,
         },
         { onConflict: "scenario_id" }
       )

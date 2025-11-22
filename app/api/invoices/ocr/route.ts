@@ -47,26 +47,30 @@ export async function POST(request: NextRequest) {
 
     // Additional validation: Check magic bytes to prevent MIME spoofing
     const magicBytes = buffer.slice(0, 4).toString('hex');
-    const validMagicBytes = [
-      'ffd8ff', // JPEG
-      '89504e47', // PNG
-      '52494646', // WEBP (RIFF)
-      '25504446', // PDF (%PDF)
-    ];
-    const isValidMagic = validMagicBytes.some((magic) => magicBytes.startsWith(magic));
-    if (!isValidMagic) {
+
+    // Detect actual file type from magic bytes
+    let actualMimeType: string;
+    if (magicBytes.startsWith('ffd8ff')) {
+      actualMimeType = 'image/jpeg';
+    } else if (magicBytes.startsWith('89504e47')) {
+      actualMimeType = 'image/png';
+    } else if (magicBytes.startsWith('52494646')) {
+      actualMimeType = 'image/webp';
+    } else if (magicBytes.startsWith('25504446')) {
+      actualMimeType = 'application/pdf';
+    } else {
       throw {
         status: 400,
         code: 'INVALID_FILE_FORMAT',
-        message: 'File content does not match declared MIME type',
+        message: 'Unsupported file format. Only JPEG, PNG, WebP, and PDF are supported.',
       };
     }
 
-    // Handle PDF or image
-    const isPDF = file.type === 'application/pdf';
+    // Handle PDF or image (use detected MIME type, not declared)
+    const isPDF = actualMimeType === 'application/pdf';
     const { invoice: rawInvoice } = isPDF
       ? await extractInvoiceFromPDF(buffer)
-      : await extractInvoiceWithClaude(buffer, file.type);
+      : await extractInvoiceWithClaude(buffer, actualMimeType);
     const supabase = await createClient();
     const normalized = await normalizeOCR(rawInvoice, supabase);
 

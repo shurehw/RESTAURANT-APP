@@ -55,6 +55,9 @@ export function RevenueAssumptions({
     // Seasonality
     seasonality_curve: assumptions?.seasonality_curve || Array(12).fill(1.0),
     seasonality_preset: assumptions?.seasonality_preset || "none",
+
+    // Day of Week Distribution
+    day_of_week_distribution: assumptions?.day_of_week_distribution || [14.3, 14.3, 14.3, 14.3, 14.3, 14.3, 14.2], // Default: equal distribution
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,6 +96,8 @@ export function RevenueAssumptions({
 
           seasonality_curve: showAdvanced ? formData.seasonality_curve : null,
           seasonality_preset: showAdvanced ? formData.seasonality_preset : "none",
+
+          day_of_week_distribution: formData.day_of_week_distribution,
         }),
       });
 
@@ -111,6 +116,10 @@ export function RevenueAssumptions({
   };
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+  // Calculate current total percentage
+  const totalDayPct = formData.day_of_week_distribution.reduce((sum, val) => sum + val, 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -349,6 +358,35 @@ export function RevenueAssumptions({
             required
           />
         </div>
+      </div>
+
+      {/* Day of Week Distribution */}
+      <div className="border-t border-zinc-800 pt-4">
+        <h4 className="text-sm font-medium text-zinc-300 mb-3">Day of Week Sales Distribution</h4>
+        <div className="grid grid-cols-7 gap-2">
+          {dayNames.map((day, idx) => (
+            <div key={day}>
+              <Label htmlFor={`day_${idx}`} className="text-xs">
+                {day}
+              </Label>
+              <Input
+                id={`day_${idx}`}
+                type="number"
+                step="0.1"
+                value={formData.day_of_week_distribution[idx]}
+                onChange={(e) => {
+                  const newDist = [...formData.day_of_week_distribution];
+                  newDist[idx] = parseFloat(e.target.value) || 0;
+                  setFormData({ ...formData, day_of_week_distribution: newDist });
+                }}
+                className="text-xs"
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-zinc-500 mt-2">
+          Enter percentage of weekly sales for each day (must total 100%). Current total: {totalDayPct.toFixed(1)}%
+        </p>
       </div>
 
       {/* Seasonality */}
