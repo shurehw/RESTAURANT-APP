@@ -29,14 +29,14 @@ BEGIN
   ) VALUES (
     (invoice_data->>'venue_id')::UUID,
     (invoice_data->>'vendor_id')::UUID,
-    invoice_data->>'invoice_number',
+    NULLIF(invoice_data->>'invoice_number', ''),
     (invoice_data->>'invoice_date')::DATE,
-    (invoice_data->>'due_date')::DATE,
+    NULLIF(invoice_data->>'due_date', '')::DATE,
     (invoice_data->>'total_amount')::NUMERIC,
-    'draft',
+    COALESCE(invoice_data->>'status', 'draft')::invoice_status,
     (invoice_data->>'ocr_confidence')::NUMERIC,
     invoice_data->'ocr_raw_json',
-    invoice_data->>'image_url',
+    NULLIF(invoice_data->>'image_url', ''),
     auth.uid()
   )
   RETURNING id INTO new_invoice_id;
@@ -53,7 +53,7 @@ BEGIN
       ocr_confidence
     ) VALUES (
       new_invoice_id,
-      (line_item->>'item_id')::UUID,
+      NULLIF(line_item->>'item_id', '')::UUID, -- Handle NULL item_id for unmapped items
       line_item->>'description',
       (line_item->>'quantity')::NUMERIC,
       (line_item->>'unit_cost')::NUMERIC,

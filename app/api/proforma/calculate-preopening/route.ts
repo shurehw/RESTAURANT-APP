@@ -16,39 +16,59 @@ function getDistributionWeights(
   switch (pattern) {
     case "front":
       // Front-loaded: 50% in first month, rest distributed
-      for (let i = 0; i < months; i++) {
-        weights.push(i === 0 ? 0.5 : 0.5 / (months - 1));
+      if (months === 1) {
+        weights.push(1.0);
+      } else {
+        for (let i = 0; i < months; i++) {
+          weights.push(i === 0 ? 0.5 : 0.5 / (months - 1));
+        }
       }
       break;
 
     case "back_loaded":
       // Back-loaded: 50% in last month, 30% in second-to-last, rest even
-      for (let i = 0; i < months; i++) {
-        if (i === months - 1) {
-          weights.push(0.5);
-        } else if (i === months - 2) {
-          weights.push(0.3);
-        } else {
-          weights.push(0.2 / (months - 2));
+      if (months === 1) {
+        weights.push(1.0);
+      } else if (months === 2) {
+        weights.push(0.5, 0.5); // Equal split for 2 months (can't do 50% last + 30% first = 80%)
+      } else {
+        for (let i = 0; i < months; i++) {
+          if (i === months - 1) {
+            weights.push(0.5);
+          } else if (i === months - 2) {
+            weights.push(0.3);
+          } else {
+            weights.push(0.2 / (months - 2));
+          }
         }
       }
       break;
 
     case "ramp":
       // Linear ramp: increases each month
-      const sum = (months * (months + 1)) / 2;
-      for (let i = 0; i < months; i++) {
-        weights.push((i + 1) / sum);
+      if (months === 1) {
+        weights.push(1.0);
+      } else {
+        const sum = (months * (months + 1)) / 2;
+        for (let i = 0; i < months; i++) {
+          weights.push((i + 1) / sum);
+        }
       }
       break;
 
     case "late":
       // Late: 70% in last 2 months, rest even
-      for (let i = 0; i < months; i++) {
-        if (i >= months - 2) {
-          weights.push(0.35);
-        } else {
-          weights.push(0.3 / (months - 2));
+      if (months === 1) {
+        weights.push(1.0);
+      } else if (months === 2) {
+        weights.push(0.35, 0.35); // Equal split for 2 months
+      } else {
+        for (let i = 0; i < months; i++) {
+          if (i >= months - 2) {
+            weights.push(0.35);
+          } else {
+            weights.push(0.3 / (months - 2));
+          }
         }
       }
       break;
@@ -92,7 +112,8 @@ export async function POST(request: Request) {
       .select(
         `
         *,
-        proforma_preopening_assumptions (*)
+        proforma_preopening_assumptions (*),
+        proforma_projects (*)
       `
       )
       .eq("id", scenario_id)
@@ -124,7 +145,21 @@ export async function POST(request: Request) {
 
     if (!categories || categories.length === 0) {
       return NextResponse.json(
-        { error: "No preopening categories found" },
+        { 
+          error: "No preopening categories found",
+          details: "Please ensure preopening categories are seeded for this organization"
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate preopening start date
+    if (!scenario.preopening_start_month && !scenario.start_month) {
+      return NextResponse.json(
+        { 
+          error: "Preopening start date not set",
+          details: "Scenario must have either preopening_start_month or start_month set"
+        },
         { status: 400 }
       );
     }
@@ -222,7 +257,30 @@ export async function POST(request: Request) {
     };
 
     const months = assumptions.duration_months;
+    
+    // Validate duration
+    if (!months || months <= 0) {
+      return NextResponse.json(
+        { 
+          error: "Invalid preopening duration",
+          details: `duration_months must be greater than 0, got: ${months}`
+        },
+        { status: 400 }
+      );
+    }
+
     const preopeningStartDate = new Date(scenario.preopening_start_month || scenario.start_month);
+    
+    // Validate date
+    if (isNaN(preopeningStartDate.getTime())) {
+      return NextResponse.json(
+        { 
+          error: "Invalid preopening start date",
+          details: `Could not parse date: ${scenario.preopening_start_month || scenario.start_month}`
+        },
+        { status: 400 }
+      );
+    }
 
     // Generate monthly schedule
     const monthlyRecords: any[] = [];
@@ -238,10 +296,21 @@ export async function POST(request: Request) {
       );
 
       for (let monthIndex = 1; monthIndex <= months; monthIndex++) {
+        // Calculate period date: start date + (monthIndex - 1) months
+        // Using setMonth handles month boundaries correctly (e.g., Jan 31 + 1 month = Feb 28/29)
         const periodDate = new Date(preopeningStartDate);
         periodDate.setMonth(periodDate.getMonth() + monthIndex - 1);
+        
+        // Ensure we're on the first day of the month
+        periodDate.setDate(1);
 
-        const amount = -(mapping.total * weights[monthIndex - 1]); // Negative for cash out
+        const weight = weights[monthIndex - 1];
+        if (weight === undefined || weight < 0) {
+          console.warn(`Invalid weight for month ${monthIndex}: ${weight}`);
+          continue;
+        }
+
+        const amount = -(mapping.total * weight); // Negative for cash out (expenses)
 
         monthlyRecords.push({
           scenario_id,
