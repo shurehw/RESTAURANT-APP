@@ -126,11 +126,11 @@ export async function POST(request: NextRequest) {
     };
 
     const linesPayload = normalized.lines.map((line) => ({
-      item_id: line.itemId,
+      item_id: line.itemId || null, // Explicitly set to null if undefined
       description: line.description,
       quantity: line.qty,
       unit_cost: line.unitCost,
-      line_total: line.lineTotal,
+      // line_total is a generated column, don't send it
       ocr_confidence: line.ocrConfidence,
     }));
 
