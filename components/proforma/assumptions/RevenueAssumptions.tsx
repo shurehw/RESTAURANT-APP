@@ -44,10 +44,10 @@ export function RevenueAssumptions({
     avg_check_food: assumptions?.avg_check_food || "",
     avg_check_bev: assumptions?.avg_check_bev || "",
 
-    // Mix
-    food_mix_pct: assumptions?.food_mix_pct || 60,
-    bev_mix_pct: assumptions?.bev_mix_pct || 35,
-    other_mix_pct: assumptions?.other_mix_pct || 5,
+    // Mix (stored as decimals 0-1, displayed as percentages)
+    food_mix_pct: assumptions?.food_mix_pct ? assumptions.food_mix_pct * 100 : 60,
+    bev_mix_pct: assumptions?.bev_mix_pct ? assumptions.bev_mix_pct * 100 : 35,
+    other_mix_pct: assumptions?.other_mix_pct ? assumptions.other_mix_pct * 100 : 5,
 
     // Ramp
     ramp_months: assumptions?.ramp_months || 12,
@@ -88,9 +88,10 @@ export function RevenueAssumptions({
           avg_check_food: formData.avg_check_food ? parseFloat(formData.avg_check_food as any) : null,
           avg_check_bev: formData.avg_check_bev ? parseFloat(formData.avg_check_bev as any) : null,
 
-          food_mix_pct: formData.food_mix_pct,
-          bev_mix_pct: formData.bev_mix_pct,
-          other_mix_pct: formData.other_mix_pct,
+          // Convert percentages from display (0-100) to storage (0-1)
+          food_mix_pct: formData.food_mix_pct / 100,
+          bev_mix_pct: formData.bev_mix_pct / 100,
+          other_mix_pct: formData.other_mix_pct / 100,
 
           ramp_months: formData.ramp_months,
 

@@ -20,11 +20,12 @@ export function CapexAssumptions({
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     total_capex: assumptions?.total_capex || 2500000,
-    equity_pct: assumptions?.equity_pct || 40,
-    debt_interest_rate: assumptions?.debt_interest_rate || 7.5,
+    // Display as 0-100, stored as 0-1
+    equity_pct: assumptions?.equity_pct ? assumptions.equity_pct * 100 : 40,
+    debt_interest_rate: assumptions?.debt_interest_rate ? assumptions.debt_interest_rate * 100 : 7.5,
     debt_term_months: assumptions?.debt_term_months || 120,
     interest_only_months: assumptions?.interest_only_months || 12,
-    lender_fee_pct: assumptions?.lender_fee_pct || 0,
+    lender_fee_pct: assumptions?.lender_fee_pct ? assumptions.lender_fee_pct * 100 : 0,
     lender_fee_capitalize: assumptions?.lender_fee_capitalize !== false, // default true
   });
 
@@ -38,7 +39,14 @@ export function CapexAssumptions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scenario_id: scenarioId,
-          ...formData,
+          total_capex: formData.total_capex,
+          // Convert from display (0-100) to storage (0-1)
+          equity_pct: formData.equity_pct / 100,
+          debt_interest_rate: formData.debt_interest_rate / 100,
+          debt_term_months: formData.debt_term_months,
+          interest_only_months: formData.interest_only_months,
+          lender_fee_pct: formData.lender_fee_pct / 100,
+          lender_fee_capitalize: formData.lender_fee_capitalize,
         }),
       });
 

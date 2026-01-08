@@ -24,15 +24,16 @@ export function OpexAssumptions({
     property_tax_monthly: assumptions?.property_tax_monthly || 2000,
     utilities_monthly: assumptions?.utilities_monthly || 4000,
     insurance_monthly: assumptions?.insurance_monthly || 1500,
-    linen_pct_of_sales: assumptions?.linen_pct_of_sales || 1.5,
-    smallwares_pct_of_sales: assumptions?.smallwares_pct_of_sales || 1.0,
-    cleaning_supplies_pct: assumptions?.cleaning_supplies_pct || 0.5,
-    cc_fees_pct_of_sales: assumptions?.cc_fees_pct_of_sales || 2.5,
+    // Display as 0-100, stored as 0-1
+    linen_pct_of_sales: assumptions?.linen_pct_of_sales ? assumptions.linen_pct_of_sales * 100 : 1.5,
+    smallwares_pct_of_sales: assumptions?.smallwares_pct_of_sales ? assumptions.smallwares_pct_of_sales * 100 : 1.0,
+    cleaning_supplies_pct: assumptions?.cleaning_supplies_pct ? assumptions.cleaning_supplies_pct * 100 : 0.5,
+    cc_fees_pct_of_sales: assumptions?.cc_fees_pct_of_sales ? assumptions.cc_fees_pct_of_sales * 100 : 2.5,
     other_opex_flat_monthly: assumptions?.other_opex_flat_monthly || 2000,
-    marketing_pct_of_sales: assumptions?.marketing_pct_of_sales || 3.0,
+    marketing_pct_of_sales: assumptions?.marketing_pct_of_sales ? assumptions.marketing_pct_of_sales * 100 : 3.0,
     marketing_boost_months: assumptions?.marketing_boost_months || 3,
     marketing_boost_multiplier: assumptions?.marketing_boost_multiplier || 2.0,
-    gna_pct_of_sales: assumptions?.gna_pct_of_sales || 4.0,
+    gna_pct_of_sales: assumptions?.gna_pct_of_sales ? assumptions.gna_pct_of_sales * 100 : 4.0,
     corporate_overhead_flat_monthly: assumptions?.corporate_overhead_flat_monthly || 5000,
   });
 
@@ -46,7 +47,22 @@ export function OpexAssumptions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scenario_id: scenarioId,
-          ...formData,
+          base_rent_monthly: formData.base_rent_monthly,
+          cam_monthly: formData.cam_monthly,
+          property_tax_monthly: formData.property_tax_monthly,
+          utilities_monthly: formData.utilities_monthly,
+          insurance_monthly: formData.insurance_monthly,
+          // Convert from display (0-100) to storage (0-1)
+          linen_pct_of_sales: formData.linen_pct_of_sales / 100,
+          smallwares_pct_of_sales: formData.smallwares_pct_of_sales / 100,
+          cleaning_supplies_pct: formData.cleaning_supplies_pct / 100,
+          cc_fees_pct_of_sales: formData.cc_fees_pct_of_sales / 100,
+          other_opex_flat_monthly: formData.other_opex_flat_monthly,
+          marketing_pct_of_sales: formData.marketing_pct_of_sales / 100,
+          marketing_boost_months: formData.marketing_boost_months,
+          marketing_boost_multiplier: formData.marketing_boost_multiplier,
+          gna_pct_of_sales: formData.gna_pct_of_sales / 100,
+          corporate_overhead_flat_monthly: formData.corporate_overhead_flat_monthly,
         }),
       });
 

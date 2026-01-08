@@ -16,9 +16,10 @@ export function CogsAssumptions({ scenarioId, assumptions }: CogsAssumptionsProp
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    food_cogs_pct: assumptions?.food_cogs_pct || 28,
-    bev_cogs_pct: assumptions?.bev_cogs_pct || 22,
-    other_cogs_pct: assumptions?.other_cogs_pct || 25,
+    // Display as 0-100, stored as 0-1
+    food_cogs_pct: assumptions?.food_cogs_pct ? assumptions.food_cogs_pct * 100 : 28,
+    bev_cogs_pct: assumptions?.bev_cogs_pct ? assumptions.bev_cogs_pct * 100 : 22,
+    other_cogs_pct: assumptions?.other_cogs_pct ? assumptions.other_cogs_pct * 100 : 25,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,7 +32,10 @@ export function CogsAssumptions({ scenarioId, assumptions }: CogsAssumptionsProp
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scenario_id: scenarioId,
-          ...formData,
+          // Convert from display (0-100) to storage (0-1)
+          food_cogs_pct: formData.food_cogs_pct / 100,
+          bev_cogs_pct: formData.bev_cogs_pct / 100,
+          other_cogs_pct: formData.other_cogs_pct / 100,
         }),
       });
 
