@@ -71,6 +71,49 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  try {
+    const supabase = await createClient();
+    const body = await request.json();
+
+    const {
+      id,
+      service_name,
+      days_per_week,
+      avg_covers_per_service,
+      avg_food_check,
+      avg_bev_check,
+    } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "id required" }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from("proforma_revenue_service_periods")
+      .update({
+        service_name,
+        days_per_week,
+        avg_covers_per_service,
+        avg_food_check,
+        avg_bev_check,
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating service period:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ service: data });
+  } catch (error: any) {
+    console.error("Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
