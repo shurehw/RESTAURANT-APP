@@ -48,9 +48,9 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Basic Info
+  // Step 1: Basic Info + Scenario
   const [basicInfo, setBasicInfo] = useState({
-    name: "Base Case",
+    scenarioName: "Base Case",
     months: 60,
     start_month: new Date().toISOString().split("T")[0].substring(0, 7) + "-01",
   });
@@ -149,7 +149,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
 
   const handleNext = () => {
     if (step === 1) {
-      if (!basicInfo.name) {
+      if (!basicInfo.scenarioName) {
         alert("Please enter a scenario name");
         return;
       }
@@ -216,7 +216,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project_id: projectId,
-          name: basicInfo.name,
+          name: basicInfo.scenarioName,
           months: basicInfo.months,
           start_month: basicInfo.start_month,
           is_base: true,
@@ -280,7 +280,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
               <div className={`w-7 h-7 rounded-full flex items-center justify-center ${step >= 1 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 1
               </div>
-              <span className="font-medium">Info</span>
+              <span className="font-medium">Scenario</span>
             </div>
             <div className="flex-1 h-px bg-zinc-800 mx-2" />
             <div className={`flex items-center gap-2 ${step >= 2 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
@@ -305,27 +305,28 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
             </div>
           </div>
 
-          {/* Step 1: Basic Info */}
+          {/* Step 1: Scenario Setup */}
           {step === 1 && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-zinc-50">Basic Information</h3>
-                <p className="text-sm text-zinc-400 mt-1">Define your scenario parameters</p>
+                <h3 className="text-lg font-semibold text-zinc-50">Scenario Setup</h3>
+                <p className="text-sm text-zinc-400 mt-1">Configure your projection timeline and scenario name</p>
               </div>
 
               <div>
-                <Label htmlFor="name">Scenario Name *</Label>
+                <Label htmlFor="scenarioName">Scenario Name *</Label>
                 <Input
-                  id="name"
-                  value={basicInfo.name}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
+                  id="scenarioName"
+                  value={basicInfo.scenarioName}
+                  onChange={(e) => setBasicInfo({ ...basicInfo, scenarioName: e.target.value })}
                   placeholder="Base Case, Upside, Downside"
                 />
+                <p className="text-xs text-zinc-500 mt-1">This will be your primary financial model</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="months">Projection Months *</Label>
+                  <Label htmlFor="months">Projection Period (Months) *</Label>
                   <Input
                     id="months"
                     type="number"
@@ -334,6 +335,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                     value={basicInfo.months}
                     onChange={(e) => setBasicInfo({ ...basicInfo, months: parseInt(e.target.value) })}
                   />
+                  <p className="text-xs text-zinc-500 mt-1">Typically 60 months (5 years)</p>
                 </div>
                 <div>
                   <Label htmlFor="start_month">Start Month *</Label>
@@ -343,6 +345,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                     value={basicInfo.start_month}
                     onChange={(e) => setBasicInfo({ ...basicInfo, start_month: e.target.value })}
                   />
+                  <p className="text-xs text-zinc-500 mt-1">Projected opening date</p>
                 </div>
               </div>
             </div>
