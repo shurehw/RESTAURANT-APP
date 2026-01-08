@@ -28,6 +28,11 @@ interface CreateProjectDialogProps {
   organizationId: string;
 }
 
+interface RevenueCenter {
+  center_name: string;
+  seats: number;
+}
+
 interface ServicePeriod {
   service_name: string;
   days_per_week: number;
@@ -77,7 +82,14 @@ export function CreateProjectDialog({
     start_month: new Date().toISOString().split("T")[0].substring(0, 7) + "-01",
   });
 
-  // Step 3: Service Periods
+  // Step 3: Revenue Centers
+  const [centers, setCenters] = useState<RevenueCenter[]>([]);
+  const [newCenter, setNewCenter] = useState<RevenueCenter>({
+    center_name: "",
+    seats: 0,
+  });
+
+  // Step 4: Service Periods
   const [services, setServices] = useState<ServicePeriod[]>([]);
   const [newService, setNewService] = useState<ServicePeriod>({
     service_name: "",
@@ -87,7 +99,7 @@ export function CreateProjectDialog({
     avg_bev_check: 0,
   });
 
-  // Step 4: Private Dining
+  // Step 5: Private Dining
   const [pdrs, setPdrs] = useState<PDR[]>([]);
   const [newPDR, setNewPDR] = useState<PDR>({
     room_name: "",
@@ -106,6 +118,23 @@ export function CreateProjectDialog({
   const calculatedBohSqft = formData.total_sqft - calculatedFohSqft;
   const calculatedSeats = Math.round(calculatedFohSqft / 15);
   const displaySeats = formData.seats_override ? formData.seats : calculatedSeats;
+
+  const handleAddCenter = () => {
+    if (!newCenter.center_name) {
+      alert("Please enter a center name");
+      return;
+    }
+    if (!newCenter.seats || newCenter.seats <= 0) {
+      alert("Please enter a valid seat count");
+      return;
+    }
+    setCenters([...centers, newCenter]);
+    setNewCenter({ center_name: "", seats: 0 });
+  };
+
+  const handleRemoveCenter = (index: number) => {
+    setCenters(centers.filter((_, i) => i !== index));
+  };
 
   const handleAddService = () => {
     if (!newService.service_name) {
@@ -209,7 +238,20 @@ export function CreateProjectDialog({
       if (!scenarioRes.ok) throw new Error("Failed to create scenario");
       const { scenario } = await scenarioRes.json();
 
-      // 3. Add service periods
+      // 3. Add revenue centers
+      for (let i = 0; i < centers.length; i++) {
+        await fetch("/api/proforma/revenue-centers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scenario_id: scenario.id,
+            ...centers[i],
+            sort_order: i,
+          }),
+        });
+      }
+
+      // 4. Add service periods
       for (let i = 0; i < services.length; i++) {
         await fetch("/api/proforma/service-periods", {
           method: "POST",
@@ -222,7 +264,7 @@ export function CreateProjectDialog({
         });
       }
 
-      // 4. Add PDRs
+      // 5. Add PDRs
       for (const pdr of pdrs) {
         await fetch("/api/proforma/pdr", {
           method: "POST",
@@ -262,31 +304,38 @@ export function CreateProjectDialog({
           {/* Progress indicator */}
           <div className="flex items-center justify-between">
             <div className={`flex items-center gap-2 ${step >= 1 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${step >= 1 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 1
               </div>
-              <span className="text-sm font-medium">Project</span>
+              <span className="text-xs font-medium hidden sm:inline">Project</span>
             </div>
-            <div className="flex-1 h-px bg-zinc-800 mx-4" />
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
             <div className={`flex items-center gap-2 ${step >= 2 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${step >= 2 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 2
               </div>
-              <span className="text-sm font-medium">Scenario</span>
+              <span className="text-xs font-medium hidden sm:inline">Scenario</span>
             </div>
-            <div className="flex-1 h-px bg-zinc-800 mx-4" />
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
             <div className={`flex items-center gap-2 ${step >= 3 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${step >= 3 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 3
               </div>
-              <span className="text-sm font-medium">Services</span>
+              <span className="text-xs font-medium hidden sm:inline">Centers</span>
             </div>
-            <div className="flex-1 h-px bg-zinc-800 mx-4" />
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
             <div className={`flex items-center gap-2 ${step >= 4 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 4 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${step >= 4 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 4
               </div>
-              <span className="text-sm font-medium">PDR</span>
+              <span className="text-xs font-medium hidden sm:inline">Services</span>
+            </div>
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
+            <div className={`flex items-center gap-2 ${step >= 5 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${step >= 5 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+                5
+              </div>
+              <span className="text-xs font-medium hidden sm:inline">PDR</span>
             </div>
           </div>
 
@@ -470,8 +519,59 @@ export function CreateProjectDialog({
             </div>
           )}
 
-          {/* Step 3: Service Periods */}
+          {/* Step 3: Revenue Centers */}
           {step === 3 && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-50">Revenue Centers</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Define revenue centers like Main Dining, Bar, Patio, etc. You can skip this and add later.
+                </p>
+              </div>
+
+              {centers.length > 0 && (
+                <div className="space-y-2">
+                  {centers.map((center, index) => (
+                    <Card key={index} className="p-3 flex items-center justify-between">
+                      <div className="flex-1 grid grid-cols-2 gap-2 text-sm">
+                        <span className="font-medium text-zinc-50">{center.center_name}</span>
+                        <span className="text-zinc-400">{center.seats} seats</span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => handleRemoveCenter(index)}>
+                        <Trash2 className="w-4 h-4 text-red-400" />
+                      </Button>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <Card className="p-4 border-dashed">
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Center name (e.g., Main Dining)"
+                      value={newCenter.center_name}
+                      onChange={(e) => setNewCenter({ ...newCenter, center_name: e.target.value })}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Seats"
+                      min="0"
+                      value={newCenter.seats || ""}
+                      onChange={(e) => setNewCenter({ ...newCenter, seats: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <Button onClick={handleAddCenter} size="sm" variant="outline">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Revenue Center
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Step 4: Service Periods */}
+          {step === 4 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-zinc-50">Service Periods</h3>
@@ -544,8 +644,8 @@ export function CreateProjectDialog({
             </div>
           )}
 
-          {/* Step 4: Private Dining */}
-          {step === 4 && (
+          {/* Step 5: Private Dining */}
+          {step === 5 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-zinc-50">Private Dining Rooms (Optional)</h3>
@@ -626,7 +726,7 @@ export function CreateProjectDialog({
               Back
             </Button>
 
-            {step < 4 ? (
+            {step < 5 ? (
               <Button onClick={handleNext}>
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
