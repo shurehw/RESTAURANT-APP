@@ -225,8 +225,12 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
 
           {/* Step 1: Basic Info */}
           {step === 1 && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-zinc-50">Basic Information</h3>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-50">Basic Information</h3>
+                <p className="text-sm text-zinc-400 mt-1">Define your scenario parameters</p>
+              </div>
+
               <div>
                 <Label htmlFor="name">Scenario Name *</Label>
                 <Input
@@ -236,6 +240,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                   placeholder="Base Case, Upside, Downside"
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="months">Projection Months *</Label>
