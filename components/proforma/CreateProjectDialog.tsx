@@ -38,11 +38,20 @@ export function CreateProjectDialog({
     concept_type: "fsr",
     location_city: "",
     location_state: "",
+    total_sqft: 0,
+    foh_pct: 60,
     square_feet_foh: "",
     square_feet_boh: "",
     seats: "",
+    seats_override: false,
     bar_seats: "",
   });
+
+  // Calculate derived values
+  const calculatedFohSqft = Math.round(formData.total_sqft * (formData.foh_pct / 100));
+  const calculatedBohSqft = formData.total_sqft - calculatedFohSqft;
+  const calculatedSeats = Math.round(calculatedFohSqft / 15); // 15 sqft per seat
+  const displaySeats = formData.seats_override ? formData.seats : calculatedSeats;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +62,14 @@ export function CreateProjectDialog({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...formData,
+          name: formData.name,
+          concept_type: formData.concept_type,
+          location_city: formData.location_city || null,
+          location_state: formData.location_state || null,
           org_id: organizationId,
-          square_feet_foh: formData.square_feet_foh ? parseInt(formData.square_feet_foh) : null,
-          square_feet_boh: formData.square_feet_boh ? parseInt(formData.square_feet_boh) : null,
-          seats: formData.seats ? parseInt(formData.seats) : null,
+          square_feet_foh: calculatedFohSqft || null,
+          square_feet_boh: calculatedBohSqft || null,
+          seats: displaySeats || null,
           bar_seats: formData.bar_seats ? parseInt(formData.bar_seats) : null,
         }),
       });
@@ -151,45 +163,80 @@ export function CreateProjectDialog({
           </div>
 
           {/* Square Footage */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="border-t border-zinc-800 pt-4 space-y-4">
+            <h4 className="font-medium text-zinc-50">Space Planning</h4>
+
             <div>
-              <Label htmlFor="square_feet_foh">FOH Square Feet</Label>
+              <Label htmlFor="total_sqft">Total Square Feet</Label>
               <Input
-                id="square_feet_foh"
+                id="total_sqft"
                 type="number"
-                value={formData.square_feet_foh}
+                min="0"
+                value={formData.total_sqft || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, square_feet_foh: e.target.value })
+                  setFormData({ ...formData, total_sqft: parseInt(e.target.value) || 0 })
                 }
-                placeholder="3000"
+                placeholder="e.g., 4000"
               />
             </div>
+
             <div>
-              <Label htmlFor="square_feet_boh">BOH Square Feet</Label>
+              <Label htmlFor="foh_pct">Front of House %</Label>
               <Input
-                id="square_feet_boh"
+                id="foh_pct"
                 type="number"
-                value={formData.square_feet_boh}
+                min="0"
+                max="100"
+                value={formData.foh_pct}
                 onChange={(e) =>
-                  setFormData({ ...formData, square_feet_boh: e.target.value })
+                  setFormData({ ...formData, foh_pct: parseInt(e.target.value) || 60 })
                 }
-                placeholder="1500"
               />
+              <p className="text-xs text-zinc-500 mt-1">
+                FOH: {calculatedFohSqft.toLocaleString()} sqft | BOH: {calculatedBohSqft.toLocaleString()} sqft
+              </p>
             </div>
           </div>
 
           {/* Seating */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
-              <Label htmlFor="seats">Total Seats</Label>
-              <Input
-                id="seats"
-                type="number"
-                value={formData.seats}
-                onChange={(e) => setFormData({ ...formData, seats: e.target.value })}
-                placeholder="150"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="seats">Seats</Label>
+                <label className="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.seats_override}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        seats_override: e.target.checked,
+                        seats: displaySeats,
+                      })
+                    }
+                    className="rounded"
+                  />
+                  Override calculation
+                </label>
+              </div>
+              {formData.seats_override ? (
+                <Input
+                  id="seats"
+                  type="number"
+                  min="0"
+                  value={formData.seats || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, seats: e.target.value })
+                  }
+                  placeholder="Enter seat count"
+                />
+              ) : (
+                <div className="h-10 px-3 py-2 rounded-md border border-zinc-800 bg-zinc-900/50 flex items-center text-sm text-zinc-300">
+                  {calculatedSeats} seats (auto: ~15 sqft/seat)
+                </div>
+              )}
             </div>
+
             <div>
               <Label htmlFor="bar_seats">Bar Seats</Label>
               <Input
