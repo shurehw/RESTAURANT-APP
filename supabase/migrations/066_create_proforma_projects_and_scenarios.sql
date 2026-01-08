@@ -6,14 +6,28 @@ create table if not exists proforma_projects (
   org_id uuid not null references organizations(id) on delete cascade,
   name text not null,
   concept_type text not null check (concept_type in (
-    'fsr','nightlife','fast_casual','coffee','bakery'
+    'fast-casual','casual-dining','premium-casual','fine-dining','bar-lounge','nightclub'
   )),
   location_city text,
   location_state text,
-  square_feet_foh int,
-  square_feet_boh int,
-  seats int,
+
+  -- Space planning fields
+  total_sf int,
+  sf_per_seat numeric(6,2),
+  dining_area_pct numeric(5,2),
+  boh_pct numeric(5,2),
+  monthly_rent numeric(12,2),
+
+  -- Manual overrides
+  use_manual_seats boolean default false,
+  manual_seats int,
+  use_manual_splits boolean default false,
+  square_feet_foh int,  -- manual override
+  square_feet_boh int,  -- manual override
+
+  -- Legacy/additional fields
   bar_seats int,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
