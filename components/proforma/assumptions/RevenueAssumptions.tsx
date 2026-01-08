@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Plus, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ServicePeriodsManager } from "./ServicePeriodsManager";
+import { PDRManager } from "./PDRManager";
 
 interface RevenueAssumptionsProps {
   scenarioId: string;
@@ -123,12 +125,22 @@ export function RevenueAssumptions({
   const totalDayPct = formData.day_of_week_distribution.reduce((sum: number, val: number) => sum + val, 0);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-zinc-50 mb-4">
           Revenue Assumptions
         </h3>
       </div>
+
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList>
+          <TabsTrigger value="basic">Basic Settings</TabsTrigger>
+          <TabsTrigger value="services">Service Periods</TabsTrigger>
+          <TabsTrigger value="pdr">Private Dining</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="basic" className="space-y-6 mt-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Operations */}
       <div className="grid grid-cols-2 gap-4">
@@ -441,6 +453,17 @@ export function RevenueAssumptions({
           {loading ? "Saving..." : "Save Revenue Assumptions"}
         </Button>
       </div>
-    </form>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="services" className="mt-6">
+          <ServicePeriodsManager scenarioId={scenarioId} />
+        </TabsContent>
+
+        <TabsContent value="pdr" className="mt-6">
+          <PDRManager scenarioId={scenarioId} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

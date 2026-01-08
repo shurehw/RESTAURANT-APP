@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { InvoiceUploadButton } from "@/components/invoices/InvoiceUploadButton";
-import { Download, Check, AlertCircle, CheckCircle, Zap, List } from "lucide-react";
+import { Download, Check, AlertCircle, CheckCircle, Zap, List, X } from "lucide-react";
 import Link from "next/link";
 
 type Invoice = {
@@ -46,6 +46,8 @@ interface InvoicesClientProps {
 export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState<string | null>(null);
 
   const handleAutoMatch = async (invoiceId: string) => {
     setLoading(invoiceId);
@@ -74,6 +76,55 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
       console.error(error);
     } finally {
       setLoading(null);
+    }
+  };
+
+  const handleApprove = async (invoiceId: string) => {
+    if (!confirm('Approve this invoice?')) return;
+
+    setApproving(invoiceId);
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/approve`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        router.refresh();
+      } else {
+        const result = await response.json();
+        alert(`Failed to approve: ${result.error}`);
+      }
+    } catch (error) {
+      alert('Error approving invoice');
+      console.error(error);
+    } finally {
+      setApproving(null);
+    }
+  };
+
+  const handleReject = async (invoiceId: string) => {
+    const reason = prompt('Reason for rejection (optional):');
+    if (reason === null) return; // User cancelled
+
+    setRejecting(invoiceId);
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason }),
+      });
+
+      if (response.ok) {
+        router.refresh();
+      } else {
+        const result = await response.json();
+        alert(`Failed to reject: ${result.error}`);
+      }
+    } catch (error) {
+      alert('Error rejecting invoice');
+      console.error(error);
+    } finally {
+      setRejecting(null);
     }
   };
 
@@ -115,6 +166,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
               <TableHead>PO #</TableHead>
               <TableHead>Date</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              <TableHead>OCR</TableHead>
               <TableHead>Match</TableHead>
               <TableHead>Variance</TableHead>
               <TableHead>Status</TableHead>
@@ -139,6 +191,9 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   ${invoice.total_amount?.toFixed(2) || "0.00"}
+                </TableCell>
+                <TableCell>
+                  <OCRConfidenceBadge confidence={invoice.ocr_confidence} />
                 </TableCell>
                 <TableCell>
                   <MatchConfidenceBadge
@@ -169,10 +224,26 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
                       </Button>
                     )}
                     {invoice.status === "pending_approval" && (
-                      <Button variant="sage" size="sm">
-                        <Check className="w-3 h-3" />
-                        Approve
-                      </Button>
+                      <>
+                        <Button
+                          variant="sage"
+                          size="sm"
+                          onClick={() => handleApprove(invoice.id)}
+                          disabled={approving === invoice.id || rejecting === invoice.id}
+                        >
+                          <Check className="w-3 h-3" />
+                          {approving === invoice.id ? "..." : "Approve"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleReject(invoice.id)}
+                          disabled={approving === invoice.id || rejecting === invoice.id}
+                        >
+                          <X className="w-3 h-3" />
+                          {rejecting === invoice.id ? "..." : "Reject"}
+                        </Button>
+                      </>
                     )}
                     <Button
                       variant="ghost"
@@ -203,6 +274,32 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function OCRConfidenceBadge({ confidence }: { confidence: number | null }) {
+  if (confidence === null) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+
+  const score = Math.round(confidence * 100);
+  let variant: "sage" | "brass" | "default" = "default";
+  let color = "text-gray-600";
+
+  if (score >= 90) {
+    variant = "sage";
+    color = "text-green-600";
+  } else if (score >= 70) {
+    variant = "brass";
+    color = "text-yellow-600";
+  } else {
+    color = "text-red-600";
+  }
+
+  return (
+    <Badge variant={variant} className="text-xs">
+      <span className={color}>{score}%</span>
+    </Badge>
   );
 }
 
