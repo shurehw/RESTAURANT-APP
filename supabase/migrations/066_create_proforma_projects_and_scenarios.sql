@@ -13,6 +13,9 @@ create table if not exists proforma_projects (
 
   -- Space planning fields
   total_sf int,
+  density_benchmark text check (density_benchmark in (
+    'fast-casual','casual-dining','premium-casual','fine-dining','bar-lounge','nightclub'
+  )),
   sf_per_seat numeric(6,2),
   dining_area_pct numeric(5,2),
   boh_pct numeric(5,2),

@@ -24,6 +24,7 @@ export async function PATCH(
       .from("proforma_projects")
       .update({
         concept_type: body.concept_type,
+        density_benchmark: body.density_benchmark,
         total_sf: body.total_sf,
         sf_per_seat: body.sf_per_seat,
         dining_area_pct: body.dining_area_pct,

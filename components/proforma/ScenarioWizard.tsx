@@ -58,6 +58,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
   // Step 2: Space Planning
   const [spacePlanning, setSpacePlanning] = useState({
     conceptType: "casual-dining",
+    densityBenchmark: "casual-dining", // Independent density selection
     totalSF: 0,
     sfPerSeat: 20,
     diningAreaPct: 65,
@@ -168,7 +169,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
         sfPerSeat: spacePlanning.useManualSeats ? 0 : spacePlanning.sfPerSeat, // Skip validation if manual
         bohPct: spacePlanning.useManualSplits ? 0 : spacePlanning.bohPct, // Skip validation if manual
         rentPerSeatPerMonth: rentPerSeat,
-        conceptType: spacePlanning.conceptType,
+        conceptType: spacePlanning.densityBenchmark, // Use density benchmark for validation
       });
 
       setSpaceValidation(validation);
@@ -193,6 +194,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           concept_type: spacePlanning.conceptType,
+          density_benchmark: spacePlanning.densityBenchmark,
           total_sf: spacePlanning.totalSF,
           sf_per_seat: spacePlanning.sfPerSeat,
           dining_area_pct: spacePlanning.diningAreaPct,
@@ -356,23 +358,53 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                 </p>
               </div>
 
-              <div>
-                <Label htmlFor="conceptType">Concept Type</Label>
-                <Select
-                  value={spacePlanning.conceptType}
-                  onValueChange={(value) => setSpacePlanning({ ...spacePlanning, conceptType: value })}
-                >
-                  <SelectTrigger id="conceptType">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONCEPT_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="conceptType">Concept Type</Label>
+                  <Select
+                    value={spacePlanning.conceptType}
+                    onValueChange={(value) => setSpacePlanning({ ...spacePlanning, conceptType: value })}
+                  >
+                    <SelectTrigger id="conceptType">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONCEPT_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="densityBenchmark">Seating Density Benchmark</Label>
+                  <Select
+                    value={spacePlanning.densityBenchmark}
+                    onValueChange={(value) => {
+                      const benchmark = SEATING_BENCHMARKS[value];
+                      const avgSFPerSeat = benchmark ? (benchmark.sfPerSeat[0] + benchmark.sfPerSeat[1]) / 2 : 20;
+                      const avgDiningPct = benchmark ? (benchmark.diningAreaPct[0] + benchmark.diningAreaPct[1]) / 2 : 65;
+                      setSpacePlanning({
+                        ...spacePlanning,
+                        densityBenchmark: value,
+                        sfPerSeat: avgSFPerSeat,
+                        diningAreaPct: avgDiningPct,
+                      });
+                    }}
+                  >
+                    <SelectTrigger id="densityBenchmark">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CONCEPT_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -398,27 +430,27 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                 </div>
               </div>
 
-              {spacePlanning.conceptType && SEATING_BENCHMARKS[spacePlanning.conceptType] && (
+              {spacePlanning.densityBenchmark && SEATING_BENCHMARKS[spacePlanning.densityBenchmark] && (
                 <Card className="p-4 bg-zinc-900/50 border-zinc-800">
                   <div className="text-xs text-zinc-400 space-y-2">
-                    <div className="font-semibold text-zinc-300 mb-2">Industry Benchmarks:</div>
+                    <div className="font-semibold text-zinc-300 mb-2">Industry Benchmarks ({CONCEPT_TYPES.find(t => t.value === spacePlanning.densityBenchmark)?.label}):</div>
                     <div className="grid grid-cols-3 gap-2">
                       <div>
                         <span className="text-zinc-500">SF/Seat:</span>{" "}
                         <span className="text-[#D4AF37]">
-                          {SEATING_BENCHMARKS[spacePlanning.conceptType].sfPerSeat.join("–")}
+                          {SEATING_BENCHMARKS[spacePlanning.densityBenchmark].sfPerSeat.join("–")}
                         </span>
                       </div>
                       <div>
                         <span className="text-zinc-500">Seats/1K SF:</span>{" "}
                         <span className="text-[#D4AF37]">
-                          {SEATING_BENCHMARKS[spacePlanning.conceptType].seatsPerThousandSF.join("–")}
+                          {SEATING_BENCHMARKS[spacePlanning.densityBenchmark].seatsPerThousandSF.join("–")}
                         </span>
                       </div>
                       <div>
                         <span className="text-zinc-500">Dining %:</span>{" "}
                         <span className="text-[#D4AF37]">
-                          {SEATING_BENCHMARKS[spacePlanning.conceptType].diningAreaPct.join("–")}%
+                          {SEATING_BENCHMARKS[spacePlanning.densityBenchmark].diningAreaPct.join("–")}%
                         </span>
                       </div>
                     </div>
