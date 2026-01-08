@@ -82,6 +82,19 @@ export async function POST(request: Request) {
       .select("*")
       .eq("scenario_id", scenario_id);
 
+    // Fetch service periods
+    const { data: servicePeriods } = await supabase
+      .from("proforma_revenue_service_periods")
+      .select("*")
+      .eq("scenario_id", scenario_id)
+      .order("sort_order");
+
+    // Fetch PDRs
+    const { data: pdrs } = await supabase
+      .from("proforma_revenue_pdr")
+      .select("*")
+      .eq("scenario_id", scenario_id);
+
     // Create calc run record using service role client
     const serviceSupabase = await createClient();
     const inputsHash = hashInputs(scenario, revenue, cogs, labor, opex, capex, salariedRoles || []);
@@ -181,7 +194,31 @@ export async function POST(request: Request) {
       const bevRevenue = bevRevenueLunch + bevRevenueDinner + bevRevenueLate;
 
       const otherRevenue = (foodRevenue + bevRevenue) * revenue.other_mix_pct;
-      const totalRevenue = foodRevenue + bevRevenue + otherRevenue;
+      let totalRevenue = foodRevenue + bevRevenue + otherRevenue;
+
+      // === ADD SERVICE PERIODS REVENUE ===
+      if (servicePeriods && servicePeriods.length > 0) {
+        for (const service of servicePeriods) {
+          const monthlyCovers = service.avg_covers_per_service * service.days_per_week * 4.33;
+          const serviceFoodRev = monthlyCovers * service.avg_food_check * rampFactor * seasonalityFactor;
+          const serviceBevRev = monthlyCovers * service.avg_bev_check * rampFactor * seasonalityFactor;
+          totalRevenue += serviceFoodRev + serviceBevRev;
+        }
+      }
+
+      // === ADD PDR REVENUE ===
+      if (pdrs && pdrs.length > 0) {
+        for (const pdr of pdrs) {
+          const pdrRampFactor =
+            monthIndex <= pdr.ramp_months
+              ? monthIndex / pdr.ramp_months
+              : 1.0;
+
+          const baseRevenue = pdr.events_per_month * pdr.avg_party_size * pdr.avg_spend_per_person;
+          const pdrRevenue = baseRevenue * pdrRampFactor * seasonalityFactor;
+          totalRevenue += pdrRevenue;
+        }
+      }
 
       // === COGS CALCULATION ===
 

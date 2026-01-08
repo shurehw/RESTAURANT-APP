@@ -60,7 +60,9 @@
       "Bash(dir:*)",
       "Bash(start http://localhost:3002/login)",
       "Bash(taskkill:*)",
-      "Bash(npx kill-port:*)"
+      "Bash(npx kill-port:*)",
+      "Bash(start http://localhost:3001)",
+      "Bash(echo $DATABASE_URL)"
     ],
     "deny": [],
     "ask": []
