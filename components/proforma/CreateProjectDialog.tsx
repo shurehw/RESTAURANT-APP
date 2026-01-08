@@ -438,7 +438,7 @@ export function CreateProjectDialog({
                           setFormData({
                             ...formData,
                             seats_override: e.target.checked,
-                            seats: displaySeats,
+                            seats: String(displaySeats),
                           })
                         }
                         className="rounded"
