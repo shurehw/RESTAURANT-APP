@@ -24,6 +24,8 @@ interface ServicePeriodsManagerProps {
 export function ServicePeriodsManager({ scenarioId }: ServicePeriodsManagerProps) {
   const [services, setServices] = useState<ServicePeriod[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Partial<ServicePeriod>>({});
   const [newService, setNewService] = useState({
     service_name: "",
     days_per_week: 7,
@@ -99,6 +101,40 @@ export function ServicePeriodsManager({ scenarioId }: ServicePeriodsManagerProps
     }
   };
 
+  const handleEdit = (service: ServicePeriod) => {
+    setEditingId(service.id);
+    setEditValues(service);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditValues({});
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+
+    try {
+      const response = await fetch("/api/proforma/service-periods", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingId,
+          ...editValues,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Failed to update");
+
+      setEditingId(null);
+      setEditValues({});
+      loadServices();
+    } catch (error) {
+      console.error("Error updating service:", error);
+      alert("Failed to update service period");
+    }
+  };
+
   const calculateMonthlyRevenue = (service: ServicePeriod) => {
     const monthlyCovers = service.avg_covers_per_service * service.days_per_week * 4.33;
     const foodRevenue = monthlyCovers * service.avg_food_check;
@@ -124,66 +160,136 @@ export function ServicePeriodsManager({ scenarioId }: ServicePeriodsManagerProps
       {/* Existing Services */}
       {services.length > 0 && (
         <div className="space-y-3">
-          {services.map((service) => (
-            <Card key={service.id} className="p-4">
-              <div className="flex items-start gap-4">
-                <GripVertical className="w-5 h-5 text-zinc-600 mt-2 cursor-move" />
+          {services.map((service) => {
+            const isEditing = editingId === service.id;
+            const displayService = isEditing ? editValues : service;
 
-                <div className="flex-1 grid grid-cols-5 gap-3">
-                  <div>
-                    <Label className="text-xs">Service Name</Label>
-                    <div className="text-sm font-medium text-zinc-50 mt-1">
-                      {service.service_name}
+            return (
+              <Card key={service.id} className="p-4">
+                <div className="flex items-start gap-4">
+                  <GripVertical className="w-5 h-5 text-zinc-600 mt-2 cursor-move" />
+
+                  <div className="flex-1 grid grid-cols-5 gap-3">
+                    <div>
+                      <Label className="text-xs">Service Name</Label>
+                      {isEditing ? (
+                        <Input
+                          value={displayService.service_name || ""}
+                          onChange={(e) => setEditValues({ ...editValues, service_name: e.target.value })}
+                          className="h-8 text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm font-medium text-zinc-50 mt-1">
+                          {service.service_name}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">Days/Week</Label>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          step="0.5"
+                          value={displayService.days_per_week || 0}
+                          onChange={(e) => setEditValues({ ...editValues, days_per_week: parseFloat(e.target.value) })}
+                          className="h-8 text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-zinc-300 mt-1">
+                          {service.days_per_week}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">Avg Covers</Label>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          value={displayService.avg_covers_per_service || 0}
+                          onChange={(e) => setEditValues({ ...editValues, avg_covers_per_service: parseFloat(e.target.value) })}
+                          className="h-8 text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-zinc-300 mt-1">
+                          {service.avg_covers_per_service}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">Food Check</Label>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={displayService.avg_food_check || 0}
+                          onChange={(e) => setEditValues({ ...editValues, avg_food_check: parseFloat(e.target.value) })}
+                          className="h-8 text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-zinc-300 mt-1">
+                          ${service.avg_food_check.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">Bev Check</Label>
+                      {isEditing ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={displayService.avg_bev_check || 0}
+                          onChange={(e) => setEditValues({ ...editValues, avg_bev_check: parseFloat(e.target.value) })}
+                          className="h-8 text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-zinc-300 mt-1">
+                          ${service.avg_bev_check.toFixed(2)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div>
-                    <Label className="text-xs">Days/Week</Label>
-                    <div className="text-sm text-zinc-300 mt-1">
-                      {service.days_per_week}
+                  <div className="text-right">
+                    <Label className="text-xs">Est. Monthly</Label>
+                    <div className="text-sm font-semibold text-[#D4AF37] mt-1">
+                      ${calculateMonthlyRevenue(displayService as ServicePeriod).toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     </div>
                   </div>
 
-                  <div>
-                    <Label className="text-xs">Avg Covers</Label>
-                    <div className="text-sm text-zinc-300 mt-1">
-                      {service.avg_covers_per_service}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs">Food Check</Label>
-                    <div className="text-sm text-zinc-300 mt-1">
-                      ${service.avg_food_check.toFixed(2)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs">Bev Check</Label>
-                    <div className="text-sm text-zinc-300 mt-1">
-                      ${service.avg_bev_check.toFixed(2)}
-                    </div>
+                  <div className="flex gap-2">
+                    {isEditing ? (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={handleSaveEdit} className="text-green-400 hover:text-green-300">
+                          Save
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="text-zinc-400 hover:text-zinc-300">
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(service)} className="text-blue-400 hover:text-blue-300">
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteService(service.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-
-                <div className="text-right">
-                  <Label className="text-xs">Est. Monthly</Label>
-                  <div className="text-sm font-semibold text-[#D4AF37] mt-1">
-                    ${calculateMonthlyRevenue(service).toLocaleString('en-US', { maximumFractionDigits: 0 })}
-                  </div>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteService(service.id)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
 
