@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { ScenarioAssumptions } from "./ScenarioAssumptions";
-import { CreateScenarioDialog } from "./CreateScenarioDialog";
+import { ScenarioWizard } from "./ScenarioWizard";
 
 interface ProformaProjectClientProps {
   project: any;
@@ -90,12 +90,11 @@ export function ProformaProjectClient({ project }: ProformaProjectClientProps) {
         </div>
       )}
 
-      {/* Create Scenario Dialog */}
-      <CreateScenarioDialog
+      {/* Create Scenario Wizard */}
+      <ScenarioWizard
         open={showCreateScenario}
         onOpenChange={setShowCreateScenario}
         projectId={project.id}
-        hasBaseScenario={!!baseScenario}
       />
     </div>
   );
