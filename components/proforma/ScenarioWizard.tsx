@@ -7,7 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Plus, Trash2, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Check, AlertTriangle } from "lucide-react";
+import {
+  SEATING_BENCHMARKS,
+  CONCEPT_TYPES,
+  calculateSeats,
+  validateSpaceConstraints,
+  type ValidationResult,
+} from "@/lib/proforma/constants";
 
 interface ScenarioWizardProps {
   open: boolean;
@@ -47,7 +55,27 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
     start_month: new Date().toISOString().split("T")[0].substring(0, 7) + "-01",
   });
 
-  // Step 2: Service Periods
+  // Step 2: Space Planning
+  const [spacePlanning, setSpacePlanning] = useState({
+    conceptType: "casual-dining",
+    totalSF: 0,
+    sfPerSeat: 20,
+    diningAreaPct: 65,
+    bohPct: 30,
+    monthlyRent: 0,
+    useManualSeats: false,
+    manualSeats: 0,
+    useManualSplits: false,
+    manualFOH: 0,
+    manualBOH: 0,
+  });
+  const [spaceValidation, setSpaceValidation] = useState<ValidationResult>({
+    valid: true,
+    warnings: [],
+    errors: [],
+  });
+
+  // Step 3: Service Periods
   const [services, setServices] = useState<ServicePeriod[]>([]);
   const [newService, setNewService] = useState<ServicePeriod>({
     service_name: "",
@@ -57,7 +85,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
     avg_bev_check: 0,
   });
 
-  // Step 3: Private Dining
+  // Step 4: Private Dining
   const [pdrs, setPdrs] = useState<PDR[]>([]);
   const [newPDR, setNewPDR] = useState<PDR>({
     room_name: "",
@@ -125,6 +153,30 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
         return;
       }
     }
+    if (step === 2) {
+      // Validate space planning
+      const finalSeats = spacePlanning.useManualSeats
+        ? spacePlanning.manualSeats
+        : spacePlanning.totalSF > 0
+        ? calculateSeats(spacePlanning.totalSF, spacePlanning.diningAreaPct, spacePlanning.sfPerSeat)
+        : 0;
+
+      const rentPerSeat = finalSeats > 0 ? spacePlanning.monthlyRent / finalSeats : 0;
+
+      const validation = validateSpaceConstraints({
+        totalSF: spacePlanning.totalSF,
+        sfPerSeat: spacePlanning.useManualSeats ? 0 : spacePlanning.sfPerSeat, // Skip validation if manual
+        bohPct: spacePlanning.useManualSplits ? 0 : spacePlanning.bohPct, // Skip validation if manual
+        rentPerSeatPerMonth: rentPerSeat,
+        conceptType: spacePlanning.conceptType,
+      });
+
+      setSpaceValidation(validation);
+
+      if (!validation.valid) {
+        return;
+      }
+    }
     setStep(step + 1);
   };
 
@@ -135,7 +187,28 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
   const handleFinish = async () => {
     setLoading(true);
     try {
-      // 1. Create scenario
+      // 1. Update project with space planning data
+      const projectUpdateRes = await fetch(`/api/proforma/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          concept_type: spacePlanning.conceptType,
+          total_sf: spacePlanning.totalSF,
+          sf_per_seat: spacePlanning.sfPerSeat,
+          dining_area_pct: spacePlanning.diningAreaPct,
+          boh_pct: spacePlanning.bohPct,
+          monthly_rent: spacePlanning.monthlyRent,
+          use_manual_seats: spacePlanning.useManualSeats,
+          manual_seats: spacePlanning.manualSeats,
+          use_manual_splits: spacePlanning.useManualSplits,
+          square_feet_foh: spacePlanning.useManualSplits ? spacePlanning.manualFOH : null,
+          square_feet_boh: spacePlanning.useManualSplits ? spacePlanning.manualBOH : null,
+        }),
+      });
+
+      if (!projectUpdateRes.ok) throw new Error("Failed to update project");
+
+      // 2. Create scenario
       const scenarioRes = await fetch("/api/proforma/scenarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,7 +224,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
       if (!scenarioRes.ok) throw new Error("Failed to create scenario");
       const { scenario } = await scenarioRes.json();
 
-      // 2. Add service periods
+      // 3. Add service periods
       for (let i = 0; i < services.length; i++) {
         await fetch("/api/proforma/service-periods", {
           method: "POST",
@@ -164,7 +237,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
         });
       }
 
-      // 3. Add PDRs
+      // 4. Add PDRs
       for (const pdr of pdrs) {
         await fetch("/api/proforma/pdr", {
           method: "POST",
@@ -200,26 +273,33 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
 
         <div className="space-y-6">
           {/* Progress indicator */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between text-xs">
             <div className={`flex items-center gap-2 ${step >= 1 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${step >= 1 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 1
               </div>
-              <span className="text-sm font-medium">Basic Info</span>
+              <span className="font-medium">Info</span>
             </div>
-            <div className="flex-1 h-px bg-zinc-800 mx-4" />
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
             <div className={`flex items-center gap-2 ${step >= 2 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${step >= 2 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 2
               </div>
-              <span className="text-sm font-medium">Services</span>
+              <span className="font-medium">Space</span>
             </div>
-            <div className="flex-1 h-px bg-zinc-800 mx-4" />
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
             <div className={`flex items-center gap-2 ${step >= 3 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${step >= 3 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
                 3
               </div>
-              <span className="text-sm font-medium">Private Dining</span>
+              <span className="font-medium">Services</span>
+            </div>
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
+            <div className={`flex items-center gap-2 ${step >= 4 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${step >= 4 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+                4
+              </div>
+              <span className="font-medium">PDR</span>
             </div>
           </div>
 
@@ -266,8 +346,252 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
             </div>
           )}
 
-          {/* Step 2: Service Periods */}
+          {/* Step 2: Space Planning */}
           {step === 2 && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-50">Space Planning</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Define your space parameters and get benchmark-driven seat count estimates
+                </p>
+              </div>
+
+              <div>
+                <Label htmlFor="conceptType">Concept Type</Label>
+                <Select
+                  value={spacePlanning.conceptType}
+                  onValueChange={(value) => setSpacePlanning({ ...spacePlanning, conceptType: value })}
+                >
+                  <SelectTrigger id="conceptType">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONCEPT_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="totalSF">Total Square Feet</Label>
+                  <Input
+                    id="totalSF"
+                    type="number"
+                    min="0"
+                    value={spacePlanning.totalSF || ""}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, totalSF: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="monthlyRent">Monthly Rent ($)</Label>
+                  <Input
+                    id="monthlyRent"
+                    type="number"
+                    min="0"
+                    value={spacePlanning.monthlyRent || ""}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, monthlyRent: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              {spacePlanning.conceptType && SEATING_BENCHMARKS[spacePlanning.conceptType] && (
+                <Card className="p-4 bg-zinc-900/50 border-zinc-800">
+                  <div className="text-xs text-zinc-400 space-y-2">
+                    <div className="font-semibold text-zinc-300 mb-2">Industry Benchmarks:</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <span className="text-zinc-500">SF/Seat:</span>{" "}
+                        <span className="text-[#D4AF37]">
+                          {SEATING_BENCHMARKS[spacePlanning.conceptType].sfPerSeat.join("–")}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Seats/1K SF:</span>{" "}
+                        <span className="text-[#D4AF37]">
+                          {SEATING_BENCHMARKS[spacePlanning.conceptType].seatsPerThousandSF.join("–")}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-500">Dining %:</span>{" "}
+                        <span className="text-[#D4AF37]">
+                          {SEATING_BENCHMARKS[spacePlanning.conceptType].diningAreaPct.join("–")}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="sfPerSeat">SF per Seat</Label>
+                  <Input
+                    id="sfPerSeat"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={spacePlanning.sfPerSeat}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, sfPerSeat: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="diningAreaPct">Dining Area %</Label>
+                  <Input
+                    id="diningAreaPct"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    value={spacePlanning.diningAreaPct}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, diningAreaPct: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bohPct">BOH %</Label>
+                  <Input
+                    id="bohPct"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="100"
+                    value={spacePlanning.bohPct}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, bohPct: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+
+              {/* Manual Overrides Toggle */}
+              <div className="flex items-center gap-4 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={spacePlanning.useManualSeats}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, useManualSeats: e.target.checked })}
+                    className="rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  />
+                  <span className="text-sm text-zinc-300">Manual Seat Count</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={spacePlanning.useManualSplits}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, useManualSplits: e.target.checked })}
+                    className="rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
+                  />
+                  <span className="text-sm text-zinc-300">Manual FOH/BOH Split</span>
+                </label>
+              </div>
+
+              {/* Manual Seats Override */}
+              {spacePlanning.useManualSeats && (
+                <Card className="p-4 bg-zinc-900/50 border-[#D4AF37]/30">
+                  <Label htmlFor="manualSeats">Manual Seat Count</Label>
+                  <Input
+                    id="manualSeats"
+                    type="number"
+                    min="0"
+                    value={spacePlanning.manualSeats || ""}
+                    onChange={(e) => setSpacePlanning({ ...spacePlanning, manualSeats: parseInt(e.target.value) || 0 })}
+                    className="mt-2"
+                  />
+                </Card>
+              )}
+
+              {/* Manual FOH/BOH Split Override */}
+              {spacePlanning.useManualSplits && (
+                <Card className="p-4 bg-zinc-900/50 border-[#D4AF37]/30">
+                  <div className="space-y-3">
+                    <Label>Manual FOH/BOH Split (SF)</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="manualFOH" className="text-xs text-zinc-400">Front of House SF</Label>
+                        <Input
+                          id="manualFOH"
+                          type="number"
+                          min="0"
+                          value={spacePlanning.manualFOH || ""}
+                          onChange={(e) => setSpacePlanning({ ...spacePlanning, manualFOH: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="manualBOH" className="text-xs text-zinc-400">Back of House SF</Label>
+                        <Input
+                          id="manualBOH"
+                          type="number"
+                          min="0"
+                          value={spacePlanning.manualBOH || ""}
+                          onChange={(e) => setSpacePlanning({ ...spacePlanning, manualBOH: parseInt(e.target.value) || 0 })}
+                        />
+                      </div>
+                    </div>
+                    {spacePlanning.manualFOH > 0 && spacePlanning.manualBOH > 0 && (
+                      <div className="text-xs text-zinc-400 pt-1">
+                        Total: {spacePlanning.manualFOH + spacePlanning.manualBOH} SF
+                        ({((spacePlanning.manualFOH / (spacePlanning.manualFOH + spacePlanning.manualBOH)) * 100).toFixed(1)}% FOH / {((spacePlanning.manualBOH / (spacePlanning.manualFOH + spacePlanning.manualBOH)) * 100).toFixed(1)}% BOH)
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {/* Calculated Capacity Display */}
+              {spacePlanning.totalSF > 0 && (
+                <Card className="p-4 bg-zinc-900 border-[#D4AF37]/30">
+                  <div className="space-y-2">
+                    <div className="text-sm font-semibold text-[#D4AF37]">
+                      {spacePlanning.useManualSeats ? "Manual" : "Calculated"} Capacity
+                    </div>
+                    <div className="text-2xl font-bold text-zinc-50">
+                      {spacePlanning.useManualSeats
+                        ? spacePlanning.manualSeats
+                        : calculateSeats(spacePlanning.totalSF, spacePlanning.diningAreaPct, spacePlanning.sfPerSeat)} seats
+                    </div>
+                    {spacePlanning.monthlyRent > 0 && (
+                      <div className="text-sm text-zinc-400">
+                        Rent/Seat/Month: $
+                        {spacePlanning.useManualSeats && spacePlanning.manualSeats > 0
+                          ? (spacePlanning.monthlyRent / spacePlanning.manualSeats).toFixed(2)
+                          : (spacePlanning.monthlyRent / calculateSeats(spacePlanning.totalSF, spacePlanning.diningAreaPct, spacePlanning.sfPerSeat)).toFixed(2)}
+                      </div>
+                    )}
+                    {spacePlanning.useManualSplits && spacePlanning.manualFOH > 0 && spacePlanning.manualBOH > 0 && (
+                      <div className="text-sm text-zinc-400 pt-2 border-t border-zinc-800">
+                        FOH: {spacePlanning.manualFOH.toLocaleString()} SF | BOH: {spacePlanning.manualBOH.toLocaleString()} SF
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+
+              {(spaceValidation.errors.length > 0 || spaceValidation.warnings.length > 0) && (
+                <div className="space-y-2">
+                  {spaceValidation.errors.map((error, i) => (
+                    <Card key={`error-${i}`} className="p-3 bg-red-950/30 border-red-800/50">
+                      <div className="flex items-start gap-2 text-sm text-red-400">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>{error}</span>
+                      </div>
+                    </Card>
+                  ))}
+                  {spaceValidation.warnings.map((warning, i) => (
+                    <Card key={`warning-${i}`} className="p-3 bg-yellow-950/30 border-yellow-800/50">
+                      <div className="flex items-start gap-2 text-sm text-yellow-400">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span>{warning}</span>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: Service Periods */}
+          {step === 3 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-zinc-50">Service Periods</h3>
@@ -342,8 +666,8 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
             </div>
           )}
 
-          {/* Step 3: Private Dining */}
-          {step === 3 && (
+          {/* Step 4: Private Dining */}
+          {step === 4 && (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold text-zinc-50">Private Dining Rooms (Optional)</h3>
@@ -426,7 +750,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
               Back
             </Button>
 
-            {step < 3 ? (
+            {step < 4 ? (
               <Button onClick={handleNext}>
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />
