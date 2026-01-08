@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 
 // Helper: get seasonality factor for a given month (0-11)
 function getSeasonalityFactor(curve: number[] | null, monthIndex: number): number {
@@ -7,6 +8,20 @@ function getSeasonalityFactor(curve: number[] | null, monthIndex: number): numbe
     return 1.0;
   }
   return curve[monthIndex] || 1.0;
+}
+
+// Helper: create canonical hash of inputs for reproducibility
+function hashInputs(scenario: any, revenue: any, cogs: any, labor: any, opex: any, capex: any, salariedRoles: any[]): string {
+  const canonical = JSON.stringify({
+    scenario: { id: scenario.id, months: scenario.months, start_month: scenario.start_month, opening_month: scenario.opening_month },
+    revenue,
+    cogs,
+    labor,
+    opex,
+    capex,
+    salariedRoles,
+  });
+  return crypto.createHash('sha256').update(canonical).digest('hex');
 }
 
 export async function POST(request: Request) {
@@ -67,11 +82,30 @@ export async function POST(request: Request) {
       .select("*")
       .eq("scenario_id", scenario_id);
 
-    // Delete existing results for this scenario
-    await supabase
-      .from("proforma_monthly_summary")
-      .delete()
-      .eq("scenario_id", scenario_id);
+    // Create calc run record using service role client
+    const serviceSupabase = await createClient();
+    const inputsHash = hashInputs(scenario, revenue, cogs, labor, opex, capex, salariedRoles || []);
+
+    const { data: calcRun, error: calcRunError } = await serviceSupabase
+      .from("proforma_calc_runs")
+      .insert({
+        scenario_id,
+        engine_version: "1.0.0", // TODO: use actual git sha or package version
+        inputs_hash: inputsHash,
+        status: "running",
+      })
+      .select()
+      .single();
+
+    if (calcRunError || !calcRun) {
+      console.error("Failed to create calc run:", calcRunError);
+      return NextResponse.json(
+        { error: "Failed to create calculation run" },
+        { status: 500 }
+      );
+    }
+
+    const calcRunId = calcRun.id;
 
     // Get preopening cash flow (cumulative preopening capital spent)
     const { data: preopeningData } = await supabase
@@ -146,14 +180,14 @@ export async function POST(request: Request) {
       const bevRevenueLate = coversLateNight * bevLate * rampFactor * seasonalityFactor;
       const bevRevenue = bevRevenueLunch + bevRevenueDinner + bevRevenueLate;
 
-      const otherRevenue = (foodRevenue + bevRevenue) * (revenue.other_mix_pct / 100);
+      const otherRevenue = (foodRevenue + bevRevenue) * revenue.other_mix_pct;
       const totalRevenue = foodRevenue + bevRevenue + otherRevenue;
 
       // === COGS CALCULATION ===
 
-      const foodCogs = foodRevenue * (cogs.food_cogs_pct / 100);
-      const bevCogs = bevRevenue * (cogs.bev_cogs_pct / 100);
-      const otherCogs = otherRevenue * (cogs.other_cogs_pct / 100);
+      const foodCogs = foodRevenue * cogs.food_cogs_pct;
+      const bevCogs = bevRevenue * cogs.bev_cogs_pct;
+      const otherCogs = otherRevenue * cogs.other_cogs_pct;
       const totalCogs = foodCogs + bevCogs + otherCogs;
 
       const grossProfit = totalRevenue - totalCogs;
@@ -189,7 +223,7 @@ export async function POST(request: Request) {
       }
 
       const grossWages = hourlyWages + managementSalaries;
-      const payrollBurden = grossWages * (labor.payroll_burden_pct / 100);
+      const payrollBurden = grossWages * labor.payroll_burden_pct;
       const totalLabor = grossWages + payrollBurden;
 
       // === OPEX CALCULATION ===
@@ -204,32 +238,32 @@ export async function POST(request: Request) {
 
       // Variable opex
       const variableOpex =
-        totalRevenue * (opex.linen_pct_of_sales / 100) +
-        totalRevenue * (opex.smallwares_pct_of_sales / 100) +
-        totalRevenue * (opex.cleaning_supplies_pct / 100) +
-        totalRevenue * (opex.cc_fees_pct_of_sales / 100) +
+        totalRevenue * opex.linen_pct_of_sales +
+        totalRevenue * opex.smallwares_pct_of_sales +
+        totalRevenue * opex.cleaning_supplies_pct +
+        totalRevenue * opex.cc_fees_pct_of_sales +
         opex.other_opex_flat_monthly;
 
       // Marketing (with boost)
-      let marketingSpend = totalRevenue * (opex.marketing_pct_of_sales / 100);
+      let marketingSpend = totalRevenue * opex.marketing_pct_of_sales;
       if (monthIndex <= opex.marketing_boost_months) {
         marketingSpend *= opex.marketing_boost_multiplier;
       }
 
       // G&A
       const gna =
-        totalRevenue * (opex.gna_pct_of_sales / 100) +
+        totalRevenue * opex.gna_pct_of_sales +
         opex.corporate_overhead_flat_monthly;
 
       const totalOpex = totalOccupancy + variableOpex + marketingSpend + gna;
 
       // === DEBT SERVICE CALCULATION ===
 
-      const equityPct = capex.equity_pct / 100;
+      const equityPct = capex.equity_pct;
       let principal = capex.total_capex * (1 - equityPct);
 
       // Lender fees
-      const lenderFeePct = (capex.lender_fee_pct || 0) / 100;
+      const lenderFeePct = capex.lender_fee_pct || 0;
       const lenderFee = principal * lenderFeePct;
 
       if (capex.lender_fee_capitalize) {
@@ -237,7 +271,7 @@ export async function POST(request: Request) {
       }
       // If not capitalized, treat as month 1 expense (handled in opex/gna if needed)
 
-      const monthlyRate = capex.debt_interest_rate / 100 / 12;
+      const monthlyRate = capex.debt_interest_rate / 12;
 
       let debtService = 0;
       if (principal > 0 && monthlyRate > 0) {
@@ -274,8 +308,9 @@ export async function POST(request: Request) {
 
       // === SAVE TO DATABASE ===
 
-      await supabase.from("proforma_monthly_summary").insert({
+      await serviceSupabase.from("proforma_monthly_summary").insert({
         scenario_id,
+        calc_run_id: calcRunId,
         month_index: monthIndex,
         period_start_date: periodDate.toISOString().split("T")[0],
         total_revenue: totalRevenue,
@@ -295,11 +330,17 @@ export async function POST(request: Request) {
       });
     }
 
+    // Mark calc run as succeeded
+    await serviceSupabase
+      .from("proforma_calc_runs")
+      .update({ status: "succeeded" })
+      .eq("id", calcRunId);
+
     // Calculate summary metrics
     const { data: summaryData } = await supabase
       .from("proforma_monthly_summary")
       .select("*")
-      .eq("scenario_id", scenario_id)
+      .eq("calc_run_id", calcRunId)
       .order("month_index");
 
     const year1Data = summaryData?.slice(0, 12) || [];
@@ -309,6 +350,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      calc_run_id: calcRunId,
       summary: {
         year1Revenue,
         year1Ebitda,
@@ -319,6 +361,23 @@ export async function POST(request: Request) {
     });
   } catch (error: any) {
     console.error("Error calculating proforma:", error);
+
+    // Mark calc run as failed if we created one
+    try {
+      const serviceSupabase = await createClient();
+      // Extract scenario_id from the error context if available
+      const body = await new Response(error.request?.body).json().catch(() => ({}));
+      if (body.scenario_id) {
+        await serviceSupabase
+          .from("proforma_calc_runs")
+          .update({ status: "failed", error: error.message })
+          .eq("scenario_id", body.scenario_id)
+          .eq("status", "running");
+      }
+    } catch (updateError) {
+      console.error("Failed to mark calc run as failed:", updateError);
+    }
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

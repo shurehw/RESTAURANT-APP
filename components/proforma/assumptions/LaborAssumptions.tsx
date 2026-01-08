@@ -29,7 +29,8 @@ export function LaborAssumptions({
     gm_salary_annual: assumptions?.gm_salary_annual || 90000,
     agm_salary_annual: assumptions?.agm_salary_annual || 65000,
     km_salary_annual: assumptions?.km_salary_annual || 75000,
-    payroll_burden_pct: assumptions?.payroll_burden_pct || 25,
+    // Display as 0-100, stored as 0-1
+    payroll_burden_pct: assumptions?.payroll_burden_pct ? assumptions.payroll_burden_pct * 100 : 25,
   });
 
   const [newRole, setNewRole] = useState({
@@ -70,7 +71,15 @@ export function LaborAssumptions({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scenario_id: scenarioId,
-          ...formData,
+          foh_hours_per_100_covers: formData.foh_hours_per_100_covers,
+          boh_hours_per_100_covers: formData.boh_hours_per_100_covers,
+          foh_hourly_rate: formData.foh_hourly_rate,
+          boh_hourly_rate: formData.boh_hourly_rate,
+          gm_salary_annual: formData.gm_salary_annual,
+          agm_salary_annual: formData.agm_salary_annual,
+          km_salary_annual: formData.km_salary_annual,
+          // Convert from display (0-100) to storage (0-1)
+          payroll_burden_pct: formData.payroll_burden_pct / 100,
         }),
       });
 
