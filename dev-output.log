@@ -1239,3 +1239,1907 @@ Sorting candidates: 0.139ms
 Generate rules: 2.47ms
 Potential classes:  255
 JIT TOTAL: 133.31ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 6.2s (compile: 3.1s, render: 3.1s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.2s (compile: 18ms, render: 2.1s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1156ms (compile: 200ms, render: 956ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1409ms (compile: 560ms, render: 849ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1522ms (compile: 589ms, render: 933ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 440ms (compile: 70ms, render: 370ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 373ms (compile: 57ms, render: 316ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 309ms (compile: 35ms, render: 274ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.3s (compile: 3.0s, render: 354ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 328ms (compile: 9ms, render: 320ms)
+Finding changed files: 479.765ms
+Reading changed files: 292.996ms
+Sorting candidates: 6.694ms
+Generate rules: 109.837ms
+Potential classes:  1064
+JIT TOTAL: 1.518s
+ ✓ Compiled in 3.4s
+Finding changed files: 15.62ms
+Reading changed files: 24.873ms
+Generate rules: 2.09ms
+Potential classes:  1065
+JIT TOTAL: 115.441ms
+ ✓ Compiled in 555ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.3s (compile: 494ms, render: 2.9s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.2s (compile: 893ms, render: 2.3s)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.8s (compile: 931ms, render: 2.9s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 656ms (compile: 28ms, render: 628ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 752ms (compile: 151ms, render: 601ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.3s (compile: 1026ms, render: 3.3s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 498ms (compile: 29ms, render: 469ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.8s (compile: 1063ms, render: 2.7s)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 291ms (compile: 161ms, render: 130ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 137ms (compile: 15ms, render: 121ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 150ms (compile: 9ms, render: 140ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 260ms (compile: 19ms, render: 241ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 123ms (compile: 2ms, render: 120ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 141ms (compile: 3ms, render: 137ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 345ms (compile: 4ms, render: 341ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 132ms (compile: 2ms, render: 130ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 338ms (compile: 3ms, render: 335ms)
+Finding changed files: 13.64ms
+Reading changed files: 33.399ms
+Sorting candidates: 0.56ms
+Generate rules: 1.077ms
+Potential classes:  1071
+JIT TOTAL: 102.07ms
+ ✓ Compiled in 194ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 9.7s (compile: 6.7s, render: 3.0s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 304ms (compile: 37ms, render: 267ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 319ms (compile: 47ms, render: 272ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 131ms (compile: 4ms, render: 127ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 138ms (compile: 7ms, render: 131ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 540ms (compile: 103ms, render: 437ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 627ms (compile: 176ms, render: 452ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 180ms (compile: 5ms, render: 175ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 407ms (compile: 104ms, render: 303ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 234ms (compile: 5ms, render: 229ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 360ms (compile: 12ms, render: 348ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 225ms (compile: 13ms, render: 212ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 693ms (compile: 15ms, render: 678ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 639ms (compile: 537ms, render: 102ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 522ms (compile: 214ms, render: 309ms)
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T02:56:55.331012+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: 0.35,
+  realization_rate: 0.9,
+  avg_guests_per_event: 18,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 173
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  default_utilization_pct: 65,
+  updated_at: '2026-01-19T03:21:06.080Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:21:06.196647+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 663ms (compile: 56ms, render: 606ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 294ms (compile: 7ms, render: 287ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 466ms (compile: 17ms, render: 449ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 605ms (compile: 226ms, render: 379ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 728ms (compile: 87ms, render: 641ms)
+Finding changed files: 324.791ms
+Reading changed files: 131.934ms
+Sorting candidates: 2.644ms
+Generate rules: 33.755ms
+Potential classes:  1081
+JIT TOTAL: 931.768ms
+ ✓ Compiled in 2.9s
+Finding changed files: 13.016ms
+Reading changed files: 17.037ms
+Sorting candidates: 0.549ms
+Generate rules: 1.164ms
+JIT TOTAL: 86.609ms
+ ✓ Compiled in 286ms
+Finding changed files: 26.343ms
+Reading changed files: 25.506ms
+Sorting candidates: 0.91ms
+Generate rules: 1.757ms
+Potential classes:  1087
+JIT TOTAL: 186.875ms
+ ✓ Compiled in 389ms
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.7s (compile: 493ms, render: 2.2s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.9s (compile: 1442ms, render: 1451ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 327ms (compile: 131ms, render: 196ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 358ms (compile: 154ms, render: 204ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.3s (compile: 1348ms, render: 1922ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 371ms (compile: 17ms, render: 354ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 275ms (compile: 39ms, render: 236ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 317ms (compile: 79ms, render: 239ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 162ms (compile: 34ms, render: 128ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 158ms (compile: 4ms, render: 155ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 530ms (compile: 89ms, render: 441ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 344ms (compile: 13ms, render: 331ms)
+Finding changed files: 480.785ms
+Reading changed files: 206.073ms
+Sorting candidates: 2.077ms
+Generate rules: 62.139ms
+Build stylesheet: 0.044ms
+Potential classes:  1089
+JIT TOTAL: 1.640s
+ ✓ Compiled in 3.2s
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1984ms (compile: 864ms, render: 1120ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.0s (compile: 1380ms, render: 629ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.5s (compile: 525ms, render: 1958ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 346ms (compile: 68ms, render: 278ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 366ms (compile: 34ms, render: 332ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 474ms (compile: 19ms, render: 454ms)
+Finding changed files: 28.079ms
+Reading changed files: 23.105ms
+Sorting candidates: 0.847ms
+Generate rules: 5.384ms
+Potential classes:  874
+JIT TOTAL: 313.03ms
+ ✓ Compiled in 659ms
+Finding changed files: 29.262ms
+Reading changed files: 29.974ms
+Sorting candidates: 0.848ms
+Generate rules: 7.629ms
+JIT TOTAL: 263.918ms
+ ✓ Compiled in 576ms
+Finding changed files: 366.939ms
+Reading changed files: 23.311ms
+Sorting candidates: 1.264ms
+Generate rules: 42.197ms
+Potential classes:  279
+JIT TOTAL: 1.589s
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:21:06.196647+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: 0.15,
+  realization_rate: 0.9,
+  avg_guests_per_event: 18,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 108
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  default_utilization_pct: 65,
+  events_per_service: 0.15,
+  avg_guests_per_event: 18,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 108,
+  realization_rate: 0.9,
+  pdr_covers: 2.6999999999999997,
+  pdr_revenue: 262.44,
+  updated_at: '2026-01-19T03:33:24.363Z'
+}
+Error upserting center-service metrics: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'avg_guests_per_event' column of 'proforma_center_service_participation' in the schema cache"
+}
+Error details: {
+  "code": "PGRST204",
+  "details": null,
+  "hint": null,
+  "message": "Could not find the 'avg_guests_per_event' column of 'proforma_center_service_participation' in the schema cache"
+}
+ PATCH /api/proforma/center-service-metrics 500 in 5.9s (compile: 4.7s, render: 1152ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 397ms (compile: 71ms, render: 326ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 406ms (compile: 38ms, render: 368ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 137ms (compile: 11ms, render: 126ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 142ms (compile: 21ms, render: 121ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 633ms (compile: 106ms, render: 528ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 404ms (compile: 29ms, render: 375ms)
+Finding changed files: 86.863ms
+Reading changed files: 29.757ms
+Sorting candidates: 7.107ms
+Generate rules: 37.357ms
+Potential classes:  893
+JIT TOTAL: 378.558ms
+ ✓ Compiled in 1148ms
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:21:06.196647+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  default_utilization_pct: 65,
+  updated_at: '2026-01-19T03:36:17.223Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:36:17.528013+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 2.4s (compile: 826ms, render: 1532ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 538ms (compile: 91ms, render: 447ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 736ms (compile: 162ms, render: 574ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 949ms (compile: 339ms, render: 610ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1025ms (compile: 373ms, render: 652ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 384ms (compile: 84ms, render: 301ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 507ms (compile: 185ms, render: 322ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 194ms (compile: 42ms, render: 153ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 155ms (compile: 13ms, render: 142ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 713ms (compile: 178ms, render: 534ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 660ms (compile: 17ms, render: 643ms)
+Finding changed files: 275.433ms
+Reading changed files: 44.973ms
+Sorting candidates: 1.408ms
+Generate rules: 68.59ms
+Build stylesheet: 47.272ms
+Potential classes:  897
+JIT TOTAL: 806.467ms
+ ✓ Compiled in 2.3s
+Finding changed files: 403.684ms
+Reading changed files: 80.353ms
+Sorting candidates: 5.878ms
+Generate rules: 71.495ms
+JIT TOTAL: 1.214s
+ ✓ Compiled in 2.8s
+Finding changed files: 15.707ms
+Reading changed files: 11.278ms
+Sorting candidates: 0.667ms
+Generate rules: 1.36ms
+Potential classes:  899
+JIT TOTAL: 150.108ms
+ ✓ Compiled in 279ms
+Finding changed files: 21.149ms
+Reading changed files: 16.613ms
+Sorting candidates: 0.44ms
+Generate rules: 1.474ms
+Potential classes:  900
+JIT TOTAL: 147.889ms
+ ✓ Compiled in 559ms
+Finding changed files: 617.248ms
+Reading changed files: 227.76ms
+Sorting candidates: 6.646ms
+Generate rules: 187.725ms
+Potential classes:  907
+JIT TOTAL: 1.961s
+ ✓ Compiled in 3.7s
+Finding changed files: 19.545ms
+Reading changed files: 17.969ms
+Sorting candidates: 0.748ms
+Generate rules: 1.528ms
+Potential classes:  903
+JIT TOTAL: 162.394ms
+ ✓ Compiled in 544ms
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.0s (compile: 1299ms, render: 2.7s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.4s (compile: 1744ms, render: 1641ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 310ms (compile: 39ms, render: 271ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 277ms (compile: 13ms, render: 263ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.9s (compile: 1577ms, render: 2.3s)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 569ms (compile: 19ms, render: 550ms)
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:36:17.528013+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: 0.35,
+  realization_rate: 0.9,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 110
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  default_utilization_pct: 65,
+  events_per_service: 0.35,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 110,
+  realization_rate: 0.9,
+  pdr_covers: 5.25,
+  pdr_revenue: 519.75,
+  updated_at: '2026-01-19T03:48:21.196Z'
+}
+Error upserting center-service metrics: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'avg_guests_per_event' column of 'proforma_center_service_participation' in the schema cache"
+}
+Error details: {
+  "code": "PGRST204",
+  "details": null,
+  "hint": null,
+  "message": "Could not find the 'avg_guests_per_event' column of 'proforma_center_service_participation' in the schema cache"
+}
+ PATCH /api/proforma/center-service-metrics 500 in 397ms (compile: 162ms, render: 234ms)
+Finding changed files: 90.624ms
+Reading changed files: 24.469ms
+Sorting candidates: 1.33ms
+Generate rules: 27.483ms
+JIT TOTAL: 357.235ms
+ ✓ Compiled in 811ms
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.0s (compile: 1063ms, render: 952ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.3s (compile: 1343ms, render: 914ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 313ms (compile: 41ms, render: 272ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.1s (compile: 743ms, render: 2.3s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 542ms (compile: 13ms, render: 530ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 621ms (compile: 89ms, render: 532ms)
+Finding changed files: 5.058s
+Reading changed files: 443.709ms
+Sorting candidates: 11.181ms
+Generate rules: 564.075ms
+Potential classes:  918
+JIT TOTAL: 12.576s
+ ✓ Compiled in 32.5s
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 10.7s (compile: 8.2s, render: 2.5s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 15.0s (compile: 7.1s, render: 8.0s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 930ms (compile: 186ms, render: 744ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 924ms (compile: 192ms, render: 732ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 10.8s (compile: 8.1s, render: 2.7s)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1264ms (compile: 257ms, render: 1008ms)
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:36:17.528013+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: 0.15,
+  realization_rate: 0.9,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 113
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  default_utilization_pct: 65,
+  events_per_service: 0.15,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 113,
+  realization_rate: 0.9,
+  pdr_covers: 2.25,
+  pdr_revenue: 228.82500000000002,
+  updated_at: '2026-01-19T03:54:35.549Z'
+}
+Error upserting center-service metrics: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'avg_guests_per_event' column of 'proforma_center_service_participation' in the schema cache"
+}
+Error details: {
+  "code": "PGRST204",
+  "details": null,
+  "hint": null,
+  "message": "Could not find the 'avg_guests_per_event' column of 'proforma_center_service_participation' in the schema cache"
+}
+ PATCH /api/proforma/center-service-metrics 500 in 1962ms (compile: 139ms, render: 1823ms)
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:36:17.528013+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: 0.15,
+  realization_rate: 0.9,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 113
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  default_utilization_pct: 65,
+  events_per_service: 0.15,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 113,
+  realization_rate: 0.9,
+  pdr_covers: 2.25,
+  pdr_revenue: 228.82500000000002,
+  updated_at: '2026-01-19T03:57:20.190Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '4d6ee167-1d4f-41da-9353-d339834d5ada',
+  revenue_center_id: 'd35670d7-f5fc-4464-8f00-9a0568d73985',
+  service_period_id: 'fd2c8af3-ec79-4df4-8db7-74d746dcfd0e',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-19T02:46:39.519151+00:00',
+  updated_at: '2026-01-19T03:57:20.226711+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: 0.15,
+  avg_guests_per_event: 15,
+  pricing_model: 'per_guest',
+  avg_spend_per_guest: 113,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: 2.25,
+  pdr_revenue: 228.83
+}
+ PATCH /api/proforma/center-service-metrics 200 in 983ms (compile: 241ms, render: 743ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 667ms (compile: 166ms, render: 501ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 702ms (compile: 108ms, render: 594ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 804ms (compile: 85ms, render: 719ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 819ms (compile: 182ms, render: 637ms)
+Finding changed files: 877.036ms
+Reading changed files: 130.134ms
+Sorting candidates: 5.098ms
+Generate rules: 100.403ms
+Potential classes:  1088
+JIT TOTAL: 1.800s
+ ✓ Compiled in 4s
+Finding changed files: 453.656ms
+Reading changed files: 54.123ms
+Sorting candidates: 2.427ms
+Generate rules: 41.19ms
+Potential classes:  394
+JIT TOTAL: 1.729s
+ ✓ Compiled in 5.8s
+Finding changed files: 67.893ms
+Reading changed files: 10.126ms
+Sorting candidates: 0.946ms
+Generate rules: 47.54ms
+Build stylesheet: 16.192ms
+Potential classes:  409
+JIT TOTAL: 303.173ms
+ ✓ Compiled in 1023ms
+Finding changed files: 28.732ms
+Reading changed files: 11.097ms
+Sorting candidates: 0.9ms
+Generate rules: 16.404ms
+Potential classes:  410
+JIT TOTAL: 280.284ms
+ ✓ Compiled in 743ms
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing'
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing',
+  updated_at: '2026-01-19T04:12:26.760Z'
+}
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing'
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing',
+  updated_at: '2026-01-19T04:12:26.961Z'
+}
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing'
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing',
+  updated_at: '2026-01-19T04:12:27.038Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:12:27.368444+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: null,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 4.3s (compile: 1579ms, render: 2.7s)
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:12:27.376816+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: null,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 3.9s (compile: 2.1s, render: 1852ms)
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:12:27.647362+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: null,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 1330ms (compile: 20ms, render: 1310ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 427ms (compile: 91ms, render: 336ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 532ms (compile: 303ms, render: 229ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 215ms (compile: 22ms, render: 193ms)
+ PATCH /api/proforma/center-participation 200 in 2.0s (compile: 307ms, render: 1739ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 729ms (compile: 154ms, render: 575ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 214ms (compile: 31ms, render: 183ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 191ms (compile: 7ms, render: 184ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 159ms (compile: 26ms, render: 133ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 165ms (compile: 10ms, render: 155ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 387ms (compile: 28ms, render: 360ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 170ms (compile: 6ms, render: 164ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 338ms (compile: 8ms, render: 330ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 400ms (compile: 8ms, render: 392ms)
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'seated'
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'seated',
+  updated_at: '2026-01-19T04:12:36.136Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:12:36.040958+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: 'seated',
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: null,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 288ms (compile: 14ms, render: 274ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 339ms (compile: 13ms, render: 326ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 638ms (compile: 37ms, render: 601ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 966ms (compile: 193ms, render: 774ms)
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing'
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing',
+  updated_at: '2026-01-19T04:12:38.665Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:12:38.484728+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: null,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 188ms (compile: 13ms, render: 176ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 180ms (compile: 22ms, render: 158ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 250ms (compile: 9ms, render: 241ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 502ms (compile: 51ms, render: 451ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 11.1s (compile: 4.0s, render: 7.1s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 405ms (compile: 23ms, render: 381ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 406ms (compile: 76ms, render: 330ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 146ms (compile: 11ms, render: 135ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 185ms (compile: 40ms, render: 144ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 633ms (compile: 95ms, render: 538ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 656ms (compile: 53ms, render: 603ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 147ms (compile: 7ms, render: 140ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 426ms (compile: 15ms, render: 411ms)
+Finding changed files: 316.474ms
+Reading changed files: 135.469ms
+Sorting candidates: 4.255ms
+Generate rules: 42.76ms
+Potential classes:  1099
+JIT TOTAL: 826.393ms
+ ✓ Compiled in 2.1s
+Finding changed files: 17.486ms
+Reading changed files: 36.444ms
+Sorting candidates: 1.24ms
+Generate rules: 2.815ms
+Potential classes:  1125
+JIT TOTAL: 244.669ms
+ ✓ Compiled in 757ms
+Finding changed files: 28.832ms
+Reading changed files: 27.099ms
+Sorting candidates: 2.37ms
+Generate rules: 3.809ms
+Potential classes:  1118
+JIT TOTAL: 195.461ms
+Finding changed files: 32.557ms
+Reading changed files: 36.635ms
+Sorting candidates: 1.233ms
+Generate rules: 2.292ms
+JIT TOTAL: 211.653ms
+Finding changed files: 16.887ms
+Reading changed files: 22.829ms
+Sorting candidates: 1.253ms
+Generate rules: 3.351ms
+JIT TOTAL: 162.298ms
+Finding changed files: 26.317ms
+Reading changed files: 24.656ms
+Sorting candidates: 0.777ms
+Generate rules: 3.31ms
+JIT TOTAL: 364.076ms
+ ✓ Compiled in 644ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.8s (compile: 1778ms, render: 1990ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 11.5s (compile: 472ms, render: 11.0s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 386ms (compile: 137ms, render: 249ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 507ms (compile: 77ms, render: 430ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 583ms (compile: 124ms, render: 459ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 161ms (compile: 30ms, render: 131ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 130ms (compile: 11ms, render: 118ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 752ms (compile: 122ms, render: 630ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 157ms (compile: 5ms, render: 152ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 488ms (compile: 12ms, render: 476ms)
+Finding changed files: 174ms
+Reading changed files: 18.997ms
+Sorting candidates: 1.525ms
+Generate rules: 23.684ms
+Potential classes:  275
+JIT TOTAL: 629.769ms
+Finding changed files: 310.434ms
+Reading changed files: 106.627ms
+Sorting candidates: 6.781ms
+Generate rules: 69.102ms
+Build stylesheet: 1.267ms
+JIT TOTAL: 1.391s
+Finding changed files: 507.942ms
+Reading changed files: 97.35ms
+Sorting candidates: 1.259ms
+Generate rules: 71.753ms
+Potential classes:  341
+Finding changed files: 400.081ms
+Reading changed files: 67.908ms
+Sorting candidates: 1.881ms
+Generate rules: 53.456ms
+Build stylesheet: 0.02ms
+Potential classes:  363
+JIT TOTAL: 1.993s
+Finding changed files: 43.225ms
+Reading changed files: 44.676ms
+Sorting candidates: 1.359ms
+Generate rules: 10.28ms
+JIT TOTAL: 284.331ms
+ ✓ Compiled in 770ms
+Finding changed files: 27.505ms
+Reading changed files: 38.057ms
+Sorting candidates: 1.243ms
+Generate rules: 2.494ms
+JIT TOTAL: 331.095ms
+ ✓ Compiled in 514ms
+Finding changed files: 264.776ms
+Reading changed files: 323.498ms
+Sorting candidates: 6.483ms
+Generate rules: 218.475ms
+JIT TOTAL: 1.917s
+ ✓ Compiled in 5s
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 9.2s (compile: 3.7s, render: 5.6s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 531ms (compile: 176ms, render: 355ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 538ms (compile: 210ms, render: 327ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 691ms (compile: 57ms, render: 635ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 351ms (compile: 65ms, render: 286ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 943ms (compile: 18ms, render: 925ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 290ms (compile: 13ms, render: 277ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1997ms (compile: 1403ms, render: 595ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 574ms (compile: 11ms, render: 564ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 350ms (compile: 13ms, render: 337ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 461ms (compile: 25ms, render: 436ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 145ms (compile: 11ms, render: 134ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 136ms (compile: 4ms, render: 131ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 709ms (compile: 54ms, render: 655ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 422ms (compile: 45ms, render: 377ms)
+Finding changed files: 396.94ms
+Reading changed files: 195.076ms
+Sorting candidates: 7.752ms
+Generate rules: 189.472ms
+Potential classes:  904
+JIT TOTAL: 1.906s
+ ✓ Compiled in 3.9s
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:48:20.276494+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: 3,
+  standing_capacity: 33,
+  avg_dwell_hours: 1.25,
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: 18,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null,
+  bar_food_pct: 10,
+  bar_bev_pct: 90,
+  bar_revenue: null
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: 50,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: 1.7999999999999998,
+  standing_capacity: 33,
+  avg_dwell_hours: 1,
+  default_utilization_pct: 65,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: 18,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  bar_food_pct: 10,
+  bar_bev_pct: 90,
+  bar_revenue: 909,
+  updated_at: '2026-01-19T04:51:05.460Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 65,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T04:51:05.262998+00:00',
+  utilization_pct: 65,
+  guests_per_hour: null,
+  active_hours: 1.8,
+  standing_capacity: 33,
+  avg_dwell_hours: 1,
+  bar_mode_override: 'standing',
+  covers: null,
+  bar_guests: 50,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null,
+  events_per_service: null,
+  avg_guests_per_event: null,
+  pricing_model: null,
+  avg_spend_per_guest: 18,
+  min_spend_per_event: null,
+  realization_rate: 0.9,
+  pdr_covers: null,
+  pdr_revenue: null,
+  bar_food_pct: 10,
+  bar_bev_pct: 90,
+  bar_revenue: 909
+}
+ PATCH /api/proforma/center-service-metrics 200 in 3.1s (compile: 1689ms, render: 1370ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 434ms (compile: 196ms, render: 237ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 459ms (compile: 107ms, render: 352ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 644ms (compile: 328ms, render: 316ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 836ms (compile: 215ms, render: 621ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 379ms (compile: 41ms, render: 338ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 460ms (compile: 24ms, render: 436ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 170ms (compile: 9ms, render: 160ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 568ms (compile: 58ms, render: 510ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 182ms (compile: 9ms, render: 172ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 531ms (compile: 10ms, render: 521ms)
+Finding changed files: 1.402s
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 5.2s (compile: 2.3s, render: 2.9s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 5.1s (compile: 2.7s, render: 2.4s)
+Reading changed files: 304.799ms
+Sorting candidates: 25.639ms
+Generate rules: 201.979ms
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 540ms (compile: 56ms, render: 484ms)
+Potential classes:  926
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 5.8s (compile: 2.7s, render: 3.0s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 918ms (compile: 191ms, render: 727ms)
+JIT TOTAL: 3.527s
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 727ms (compile: 153ms, render: 574ms)
+ ✓ Compiled in 7.3s
+Finding changed files: 179.664ms
+Reading changed files: 47.108ms
+Sorting candidates: 7.158ms
+Generate rules: 40.59ms
+Potential classes:  923
+JIT TOTAL: 676.923ms
+ ✓ Compiled in 1614ms
+Finding changed files: 18.661ms
+Reading changed files: 18.109ms
+Sorting candidates: 0.971ms
+Generate rules: 3.682ms
+Potential classes:  927
+JIT TOTAL: 165.161ms
+ ✓ Compiled in 456ms
+Finding changed files: 64.882ms
+Reading changed files: 20.644ms
+Sorting candidates: 0.497ms
+Generate rules: 15.813ms
+Potential classes:  78
+JIT TOTAL: 366.845ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1976ms (compile: 203ms, render: 1773ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 777ms (compile: 11ms, render: 766ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 4.1s (compile: 66ms, render: 4.0s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 7.6s (compile: 1716ms, render: 5.9s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 535ms (compile: 134ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 467ms (compile: 12ms, render: 454ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 834ms (compile: 24ms, render: 810ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 801ms (compile: 14ms, render: 787ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 639ms (compile: 10ms, render: 629ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 363ms (compile: 8ms, render: 355ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 732ms (compile: 15ms, render: 717ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 586ms (compile: 5ms, render: 581ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 534ms (compile: 7ms, render: 527ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 510ms (compile: 5ms, render: 505ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 924ms (compile: 6ms, render: 918ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 755ms (compile: 6ms, render: 749ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 878ms (compile: 7ms, render: 871ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1045ms (compile: 22ms, render: 1024ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 942ms (compile: 38ms, render: 904ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 680ms (compile: 11ms, render: 669ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 714ms (compile: 21ms, render: 693ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 881ms (compile: 19ms, render: 863ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 717ms (compile: 6ms, render: 711ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 557ms (compile: 14ms, render: 543ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 550ms (compile: 15ms, render: 534ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 536ms (compile: 5ms, render: 531ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 808ms (compile: 6ms, render: 802ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 997ms (compile: 8ms, render: 989ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 863ms (compile: 9ms, render: 854ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 767ms (compile: 23ms, render: 744ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 480ms (compile: 8ms, render: 472ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 461ms (compile: 20ms, render: 440ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 521ms (compile: 6ms, render: 515ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 617ms (compile: 3ms, render: 614ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 414ms (compile: 3ms, render: 411ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 332ms (compile: 3ms, render: 329ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 622ms (compile: 6ms, render: 616ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 410ms (compile: 5ms, render: 405ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 445ms (compile: 8ms, render: 437ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 367ms (compile: 3ms, render: 364ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 487ms (compile: 2ms, render: 485ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 444ms (compile: 3ms, render: 442ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 579ms (compile: 3ms, render: 576ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 325ms (compile: 4ms, render: 321ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 338ms (compile: 3ms, render: 335ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 511ms (compile: 10ms, render: 501ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 482ms (compile: 3ms, render: 479ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 390ms (compile: 7ms, render: 383ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 375ms (compile: 4ms, render: 371ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 428ms (compile: 4ms, render: 424ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 427ms (compile: 3ms, render: 424ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 444ms (compile: 9ms, render: 435ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 347ms (compile: 10ms, render: 337ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 343ms (compile: 20ms, render: 322ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 435ms (compile: 4ms, render: 431ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 467ms (compile: 3ms, render: 464ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 425ms (compile: 4ms, render: 421ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 539ms (compile: 3ms, render: 536ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 451ms (compile: 7ms, render: 443ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 354ms (compile: 3ms, render: 351ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 357ms (compile: 5ms, render: 352ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 328ms (compile: 4ms, render: 324ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 523ms (compile: 5ms, render: 519ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 475ms (compile: 5ms, render: 470ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 489ms (compile: 8ms, render: 481ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 384ms (compile: 5ms, render: 378ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 357ms (compile: 4ms, render: 354ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 456ms (compile: 9ms, render: 447ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 352ms (compile: 3ms, render: 349ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 366ms (compile: 4ms, render: 362ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 322ms (compile: 15ms, render: 307ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 364ms (compile: 5ms, render: 359ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 430ms (compile: 5ms, render: 425ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 436ms (compile: 2ms, render: 434ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 363ms (compile: 4ms, render: 359ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 366ms (compile: 3ms, render: 363ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 333ms (compile: 4ms, render: 329ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 346ms (compile: 7ms, render: 339ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 433ms (compile: 4ms, render: 429ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 382ms (compile: 3ms, render: 379ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 405ms (compile: 3ms, render: 402ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 423ms (compile: 7ms, render: 417ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 376ms (compile: 4ms, render: 372ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 374ms (compile: 10ms, render: 365ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 845ms (compile: 3ms, render: 841ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 880ms (compile: 3ms, render: 877ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 913ms (compile: 3ms, render: 910ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 853ms (compile: 6ms, render: 847ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 819ms (compile: 7ms, render: 813ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 546ms (compile: 29ms, render: 517ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 793ms (compile: 8ms, render: 785ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 800ms (compile: 5ms, render: 796ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 697ms (compile: 7ms, render: 690ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 554ms (compile: 69ms, render: 485ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 475ms (compile: 39ms, render: 436ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 363ms (compile: 3ms, render: 360ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 345ms (compile: 3ms, render: 342ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 355ms (compile: 6ms, render: 349ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 333ms (compile: 5ms, render: 327ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 533ms (compile: 2ms, render: 530ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 484ms (compile: 2ms, render: 481ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 547ms (compile: 14ms, render: 533ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 444ms (compile: 4ms, render: 440ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 591ms (compile: 8ms, render: 584ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 473ms (compile: 4ms, render: 469ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 876ms (compile: 4ms, render: 872ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 914ms (compile: 14ms, render: 899ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 751ms (compile: 6ms, render: 745ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 635ms (compile: 5ms, render: 630ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 578ms (compile: 13ms, render: 565ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 436ms (compile: 8ms, render: 428ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 333ms (compile: 11ms, render: 322ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 403ms (compile: 12ms, render: 390ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 409ms (compile: 4ms, render: 405ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 548ms (compile: 48ms, render: 500ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 8ms, render: 403ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 370ms (compile: 5ms, render: 365ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 394ms (compile: 11ms, render: 383ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 488ms (compile: 5ms, render: 483ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 376ms (compile: 4ms, render: 371ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 323ms (compile: 2ms, render: 320ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 337ms (compile: 4ms, render: 334ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 349ms (compile: 4ms, render: 345ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 354ms (compile: 20ms, render: 334ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 339ms (compile: 3ms, render: 336ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 431ms (compile: 3ms, render: 428ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 508ms (compile: 3ms, render: 505ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 382ms (compile: 2ms, render: 380ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 306ms (compile: 4ms, render: 302ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 334ms (compile: 4ms, render: 330ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 337ms (compile: 2ms, render: 334ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 349ms (compile: 7ms, render: 343ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 486ms (compile: 3ms, render: 483ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 467ms (compile: 5ms, render: 462ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 393ms (compile: 3ms, render: 391ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 347ms (compile: 4ms, render: 343ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 381ms (compile: 4ms, render: 378ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 449ms (compile: 6ms, render: 443ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 342ms (compile: 7ms, render: 335ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 353ms (compile: 3ms, render: 350ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 492ms (compile: 2ms, render: 489ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 354ms (compile: 5ms, render: 350ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 364ms (compile: 4ms, render: 360ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 331ms (compile: 2ms, render: 329ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 445ms (compile: 5ms, render: 440ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 366ms (compile: 9ms, render: 358ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 304ms (compile: 2ms, render: 302ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 385ms (compile: 4ms, render: 381ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 338ms (compile: 4ms, render: 334ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 335ms (compile: 4ms, render: 331ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 310ms (compile: 2ms, render: 308ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 481ms (compile: 9ms, render: 472ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 423ms (compile: 7ms, render: 416ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 363ms (compile: 3ms, render: 360ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 338ms (compile: 2ms, render: 336ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 468ms (compile: 2ms, render: 466ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 453ms (compile: 8ms, render: 445ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 376ms (compile: 4ms, render: 372ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 457ms (compile: 3ms, render: 454ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 384ms (compile: 18ms, render: 366ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 508ms (compile: 12ms, render: 495ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 424ms (compile: 4ms, render: 421ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 433ms (compile: 6ms, render: 428ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 416ms (compile: 8ms, render: 408ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 370ms (compile: 5ms, render: 365ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 425ms (compile: 3ms, render: 422ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 444ms (compile: 8ms, render: 435ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 409ms (compile: 3ms, render: 405ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 360ms (compile: 3ms, render: 358ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 331ms (compile: 3ms, render: 329ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 330ms (compile: 4ms, render: 325ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 368ms (compile: 6ms, render: 362ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 395ms (compile: 10ms, render: 385ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 337ms (compile: 8ms, render: 328ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 306ms (compile: 3ms, render: 303ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 394ms (compile: 3ms, render: 391ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 328ms (compile: 3ms, render: 325ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 294ms (compile: 3ms, render: 291ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 332ms (compile: 3ms, render: 329ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 303ms (compile: 7ms, render: 296ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 491ms (compile: 2ms, render: 489ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 509ms (compile: 3ms, render: 506ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 443ms (compile: 4ms, render: 440ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 400ms (compile: 2ms, render: 397ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 373ms (compile: 4ms, render: 369ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 413ms (compile: 2ms, render: 411ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 331ms (compile: 4ms, render: 327ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 553ms (compile: 4ms, render: 548ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 510ms (compile: 2ms, render: 508ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 438ms (compile: 4ms, render: 433ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 604ms (compile: 89ms, render: 515ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 679ms (compile: 2ms, render: 676ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 466ms (compile: 2ms, render: 463ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 387ms (compile: 4ms, render: 384ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 392ms (compile: 3ms, render: 389ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 450ms (compile: 3ms, render: 447ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 426ms (compile: 3ms, render: 423ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 355ms (compile: 11ms, render: 344ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 311ms (compile: 3ms, render: 309ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 341ms (compile: 5ms, render: 336ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 400ms (compile: 4ms, render: 396ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 268ms (compile: 2ms, render: 266ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 281ms (compile: 7ms, render: 274ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 340ms (compile: 3ms, render: 337ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 297ms (compile: 3ms, render: 294ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 336ms (compile: 3ms, render: 333ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 466ms (compile: 3ms, render: 463ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 909ms (compile: 5ms, render: 904ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 994ms (compile: 3ms, render: 991ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 358ms (compile: 5ms, render: 354ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 380ms (compile: 2ms, render: 378ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 436ms (compile: 6ms, render: 430ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 3ms, render: 409ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 624ms (compile: 37ms, render: 587ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 494ms (compile: 2ms, render: 492ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 443ms (compile: 7ms, render: 436ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 2ms, render: 409ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 353ms (compile: 8ms, render: 345ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 442ms (compile: 6ms, render: 436ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 302ms (compile: 5ms, render: 298ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 386ms (compile: 3ms, render: 384ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 343ms (compile: 3ms, render: 340ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 3ms, render: 409ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 329ms (compile: 6ms, render: 323ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 321ms (compile: 6ms, render: 314ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 340ms (compile: 3ms, render: 337ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 307ms (compile: 3ms, render: 303ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 319ms (compile: 3ms, render: 316ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 319ms (compile: 3ms, render: 317ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 308ms (compile: 2ms, render: 305ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 459ms (compile: 2ms, render: 457ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 474ms (compile: 20ms, render: 454ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 396ms (compile: 3ms, render: 393ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 437ms (compile: 4ms, render: 433ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 443ms (compile: 4ms, render: 440ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 404ms (compile: 4ms, render: 400ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 359ms (compile: 3ms, render: 356ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 858ms (compile: 8ms, render: 850ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 761ms (compile: 3ms, render: 757ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 679ms (compile: 3ms, render: 675ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 690ms (compile: 9ms, render: 681ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 408ms (compile: 7ms, render: 402ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 595ms (compile: 14ms, render: 581ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 449ms (compile: 6ms, render: 443ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 555ms (compile: 18ms, render: 537ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 480ms (compile: 6ms, render: 473ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 3ms, render: 409ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1013ms (compile: 9ms, render: 1004ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 999ms (compile: 5ms, render: 994ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 911ms (compile: 3ms, render: 908ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 647ms (compile: 15ms, render: 632ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 668ms (compile: 17ms, render: 651ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 650ms (compile: 3ms, render: 647ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 569ms (compile: 4ms, render: 565ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 564ms (compile: 14ms, render: 551ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 753ms (compile: 8ms, render: 745ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 610ms (compile: 11ms, render: 598ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 530ms (compile: 3ms, render: 526ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 545ms (compile: 4ms, render: 541ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 452ms (compile: 7ms, render: 445ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 443ms (compile: 24ms, render: 419ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 552ms (compile: 9ms, render: 543ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 419ms (compile: 9ms, render: 410ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 527ms (compile: 22ms, render: 505ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 374ms (compile: 10ms, render: 365ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 427ms (compile: 4ms, render: 423ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 357ms (compile: 9ms, render: 347ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 316ms (compile: 9ms, render: 307ms)
+Finding changed files: 746.661ms
+Reading changed files: 77.624ms
+Sorting candidates: 5.528ms
+Generate rules: 196.658ms
+Build stylesheet: 85.606ms
+Potential classes:  526
+JIT TOTAL: 1.670s
+ ✓ Compiled in 5.3s
+Finding changed files: 462.147ms
+Reading changed files: 67.903ms
+Sorting candidates: 1.268ms
+Generate rules: 43.653ms
+Potential classes:  86
+JIT TOTAL: 1.378s
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 11.3s (compile: 3.3s, render: 8.0s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.9s (compile: 54ms, render: 2.8s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.2s (compile: 19ms, render: 3.2s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.1s (compile: 185ms, render: 1953ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1531ms (compile: 22ms, render: 1509ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1784ms (compile: 48ms, render: 1735ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1367ms (compile: 34ms, render: 1333ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1372ms (compile: 29ms, render: 1344ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1177ms (compile: 24ms, render: 1153ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.3s (compile: 78ms, render: 2.2s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.1s (compile: 38ms, render: 2.0s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1842ms (compile: 11ms, render: 1831ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1221ms (compile: 35ms, render: 1186ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.9s (compile: 59ms, render: 3.8s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 6.3s (compile: 30ms, render: 6.3s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 6.0s (compile: 16ms, render: 6.0s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.2s (compile: 149ms, render: 3.0s)
+Finding changed files: 104.555ms
+Reading changed files: 1.303ms
+Sorting candidates: 0.018ms
+Generate rules: 1.583ms
+Build stylesheet: 0.01ms
+JIT TOTAL: 339.919ms
+ ✓ Compiled in 2.9s
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 6.2s (compile: 3.8s, render: 2.5s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.4s (compile: 9ms, render: 2.4s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.5s (compile: 12ms, render: 2.5s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.1s (compile: 11ms, render: 2.1s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1717ms (compile: 14ms, render: 1702ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1800ms (compile: 50ms, render: 1750ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1754ms (compile: 17ms, render: 1736ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1430ms (compile: 8ms, render: 1422ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1274ms (compile: 26ms, render: 1248ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1303ms (compile: 38ms, render: 1265ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.2s (compile: 28ms, render: 2.2s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1979ms (compile: 21ms, render: 1958ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.4s (compile: 6ms, render: 2.4s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1695ms (compile: 26ms, render: 1668ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1032ms (compile: 18ms, render: 1014ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1207ms (compile: 27ms, render: 1180ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1098ms (compile: 8ms, render: 1091ms)
+Finding changed files: 49.784ms
+Reading changed files: 27.882ms
+Sorting candidates: 5.755ms
+Generate rules: 19.043ms
+Build stylesheet: 0.026ms
+Potential classes:  534
+JIT TOTAL: 313.511ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1766ms (compile: 17ms, render: 1749ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1359ms (compile: 16ms, render: 1343ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1039ms (compile: 7ms, render: 1032ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 750ms (compile: 19ms, render: 731ms)
+ ✓ Compiled in 829ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.7s (compile: 707ms, render: 1994ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1150ms (compile: 6ms, render: 1144ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1742ms (compile: 9ms, render: 1733ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1382ms (compile: 7ms, render: 1375ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1465ms (compile: 308ms, render: 1157ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 783ms (compile: 17ms, render: 766ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 869ms (compile: 5ms, render: 864ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 824ms (compile: 10ms, render: 815ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 790ms (compile: 6ms, render: 784ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 735ms (compile: 12ms, render: 723ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 491ms (compile: 7ms, render: 484ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 654ms (compile: 19ms, render: 636ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1079ms (compile: 11ms, render: 1068ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 815ms (compile: 9ms, render: 807ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 664ms (compile: 11ms, render: 653ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 532ms (compile: 14ms, render: 517ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1015ms (compile: 6ms, render: 1009ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 868ms (compile: 7ms, render: 861ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1043ms (compile: 13ms, render: 1030ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 910ms (compile: 7ms, render: 903ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 781ms (compile: 14ms, render: 767ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 549ms (compile: 8ms, render: 541ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 485ms (compile: 12ms, render: 472ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 414ms (compile: 13ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 444ms (compile: 12ms, render: 432ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 501ms (compile: 5ms, render: 496ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 376ms (compile: 7ms, render: 370ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 338ms (compile: 3ms, render: 335ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 374ms (compile: 5ms, render: 368ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 530ms (compile: 2ms, render: 528ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 641ms (compile: 11ms, render: 630ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 489ms (compile: 5ms, render: 483ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 456ms (compile: 3ms, render: 453ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 376ms (compile: 3ms, render: 373ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 397ms (compile: 4ms, render: 394ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 404ms (compile: 3ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 493ms (compile: 18ms, render: 475ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 353ms (compile: 3ms, render: 350ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 345ms (compile: 10ms, render: 335ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 361ms (compile: 5ms, render: 356ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 354ms (compile: 3ms, render: 351ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 364ms (compile: 3ms, render: 361ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 316ms (compile: 8ms, render: 309ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 599ms (compile: 3ms, render: 595ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 816ms (compile: 14ms, render: 803ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 510ms (compile: 6ms, render: 504ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 534ms (compile: 3ms, render: 531ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 553ms (compile: 3ms, render: 550ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 430ms (compile: 18ms, render: 412ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 442ms (compile: 6ms, render: 437ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 578ms (compile: 7ms, render: 571ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 460ms (compile: 3ms, render: 457ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 353ms (compile: 3ms, render: 350ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 351ms (compile: 6ms, render: 345ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 371ms (compile: 9ms, render: 362ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 437ms (compile: 3ms, render: 433ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 457ms (compile: 6ms, render: 451ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 502ms (compile: 3ms, render: 499ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 447ms (compile: 3ms, render: 444ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 368ms (compile: 3ms, render: 365ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 421ms (compile: 4ms, render: 417ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 467ms (compile: 9ms, render: 459ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 454ms (compile: 4ms, render: 450ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 437ms (compile: 3ms, render: 434ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 516ms (compile: 7ms, render: 509ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 316ms (compile: 4ms, render: 312ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 319ms (compile: 6ms, render: 313ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 283ms (compile: 7ms, render: 277ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 432ms (compile: 4ms, render: 428ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 392ms (compile: 3ms, render: 389ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 446ms (compile: 3ms, render: 442ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 322ms (compile: 3ms, render: 319ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 368ms (compile: 20ms, render: 349ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 360ms (compile: 3ms, render: 357ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 396ms (compile: 10ms, render: 387ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 313ms (compile: 6ms, render: 307ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 435ms (compile: 4ms, render: 431ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 411ms (compile: 4ms, render: 407ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 323ms (compile: 3ms, render: 320ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 420ms (compile: 2ms, render: 417ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 423ms (compile: 10ms, render: 414ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 653ms (compile: 4ms, render: 649ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 557ms (compile: 4ms, render: 553ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 557ms (compile: 5ms, render: 552ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 470ms (compile: 4ms, render: 465ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 410ms (compile: 4ms, render: 406ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 385ms (compile: 13ms, render: 372ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 414ms (compile: 2ms, render: 412ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 463ms (compile: 6ms, render: 457ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 331ms (compile: 3ms, render: 328ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 396ms (compile: 19ms, render: 377ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 436ms (compile: 6ms, render: 430ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 444ms (compile: 6ms, render: 438ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 804ms (compile: 7ms, render: 797ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 822ms (compile: 4ms, render: 818ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 694ms (compile: 6ms, render: 688ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 647ms (compile: 7ms, render: 640ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 414ms (compile: 12ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 525ms (compile: 12ms, render: 513ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 430ms (compile: 2ms, render: 427ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 602ms (compile: 4ms, render: 597ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 486ms (compile: 4ms, render: 482ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 690ms (compile: 6ms, render: 684ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 707ms (compile: 5ms, render: 703ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 521ms (compile: 18ms, render: 503ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 421ms (compile: 5ms, render: 416ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 451ms (compile: 7ms, render: 444ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 441ms (compile: 4ms, render: 437ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 379ms (compile: 2ms, render: 376ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 326ms (compile: 3ms, render: 323ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 336ms (compile: 13ms, render: 323ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 331ms (compile: 9ms, render: 321ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 447ms (compile: 3ms, render: 444ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 500ms (compile: 3ms, render: 497ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 462ms (compile: 3ms, render: 459ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 406ms (compile: 5ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 341ms (compile: 4ms, render: 336ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 362ms (compile: 4ms, render: 358ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 515ms (compile: 9ms, render: 506ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 517ms (compile: 5ms, render: 512ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 427ms (compile: 3ms, render: 424ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 481ms (compile: 3ms, render: 478ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 5ms, render: 407ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 523ms (compile: 7ms, render: 516ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 520ms (compile: 11ms, render: 509ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 402ms (compile: 3ms, render: 398ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 408ms (compile: 3ms, render: 405ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 467ms (compile: 7ms, render: 461ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 456ms (compile: 4ms, render: 452ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 369ms (compile: 8ms, render: 361ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 461ms (compile: 108ms, render: 352ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 353ms (compile: 4ms, render: 349ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 407ms (compile: 5ms, render: 402ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 345ms (compile: 6ms, render: 340ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 385ms (compile: 3ms, render: 382ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 348ms (compile: 4ms, render: 344ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 296ms (compile: 3ms, render: 293ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 369ms (compile: 9ms, render: 360ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 340ms (compile: 4ms, render: 335ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 321ms (compile: 4ms, render: 317ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 331ms (compile: 3ms, render: 328ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 362ms (compile: 7ms, render: 355ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 277ms (compile: 3ms, render: 275ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 432ms (compile: 3ms, render: 429ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 350ms (compile: 8ms, render: 342ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 351ms (compile: 4ms, render: 347ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 346ms (compile: 3ms, render: 344ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 403ms (compile: 3ms, render: 400ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 400ms (compile: 6ms, render: 394ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 562ms (compile: 3ms, render: 559ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 515ms (compile: 11ms, render: 503ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 418ms (compile: 7ms, render: 411ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 431ms (compile: 5ms, render: 427ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 412ms (compile: 9ms, render: 403ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 562ms (compile: 5ms, render: 558ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 464ms (compile: 3ms, render: 462ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 406ms (compile: 8ms, render: 398ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 329ms (compile: 3ms, render: 326ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 375ms (compile: 3ms, render: 371ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 373ms (compile: 3ms, render: 370ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 502ms (compile: 8ms, render: 494ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 385ms (compile: 6ms, render: 379ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 301ms (compile: 9ms, render: 291ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 356ms (compile: 2ms, render: 354ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 355ms (compile: 4ms, render: 351ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 379ms (compile: 6ms, render: 372ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 362ms (compile: 2ms, render: 360ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 420ms (compile: 2ms, render: 418ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 414ms (compile: 4ms, render: 410ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 473ms (compile: 12ms, render: 461ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 387ms (compile: 3ms, render: 385ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 405ms (compile: 4ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 453ms (compile: 6ms, render: 447ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 490ms (compile: 11ms, render: 478ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 404ms (compile: 3ms, render: 401ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 357ms (compile: 10ms, render: 347ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 335ms (compile: 3ms, render: 332ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 343ms (compile: 2ms, render: 341ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 476ms (compile: 3ms, render: 473ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 452ms (compile: 3ms, render: 449ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 532ms (compile: 11ms, render: 521ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 452ms (compile: 5ms, render: 447ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 400ms (compile: 19ms, render: 381ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 367ms (compile: 10ms, render: 357ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 340ms (compile: 2ms, render: 338ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 322ms (compile: 4ms, render: 319ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 365ms (compile: 3ms, render: 362ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 401ms (compile: 4ms, render: 397ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 442ms (compile: 10ms, render: 433ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 435ms (compile: 5ms, render: 430ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 319ms (compile: 5ms, render: 314ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 366ms (compile: 9ms, render: 357ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 341ms (compile: 4ms, render: 336ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 716ms (compile: 5ms, render: 711ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 646ms (compile: 8ms, render: 638ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 626ms (compile: 4ms, render: 621ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 806ms (compile: 6ms, render: 801ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 418ms (compile: 4ms, render: 414ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 560ms (compile: 5ms, render: 555ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1113ms (compile: 4ms, render: 1108ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1087ms (compile: 11ms, render: 1076ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 954ms (compile: 5ms, render: 949ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 795ms (compile: 13ms, render: 782ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 523ms (compile: 19ms, render: 504ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 393ms (compile: 9ms, render: 384ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 387ms (compile: 7ms, render: 380ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 415ms (compile: 4ms, render: 411ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 422ms (compile: 5ms, render: 418ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 325ms (compile: 3ms, render: 322ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 337ms (compile: 4ms, render: 333ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 462ms (compile: 17ms, render: 445ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 452ms (compile: 3ms, render: 450ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 410ms (compile: 16ms, render: 394ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 353ms (compile: 9ms, render: 344ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 480ms (compile: 12ms, render: 468ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 344ms (compile: 7ms, render: 337ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 562ms (compile: 7ms, render: 555ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 456ms (compile: 18ms, render: 438ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 434ms (compile: 6ms, render: 428ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 428ms (compile: 5ms, render: 423ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 597ms (compile: 3ms, render: 594ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 505ms (compile: 5ms, render: 500ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 587ms (compile: 5ms, render: 581ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 519ms (compile: 17ms, render: 501ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 471ms (compile: 8ms, render: 464ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 424ms (compile: 3ms, render: 420ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 377ms (compile: 9ms, render: 368ms)
+Finding changed files: 31.488ms
+Reading changed files: 6.799ms
+Sorting candidates: 0.241ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 301ms (compile: 3ms, render: 298ms)
+Generate rules: 76.557ms
+Build stylesheet: 42.226ms
+Potential classes:  606
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 310ms (compile: 3ms, render: 307ms)
+JIT TOTAL: 248.349ms
+ ✓ Compiled in 3.2s
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 4.4s (compile: 3.4s, render: 998ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 647ms (compile: 5ms, render: 642ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 474ms (compile: 9ms, render: 465ms)
+Finding changed files: 302.51ms
+Reading changed files: 32.667ms
+Sorting candidates: 1.138ms
+Generate rules: 56.252ms
+Build stylesheet: 27.085ms
+Potential classes:  647
+JIT TOTAL: 870.627ms
+ ✓ Compiled in 3.2s
+ ○ Compiling /api/proforma/labor-position-mix ...
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 12.4s (compile: 4.3s, render: 8.1s)
+ GET /api/proforma/labor-benchmarks?concept=Premium%20Casual 200 in 6.3s (compile: 2.8s, render: 3.5s)
+ GET /api/proforma/labor-benchmarks?concept=Bar%20Lounge 200 in 6.7s (compile: 2.9s, render: 3.7s)
+ GET /api/proforma/labor-position-mix?concept=Bar%20Lounge 200 in 5.4s (compile: 3.8s, render: 1615ms)
+ GET /api/proforma/labor-benchmarks?concept=Casual%20Dining 200 in 18.0s (compile: 14.4s, render: 3.6s)
+ GET /api/proforma/labor-position-mix?concept=Premium%20Casual 200 in 6.9s (compile: 5.0s, render: 1869ms)
+ GET /api/proforma/labor-position-mix?concept=Casual%20Dining 200 in 18.3s (compile: 16.3s, render: 2.1s)
+ GET /api/proforma/labor-benchmarks?concept=Fast%20Casual 200 in 594ms (compile: 34ms, render: 559ms)
+ GET /api/proforma/labor-benchmarks?concept=Fine%20Dining 200 in 933ms (compile: 43ms, render: 890ms)
+ GET /api/proforma/labor-position-mix?concept=Fast%20Casual 200 in 1273ms (compile: 80ms, render: 1194ms)
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1039ms (compile: 177ms, render: 862ms)
+ GET /api/proforma/labor-benchmarks?concept=Casual%20Dining 200 in 1100ms (compile: 276ms, render: 824ms)
+ GET /api/proforma/labor-position-mix?concept=Fine%20Dining 200 in 1135ms (compile: 107ms, render: 1028ms)
+ GET /api/proforma/labor-position-mix?concept=Casual%20Dining 200 in 1142ms (compile: 336ms, render: 805ms)
+Finding changed files: 274.473ms
+Reading changed files: 28.151ms
+Sorting candidates: 2.621ms
+Generate rules: 45.967ms
+Potential classes:  154
+JIT TOTAL: 903.543ms
+ ✓ Compiled in 2.1s
+Finding changed files: 413.197ms
+Reading changed files: 43.465ms
+Sorting candidates: 3.082ms
+Generate rules: 84.071ms
+Potential classes:  669
+JIT TOTAL: 934.763ms
+ ✓ Compiled in 2.2s
+Finding changed files: 82.552ms
+Reading changed files: 25.492ms
+Sorting candidates: 2.872ms
+Generate rules: 79.751ms
+JIT TOTAL: 490.238ms
+ ✓ Compiled in 3.6s
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+Finding changed files: 211.827ms
+Reading changed files: 42.168ms
+Sorting candidates: 2.861ms
+Generate rules: 33.704ms
+Potential classes:  660
+JIT TOTAL: 755.567ms
+ ✓ Compiled in 1514ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 20.4s (compile: 4.3s, render: 16.1s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 24.1s (compile: 5.5s, render: 18.5s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1094ms (compile: 53ms, render: 1040ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 20.5s (compile: 4.0s, render: 16.5s)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 22.2s (compile: 3.7s, render: 18.5s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.9s (compile: 38ms, render: 3.8s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.9s (compile: 52ms, render: 3.8s)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.3s (compile: 107ms, render: 4.2s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 21.9s (compile: 5.5s, render: 16.4s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 307ms (compile: 81ms, render: 227ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 334ms (compile: 96ms, render: 237ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.5s (compile: 625ms, render: 2.9s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.9s (compile: 230ms, render: 2.7s)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.2s (compile: 138ms, render: 4.0s)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.2s (compile: 120ms, render: 4.1s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 427ms (compile: 53ms, render: 374ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 624ms (compile: 36ms, render: 589ms)
+Finding changed files: 144.967ms
+Reading changed files: 76.351ms
+Sorting candidates: 1.73ms
+Generate rules: 43.983ms
+Potential classes:  668
+JIT TOTAL: 743.265ms
+ ✓ Compiled in 1827ms
+Finding changed files: 180.276ms
+Reading changed files: 59.038ms
+Sorting candidates: 11.821ms
+Generate rules: 80.061ms
+Potential classes:  670
+JIT TOTAL: 824.63ms
+ ✓ Compiled in 2.2s
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.2s (compile: 3.5s, render: 613ms)
+ GET /api/proforma/labor-benchmarks?concept=Casual%20Dining 200 in 4.4s (compile: 800ms, render: 3.6s)
+ GET /api/proforma/labor-position-mix?concept=Casual%20Dining 200 in 4.3s (compile: 2.9s, render: 1471ms)
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1391ms (compile: 25ms, render: 1366ms)
+ GET /api/proforma/labor-benchmarks?concept=Casual%20Dining 200 in 1404ms (compile: 14ms, render: 1390ms)
+ GET /api/proforma/labor-position-mix?concept=Casual%20Dining 200 in 1382ms (compile: 897ms, render: 485ms)
+Finding changed files: 110.861ms
+Reading changed files: 86.239ms
+Sorting candidates: 2.47ms
+Generate rules: 54.425ms
+Potential classes:  673
+JIT TOTAL: 587.532ms
+ ✓ Compiled in 1335ms
+ GET /api/proforma/labor-position-mix?concept=Casual%20Dining 200 in 1875ms (compile: 220ms, render: 1655ms)
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1796ms (compile: 648ms, render: 1148ms)
+ GET /api/proforma/labor-benchmarks?concept=Casual%20Dining 200 in 1842ms (compile: 423ms, render: 1419ms)
+Finding changed files: 14.508ms
+Reading changed files: 7.411ms
+Sorting candidates: 0.387ms
+Generate rules: 0.951ms
+Potential classes:  675
+JIT TOTAL: 101.279ms
+ ✓ Compiled in 211ms
+Finding changed files: 30.161ms
+Reading changed files: 17.934ms
+Sorting candidates: 0.471ms
+Generate rules: 0.969ms
+Potential classes:  697
+JIT TOTAL: 170.77ms
+ ✓ Compiled in 378ms
+Finding changed files: 2.517s
+Reading changed files: 602.365ms
+Sorting candidates: 17.332ms
+Generate rules: 136.733ms
+Potential classes:  698
+JIT TOTAL: 5.667s
+ ✓ Compiled in 12s
+Finding changed files: 259.625ms
+Reading changed files: 251.287ms
+Sorting candidates: 2.187ms
+Generate rules: 7.438ms
+Potential classes:  699
+JIT TOTAL: 1.249s
+ ✓ Compiled in 2.1s
+Finding changed files: 310.39ms
+Reading changed files: 210.665ms
+Sorting candidates: 4.546ms
+Generate rules: 5.222ms
+JIT TOTAL: 2.030s
+ ✓ Compiled in 3.3s
+Finding changed files: 31.872ms
+Reading changed files: 19.182ms
+Sorting candidates: 0.646ms
+Generate rules: 2.058ms
+Potential classes:  694
+JIT TOTAL: 205.139ms
+ ✓ Compiled in 524ms
+Finding changed files: 21.402ms
+Reading changed files: 12.479ms
+Sorting candidates: 0.401ms
+Generate rules: 0.781ms
+Potential classes:  691
+JIT TOTAL: 140.163ms
+ ✓ Compiled in 308ms
