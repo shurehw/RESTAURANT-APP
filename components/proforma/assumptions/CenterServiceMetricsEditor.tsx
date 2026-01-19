@@ -24,6 +24,7 @@ interface ServicePeriod {
   service_hours: number;
   avg_dining_time_hours: number;
   default_utilization_pct: number;
+  operating_days?: string[] | null;
 }
 
 interface CenterServiceMetrics {
