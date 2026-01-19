@@ -130,8 +130,8 @@ export async function PATCH(request: Request) {
 
       // Auto-calculate covers for regular dining centers and SEATED bars (not PDRs or standing bars)
       if (center && service && !center.is_pdr) {
-        // For bars, check if they're in seated mode (default or override)
-        const isSeatedBar = center.is_bar && (bar_mode_override === 'seated' || (!bar_mode_override && center.bar_mode === 'seated'));
+        // For bars, check if they're in seated mode
+        const isSeatedBar = center.is_bar && center.bar_mode === 'seated';
         const shouldCalculate = !center.is_bar || isSeatedBar;
 
         if (shouldCalculate) {
