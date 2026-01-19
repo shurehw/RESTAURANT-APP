@@ -39,14 +39,14 @@ export function LaborAssumptions({
 }: LaborAssumptionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [salariedRoles, setSalariedRoles] = useState<any[]>([]);
-  const [loadingRoles, setLoadingRoles] = useState(true);
   const [benchmarks, setBenchmarks] = useState<any>(null);
   const [showPositions, setShowPositions] = useState(false);
   const [positionMix, setPositionMix] = useState<{ foh: any[]; boh: any[] }>({ foh: [], boh: [] });
   const [useManualOverride, setUseManualOverride] = useState(false);
   const [useDifferentConcept, setUseDifferentConcept] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<string>("");
+  const [revenueData, setRevenueData] = useState<any>(null);
+  const [loadingRevenue, setLoadingRevenue] = useState(true);
 
   // Convert kebab-case to title case for display
   const displayConcept = CONCEPT_TYPE_MAP[conceptType] || "Casual Dining";
@@ -68,13 +68,6 @@ export function LaborAssumptions({
     { role_name: "KM Salary", annual_salary: assumptions?.km_salary_annual || 75000 },
   ]);
 
-  const [newRole, setNewRole] = useState({
-    role_name: "",
-    annual_salary: "",
-    start_month: "1",
-    end_month: "",
-  });
-
   // Load benchmarks when active concept changes
   useEffect(() => {
     if (activeConcept) {
@@ -83,9 +76,9 @@ export function LaborAssumptions({
     }
   }, [activeConcept]);
 
-  // Load salaried roles
+  // Load revenue data
   useEffect(() => {
-    loadSalariedRoles();
+    loadRevenueData();
   }, [scenarioId]);
 
   const loadBenchmarks = async (concept: string) => {
@@ -135,19 +128,17 @@ export function LaborAssumptions({
     });
   };
 
-  const loadSalariedRoles = async () => {
+  const loadRevenueData = async () => {
     try {
-      const response = await fetch(
-        `/api/proforma/salaried-roles?scenario_id=${scenarioId}`
-      );
+      const response = await fetch(`/api/proforma/revenue-summary?scenario_id=${scenarioId}`);
       if (response.ok) {
         const data = await response.json();
-        setSalariedRoles(data.roles || []);
+        setRevenueData(data);
       }
     } catch (error) {
-      console.error("Error loading salaried roles:", error);
+      console.error("Error loading revenue data:", error);
     } finally {
-      setLoadingRoles(false);
+      setLoadingRevenue(false);
     }
   };
 
@@ -186,64 +177,47 @@ export function LaborAssumptions({
     }
   };
 
-  const handleAddRole = async () => {
-    if (!newRole.role_name || !newRole.annual_salary) {
-      alert("Please enter role name and salary");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/proforma/salaried-roles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          scenario_id: scenarioId,
-          role_name: newRole.role_name,
-          annual_salary: parseFloat(newRole.annual_salary),
-          start_month: parseInt(newRole.start_month),
-          end_month: newRole.end_month ? parseInt(newRole.end_month) : null,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add role");
-      }
-
-      setNewRole({
-        role_name: "",
-        annual_salary: "",
-        start_month: "1",
-        end_month: "",
-      });
-
-      loadSalariedRoles();
-    } catch (error) {
-      console.error("Error adding role:", error);
-      alert("Failed to add role");
-    }
-  };
-
-  const handleDeleteRole = async (roleId: string) => {
-    if (!confirm("Delete this role?")) return;
-
-    try {
-      const response = await fetch(
-        `/api/proforma/salaried-roles?id=${roleId}`,
-        { method: "DELETE" }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete role");
-      }
-
-      loadSalariedRoles();
-    } catch (error) {
-      console.error("Error deleting role:", error);
-      alert("Failed to delete role");
-    }
-  };
-
   const totalHoursPer100 = formData.foh_hours_per_100_covers + formData.boh_hours_per_100_covers;
+
+  // Calculate labor % of sales
+  const calculateLaborMetrics = () => {
+    if (!revenueData || !revenueData.annual_revenue || !revenueData.annual_covers) {
+      return null;
+    }
+
+    const annualRevenue = revenueData.annual_revenue;
+    const annualCovers = revenueData.annual_covers;
+
+    // Hourly labor cost
+    const fohCost = (annualCovers / 100) * formData.foh_hours_per_100_covers * formData.foh_hourly_rate;
+    const bohCost = (annualCovers / 100) * formData.boh_hours_per_100_covers * formData.boh_hourly_rate;
+    const hourlyLaborCost = fohCost + bohCost;
+    const hourlyLaborPct = (hourlyLaborCost / annualRevenue) * 100;
+
+    // Salaried labor cost
+    const totalSalariedCost = coreManagement.reduce((sum, role) => sum + (role.annual_salary || 0), 0);
+    const salariedLaborPct = (totalSalariedCost / annualRevenue) * 100;
+
+    // Total labor with burden
+    const grossLabor = hourlyLaborCost + totalSalariedCost;
+    const burdenCost = grossLabor * (formData.payroll_burden_pct / 100);
+    const totalLaborCost = grossLabor + burdenCost;
+    const totalLaborPct = (totalLaborCost / annualRevenue) * 100;
+
+    return {
+      annualRevenue,
+      annualCovers,
+      hourlyLaborCost,
+      hourlyLaborPct,
+      totalSalariedCost,
+      salariedLaborPct,
+      burdenCost,
+      totalLaborCost,
+      totalLaborPct,
+    };
+  };
+
+  const laborMetrics = calculateLaborMetrics();
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -419,6 +393,81 @@ export function LaborAssumptions({
           </div>
         </div>
       </div>
+
+      {/* Labor % of Sales */}
+      {laborMetrics && (
+        <div className="border-t border-zinc-800 pt-4">
+          <h4 className="text-sm font-medium text-zinc-300 mb-3">Labor % of Sales (Live Calculation)</h4>
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
+            <div className="grid grid-cols-4 gap-4 mb-3">
+              <div className="text-center">
+                <div className="text-xs text-zinc-500 mb-1">Annual Revenue</div>
+                <div className="text-sm font-semibold text-zinc-100">
+                  ${(laborMetrics.annualRevenue / 1000000).toFixed(2)}M
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zinc-500 mb-1">Annual Covers</div>
+                <div className="text-sm font-semibold text-zinc-100">
+                  {laborMetrics.annualCovers.toLocaleString()}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zinc-500 mb-1">Hourly Labor</div>
+                <div className="text-sm font-semibold text-blue-400">
+                  {laborMetrics.hourlyLaborPct.toFixed(1)}%
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zinc-500 mb-1">Salaried Labor</div>
+                <div className="text-sm font-semibold text-green-400">
+                  {laborMetrics.salariedLaborPct.toFixed(1)}%
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-zinc-700 pt-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-medium text-zinc-300">Total Labor % (w/ Burden)</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">
+                    ${laborMetrics.hourlyLaborCost.toLocaleString()} hourly +
+                    ${laborMetrics.totalSalariedCost.toLocaleString()} salaried +
+                    ${laborMetrics.burdenCost.toLocaleString()} burden =
+                    ${laborMetrics.totalLaborCost.toLocaleString()}
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-[#D4AF37]">
+                  {laborMetrics.totalLaborPct.toFixed(1)}%
+                </div>
+              </div>
+              {benchmarks && (
+                <div className="mt-2 text-xs text-zinc-500">
+                  Target range for {activeConcept}: {benchmarks.labor_pct_min}–{benchmarks.labor_pct_max}%
+                  {laborMetrics.totalLaborPct < benchmarks.labor_pct_min && (
+                    <span className="text-amber-400 ml-2">⚠️ Below target</span>
+                  )}
+                  {laborMetrics.totalLaborPct > benchmarks.labor_pct_max && (
+                    <span className="text-red-400 ml-2">⚠️ Above target</span>
+                  )}
+                  {laborMetrics.totalLaborPct >= benchmarks.labor_pct_min && laborMetrics.totalLaborPct <= benchmarks.labor_pct_max && (
+                    <span className="text-green-400 ml-2">✓ Within target</span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!laborMetrics && !loadingRevenue && (
+        <div className="border-t border-zinc-800 pt-4">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
+            <p className="text-sm text-amber-400">
+              Labor % calculation unavailable. Please complete the Revenue assumptions first.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Position-Level Detail (Optional) */}
       {showPositions && (
@@ -749,127 +798,6 @@ export function LaborAssumptions({
         </div>
       </div>
 
-      {/* Additional Salaried Roles */}
-      <div className="border-t border-zinc-800 pt-4">
-        <h4 className="text-sm font-medium text-zinc-300 mb-3">
-          Additional Salaried Roles
-        </h4>
-        <p className="text-xs text-zinc-500 mb-4">
-          Add security, sous chef, bar manager, etc. with custom start/end months
-        </p>
-
-        {/* Existing roles table */}
-        {!loadingRoles && salariedRoles.length > 0 && (
-          <div className="mb-4 border border-zinc-800 rounded">
-            <table className="w-full text-sm">
-              <thead className="bg-zinc-900/50">
-                <tr>
-                  <th className="text-left p-2 text-zinc-400">Role</th>
-                  <th className="text-left p-2 text-zinc-400">Annual Salary</th>
-                  <th className="text-left p-2 text-zinc-400">Start Month</th>
-                  <th className="text-left p-2 text-zinc-400">End Month</th>
-                  <th className="text-left p-2 text-zinc-400"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {salariedRoles.map((role) => (
-                  <tr key={role.id} className="border-t border-zinc-800">
-                    <td className="p-2 text-zinc-300">{role.role_name}</td>
-                    <td className="p-2 text-zinc-300">
-                      ${role.annual_salary.toLocaleString()}
-                    </td>
-                    <td className="p-2 text-zinc-300">{role.start_month}</td>
-                    <td className="p-2 text-zinc-300">
-                      {role.end_month || "Always"}
-                    </td>
-                    <td className="p-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteRole(role.id)}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-400" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Add new role */}
-        <div className="grid grid-cols-5 gap-2">
-          <div>
-            <Label htmlFor="new_role_name" className="text-xs">
-              Role Name
-            </Label>
-            <Input
-              id="new_role_name"
-              value={newRole.role_name}
-              onChange={(e) =>
-                setNewRole({ ...newRole, role_name: e.target.value })
-              }
-              placeholder="Security Manager"
-              className="text-sm"
-            />
-          </div>
-          <div>
-            <Label htmlFor="new_role_salary" className="text-xs">
-              Annual Salary
-            </Label>
-            <Input
-              id="new_role_salary"
-              type="number"
-              step="1000"
-              value={newRole.annual_salary}
-              onChange={(e) =>
-                setNewRole({ ...newRole, annual_salary: e.target.value })
-              }
-              placeholder="60000"
-              className="text-sm"
-            />
-          </div>
-          <div>
-            <Label htmlFor="new_role_start" className="text-xs">
-              Start Month
-            </Label>
-            <Input
-              id="new_role_start"
-              type="number"
-              min="1"
-              value={newRole.start_month}
-              onChange={(e) =>
-                setNewRole({ ...newRole, start_month: e.target.value })
-              }
-              className="text-sm"
-            />
-          </div>
-          <div>
-            <Label htmlFor="new_role_end" className="text-xs">
-              End Month
-            </Label>
-            <Input
-              id="new_role_end"
-              type="number"
-              min="1"
-              value={newRole.end_month}
-              onChange={(e) =>
-                setNewRole({ ...newRole, end_month: e.target.value })
-              }
-              placeholder="Optional"
-              className="text-sm"
-            />
-          </div>
-          <div className="flex items-end">
-            <Button type="button" onClick={handleAddRole} size="sm" className="w-full">
-              <Plus className="w-4 h-4 mr-1" />
-              Add
-            </Button>
-          </div>
-        </div>
-      </div>
 
       {/* Payroll Burden */}
       <div className="border-t border-zinc-800 pt-4">
