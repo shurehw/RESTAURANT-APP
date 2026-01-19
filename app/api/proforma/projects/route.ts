@@ -14,16 +14,34 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Creating project with body:', JSON.stringify(body, null, 2));
+
     const {
       org_id,
       name,
       concept_type,
+      density_benchmark,
       location_city,
       location_state,
+      total_sf,
+      sf_per_seat,
+      dining_area_pct,
+      boh_pct,
+      monthly_rent,
+      use_manual_seats,
+      manual_seats,
+      use_manual_splits,
       square_feet_foh,
       square_feet_boh,
-      seats,
       bar_seats,
+      // FP&A Standing Capacity fields
+      concept_archetype,
+      bar_zone_pct,
+      bar_net_to_gross,
+      standable_pct,
+      sf_per_standing_guest,
+      utilization_factor,
+      code_sf_per_person,
     } = body;
 
     // Create project
@@ -33,12 +51,28 @@ export async function POST(request: NextRequest) {
         org_id,
         name,
         concept_type,
+        density_benchmark,
         location_city,
         location_state,
+        total_sf,
+        sf_per_seat,
+        dining_area_pct,
+        boh_pct,
+        monthly_rent,
+        use_manual_seats,
+        manual_seats,
+        use_manual_splits,
         square_feet_foh,
         square_feet_boh,
-        seats,
         bar_seats,
+        // FP&A Standing Capacity fields
+        concept_archetype,
+        bar_zone_pct,
+        bar_net_to_gross,
+        standable_pct,
+        sf_per_standing_guest,
+        utilization_factor,
+        code_sf_per_person,
       })
       .select()
       .single();
@@ -78,6 +112,106 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ project, scenario });
   } catch (error) {
     console.error("Error in POST /api/proforma/projects:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const projectId = searchParams.get('id');
+
+    if (!projectId) {
+      return NextResponse.json({ error: "Project ID required" }, { status: 400 });
+    }
+
+    const body = await request.json();
+    console.log('Updating project with body:', JSON.stringify(body, null, 2));
+
+    const {
+      name,
+      concept_type,
+      density_benchmark,
+      location_city,
+      location_state,
+      total_sf,
+      sf_per_seat,
+      dining_area_pct,
+      boh_pct,
+      monthly_rent,
+      use_manual_seats,
+      manual_seats,
+      use_manual_splits,
+      square_feet_foh,
+      square_feet_boh,
+      bar_seats,
+      // FP&A Standing Capacity fields
+      concept_archetype,
+      bar_zone_pct,
+      bar_net_to_gross,
+      standable_pct,
+      sf_per_standing_guest,
+      utilization_factor,
+      code_sf_per_person,
+    } = body;
+
+    // Update project
+    const { data: project, error: projectError } = await supabase
+      .from("proforma_projects")
+      .update({
+        name,
+        concept_type,
+        density_benchmark,
+        location_city,
+        location_state,
+        total_sf,
+        sf_per_seat,
+        dining_area_pct,
+        boh_pct,
+        monthly_rent,
+        use_manual_seats,
+        manual_seats,
+        use_manual_splits,
+        square_feet_foh,
+        square_feet_boh,
+        bar_seats,
+        // FP&A Standing Capacity fields
+        concept_archetype,
+        bar_zone_pct,
+        bar_net_to_gross,
+        standable_pct,
+        sf_per_standing_guest,
+        utilization_factor,
+        code_sf_per_person,
+      })
+      .eq('id', projectId)
+      .select()
+      .single();
+
+    if (projectError) {
+      console.error("Error updating project:", projectError);
+      return NextResponse.json(
+        { error: "Failed to update project", details: projectError.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ project });
+  } catch (error) {
+    console.error("Error in PATCH /api/proforma/projects:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

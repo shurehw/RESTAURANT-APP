@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Settings } from "lucide-react";
 import { CreateProjectDialog } from "./CreateProjectDialog";
 import { ProjectCard } from "./ProjectCard";
+import Link from "next/link";
 
 interface ProformaClientProps {
   projects: any[];
@@ -24,10 +25,18 @@ export function ProformaClient({ projects, organizationId }: ProformaClientProps
             Model new concepts with simple assumptions → get full P&L projections
           </p>
         </div>
-        <Button onClick={() => setShowCreateDialog(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Project
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/settings/proforma">
+            <Button variant="outline">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
+            </Button>
+          </Link>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Project
+          </Button>
+        </div>
       </div>
 
       {/* Projects Grid */}
