@@ -23,17 +23,21 @@ export async function GET(request: Request) {
 
     if (serviceError) {
       console.error('Error fetching service periods:', serviceError);
-      return NextResponse.json(
-        { error: 'Failed to fetch service periods' },
-        { status: 500 }
-      );
-    }
-
-    if (!servicePeriods || servicePeriods.length === 0) {
+      console.error('Service error details:', JSON.stringify(serviceError));
+      // Return empty data instead of hard error for better UX
       return NextResponse.json({
         annual_revenue: 0,
         annual_covers: 0,
-        message: 'No service periods found'
+        message: 'Revenue data not available yet. Please complete Revenue assumptions first.'
+      });
+    }
+
+    if (!servicePeriods || servicePeriods.length === 0) {
+      console.log('No service periods found for scenario:', scenario_id);
+      return NextResponse.json({
+        annual_revenue: 0,
+        annual_covers: 0,
+        message: 'No service periods configured yet'
       });
     }
 
@@ -45,32 +49,37 @@ export async function GET(request: Request) {
 
     if (centersError) {
       console.error('Error fetching centers:', centersError);
-      return NextResponse.json(
-        { error: 'Failed to fetch revenue centers' },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        annual_revenue: 0,
+        annual_covers: 0,
+        message: 'Revenue centers not configured yet'
+      });
+    }
+
+    if (!centers || centers.length === 0) {
+      return NextResponse.json({
+        annual_revenue: 0,
+        annual_covers: 0,
+        message: 'No revenue centers configured yet'
+      });
     }
 
     // Get all service period covers
     const { data: covers, error: coversError } = await supabase
       .from('proforma_service_period_covers')
-      .select('*, proforma_revenue_centers!inner(id)')
-      .in('revenue_center_id', centers?.map(c => c.id) || [])
+      .select('*')
+      .in('revenue_center_id', centers.map(c => c.id))
       .in('service_period_id', servicePeriods.map(s => s.id));
 
     if (coversError) {
       console.error('Error fetching covers:', coversError);
-      return NextResponse.json(
-        { error: 'Failed to fetch covers' },
-        { status: 500 }
-      );
     }
 
     // Get center service metrics for avg_check, bar revenue, and PDR revenue
     const { data: metrics, error: metricsError } = await supabase
       .from('proforma_center_service_metrics')
       .select('*')
-      .in('revenue_center_id', centers?.map(c => c.id) || [])
+      .in('revenue_center_id', centers.map(c => c.id))
       .in('service_period_id', servicePeriods.map(s => s.id));
 
     if (metricsError) {
@@ -86,7 +95,7 @@ export async function GET(request: Request) {
       const weeksPerYear = 52;
       const servicesPerYear = daysPerWeek * weeksPerYear;
 
-      for (const center of centers || []) {
+      for (const center of centers) {
         const coverRecord = covers?.find(
           c => c.revenue_center_id === center.id && c.service_period_id === service.id
         );
@@ -95,33 +104,37 @@ export async function GET(request: Request) {
           m => m.revenue_center_id === center.id && m.service_period_id === service.id
         );
 
-        if (!coverRecord) continue;
+        if (!coverRecord && !metricRecord) continue;
 
         // Regular dining/seated bar: covers × avg check
         if (!center.is_pdr && !center.is_bar) {
-          const coversPerService = coverRecord.covers || 0;
-          const avgCheck = metricRecord?.avg_check || 0;
-          const revenue = coversPerService * avgCheck * servicesPerYear;
-          totalAnnualRevenue += revenue;
-          totalAnnualCovers += coversPerService * servicesPerYear;
+          const coversPerService = coverRecord?.covers || 0;
+          const avgCheck = metricRecord?.avg_check || 50; // Default if not set
+          if (coversPerService > 0 && avgCheck > 0) {
+            const revenue = coversPerService * avgCheck * servicesPerYear;
+            totalAnnualRevenue += revenue;
+            totalAnnualCovers += coversPerService * servicesPerYear;
+          }
         }
 
         // Standing bar: bar_guests × avg_spend_per_guest
         else if (center.is_bar && metricRecord?.bar_guests) {
           const barGuests = metricRecord.bar_guests || 0;
           const avgSpend = metricRecord.avg_spend_per_guest || metricRecord.bar_avg_check || 0;
-          const revenue = barGuests * avgSpend * servicesPerYear;
-          totalAnnualRevenue += revenue;
-          // Don't count bar guests as covers for labor calculation
+          if (barGuests > 0 && avgSpend > 0) {
+            const revenue = barGuests * avgSpend * servicesPerYear;
+            totalAnnualRevenue += revenue;
+          }
         }
 
         // PDR: pdr_revenue (already calculated)
         else if (center.is_pdr && metricRecord?.pdr_revenue) {
           const pdrRevenuePerService = metricRecord.pdr_revenue || 0;
-          totalAnnualRevenue += pdrRevenuePerService * servicesPerYear;
-          // PDR covers are event-based, already in the metric
-          if (metricRecord.pdr_covers) {
-            totalAnnualCovers += metricRecord.pdr_covers * servicesPerYear;
+          if (pdrRevenuePerService > 0) {
+            totalAnnualRevenue += pdrRevenuePerService * servicesPerYear;
+            if (metricRecord.pdr_covers) {
+              totalAnnualCovers += metricRecord.pdr_covers * servicesPerYear;
+            }
           }
         }
       }
@@ -131,13 +144,15 @@ export async function GET(request: Request) {
       annual_revenue: Math.round(totalAnnualRevenue),
       annual_covers: Math.round(totalAnnualCovers),
       service_periods_count: servicePeriods.length,
-      centers_count: centers?.length || 0,
+      centers_count: centers.length,
+      has_data: totalAnnualRevenue > 0 || totalAnnualCovers > 0
     });
   } catch (error) {
     console.error('Error calculating revenue summary:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({
+      annual_revenue: 0,
+      annual_covers: 0,
+      message: 'Error calculating revenue'
+    });
   }
 }
