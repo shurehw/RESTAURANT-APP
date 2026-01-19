@@ -63,6 +63,11 @@ interface CenterServiceMetrics {
   realization_rate?: number | null;
   pdr_covers?: number | null;
   pdr_revenue?: number | null;
+
+  // Bar revenue metrics
+  bar_food_pct?: number | null;
+  bar_bev_pct?: number | null;
+  bar_avg_check?: number | null;
 }
 
 interface RevenueCenterWithBarArea extends RevenueCenter {
