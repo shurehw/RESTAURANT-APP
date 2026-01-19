@@ -130,13 +130,98 @@ export function LaborAssumptions({
 
   const loadRevenueData = async () => {
     try {
-      const response = await fetch(`/api/proforma/revenue-summary?scenario_id=${scenarioId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setRevenueData(data);
+      // Import supabase client
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
+      // Get service periods
+      const { data: services } = await supabase
+        .from('proforma_revenue_service_periods')
+        .select('id, operating_days')
+        .eq('scenario_id', scenarioId);
+
+      // Get revenue centers
+      const { data: centers } = await supabase
+        .from('proforma_revenue_centers')
+        .select('id, is_pdr, is_bar')
+        .eq('scenario_id', scenarioId);
+
+      if (!services || !centers || services.length === 0 || centers.length === 0) {
+        setRevenueData({ annual_revenue: 0, annual_covers: 0 });
+        setLoadingRevenue(false);
+        return;
       }
+
+      // Get covers
+      const { data: covers } = await supabase
+        .from('proforma_service_period_covers')
+        .select('*')
+        .in('revenue_center_id', centers.map((c: any) => c.id))
+        .in('service_period_id', services.map((s: any) => s.id));
+
+      // Get metrics
+      const { data: metrics } = await supabase
+        .from('proforma_center_service_metrics')
+        .select('*')
+        .in('revenue_center_id', centers.map((c: any) => c.id))
+        .in('service_period_id', services.map((s: any) => s.id));
+
+      // Calculate totals
+      let totalAnnualRevenue = 0;
+      let totalAnnualCovers = 0;
+
+      for (const service of services) {
+        const daysPerWeek = service.operating_days?.length || 7;
+        const servicesPerYear = daysPerWeek * 52;
+
+        for (const center of centers) {
+          const coverRecord = covers?.find(
+            (c: any) => c.revenue_center_id === center.id && c.service_period_id === service.id
+          );
+
+          const metricRecord = metrics?.find(
+            (m: any) => m.revenue_center_id === center.id && m.service_period_id === service.id
+          );
+
+          if (!coverRecord && !metricRecord) continue;
+
+          // Regular dining
+          if (!center.is_pdr && !center.is_bar) {
+            const coversPerService = coverRecord?.covers || 0;
+            const avgCheck = metricRecord?.avg_check || 50;
+            if (coversPerService > 0 && avgCheck > 0) {
+              totalAnnualRevenue += coversPerService * avgCheck * servicesPerYear;
+              totalAnnualCovers += coversPerService * servicesPerYear;
+            }
+          }
+          // Bar
+          else if (center.is_bar && metricRecord?.bar_guests) {
+            const barGuests = metricRecord.bar_guests || 0;
+            const avgSpend = metricRecord.avg_spend_per_guest || metricRecord.bar_avg_check || 0;
+            if (barGuests > 0 && avgSpend > 0) {
+              totalAnnualRevenue += barGuests * avgSpend * servicesPerYear;
+            }
+          }
+          // PDR
+          else if (center.is_pdr && metricRecord?.pdr_revenue) {
+            const pdrRev = metricRecord.pdr_revenue || 0;
+            if (pdrRev > 0) {
+              totalAnnualRevenue += pdrRev * servicesPerYear;
+              if (metricRecord.pdr_covers) {
+                totalAnnualCovers += metricRecord.pdr_covers * servicesPerYear;
+              }
+            }
+          }
+        }
+      }
+
+      setRevenueData({
+        annual_revenue: Math.round(totalAnnualRevenue),
+        annual_covers: Math.round(totalAnnualCovers),
+      });
     } catch (error) {
       console.error("Error loading revenue data:", error);
+      setRevenueData({ annual_revenue: 0, annual_covers: 0 });
     } finally {
       setLoadingRevenue(false);
     }
