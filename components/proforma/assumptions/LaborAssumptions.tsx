@@ -45,9 +45,14 @@ export function LaborAssumptions({
   const [showPositions, setShowPositions] = useState(false);
   const [positionMix, setPositionMix] = useState<{ foh: any[]; boh: any[] }>({ foh: [], boh: [] });
   const [useManualOverride, setUseManualOverride] = useState(false);
+  const [useDifferentConcept, setUseDifferentConcept] = useState(false);
+  const [selectedConcept, setSelectedConcept] = useState<string>("");
 
   // Convert kebab-case to title case for display
   const displayConcept = CONCEPT_TYPE_MAP[conceptType] || "Casual Dining";
+
+  // Use selected concept if override is enabled, otherwise use project concept
+  const activeConcept = useDifferentConcept && selectedConcept ? selectedConcept : displayConcept;
 
   const [formData, setFormData] = useState({
     foh_hours_per_100_covers: assumptions?.foh_hours_per_100_covers || 30,
@@ -70,13 +75,13 @@ export function LaborAssumptions({
     end_month: "",
   });
 
-  // Load benchmarks when concept changes
+  // Load benchmarks when active concept changes
   useEffect(() => {
-    if (displayConcept) {
-      loadBenchmarks(displayConcept);
-      loadPositionMix(displayConcept);
+    if (activeConcept) {
+      loadBenchmarks(activeConcept);
+      loadPositionMix(activeConcept);
     }
-  }, [displayConcept]);
+  }, [activeConcept]);
 
   // Load salaried roles
   useEffect(() => {
@@ -256,43 +261,81 @@ export function LaborAssumptions({
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-sm font-medium text-zinc-300">
-                  Concept Type
+                  Labor Benchmarks
                 </Label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useManualOverride}
-                    onChange={(e) => {
-                      setUseManualOverride(e.target.checked);
-                      // If turning off override, re-apply benchmarks
-                      if (!e.target.checked && benchmarks) {
-                        setFormData(prev => ({
-                          ...prev,
-                          foh_hours_per_100_covers: benchmarks.foh_hours_per_100,
-                          boh_hours_per_100_covers: benchmarks.boh_hours_per_100,
-                          foh_hourly_rate: benchmarks.foh_blended_rate,
-                          boh_hourly_rate: benchmarks.boh_blended_rate,
-                        }));
-                      }
-                    }}
-                    className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
-                  />
-                  <span className="text-xs text-zinc-400">Override Concept Benchmarks</span>
-                </label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useDifferentConcept}
+                      onChange={(e) => {
+                        setUseDifferentConcept(e.target.checked);
+                        if (!e.target.checked) {
+                          setSelectedConcept("");
+                        } else {
+                          setSelectedConcept(displayConcept);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
+                    />
+                    <span className="text-xs text-zinc-400">Use Different Concept</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useManualOverride}
+                      onChange={(e) => {
+                        setUseManualOverride(e.target.checked);
+                        // If turning off override, re-apply benchmarks
+                        if (!e.target.checked && benchmarks) {
+                          setFormData(prev => ({
+                            ...prev,
+                            foh_hours_per_100_covers: benchmarks.foh_hours_per_100,
+                            boh_hours_per_100_covers: benchmarks.boh_hours_per_100,
+                            foh_hourly_rate: benchmarks.foh_blended_rate,
+                            boh_hourly_rate: benchmarks.boh_blended_rate,
+                          }));
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
+                    />
+                    <span className="text-xs text-zinc-400">Override Benchmarks</span>
+                  </label>
+                </div>
               </div>
-              <div className="mt-1 w-full bg-zinc-950/50 border border-zinc-700 rounded px-3 py-2 text-zinc-100">
-                {displayConcept}
-              </div>
-              <p className="text-xs text-zinc-500 mt-1">
-                {useManualOverride
-                  ? "Using custom values (benchmarks overridden)"
-                  : "Auto-synced with concept benchmarks"}
-              </p>
+
+              {!useDifferentConcept ? (
+                <>
+                  <div className="mt-1 w-full bg-zinc-950/50 border border-zinc-700 rounded px-3 py-2 text-zinc-100">
+                    {displayConcept}
+                  </div>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Using project concept type
+                  </p>
+                </>
+              ) : (
+                <>
+                  <select
+                    value={selectedConcept}
+                    onChange={(e) => setSelectedConcept(e.target.value)}
+                    className="mt-1 w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-zinc-100"
+                  >
+                    {CONCEPT_TYPES.map((concept) => (
+                      <option key={concept} value={concept}>
+                        {concept}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    Project is <span className="text-zinc-300">{displayConcept}</span>, using <span className="text-[#D4AF37]">{selectedConcept}</span> benchmarks
+                  </p>
+                </>
+              )}
             </div>
             <div className="flex-1">
               {benchmarks && (
                 <div className="bg-zinc-950/50 rounded p-3 border border-zinc-800">
-                  <p className="text-xs font-medium text-zinc-400 mb-2">Benchmarks for {displayConcept}</p>
+                  <p className="text-xs font-medium text-zinc-400 mb-2">Benchmarks for {activeConcept}</p>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-zinc-300">
                     <div>FOH: {benchmarks.foh_hours_per_100} hrs/100</div>
                     <div>@ ${benchmarks.foh_blended_rate}/hr</div>
