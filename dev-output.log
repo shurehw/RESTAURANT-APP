@@ -1,0 +1,1241 @@
+
+> opsos@0.1.0 dev
+> next dev
+
+ ⚠ Port 3000 is in use by process 14704, using available port 3001 instead.
+   ▲ Next.js 16.0.8 (Turbopack)
+   - Local:         http://localhost:3001
+   - Network:       http://192.168.1.34:3001
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+Creating turbopack project { dir: 'c:\\Users\\JacobShure\\RESTAURANT APP', testMode: true }
+ ✓ Ready in 4.1s
+ ○ Compiling /proforma ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+
+
+Source path: ./app/globals.css
+Setting up new context...
+Finding changed files: 43.791ms
+Reading changed files: 413.583ms
+Sorting candidates: 15.752ms
+Generate rules: 250.713ms
+Build stylesheet: 5.049ms
+Potential classes:  14232
+Active contexts:  1
+JIT TOTAL: 1.535s
+
+
+ GET /proforma 307 in 10.9s (compile: 8.9s, render: 1993ms)
+ GET /login 200 in 823ms (compile: 716ms, render: 107ms)
+ ○ Compiling / ...
+ GET /login 200 in 2.3s (compile: 14ms, render: 2.2s)
+ GET / 200 in 2.8s (compile: 16ms, render: 2.8s)
+ GET / 200 in 7.7s (compile: 4.4s, render: 3.3s)
+ GET / 200 in 2.4s (compile: 67ms, render: 2.4s)
+ GET /proforma 200 in 695ms (compile: 26ms, render: 669ms)
+ GET /settings/proforma 200 in 3.3s (compile: 2.4s, render: 843ms)
+ GET /settings/proforma 200 in 742ms (compile: 6ms, render: 736ms)
+ GET /api/settings/proforma/presets 200 in 2.7s (compile: 2.3s, render: 371ms)
+ GET /api/settings/proforma/presets 200 in 212ms (compile: 31ms, render: 181ms)
+Finding changed files: 263.013ms
+Reading changed files: 102.525ms
+Sorting candidates: 3.128ms
+Generate rules: 49.505ms
+Build stylesheet: 0.037ms
+Potential classes:  1203
+JIT TOTAL: 867.048ms
+ ✓ Compiled in 2.4s
+Finding changed files: 128.255ms
+Reading changed files: 122.581ms
+Sorting candidates: 2.107ms
+Generate rules: 5.495ms
+Build stylesheet: 0.011ms
+JIT TOTAL: 483.766ms
+ ✓ Compiled in 694ms
+Finding changed files: 459.601ms
+Reading changed files: 124.212ms
+Sorting candidates: 4.851ms
+Generate rules: 9.385ms
+Build stylesheet: 0.067ms
+Potential classes:  1204
+JIT TOTAL: 851.569ms
+ ✓ Compiled in 1389ms
+ GET /settings/proforma 200 in 6.0s (compile: 2.2s, render: 3.8s)
+ GET /api/settings/proforma/presets 200 in 464ms (compile: 15ms, render: 450ms)
+Finding changed files: 296.296ms
+Reading changed files: 151.509ms
+Sorting candidates: 4.752ms
+Generate rules: 28.06ms
+Build stylesheet: 0.016ms
+Potential classes:  1209
+JIT TOTAL: 1.040s
+ ✓ Compiled in 1659ms
+Finding changed files: 534.619ms
+Reading changed files: 168.256ms
+Sorting candidates: 2.094ms
+Generate rules: 13.768ms
+Build stylesheet: 0.019ms
+Potential classes:  1210
+JIT TOTAL: 1.025s
+ ✓ Compiled in 1241ms
+Finding changed files: 446.346ms
+Reading changed files: 277.626ms
+Sorting candidates: 4.736ms
+Generate rules: 11.841ms
+Build stylesheet: 0.053ms
+JIT TOTAL: 1.161s
+ ✓ Compiled in 1389ms
+Finding changed files: 181.75ms
+Reading changed files: 102.862ms
+Sorting candidates: 2.322ms
+Generate rules: 5.106ms
+Build stylesheet: 0.012ms
+JIT TOTAL: 577.373ms
+ ✓ Compiled in 1020ms
+Finding changed files: 247.524ms
+Reading changed files: 59.417ms
+Sorting candidates: 2.864ms
+Generate rules: 34.109ms
+Potential classes:  1225
+JIT TOTAL: 729.64ms
+ ✓ Compiled in 2.1s
+Finding changed files: 29.739ms
+Reading changed files: 53.644ms
+Sorting candidates: 1.524ms
+Generate rules: 5.388ms
+Build stylesheet: 0.017ms
+Potential classes:  1226
+JIT TOTAL: 317.861ms
+ ✓ Compiled in 531ms
+Finding changed files: 178.089ms
+Reading changed files: 77.119ms
+Sorting candidates: 2.958ms
+Generate rules: 12.933ms
+Build stylesheet: 0.021ms
+JIT TOTAL: 528.067ms
+ ✓ Compiled in 1010ms
+Finding changed files: 38.847ms
+Reading changed files: 89.255ms
+Sorting candidates: 4.471ms
+Generate rules: 9.972ms
+Build stylesheet: 0.018ms
+JIT TOTAL: 282.787ms
+ ✓ Compiled in 501ms
+Finding changed files: 161.849ms
+Reading changed files: 57.115ms
+Sorting candidates: 3.009ms
+Generate rules: 10.784ms
+Build stylesheet: 0.01ms
+Potential classes:  1227
+JIT TOTAL: 425.853ms
+ ✓ Compiled in 764ms
+Finding changed files: 246.178ms
+Reading changed files: 176.659ms
+Sorting candidates: 3.155ms
+Generate rules: 7.036ms
+Build stylesheet: 0.064ms
+JIT TOTAL: 871.477ms
+ ✓ Compiled in 1321ms
+Finding changed files: 617.843ms
+Reading changed files: 152.486ms
+Sorting candidates: 13.849ms
+Generate rules: 118.826ms
+Potential classes:  1253
+JIT TOTAL: 1.543s
+ ✓ Compiled in 2.9s
+Finding changed files: 904.331ms
+Reading changed files: 392.96ms
+Sorting candidates: 10.249ms
+Generate rules: 57.779ms
+Build stylesheet: 19.195ms
+Potential classes:  1257
+JIT TOTAL: 1.941s
+ ✓ Compiled in 3.7s
+Finding changed files: 399.644ms
+Reading changed files: 113.694ms
+Sorting candidates: 2.689ms
+Generate rules: 35.45ms
+Build stylesheet: 0.022ms
+JIT TOTAL: 1.226s
+ ✓ Compiled in 2.1s
+Finding changed files: 59.016ms
+Reading changed files: 71.376ms
+Sorting candidates: 7.924ms
+Generate rules: 13.912ms
+Potential classes:  1259
+JIT TOTAL: 288.423ms
+Finding changed files: 39.353ms
+Reading changed files: 101.286ms
+Sorting candidates: 23.738ms
+Generate rules: 43.518ms
+Build stylesheet: 6.546ms
+Potential classes:  1264
+JIT TOTAL: 421.274ms
+ ✓ Compiled in 4.1s
+ GET /proforma 200 in 3.3s (compile: 549ms, render: 2.7s)
+ ○ Compiling /proforma/[id] ...
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 7.7s (compile: 6.4s, render: 1316ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1731ms (compile: 1225ms, render: 506ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1822ms (compile: 1320ms, render: 503ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1903ms (compile: 1430ms, render: 473ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 213ms (compile: 10ms, render: 203ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 143ms (compile: 9ms, render: 134ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 300ms (compile: 8ms, render: 292ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.1s (compile: 1507ms, render: 623ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 225ms (compile: 8ms, render: 217ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 159ms (compile: 11ms, render: 148ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 531ms (compile: 10ms, render: 521ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 387ms (compile: 51ms, render: 336ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 535ms (compile: 44ms, render: 490ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 227ms (compile: 32ms, render: 195ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 206ms (compile: 15ms, render: 191ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 857ms (compile: 33ms, render: 823ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 191ms (compile: 19ms, render: 172ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 219ms (compile: 19ms, render: 199ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 177ms (compile: 26ms, render: 152ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 178ms (compile: 9ms, render: 169ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 141ms (compile: 9ms, render: 132ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 397ms (compile: 12ms, render: 385ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 136ms (compile: 12ms, render: 124ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 272ms (compile: 42ms, render: 230ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 287ms (compile: 69ms, render: 218ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 242ms (compile: 66ms, render: 177ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 586ms (compile: 141ms, render: 445ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 268ms (compile: 24ms, render: 245ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 834ms (compile: 158ms, render: 675ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 332ms (compile: 16ms, render: 316ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 408ms (compile: 48ms, render: 360ms)
+ PATCH /api/proforma/service-periods 200 in 2.8s (compile: 954ms, render: 1817ms)
+ PATCH /api/proforma/service-periods 200 in 3.5s (compile: 1020ms, render: 2.4s)
+ PATCH /api/proforma/service-periods 200 in 1466ms (compile: 26ms, render: 1440ms)
+ PATCH /api/proforma/service-periods 200 in 907ms (compile: 342ms, render: 565ms)
+ PATCH /api/proforma/service-periods 200 in 370ms (compile: 61ms, render: 309ms)
+ PATCH /api/proforma/service-periods 200 in 407ms (compile: 73ms, render: 334ms)
+ PATCH /api/proforma/service-periods 200 in 542ms (compile: 47ms, render: 496ms)
+ PATCH /api/proforma/service-periods 200 in 558ms (compile: 159ms, render: 400ms)
+ PATCH /api/proforma/service-periods 200 in 286ms (compile: 46ms, render: 240ms)
+ PATCH /api/proforma/service-periods 200 in 203ms (compile: 29ms, render: 174ms)
+ PATCH /api/proforma/service-periods 200 in 179ms (compile: 16ms, render: 164ms)
+ PATCH /api/proforma/service-periods 200 in 212ms (compile: 30ms, render: 182ms)
+ PATCH /api/proforma/service-periods 200 in 163ms (compile: 10ms, render: 153ms)
+ PATCH /api/proforma/service-periods 200 in 284ms (compile: 27ms, render: 256ms)
+ PATCH /api/proforma/service-periods 200 in 228ms (compile: 34ms, render: 194ms)
+ PATCH /api/proforma/service-periods 200 in 175ms (compile: 17ms, render: 159ms)
+ PATCH /api/proforma/service-periods 200 in 163ms (compile: 11ms, render: 153ms)
+ PATCH /api/proforma/service-periods 200 in 196ms (compile: 8ms, render: 187ms)
+Finding changed files: 177.597ms
+Reading changed files: 8.063ms
+Sorting candidates: 0.262ms
+Generate rules: 6.517ms
+Build stylesheet: 0.008ms
+Potential classes:  179
+JIT TOTAL: 380.901ms
+Finding changed files: 869.524ms
+Reading changed files: 235.979ms
+Sorting candidates: 5.338ms
+Generate rules: 67.484ms
+Potential classes:  1053
+JIT TOTAL: 2.142s
+ ✓ Compiled in 3.7s
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  utilization_pct: 66
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  default_utilization_pct: 66,
+  updated_at: '2026-01-19T00:29:36.274Z'
+}
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '83fd9d57-68e7-4e12-9711-8989e4dda49f',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  utilization_pct: 66
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '83fd9d57-68e7-4e12-9711-8989e4dda49f',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  default_utilization_pct: 66,
+  updated_at: '2026-01-19T00:29:36.597Z'
+}
+[center-service-metrics PATCH] Request body: {
+  revenue_center_id: '59e8013b-2912-4efd-baa9-9ea018de5643',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  utilization_pct: 66
+}
+[center-service-metrics PATCH] Upserting with data: {
+  revenue_center_id: '59e8013b-2912-4efd-baa9-9ea018de5643',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  default_utilization_pct: 66,
+  updated_at: '2026-01-19T00:29:36.766Z'
+}
+[center-service-metrics PATCH] Success: {
+  id: '1a552f66-f9ad-49ca-ae8a-8b26483f4209',
+  revenue_center_id: '83fd9d57-68e7-4e12-9711-8989e4dda49f',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:52.606795+00:00',
+  updated_at: '2026-01-19T00:29:37.11218+00:00',
+  utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 5.3s (compile: 4.1s, render: 1153ms)
+[center-service-metrics PATCH] Success: {
+  id: '42a9e531-715f-4b1d-875e-d40d9d4d642b',
+  revenue_center_id: '7457cff6-ed1c-42b7-ab7a-3421a7f7549c',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:53.166412+00:00',
+  updated_at: '2026-01-19T00:29:37.092718+00:00',
+  utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 5.3s (compile: 3.8s, render: 1535ms)
+[center-service-metrics PATCH] Success: {
+  id: 'cf25d496-2c1f-4844-8232-e462174641e5',
+  revenue_center_id: '59e8013b-2912-4efd-baa9-9ea018de5643',
+  service_period_id: '79230105-ff53-4dca-a78c-c25d46876ea3',
+  is_active: true,
+  default_utilization_pct: 66,
+  notes: null,
+  created_at: '2026-01-18T00:00:51.618822+00:00',
+  updated_at: '2026-01-19T00:29:37.134414+00:00',
+  utilization_pct: null,
+  guests_per_hour: null,
+  active_hours: null,
+  standing_capacity: null,
+  avg_dwell_hours: null,
+  bar_mode_override: null,
+  covers: null,
+  bar_guests: null,
+  avg_dwell_hours_seated: null,
+  bar_utilization_pct: null,
+  standing_factor: null,
+  sqft_per_person: null,
+  net_standing_area_sqft: null,
+  calculated_standing_capacity: null,
+  bar_rail_ft_per_guest: null
+}
+ PATCH /api/proforma/center-service-metrics 200 in 5.5s (compile: 4.9s, render: 656ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1569ms (compile: 944ms, render: 626ms)
+ PATCH /api/proforma/service-period-covers 200 in 232ms (compile: 25ms, render: 207ms)
+ PATCH /api/proforma/service-period-covers 200 in 242ms (compile: 57ms, render: 186ms)
+ PATCH /api/proforma/service-period-covers 200 in 290ms (compile: 108ms, render: 181ms)
+Finding changed files: 628.315ms
+Reading changed files: 152.835ms
+Sorting candidates: 2.826ms
+Generate rules: 354.745ms
+Build stylesheet: 117.048ms
+Potential classes:  1091
+JIT TOTAL: 1.893s
+ ✓ Compiled in 4.8s
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.0s (compile: 505ms, render: 2.5s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.1s (compile: 1529ms, render: 1575ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.7s (compile: 1570ms, render: 2.1s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 300ms (compile: 20ms, render: 280ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 335ms (compile: 104ms, render: 231ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 197ms (compile: 43ms, render: 153ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 261ms (compile: 49ms, render: 212ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 169ms (compile: 27ms, render: 142ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 582ms (compile: 12ms, render: 570ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 206ms (compile: 34ms, render: 172ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 156ms (compile: 13ms, render: 143ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 158ms (compile: 12ms, render: 147ms)
+Finding changed files: 166.055ms
+Reading changed files: 27.033ms
+Sorting candidates: 1.432ms
+Generate rules: 26.37ms
+Build stylesheet: 0.078ms
+Potential classes:  464
+JIT TOTAL: 530.099ms
+ ✓ Compiled in 1543ms
+Finding changed files: 31.042ms
+Reading changed files: 12.992ms
+Sorting candidates: 0.409ms
+Generate rules: 1.259ms
+Potential classes:  470
+JIT TOTAL: 298.565ms
+ ✓ Compiled in 568ms
+Finding changed files: 30.367ms
+Reading changed files: 8.83ms
+Sorting candidates: 0.598ms
+Generate rules: 1.966ms
+Build stylesheet: 0.009ms
+Potential classes:  472
+JIT TOTAL: 185.368ms
+ ✓ Compiled in 483ms
+Finding changed files: 180.848ms
+Reading changed files: 20.114ms
+Sorting candidates: 0.6ms
+Generate rules: 21.502ms
+Potential classes:  151
+JIT TOTAL: 584.356ms
+ ✓ Compiled in 1889ms
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1154ms (compile: 251ms, render: 902ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1076ms (compile: 301ms, render: 775ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1111ms (compile: 324ms, render: 787ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 749ms (compile: 173ms, render: 576ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1860ms (compile: 469ms, render: 1391ms)
+Finding changed files: 48.282ms
+Reading changed files: 96.117ms
+Sorting candidates: 1.962ms
+Generate rules: 60.654ms
+Potential classes:  1043
+JIT TOTAL: 515.588ms
+ ✓ Compiled in 1817ms
+Finding changed files: 16.815ms
+Reading changed files: 24.26ms
+Sorting candidates: 0.897ms
+Generate rules: 1.77ms
+Build stylesheet: 0.006ms
+Potential classes:  1045
+JIT TOTAL: 201.982ms
+Finding changed files: 35.622ms
+Reading changed files: 183.984ms
+Sorting candidates: 0.668ms
+Generate rules: 1.725ms
+Potential classes:  1083
+JIT TOTAL: 952.757ms
+ ✓ Compiled in 1359ms
+Finding changed files: 294.109ms
+Reading changed files: 250.822ms
+Sorting candidates: 7.504ms
+Generate rules: 42.435ms
+Potential classes:  1100
+JIT TOTAL: 843.817ms
+ ✓ Compiled in 1386ms
+Finding changed files: 33.747ms
+Reading changed files: 38.127ms
+Sorting candidates: 1.336ms
+Generate rules: 9.239ms
+Build stylesheet: 0.172ms
+Potential classes:  1108
+JIT TOTAL: 250.297ms
+ ✓ Compiled in 1217ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.4s (compile: 2.2s, render: 1243ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 610ms (compile: 12ms, render: 598ms)
+Finding changed files: 65.305ms
+Reading changed files: 184.471ms
+Sorting candidates: 3.335ms
+Generate rules: 9.032ms
+Build stylesheet: 0.015ms
+Potential classes:  1112
+JIT TOTAL: 665.171ms
+ ✓ Compiled in 892ms
+Finding changed files: 29.785ms
+Reading changed files: 28.181ms
+Sorting candidates: 1.41ms
+Generate rules: 2.929ms
+Potential classes:  1115
+JIT TOTAL: 288.518ms
+ ✓ Compiled in 503ms
+Finding changed files: 1.136s
+Reading changed files: 203.991ms
+Sorting candidates: 10.373ms
+Generate rules: 142.058ms
+Build stylesheet: 0.013ms
+Potential classes:  1119
+JIT TOTAL: 2.400s
+ ✓ Compiled in 5.6s
+Finding changed files: 258.646ms
+Reading changed files: 96.393ms
+Sorting candidates: 2.189ms
+Generate rules: 4.436ms
+JIT TOTAL: 663.481ms
+ ✓ Compiled in 1758ms
+Finding changed files: 48.451ms
+Reading changed files: 53.235ms
+Sorting candidates: 1.937ms
+Generate rules: 8.437ms
+Potential classes:  1138
+JIT TOTAL: 453.03ms
+ ✓ Compiled in 1087ms
+Finding changed files: 27.005ms
+Reading changed files: 29.543ms
+Sorting candidates: 1.26ms
+Generate rules: 3.294ms
+Potential classes:  1141
+JIT TOTAL: 223.956ms
+ ✓ Compiled in 458ms
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.4s (compile: 1717ms, render: 1639ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.6s (compile: 830ms, render: 2.8s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 261ms (compile: 34ms, render: 227ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 266ms (compile: 35ms, render: 231ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.8s (compile: 1888ms, render: 1864ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 165ms (compile: 18ms, render: 147ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 234ms (compile: 29ms, render: 205ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 457ms (compile: 12ms, render: 445ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 405ms (compile: 27ms, render: 378ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1125ms (compile: 15ms, render: 1110ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 584ms (compile: 149ms, render: 435ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 360ms (compile: 99ms, render: 260ms)
+Finding changed files: 284.309ms
+Reading changed files: 32.601ms
+Sorting candidates: 1.323ms
+Generate rules: 56.152ms
+Build stylesheet: 0.007ms
+Potential classes:  552
+JIT TOTAL: 836.293ms
+ ✓ Compiled in 1973ms
+Finding changed files: 169.531ms
+Reading changed files: 14.185ms
+Sorting candidates: 1.226ms
+Generate rules: 9.295ms
+Potential classes:  550
+JIT TOTAL: 508.795ms
+ ✓ Compiled in 2.2s
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1766ms (compile: 411ms, render: 1355ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1735ms (compile: 202ms, render: 1533ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1827ms (compile: 252ms, render: 1575ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.1s (compile: 393ms, render: 1712ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 12.1s (compile: 7.2s, render: 4.9s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 326ms (compile: 123ms, render: 203ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 225ms (compile: 49ms, render: 176ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 374ms (compile: 58ms, render: 316ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 175ms (compile: 23ms, render: 152ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 202ms (compile: 39ms, render: 163ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 438ms (compile: 9ms, render: 429ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 217ms (compile: 24ms, render: 193ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 174ms (compile: 6ms, render: 168ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 468ms (compile: 20ms, render: 448ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 455ms (compile: 17ms, render: 438ms)
+ ○ Compiling /api/proforma/salaried-roles ...
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 5.3s (compile: 4.7s, render: 545ms)
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 315ms (compile: 11ms, render: 304ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 506ms (compile: 68ms, render: 439ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 543ms (compile: 92ms, render: 451ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 144ms (compile: 6ms, render: 138ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 198ms (compile: 23ms, render: 175ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 800ms (compile: 161ms, render: 639ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 823ms (compile: 185ms, render: 639ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 168ms (compile: 13ms, render: 155ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 234ms (compile: 24ms, render: 210ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 173ms (compile: 17ms, render: 156ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 315ms (compile: 23ms, render: 292ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 207ms (compile: 13ms, render: 193ms)
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 309ms (compile: 17ms, render: 292ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 232ms (compile: 8ms, render: 224ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 504ms (compile: 18ms, render: 486ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 204ms (compile: 4ms, render: 199ms)
+ GET /api/proforma/salaried-roles?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 278ms (compile: 13ms, render: 265ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 403ms (compile: 6ms, render: 397ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 380ms (compile: 10ms, render: 370ms)
+ ○ Compiling /api/proforma/projects ...
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 405 in 9.0s (compile: 8.7s, render: 291ms)
+Finding changed files: 394.487ms
+Reading changed files: 41.941ms
+Sorting candidates: 2.033ms
+Generate rules: 41.919ms
+Potential classes:  177
+JIT TOTAL: 1.401s
+Finding changed files: 372.79ms
+Reading changed files: 150.184ms
+Sorting candidates: 9.005ms
+Generate rules: 53.42ms
+Potential classes:  1130
+JIT TOTAL: 1.649s
+ ✓ Compiled in 4.5s
+Finding changed files: 1.028s
+Reading changed files: 188.607ms
+Sorting candidates: 8.736ms
+Generate rules: 238.305ms
+Potential classes:  1139
+JIT TOTAL: 2.776s
+ ✓ Compiled in 4.5s
+Finding changed files: 18.286ms
+Reading changed files: 23.591ms
+Sorting candidates: 1.399ms
+Generate rules: 2.527ms
+Potential classes:  1140
+JIT TOTAL: 423.228ms
+ ✓ Compiled in 740ms
+Finding changed files: 24.382ms
+Reading changed files: 25.518ms
+Sorting candidates: 2.188ms
+Generate rules: 3.741ms
+JIT TOTAL: 311.34ms
+ ✓ Compiled in 595ms
+Finding changed files: 18.215ms
+Reading changed files: 16.285ms
+Sorting candidates: 1.163ms
+Generate rules: 4.332ms
+Potential classes:  1137
+JIT TOTAL: 182.35ms
+ ✓ Compiled in 366ms
+Finding changed files: 284.071ms
+Reading changed files: 69.447ms
+Sorting candidates: 2.165ms
+Generate rules: 25.689ms
+Build stylesheet: 0.065ms
+Potential classes:  1136
+JIT TOTAL: 704.809ms
+ ✓ Compiled in 1528ms
+Finding changed files: 24.262ms
+Reading changed files: 25.031ms
+Sorting candidates: 1.442ms
+Generate rules: 2.649ms
+JIT TOTAL: 395.064ms
+ ✓ Compiled in 998ms
+Finding changed files: 184.762ms
+Reading changed files: 77.222ms
+Sorting candidates: 1.743ms
+Generate rules: 15.554ms
+Potential classes:  1135
+JIT TOTAL: 596.184ms
+ ✓ Compiled in 1096ms
+Finding changed files: 167.319ms
+Reading changed files: 53.051ms
+Sorting candidates: 1.018ms
+Generate rules: 8.693ms
+Potential classes:  1134
+JIT TOTAL: 406.089ms
+ ✓ Compiled in 1150ms
+Finding changed files: 368.207ms
+Reading changed files: 55.75ms
+Sorting candidates: 6.557ms
+Generate rules: 78.967ms
+JIT TOTAL: 946.013ms
+ ✓ Compiled in 2.9s
+Finding changed files: 16.611ms
+Reading changed files: 17.742ms
+Sorting candidates: 1.77ms
+Generate rules: 3.353ms
+Build stylesheet: 0.005ms
+JIT TOTAL: 140.257ms
+ ✓ Compiled in 276ms
+Finding changed files: 21.693ms
+Reading changed files: 19.052ms
+Sorting candidates: 1.469ms
+Generate rules: 2.641ms
+JIT TOTAL: 146.808ms
+ ✓ Compiled in 356ms
+Finding changed files: 23.724ms
+Reading changed files: 25.989ms
+Sorting candidates: 0.869ms
+Generate rules: 1.551ms
+Build stylesheet: 0.004ms
+JIT TOTAL: 191.94ms
+ ✓ Compiled in 324ms
+Finding changed files: 334.331ms
+Reading changed files: 103.379ms
+Sorting candidates: 8.024ms
+Generate rules: 87.305ms
+JIT TOTAL: 1.013s
+ ✓ Compiled in 1950ms
+Finding changed files: 19.156ms
+Reading changed files: 14.82ms
+Sorting candidates: 3.179ms
+Generate rules: 4.656ms
+Potential classes:  1133
+JIT TOTAL: 178.232ms
+ ✓ Compiled in 316ms
+Finding changed files: 27.586ms
+Reading changed files: 17.356ms
+Sorting candidates: 0.707ms
+Generate rules: 1.162ms
+Potential classes:  1131
+JIT TOTAL: 146.478ms
+ ✓ Compiled in 530ms
+Finding changed files: 53.829ms
+Reading changed files: 46.456ms
+Sorting candidates: 1.19ms
+Generate rules: 13.51ms
+Potential classes:  1129
+JIT TOTAL: 270.532ms
+ ✓ Compiled in 747ms
+Finding changed files: 737.678ms
+Reading changed files: 537.997ms
+Sorting candidates: 8.771ms
+Generate rules: 103.555ms
+Potential classes:  1262
+JIT TOTAL: 2.246s
+ ✓ Compiled in 4.5s
+Finding changed files: 777.495ms
+Reading changed files: 219.598ms
+Sorting candidates: 6.799ms
+Generate rules: 85.323ms
+Build stylesheet: 0.046ms
+Potential classes:  1263
+JIT TOTAL: 1.691s
+ ✓ Compiled in 2.9s
+Finding changed files: 133.371ms
+Reading changed files: 61.035ms
+Sorting candidates: 6.719ms
+Generate rules: 50.168ms
+JIT TOTAL: 540.569ms
+ ✓ Compiled in 1424ms
+Finding changed files: 17.883ms
+Reading changed files: 36.682ms
+Sorting candidates: 0.961ms
+Generate rules: 1.883ms
+JIT TOTAL: 257.081ms
+ ✓ Compiled in 493ms
+Finding changed files: 30.753ms
+Reading changed files: 67.624ms
+Sorting candidates: 1.598ms
+Generate rules: 18.867ms
+Build stylesheet: 0.099ms
+Potential classes:  1261
+JIT TOTAL: 239.123ms
+ ✓ Compiled in 1286ms
+Finding changed files: 17.759ms
+Reading changed files: 51.802ms
+Sorting candidates: 1.224ms
+Generate rules: 2.326ms
+Potential classes:  1260
+JIT TOTAL: 199.942ms
+ ✓ Compiled in 430ms
+Finding changed files: 17.897ms
+Reading changed files: 0.017ms
+Sorting candidates: 0.008ms
+Generate rules: 0.827ms
+Build stylesheet: 0.008ms
+Potential classes:  1
+Active contexts:  1
+JIT TOTAL: 106.424ms
+
+
+ ✓ Compiled in 253ms
+Finding changed files: 537.919ms
+Reading changed files: 200.413ms
+Sorting candidates: 4.877ms
+Generate rules: 116.525ms
+Potential classes:  1906
+JIT TOTAL: 1.318s
+ ✓ Compiled in 2.2s
+Finding changed files: 252.487ms
+Reading changed files: 40.617ms
+Sorting candidates: 1.307ms
+Generate rules: 32.544ms
+JIT TOTAL: 737.568ms
+ ✓ Compiled in 2.1s
+Finding changed files: 839.636ms
+Reading changed files: 74.048ms
+Sorting candidates: 2.037ms
+Generate rules: 24.194ms
+JIT TOTAL: 1.591s
+ ✓ Compiled in 5.5s
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "bar_area_pct": null,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+Error updating project: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'bar_area_pct' column of 'proforma_projects' in the schema cache"
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 500 in 4.5s (compile: 2.7s, render: 1739ms)
+Finding changed files: 185.966ms
+Reading changed files: 133.642ms
+Sorting candidates: 2.003ms
+Generate rules: 30.455ms
+JIT TOTAL: 688.369ms
+ ✓ Compiled in 2.3s
+Finding changed files: 31.054ms
+Reading changed files: 32.979ms
+Sorting candidates: 0.77ms
+Generate rules: 1.49ms
+Potential classes:  1120
+JIT TOTAL: 162.197ms
+ ✓ Compiled in 439ms
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "bar_area_pct": null,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+Error updating project: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'bar_area_pct' column of 'proforma_projects' in the schema cache"
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 500 in 1158ms (compile: 184ms, render: 974ms)
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "bar_area_pct": null,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+Error updating project: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'bar_area_pct' column of 'proforma_projects' in the schema cache"
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 500 in 776ms (compile: 43ms, render: 733ms)
+Finding changed files: 523.242ms
+Reading changed files: 248.659ms
+Sorting candidates: 21.118ms
+Generate rules: 130.046ms
+Build stylesheet: 0.04ms
+Potential classes:  1121
+JIT TOTAL: 2.133s
+ ✓ Compiled in 5.4s
+Finding changed files: 28.168ms
+Reading changed files: 30.783ms
+Sorting candidates: 1.749ms
+Generate rules: 7.272ms
+Potential classes:  1126
+JIT TOTAL: 196.275ms
+ ✓ Compiled in 1068ms
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "bar_area_pct": null,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+Error updating project: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'bar_area_pct' column of 'proforma_projects' in the schema cache"
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 500 in 1798ms (compile: 372ms, render: 1426ms)
+Finding changed files: 408.259ms
+Reading changed files: 26.456ms
+Sorting candidates: 2.76ms
+Generate rules: 43.663ms
+Build stylesheet: 0.014ms
+Potential classes:  180
+JIT TOTAL: 1.330s
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "bar_area_pct": null,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+Error updating project: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'bar_area_pct' column of 'proforma_projects' in the schema cache"
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 500 in 6.1s (compile: 4.2s, render: 1947ms)
+Finding changed files: 234.973ms
+Reading changed files: 61.188ms
+Sorting candidates: 5.814ms
+Generate rules: 112.806ms
+JIT TOTAL: 1.007s
+ ✓ Compiled in 2.7s
+Finding changed files: 86.127ms
+Reading changed files: 110.842ms
+Sorting candidates: 1.423ms
+Generate rules: 3.186ms
+Build stylesheet: 0.035ms
+Potential classes:  1124
+JIT TOTAL: 432.978ms
+ ✓ Compiled in 813ms
+Finding changed files: 20.81ms
+Reading changed files: 1.795ms
+Sorting candidates: 0.104ms
+Generate rules: 0.386ms
+Build stylesheet: 0.003ms
+JIT TOTAL: 219.623ms
+Finding changed files: 26.626ms
+Reading changed files: 1.947ms
+Sorting candidates: 0.39ms
+Generate rules: 0.653ms
+Potential classes:  178
+JIT TOTAL: 99.044ms
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 200 in 2.6s (compile: 1436ms, render: 1193ms)
+Error creating revenue center: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'is_pdr' column of 'proforma_revenue_centers' in the schema cache"
+}
+ POST /api/proforma/revenue-centers 500 in 284ms (compile: 32ms, render: 252ms)
+Error creating revenue center: {
+  code: 'PGRST204',
+  details: null,
+  hint: null,
+  message: "Could not find the 'is_pdr' column of 'proforma_revenue_centers' in the schema cache"
+}
+ POST /api/proforma/revenue-centers 500 in 283ms (compile: 98ms, render: 186ms)
+Error creating service period: {
+  code: '23505',
+  details: null,
+  hint: null,
+  message: 'duplicate key value violates unique constraint "proforma_revenue_service_periods_scenario_id_service_name_key"'
+}
+ POST /api/proforma/service-periods 500 in 199ms (compile: 19ms, render: 180ms)
+ POST /api/proforma/service-periods 200 in 165ms (compile: 12ms, render: 153ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 867ms (compile: 506ms, render: 361ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 242ms (compile: 16ms, render: 226ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 967ms (compile: 392ms, render: 575ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 167ms (compile: 14ms, render: 154ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1160ms (compile: 397ms, render: 763ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 218ms (compile: 11ms, render: 208ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 277ms (compile: 27ms, render: 250ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1315ms (compile: 421ms, render: 894ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 416ms (compile: 33ms, render: 383ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 589ms (compile: 27ms, render: 562ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 255ms (compile: 28ms, render: 227ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 205ms (compile: 34ms, render: 171ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 6.5s (compile: 2.1s, render: 4.3s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 178ms (compile: 20ms, render: 158ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 653ms (compile: 72ms, render: 581ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 464ms (compile: 6ms, render: 458ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 520ms (compile: 9ms, render: 510ms)
+Finding changed files: 230.406ms
+Reading changed files: 176.347ms
+Sorting candidates: 4.564ms
+Generate rules: 47.038ms
+JIT TOTAL: 959.828ms
+ ✓ Compiled in 1827ms
+Finding changed files: 89.654ms
+Reading changed files: 66.738ms
+Sorting candidates: 3.653ms
+Generate rules: 55.331ms
+Potential classes:  1113
+JIT TOTAL: 758.566ms
+ ✓ Compiled in 1804ms
+Finding changed files: 323.753ms
+Reading changed files: 69.621ms
+Sorting candidates: 1.134ms
+Generate rules: 67.492ms
+JIT TOTAL: 1.233s
+ ✓ Compiled in 3.5s
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 4.0s (compile: 1136ms, render: 2.9s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.5s (compile: 1421ms, render: 2.0s)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.4s (compile: 2.3s, render: 1104ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 280ms (compile: 21ms, render: 260ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 288ms (compile: 11ms, render: 277ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 3.7s (compile: 1570ms, render: 2.2s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 401ms (compile: 37ms, render: 364ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 413ms (compile: 23ms, render: 390ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 637ms (compile: 11ms, render: 626ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 148ms (compile: 8ms, render: 140ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 190ms (compile: 17ms, render: 174ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 643ms (compile: 87ms, render: 556ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 423ms (compile: 16ms, render: 407ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 499ms (compile: 8ms, render: 491ms)
+Finding changed files: 731.496ms
+Reading changed files: 224.783ms
+Sorting candidates: 16.379ms
+Generate rules: 137.452ms
+Potential classes:  1076
+JIT TOTAL: 1.718s
+ ✓ Compiled in 3s
+Finding changed files: 1.018s
+Reading changed files: 217.897ms
+Sorting candidates: 4.634ms
+Generate rules: 133.665ms
+Potential classes:  1061
+JIT TOTAL: 2.182s
+ ✓ Compiled in 4.9s
+ PATCH /api/proforma/center-participation 200 in 8.2s (compile: 3.3s, render: 4.9s)
+ PATCH /api/proforma/center-participation 200 in 3.0s (compile: 1491ms, render: 1525ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1408ms (compile: 439ms, render: 969ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1666ms (compile: 1037ms, render: 629ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 919ms (compile: 180ms, render: 739ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 2.9s (compile: 877ms, render: 2.1s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1169ms (compile: 293ms, render: 876ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1363ms (compile: 224ms, render: 1139ms)
+ PATCH /api/proforma/center-participation 200 in 378ms (compile: 39ms, render: 339ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 218ms (compile: 16ms, render: 203ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 448ms (compile: 112ms, render: 335ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 642ms (compile: 39ms, render: 604ms)
+Updating project with body: {
+  "name": "test",
+  "concept_type": "casual-dining",
+  "density_benchmark": "casual-dining",
+  "location_city": "LA",
+  "location_state": "CA",
+  "total_sf": 4000,
+  "sf_per_seat": 20,
+  "dining_area_pct": 65,
+  "boh_pct": 30,
+  "use_manual_seats": false,
+  "manual_seats": null,
+  "use_manual_splits": false,
+  "square_feet_foh": null,
+  "square_feet_boh": null,
+  "bar_seats": 15,
+  "concept_archetype": "balanced_resto_bar",
+  "bar_zone_pct": 15,
+  "bar_net_to_gross": 0.7,
+  "standable_pct": 0.6,
+  "sf_per_standing_guest": 7,
+  "utilization_factor": 0.8,
+  "code_sf_per_person": 7
+}
+ PATCH /api/proforma/projects?id=783eac9c-15bc-460a-afde-1143a90a5a54 200 in 634ms (compile: 118ms, render: 515ms)
+Error creating revenue center: {
+  code: '23505',
+  details: null,
+  hint: null,
+  message: 'duplicate key value violates unique constraint "proforma_revenue_centers_scenario_id_center_name_key"'
+}
+ POST /api/proforma/revenue-centers 500 in 143ms (compile: 8ms, render: 135ms)
+Error creating revenue center: {
+  code: '23505',
+  details: null,
+  hint: null,
+  message: 'duplicate key value violates unique constraint "proforma_revenue_centers_scenario_id_center_name_key"'
+}
+ POST /api/proforma/revenue-centers 500 in 173ms (compile: 6ms, render: 167ms)
+ POST /api/proforma/revenue-centers 200 in 134ms (compile: 10ms, render: 124ms)
+Error creating service period: {
+  code: '23505',
+  details: null,
+  hint: null,
+  message: 'duplicate key value violates unique constraint "proforma_revenue_service_periods_scenario_id_service_name_key"'
+}
+ POST /api/proforma/service-periods 500 in 130ms (compile: 11ms, render: 120ms)
+Error creating service period: {
+  code: '23505',
+  details: null,
+  hint: null,
+  message: 'duplicate key value violates unique constraint "proforma_revenue_service_periods_scenario_id_service_name_key"'
+}
+ POST /api/proforma/service-periods 500 in 136ms (compile: 13ms, render: 123ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 1778ms (compile: 813ms, render: 965ms)
+Finding changed files: 213.198ms
+Reading changed files: 15.604ms
+Sorting candidates: 0.909ms
+Generate rules: 40.456ms
+Potential classes:  369
+JIT TOTAL: 657.278ms
+ ✓ Compiled in 1432ms
+Finding changed files: 28.505ms
+Reading changed files: 9.419ms
+Sorting candidates: 0.254ms
+Generate rules: 7.991ms
+Potential classes:  376
+JIT TOTAL: 358.135ms
+ ✓ Compiled in 742ms
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 8.0s (compile: 5.8s, render: 2.2s)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 3.3s (compile: 71ms, render: 3.2s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 414ms (compile: 117ms, render: 297ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 508ms (compile: 154ms, render: 353ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 545ms (compile: 91ms, render: 454ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 241ms (compile: 8ms, render: 233ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 733ms (compile: 172ms, render: 561ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 281ms (compile: 4ms, render: 277ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 269ms (compile: 6ms, render: 263ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 484ms (compile: 15ms, render: 469ms)
+ PATCH /api/proforma/center-participation 200 in 179ms (compile: 6ms, render: 174ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 124ms (compile: 7ms, render: 116ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 160ms (compile: 14ms, render: 146ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 334ms (compile: 22ms, render: 312ms)
+ PATCH /api/proforma/center-participation 200 in 132ms (compile: 4ms, render: 128ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 132ms (compile: 5ms, render: 127ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 137ms (compile: 11ms, render: 126ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 339ms (compile: 19ms, render: 321ms)
+ PATCH /api/proforma/center-participation 200 in 138ms (compile: 6ms, render: 131ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 113ms (compile: 4ms, render: 109ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 139ms (compile: 9ms, render: 130ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 339ms (compile: 16ms, render: 322ms)
+Finding changed files: 534.027ms
+Reading changed files: 63.972ms
+Sorting candidates: 4.624ms
+Generate rules: 150.93ms
+Potential classes:  385
+JIT TOTAL: 1.786s
+ ✓ Compiled in 4.3s
+ PATCH /api/proforma/center-participation 200 in 4.9s (compile: 891ms, render: 4.0s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 773ms (compile: 179ms, render: 594ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 972ms (compile: 366ms, render: 606ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 838ms (compile: 120ms, render: 718ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 15.3s (compile: 10.2s, render: 5.1s)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 278ms (compile: 27ms, render: 250ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 343ms (compile: 69ms, render: 274ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 116ms (compile: 3ms, render: 113ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 497ms (compile: 162ms, render: 335ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 229ms (compile: 7ms, render: 222ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 123ms (compile: 9ms, render: 114ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 602ms (compile: 114ms, render: 487ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 337ms (compile: 5ms, render: 332ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 28.3s (compile: 2.9s, render: 25.4s)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1431ms (compile: 525ms, render: 906ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1589ms (compile: 403ms, render: 1186ms)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1443ms (compile: 535ms, render: 908ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1531ms (compile: 944ms, render: 587ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 147ms (compile: 21ms, render: 126ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 142ms (compile: 11ms, render: 132ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 121ms (compile: 5ms, render: 116ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 384ms (compile: 7ms, render: 377ms)
+ GET /proforma/783eac9c-15bc-460a-afde-1143a90a5a54 200 in 7.5s (compile: 760ms, render: 6.8s)
+ GET /api/proforma/service-period-covers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1522ms (compile: 932ms, render: 590ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1564ms (compile: 421ms, render: 1143ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1540ms (compile: 867ms, render: 673ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 1628ms (compile: 637ms, render: 991ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 152ms (compile: 12ms, render: 140ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 225ms (compile: 27ms, render: 197ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 184ms (compile: 29ms, render: 154ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 423ms (compile: 15ms, render: 409ms)
+ PATCH /api/proforma/center-participation 200 in 2.8s (compile: 1461ms, render: 1354ms)
+ GET /api/proforma/service-periods?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 422ms (compile: 194ms, render: 229ms)
+ GET /api/proforma/revenue-centers?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 340ms (compile: 124ms, render: 216ms)
+ GET /api/proforma/center-participation?scenario_id=611118a8-2a9d-49c9-817f-b7ae558a34c9 200 in 749ms (compile: 232ms, render: 517ms)
+Finding changed files: 252.42ms
+Reading changed files: 72.501ms
+Sorting candidates: 2.173ms
+Generate rules: 28.464ms
+Potential classes:  227
+JIT TOTAL: 786.553ms
+Finding changed files: 16.035ms
+Reading changed files: 5.589ms
+Sorting candidates: 0.139ms
+Generate rules: 2.47ms
+Potential classes:  255
+JIT TOTAL: 133.31ms

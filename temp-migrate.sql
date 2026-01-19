@@ -1,0 +1,12 @@
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS density_benchmark text;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS total_sf int;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS sf_per_seat numeric(6,2);
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS dining_area_pct numeric(5,2);
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS boh_pct numeric(5,2);
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS monthly_rent numeric(12,2);
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS use_manual_seats boolean DEFAULT false;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS manual_seats int;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS use_manual_splits boolean DEFAULT false;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS square_feet_foh int;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS square_feet_boh int;
+ALTER TABLE proforma_projects ADD COLUMN IF NOT EXISTS bar_seats int;

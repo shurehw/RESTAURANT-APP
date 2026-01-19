@@ -37,6 +37,10 @@ export function Sidebar({ user }: SidebarProps) {
         <NavLink href="/alerts">Alerts</NavLink>
         <NavLink href="/messages">Messages</NavLink>
         <div className="border-t my-2"></div>
+        <NavSection title="Settings">
+          <NavLink href="/settings/organization">Organization</NavLink>
+          <NavLink href="/settings/proforma">Proforma Defaults</NavLink>
+        </NavSection>
         <NavSection title="System Admin">
           <NavLink href="/admin">Admin</NavLink>
         </NavSection>

@@ -63,7 +63,19 @@
       "Bash(npx kill-port:*)",
       "Bash(start http://localhost:3001)",
       "Bash(echo $DATABASE_URL)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(start http://localhost:3001/proforma)",
+      "Bash(del \".next\\dev\\lock\")",
+      "Bash(rm:*)",
+      "Bash(start docker)",
+      "Bash(start:*)",
+      "Bash(timeout:*)",
+      "Bash(if exist .nextcache rd /s /q .nextcache)",
+      "Bash(Get-Content \"dev-output.log\" -Tail 200)",
+      "Bash(Select-String -Pattern \"Error|error|constraint|PATCH\" -Context 2)",
+      "Bash(if exist \".next\\dev\\lock\" del \".next\\dev\\lock\")",
+      "Bash(pkill:*)",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []
