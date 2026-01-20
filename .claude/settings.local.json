@@ -89,7 +89,9 @@
       "Bash(source .env.local)",
       "Bash(set +a)",
       "Bash(Get-Content dev-output.log -Tail 100)",
-      "Bash(Select-String -Pattern \"error|category|item\" -Context 1)"
+      "Bash(Select-String -Pattern \"error|category|item\" -Context 1)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/backfill-proforma-defaults.ts:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
