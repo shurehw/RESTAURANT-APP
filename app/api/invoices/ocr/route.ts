@@ -85,43 +85,40 @@ export async function POST(request: NextRequest) {
         .replace(/\s+/g, ' ')
         .trim();
 
-      // Use service role client to bypass RLS for vendor creation
+      // Use service role client to bypass RLS for vendor operations
       const serviceClient = createServiceClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
 
-      // Try to insert, but handle duplicate gracefully
-      const { data: newVendor, error: vendorError } = await serviceClient
+      // Check if vendor already exists first
+      const { data: existingVendor } = await serviceClient
         .from('vendors')
-        .insert({
-          name: normalized.vendorName,
-          normalized_name: normalizedName,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
         .select('id')
-        .single();
+        .eq('normalized_name', normalizedName)
+        .maybeSingle();
 
-      if (vendorError) {
-        // If duplicate, fetch the existing vendor
-        if (vendorError.code === '23505') {
-          const { data: existingVendor } = await serviceClient
-            .from('vendors')
-            .select('id')
-            .eq('normalized_name', normalizedName)
-            .single();
+      if (existingVendor) {
+        // Use existing vendor
+        vendorId = existingVendor.id;
+      } else {
+        // Create new vendor
+        const { data: newVendor, error: vendorError } = await serviceClient
+          .from('vendors')
+          .insert({
+            name: normalized.vendorName,
+            normalized_name: normalizedName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
 
-          if (existingVendor) {
-            vendorId = existingVendor.id;
-          } else {
-            throw { status: 500, code: 'VENDOR_CREATE_FAILED', message: `Failed to create vendor: ${vendorError.message}` };
-          }
-        } else {
+        if (vendorError) {
           console.error('Failed to create vendor:', vendorError);
           throw { status: 500, code: 'VENDOR_CREATE_FAILED', message: `Failed to create vendor: ${vendorError.message}` };
         }
-      } else {
+
         vendorId = newVendor.id;
       }
     }
