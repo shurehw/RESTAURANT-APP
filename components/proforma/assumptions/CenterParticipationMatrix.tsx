@@ -139,7 +139,7 @@ export function CenterParticipationMatrix({ scenarioId }: CenterParticipationMat
           revenue_center_id: centerId,
           service_period_id: serviceId,
           is_active: !currentState,
-          utilization_pct: !currentState ? defaultUtil : undefined, // Set default when activating
+          default_utilization_pct: !currentState ? defaultUtil : undefined, // Set default when activating
         }),
       });
 
