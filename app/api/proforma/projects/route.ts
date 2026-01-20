@@ -109,6 +109,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-create default revenue centers (Dining Room and Bar)
+    console.log('Creating default revenue centers...');
+    const calculatedSeats = manual_seats || Math.floor(total_sf * (dining_area_pct / 100) / (sf_per_seat || 15));
+
+    const { error: revCenterError } = await supabase
+      .from("revenue_centers")
+      .insert([
+        {
+          project_id: project.id,
+          name: "Dining Room",
+          is_primary: true,
+          total_seats: calculatedSeats,
+          display_order: 1
+        },
+        {
+          project_id: project.id,
+          name: "Bar",
+          is_primary: false,
+          total_seats: bar_seats || 0,
+          display_order: 2
+        }
+      ]);
+
+    if (revCenterError) {
+      console.error("Warning: Could not create revenue centers:", revCenterError);
+      // Don't fail the whole request, revenue centers can be added later
+    }
+
+    // Auto-create default service periods (Lunch and Dinner)
+    console.log('Creating default service periods...');
+    const { error: servicePeriodError } = await supabase
+      .from("service_periods")
+      .insert([
+        {
+          project_id: project.id,
+          name: "Lunch",
+          days_per_week: 7,
+          turns_per_day: 1.5,
+          avg_check: 35,
+          display_order: 1
+        },
+        {
+          project_id: project.id,
+          name: "Dinner",
+          days_per_week: 7,
+          turns_per_day: 2,
+          avg_check: 75,
+          display_order: 2
+        }
+      ]);
+
+    if (servicePeriodError) {
+      console.error("Warning: Could not create service periods:", servicePeriodError);
+      // Don't fail the whole request, service periods can be added later
+    }
+
+    console.log('✓ Project created with default revenue centers and service periods');
+
     return NextResponse.json({ project, scenario });
   } catch (error) {
     console.error("Error in POST /api/proforma/projects:", error);
