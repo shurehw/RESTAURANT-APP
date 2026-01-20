@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Plus, Trash2, Info } from "lucide-react";
+import { ManagePresenceThresholdDialog } from "../ManagePresenceThresholdDialog";
 
 const CONCEPT_TYPES = [
   "Fast Casual",
@@ -46,6 +47,7 @@ export function LaborAssumptions({
   const [useDifferentConcept, setUseDifferentConcept] = useState(false);
   const [selectedConcept, setSelectedConcept] = useState<string>("");
   const [revenueData, setRevenueData] = useState<any>(null);
+  const [showPresenceThresholdDialog, setShowPresenceThresholdDialog] = useState(false);
   const [loadingRevenue, setLoadingRevenue] = useState(true);
 
   // Convert kebab-case to title case for display
@@ -976,7 +978,7 @@ export function LaborAssumptions({
             type="button"
             size="sm"
             variant="default"
-            onClick={() => window.alert("Position management:\n\n• VOLUME positions: Managed in wizard only\n• PRESENCE/THRESHOLD positions: Add them here (UI coming soon)\n\nFor now, you can add PRESENCE/THRESHOLD positions directly via the database or API.")}
+            onClick={() => setShowPresenceThresholdDialog(true)}
             className="text-xs bg-[#D4AF37] hover:bg-[#C19B2C] text-zinc-900"
           >
             Manage PRESENCE/THRESHOLD Positions
@@ -1253,6 +1255,13 @@ export function LaborAssumptions({
           {loading ? "Saving..." : "Save Labor Assumptions"}
         </Button>
       </div>
+
+      {/* PRESENCE/THRESHOLD Position Management Dialog */}
+      <ManagePresenceThresholdDialog
+        open={showPresenceThresholdDialog}
+        onOpenChange={setShowPresenceThresholdDialog}
+        scenarioId={scenarioId}
+      />
     </form>
   );
 }
