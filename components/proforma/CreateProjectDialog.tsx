@@ -1540,6 +1540,11 @@ export function CreateProjectDialog({
                       <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
                         {positionTemplates.map((position) => {
                           const isTipped = tippedOverrides[position.position_name] ?? position.is_tipped;
+
+                          if (!laborSettings) {
+                            return null;
+                          }
+
                           const breakdown = calculatePositionRateWithBreakdown(
                             {
                               minWageCity: laborWages.minWageCity,
@@ -1550,7 +1555,7 @@ export function CreateProjectDialog({
                               wage_multiplier: position.wage_multiplier,
                               is_tipped: isTipped,
                             },
-                            laborSettings || undefined
+                            laborSettings
                           );
                           const calculatedRate = breakdown.final_rate;
 
