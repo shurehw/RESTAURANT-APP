@@ -39,12 +39,17 @@ export default async function InvoiceReviewPage({ params }: Props) {
     redirect("/invoices");
   }
 
-  // Fetch invoice lines
+  // Fetch invoice lines with GL account info
   const { data: lines } = await supabase
     .from("invoice_lines")
     .select(`
       *,
-      item:items(id, name, sku)
+      item:items(
+        id,
+        name,
+        sku,
+        gl_account:gl_accounts(id, external_code, name, section)
+      )
     `)
     .eq("invoice_id", id)
     .order("created_at", { ascending: true });
@@ -52,6 +57,26 @@ export default async function InvoiceReviewPage({ params }: Props) {
   const allLines = lines || [];
   const mappedLines = allLines.filter((l) => l.item_id !== null);
   const unmappedLines = allLines.filter((l) => l.item_id === null);
+
+  // Calculate GL breakdown for mapped items
+  const glBreakdown = mappedLines.reduce((acc, line) => {
+    const glAccount = line.item?.gl_account;
+    if (!glAccount) return acc;
+
+    const key = glAccount.id;
+    if (!acc[key]) {
+      acc[key] = {
+        gl_account: glAccount,
+        total: 0,
+        line_count: 0,
+      };
+    }
+    acc[key].total += Number(line.line_total) || 0;
+    acc[key].line_count += 1;
+    return acc;
+  }, {} as Record<string, { gl_account: any; total: number; line_count: number }>);
+
+  const glSummary = Object.values(glBreakdown).sort((a, b) => b.total - a.total);
 
   const mappingProgress = allLines.length > 0
     ? Math.round((mappedLines.length / allLines.length) * 100)
@@ -243,6 +268,89 @@ export default async function InvoiceReviewPage({ params }: Props) {
           </Card>
         )}
       </div>
+
+      {/* GL Account Summary */}
+      {mappedLines.length > 0 && glSummary.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            GL Account Breakdown
+          </h2>
+          <Card className="overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-muted border-b-2 border-brass">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold">GL Account</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold">Section</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold">Line Items</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold">Total Amount</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold">% of Invoice</th>
+                </tr>
+              </thead>
+              <tbody>
+                {glSummary.map((item) => {
+                  const percentage = invoice.total_amount
+                    ? (item.total / invoice.total_amount) * 100
+                    : 0;
+                  return (
+                    <tr key={item.gl_account.id} className="border-b border-border hover:bg-muted/50">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-sm">
+                          {item.gl_account.external_code && (
+                            <span className="text-brass font-mono mr-2">
+                              {item.gl_account.external_code}
+                            </span>
+                          )}
+                          {item.gl_account.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={
+                          item.gl_account.section === 'COGS' ? 'default' :
+                          item.gl_account.section === 'Opex' ? 'outline' :
+                          'secondary'
+                        } className="text-xs">
+                          {item.gl_account.section}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-muted-foreground">
+                        {item.line_count}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm font-mono font-semibold">
+                        ${item.total.toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-right text-sm text-muted-foreground">
+                        {percentage.toFixed(1)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot className="bg-muted border-t-2 border-brass">
+                <tr>
+                  <td colSpan={3} className="px-4 py-3 text-right font-semibold">
+                    Total Mapped:
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-lg">
+                    ${glSummary.reduce((sum, item) => sum + item.total, 0).toFixed(2)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm text-muted-foreground">
+                    {invoice.total_amount
+                      ? ((glSummary.reduce((sum, item) => sum + item.total, 0) / invoice.total_amount) * 100).toFixed(1)
+                      : 0}%
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </Card>
+
+          {unmappedLines.length > 0 && (
+            <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded text-sm">
+              <strong>Note:</strong> {unmappedLines.length} line item(s) still need to be mapped.
+              Complete mapping to see full GL breakdown.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
