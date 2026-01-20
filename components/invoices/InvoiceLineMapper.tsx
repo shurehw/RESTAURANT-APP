@@ -79,7 +79,8 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
         body: JSON.stringify({
           name: fullItemName,
           sku: newItemSKU || `AUTO-${Date.now()}`,
-          category: newItemCategory || 'COGS',
+          category: newItemCategory || 'food',
+          subcategory: newItemSubcategory || null,
           base_uom: newItemUOM || 'unit',
           gl_account_id: glAccountId || null,
         }),
@@ -229,6 +230,7 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const [newItemName, setNewItemName] = useState('');
   const [newItemSKU, setNewItemSKU] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('');
+  const [newItemSubcategory, setNewItemSubcategory] = useState('');
   const [newItemUOM, setNewItemUOM] = useState('');
   const [newItemPackSize, setNewItemPackSize] = useState('');
   const [outerPackQty, setOuterPackQty] = useState('');
@@ -261,7 +263,8 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
         if (glData.suggestions?.length > 0) {
           setGlAccountId(glData.suggestions[0].id); // Auto-select best match
         }
-        setNewItemCategory(glData.suggestedCategory || 'COGS');
+        setNewItemCategory(glData.suggestedCategory || 'food');
+        setNewItemSubcategory(glData.suggestedSubcategory || '');
       }
 
       // Fetch item normalization
@@ -559,20 +562,61 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        Category (GL Section)
+                        Category
                       </label>
                       <select
                         value={newItemCategory}
                         onChange={(e) => setNewItemCategory(e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                       >
-                        <option value="COGS">COGS (Cost of Goods Sold)</option>
-                        <option value="Labor">Labor</option>
-                        <option value="Opex">Opex (Operating Expenses)</option>
-                        <option value="Sales">Sales</option>
+                        <optgroup label="Alcoholic Beverages">
+                          <option value="liquor">Liquor / Spirits</option>
+                          <option value="wine">Wine</option>
+                          <option value="beer">Beer</option>
+                        </optgroup>
+                        <optgroup label="Non-Alcoholic">
+                          <option value="non_alcoholic_beverage">Non-Alcoholic Beverage</option>
+                        </optgroup>
+                        <optgroup label="Food">
+                          <option value="produce">Produce</option>
+                          <option value="meat">Meat</option>
+                          <option value="seafood">Seafood</option>
+                          <option value="dairy">Dairy</option>
+                          <option value="dry_goods">Dry Goods</option>
+                          <option value="frozen">Frozen</option>
+                          <option value="food">Food (General)</option>
+                        </optgroup>
+                        <optgroup label="Supplies">
+                          <option value="packaging">Packaging</option>
+                          <option value="disposables">Disposables</option>
+                          <option value="chemicals">Chemicals / Cleaning</option>
+                          <option value="smallwares">Smallwares</option>
+                          <option value="supplies">Supplies (General)</option>
+                        </optgroup>
+                        <option value="other">Other</option>
                       </select>
                     </div>
 
+                    <div>
+                      <label className="text-xs font-medium text-muted-foreground block mb-1">
+                        Subcategory
+                      </label>
+                      <input
+                        type="text"
+                        value={newItemSubcategory}
+                        onChange={(e) => setNewItemSubcategory(e.target.value)}
+                        placeholder={
+                          newItemCategory === 'liquor' ? 'e.g. Tequila, Vodka, Whiskey' :
+                          newItemCategory === 'wine' ? 'e.g. Red, White, Sparkling' :
+                          newItemCategory === 'beer' ? 'e.g. Lager, IPA, Stout' :
+                          'e.g. Specific type'
+                        }
+                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground block mb-1">
                         Pack Size

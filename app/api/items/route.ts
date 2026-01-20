@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { name, sku, category, base_uom, gl_account_id, organization_id } = body;
+    const { name, sku, category, subcategory, base_uom, gl_account_id, organization_id } = body;
 
     if (!name || !sku) {
       return NextResponse.json(
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
         name,
         sku,
         category: itemCategory,
+        subcategory: subcategory || null,
         base_uom: base_uom || 'unit',
         gl_account_id: gl_account_id || null,
         organization_id: orgId || null,
