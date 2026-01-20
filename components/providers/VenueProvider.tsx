@@ -5,9 +5,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface Venue {
   id: string;
   name: string;
-  location: string | null;
-  city: string | null;
-  state: string | null;
+  location?: string | null;
+  city?: string | null;
+  state?: string | null;
 }
 
 interface VenueContextType {
