@@ -6,11 +6,13 @@ import { Redis } from '@upstash/redis';
  * Implements sliding window algorithm for accurate rate limiting
  */
 
-// Initialize Redis client
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+// Initialize Redis client only if configured
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
 
 const WINDOW_SECONDS = 60; // 1 minute window
 const MAX_REQUESTS = 100; // requests per window
@@ -23,8 +25,9 @@ const MAX_REQUESTS = 100; // requests per window
  * @param keyExtra - Additional key suffix for per-endpoint limits
  */
 export async function rateLimit(req: NextRequest, keyExtra = ''): Promise<void> {
-  // Skip rate limiting in development if Redis not configured
-  if (process.env.NODE_ENV === 'development' && (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)) {
+  // Skip rate limiting if Redis not configured
+  if (!redis) {
+    console.warn('[Rate Limit] Redis not configured, skipping rate limit check');
     return;
   }
 
@@ -76,6 +79,15 @@ export async function checkRateLimit(
   req: NextRequest,
   keyExtra = ''
 ): Promise<{ remaining: number; limit: number; resetAt: Date }> {
+  // Return full quota if Redis not configured
+  if (!redis) {
+    return {
+      remaining: MAX_REQUESTS,
+      limit: MAX_REQUESTS,
+      resetAt: new Date(Date.now() + WINDOW_SECONDS * 1000),
+    };
+  }
+
   const ip =
     req.headers.get('x-forwarded-for')?.split(',')[0] ||
     req.headers.get('x-real-ip') ||
