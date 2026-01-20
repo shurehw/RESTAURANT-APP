@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Check, Sparkles } from 'lucide-react';
+import { PackConfigurationManager, PackConfig } from './PackConfigurationManager';
 
 interface InvoiceLineMapperProps {
   line: {
@@ -67,10 +68,7 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
     if (!newItemName.trim()) return;
 
     try {
-      // Construct full item name with pack size
-      const fullItemName = newItemPackSize
-        ? `${newItemName} (${newItemPackSize})`
-        : newItemName;
+      const fullItemName = newItemName;
 
       // Create the new item
       const createResponse = await fetch('/api/items', {
@@ -232,17 +230,21 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const [newItemCategory, setNewItemCategory] = useState('');
   const [newItemSubcategory, setNewItemSubcategory] = useState('');
   const [newItemUOM, setNewItemUOM] = useState('');
-  const [newItemPackSize, setNewItemPackSize] = useState('');
-  const [outerPackQty, setOuterPackQty] = useState('');
-  const [innerPackQty, setInnerPackQty] = useState('');
-  const [innerPackUom, setInnerPackUom] = useState('');
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [glAccountId, setGlAccountId] = useState<string>('');
   const [glSuggestions, setGlSuggestions] = useState<any[]>([]);
   const [mappingUnit, setMappingUnit] = useState<'as_invoiced' | 'case' | 'bottle'>('as_invoiced');
   const [mappedQty, setMappedQty] = useState<number>(line.qty);
   const [packSizeNumber, setPackSizeNumber] = useState<number | null>(null);
-  const [showPackBreakdown, setShowPackBreakdown] = useState(false);
+  const [showPackConfigs, setShowPackConfigs] = useState(false);
+
+  // Pack configurations - array of different ways to purchase this item
+  const [packConfigs, setPackConfigs] = useState<Array<{
+    pack_type: string;
+    units_per_pack: number;
+    unit_size: number;
+    unit_size_uom: string;
+  }>>([]);
 
   // Parse pack size from description on mount (e.g., "6/Cs" → 6)
   useEffect(() => {
@@ -304,22 +306,27 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
         setNewItemName(data.name || normalizeItemName(line.description));
         setNewItemSKU(data.sku || '');
         setNewItemUOM(data.uom || parseUOMFromDescription(line.description));
-        setNewItemPackSize(data.packSize || parsePackSizeFromDescription(line.description));
-        setOuterPackQty(data.outerPackQty || '1');
-        setInnerPackQty(data.innerPackQty || parsePackQuantity(line.description));
-        setInnerPackUom(data.innerPackUom || parseUOMFromDescription(line.description));
+
+        // Parse pack configuration from description (e.g., "6/750mL")
+        const packMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)/i);
+        if (packMatch) {
+          setPackConfigs([{
+            pack_type: 'case',
+            units_per_pack: parseInt(packMatch[1]),
+            unit_size: parseFloat(packMatch[2]),
+            unit_size_uom: packMatch[3].toLowerCase()
+          }]);
+        }
       } else {
         // Fallback to regex-based normalization
         setNewItemName(normalizeItemName(line.description));
         setNewItemUOM(parseUOMFromDescription(line.description));
-        setNewItemPackSize(parsePackSizeFromDescription(line.description));
       }
     } catch (error) {
       console.error('AI normalization error:', error);
       // Fallback to regex-based normalization
       setNewItemName(normalizeItemName(line.description));
       setNewItemUOM(parseUOMFromDescription(line.description));
-      setNewItemPackSize(parsePackSizeFromDescription(line.description));
     } finally {
       setIsNormalizing(false);
     }
@@ -550,83 +557,48 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     />
                   </div>
 
-                  {/* Pack Info - Collapsible */}
-                  <div className="border border-brass/30 rounded-md bg-brass/5">
-                    <button
-                      type="button"
-                      onClick={() => setShowPackBreakdown(!showPackBreakdown)}
-                      className="w-full p-3 text-left flex items-center justify-between hover:bg-brass/10 transition-colors"
+                  {/* Recipe Unit (base_uom) - ALWAYS VISIBLE */}
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">
+                      Recipe Unit (How recipes measure this) *
+                    </label>
+                    <select
+                      value={newItemUOM}
+                      onChange={(e) => setNewItemUOM(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     >
-                      <div className="text-xs font-semibold text-brass">
-                        Pack Breakdown <span className="font-normal text-muted-foreground">(Optional - for recipe costing)</span>
-                      </div>
-                      <span className="text-brass text-sm">{showPackBreakdown ? '−' : '+'}</span>
-                    </button>
-
-                    {showPackBreakdown && (
-                      <div className="p-3 pt-0">
-                        <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs mb-3">
-                          <strong>💡 Quick Guide:</strong>
-                          <ul className="mt-1 ml-4 list-disc space-y-1">
-                            <li><strong>Skip this section</strong> if buying single bottles/items</li>
-                            <li><strong>Case with multiple units:</strong> e.g., "6/750mL" = 6 bottles × 750 mL each</li>
-                            <li><strong>Bulk container:</strong> e.g., "4/1 GAL" = 4 cases × 1 gallon each</li>
-                          </ul>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                              Units per Case
-                            </label>
-                            <input
-                              type="number"
-                              value={outerPackQty}
-                              onChange={(e) => setOuterPackQty(e.target.value)}
-                              placeholder="1"
-                              className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-xs font-medium text-muted-foreground block mb-1">
-                              Size per Unit
-                            </label>
-                            <div className="flex gap-2">
-                              <input
-                                type="number"
-                                value={innerPackQty}
-                                onChange={(e) => setInnerPackQty(e.target.value)}
-                                placeholder="1"
-                                className="w-20 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                              />
-                              <select
-                                value={innerPackUom}
-                                onChange={(e) => setInnerPackUom(e.target.value)}
-                                className="flex-1 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                              >
-                                <option value="unit">Unit/Each</option>
-                                <option value="oz">Ounce (fl oz)</option>
-                                <option value="mL">Milliliter</option>
-                                <option value="L">Liter</option>
-                                <option value="gal">Gallon</option>
-                                <option value="qt">Quart</option>
-                                <option value="pt">Pint</option>
-                                <option value="lb">Pound</option>
-                                <option value="g">Gram</option>
-                                <option value="kg">Kilogram</option>
-                                <option value="cup">Cup</option>
-                                <option value="tbsp">Tablespoon</option>
-                                <option value="tsp">Teaspoon</option>
-                                <option value="case">Case</option>
-                                <option value="box">Box</option>
-                                <option value="bag">Bag</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                      <optgroup label="Common Units">
+                        <option value="unit">Each/Bottle/Piece</option>
+                        <option value="oz">Ounce (fl oz)</option>
+                        <option value="lb">Pound</option>
+                        <option value="gal">Gallon</option>
+                      </optgroup>
+                      <optgroup label="Metric Volume">
+                        <option value="mL">Milliliter</option>
+                        <option value="L">Liter</option>
+                      </optgroup>
+                      <optgroup label="Metric Weight">
+                        <option value="g">Gram</option>
+                        <option value="kg">Kilogram</option>
+                      </optgroup>
+                      <optgroup label="Other">
+                        <option value="qt">Quart</option>
+                        <option value="pt">Pint</option>
+                        <option value="cup">Cup</option>
+                        <option value="case">Case</option>
+                      </optgroup>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      💡 This is the unit recipes will use. Pack configurations below will convert to this unit.
+                    </p>
                   </div>
+
+                  {/* Pack Configurations - Collapsible */}
+                  <PackConfigurationManager
+                    baseUom={newItemUOM}
+                    packConfigs={packConfigs}
+                    onChange={setPackConfigs}
+                  />
 
                   {/* GL Account Selection */}
                   <div className="mb-3">
@@ -708,24 +680,8 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        Pack Size
-                      </label>
-                      <input
-                        type="text"
-                        value={newItemPackSize}
-                        onChange={(e) => setNewItemPackSize(e.target.value)}
-                        placeholder="e.g. 10L Bag-in-Box"
-                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                      />
-                    </div>
-                  </div>
-
                   <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded p-2">
                     💡 <strong>Item Name:</strong> {newItemName}
-                    {newItemPackSize && ` (${newItemPackSize})`}
                   </div>
 
                   <Button
