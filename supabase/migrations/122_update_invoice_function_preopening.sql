@@ -1,5 +1,4 @@
--- Transactional Invoice Creation
--- Prevents orphaned invoices by inserting header and lines in a single transaction
+-- Update create_invoice_with_lines to support is_preopening flag
 
 CREATE OR REPLACE FUNCTION create_invoice_with_lines(
   invoice_data JSONB,
@@ -55,7 +54,7 @@ BEGIN
       ocr_confidence
     ) VALUES (
       new_invoice_id,
-      NULLIF(line_item->>'item_id', '')::UUID, -- Handle NULL item_id for unmapped items
+      NULLIF(line_item->>'item_id', '')::UUID,
       line_item->>'description',
       (line_item->>'quantity')::NUMERIC,
       (line_item->>'unit_cost')::NUMERIC,
