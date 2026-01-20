@@ -90,7 +90,6 @@ export async function POST(request: NextRequest) {
         .insert({
           name: normalized.vendorName,
           normalized_name: normalizedName,
-          organization_id: orgId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
