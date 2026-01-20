@@ -10,6 +10,7 @@ export interface RawOCRInvoice {
   invoiceNumber?: string;
   invoiceDate: string; // ISO or US date
   dueDate?: string;
+  paymentTerms?: string;
   totalAmount: number;
   confidence: number;
   deliveryLocation?: {
@@ -35,6 +36,7 @@ export interface NormalizedInvoice {
   invoiceNumber?: string;
   invoiceDate: string; // ISO
   dueDate?: string;
+  paymentTerms?: string;
   totalAmount: number;
   ocrConfidence: number;
   lines: Array<{
@@ -310,6 +312,7 @@ export async function normalizeOCR(
     invoiceNumber: raw.invoiceNumber?.trim(),
     invoiceDate,
     dueDate,
+    paymentTerms: raw.paymentTerms?.trim(),
     totalAmount: raw.totalAmount,
     ocrConfidence: raw.confidence,
     lines,
