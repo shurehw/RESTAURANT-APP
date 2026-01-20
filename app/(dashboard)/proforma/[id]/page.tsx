@@ -40,6 +40,8 @@ export default async function ProformaProjectPage({
     .select(
       `
       *,
+      revenue_centers (*),
+      service_periods (*),
       proforma_scenarios (
         id,
         name,
