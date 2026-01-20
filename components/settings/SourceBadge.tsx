@@ -21,7 +21,7 @@ export function SourceBadge({ isGlobal, className = "" }: SourceBadgeProps) {
         <Tooltip>
           <TooltipTrigger>
             <Badge
-              variant="secondary"
+              variant="outline"
               className={`bg-blue-100 text-blue-800 border-blue-300 ${className}`}
             >
               <Globe className="h-3 w-3 mr-1" />
@@ -43,7 +43,7 @@ export function SourceBadge({ isGlobal, className = "" }: SourceBadgeProps) {
       <Tooltip>
         <TooltipTrigger>
           <Badge
-            variant="secondary"
+            variant="outline"
             className={`bg-green-100 text-green-800 border-green-300 ${className}`}
           >
             <Building2 className="h-3 w-3 mr-1" />
