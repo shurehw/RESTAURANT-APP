@@ -30,12 +30,48 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const supabase = await createClient();
-    const { error } = await supabase
+
+    // Get the invoice line details to extract vendor and pack size
+    const { data: invoiceLine } = await supabase
+      .from('invoice_lines')
+      .select('description, invoice_id, vendor_item_code, invoices(vendor_id)')
+      .eq('id', lineId)
+      .single();
+
+    if (!invoiceLine) {
+      throw { status: 404, code: 'LINE_NOT_FOUND' };
+    }
+
+    // Extract pack size from description (e.g., "6/Cs", "4/1 GAL", "750mL")
+    const packSizeMatch = invoiceLine.description.match(/(\d+\/\d+|\d+\s*(ml|l|gal|oz|lb|cs|case))/i);
+    const packSize = packSizeMatch ? packSizeMatch[0] : null;
+
+    const vendorId = (invoiceLine.invoices as any)?.vendor_id;
+
+    // Update the invoice line with the mapped item
+    const { error: updateError } = await supabase
       .from('invoice_lines')
       .update({ item_id: validated.item_id })
       .eq('id', lineId);
 
-    if (error) throw error;
+    if (updateError) throw updateError;
+
+    // Create or update vendor_item_alias for future matching
+    if (vendorId && invoiceLine.vendor_item_code) {
+      await supabase
+        .from('vendor_item_aliases')
+        .upsert({
+          vendor_id: vendorId,
+          item_id: validated.item_id,
+          vendor_item_code: invoiceLine.vendor_item_code,
+          vendor_description: invoiceLine.description,
+          pack_size: packSize,
+          is_active: true,
+        }, {
+          onConflict: 'vendor_id,vendor_item_code',
+        });
+    }
+
     return NextResponse.json({ success: true });
   });
 }

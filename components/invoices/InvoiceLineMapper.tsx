@@ -239,6 +239,30 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [glAccountId, setGlAccountId] = useState<string>('');
   const [glSuggestions, setGlSuggestions] = useState<any[]>([]);
+  const [mappingUnit, setMappingUnit] = useState<'as_invoiced' | 'case' | 'bottle'>('as_invoiced');
+  const [mappedQty, setMappedQty] = useState<number>(line.qty);
+  const [packSizeNumber, setPackSizeNumber] = useState<number | null>(null);
+
+  // Parse pack size from description on mount (e.g., "6/Cs" → 6)
+  useEffect(() => {
+    const match = line.description.match(/(\d+)\s*\/\s*(cs|case|pk|pack)/i);
+    if (match) {
+      setPackSizeNumber(parseInt(match[1], 10));
+    }
+  }, [line.description]);
+
+  // Update mapped quantity when unit changes
+  useEffect(() => {
+    if (mappingUnit === 'as_invoiced') {
+      setMappedQty(line.qty);
+    } else if (mappingUnit === 'case' && packSizeNumber) {
+      // Convert bottles to cases (e.g., 3 bottles ÷ 6 per case = 0.5 cases)
+      setMappedQty(line.qty / packSizeNumber);
+    } else if (mappingUnit === 'bottle' && packSizeNumber) {
+      // Convert cases to bottles (e.g., 3 cases × 6 per case = 18 bottles)
+      setMappedQty(line.qty * packSizeNumber);
+    }
+  }, [mappingUnit, line.qty, packSizeNumber]);
 
   // AI-powered normalization when Create New Item is opened
   useEffect(() => {
@@ -392,6 +416,53 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                       Recommendation: Create a new item for "{line.description}"
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mapping Unit Selection */}
+            {packSizeNumber && (
+              <div className="p-3 border border-orange-200 bg-orange-50 rounded-md">
+                <div className="text-xs font-semibold text-orange-900 mb-2">
+                  ⚠️ Pack Size Detected: {packSizeNumber}/Cs
+                </div>
+                <div className="text-xs text-orange-700 mb-2">
+                  OCR shows qty={line.qty}. Is this {line.qty} cases or {line.qty} bottles?
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setMappingUnit('as_invoiced')}
+                    className={`flex-1 px-3 py-2 text-xs rounded-md border ${
+                      mappingUnit === 'as_invoiced'
+                        ? 'bg-brass text-white border-brass'
+                        : 'bg-white border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    As Invoiced ({line.qty})
+                  </button>
+                  <button
+                    onClick={() => setMappingUnit('case')}
+                    className={`flex-1 px-3 py-2 text-xs rounded-md border ${
+                      mappingUnit === 'case'
+                        ? 'bg-brass text-white border-brass'
+                        : 'bg-white border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {line.qty} Cases = {(line.qty * packSizeNumber).toFixed(1)} Btl
+                  </button>
+                  <button
+                    onClick={() => setMappingUnit('bottle')}
+                    className={`flex-1 px-3 py-2 text-xs rounded-md border ${
+                      mappingUnit === 'bottle'
+                        ? 'bg-brass text-white border-brass'
+                        : 'bg-white border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {line.qty} Btl = {(line.qty / packSizeNumber).toFixed(2)} Cases
+                  </button>
+                </div>
+                <div className="mt-2 text-xs text-orange-700">
+                  <strong>Mapping as:</strong> {mappedQty} {mappingUnit === 'case' ? 'cases' : mappingUnit === 'bottle' ? 'bottles' : 'units'}
                 </div>
               </div>
             )}
