@@ -55,17 +55,17 @@ export function LaborAssumptions({
   const activeConcept = useDifferentConcept && selectedConcept ? selectedConcept : displayConcept;
 
   const [formData, setFormData] = useState({
-    foh_hours_per_100_covers: assumptions?.foh_hours_per_100_covers || 30,
-    boh_hours_per_100_covers: assumptions?.boh_hours_per_100_covers || 32,
+    foh_hours_per_100_covers: assumptions?.foh_hours_per_100_covers || 20,
+    boh_hours_per_100_covers: assumptions?.boh_hours_per_100_covers || 15,
     foh_hourly_rate: assumptions?.foh_hourly_rate || 22,
     boh_hourly_rate: assumptions?.boh_hourly_rate || 24,
     payroll_burden_pct: assumptions?.payroll_burden_pct ? assumptions.payroll_burden_pct * 100 : 25,
   });
 
   const [coreManagement, setCoreManagement] = useState<any[]>([
-    { role_name: "GM Salary", annual_salary: assumptions?.gm_salary_annual || 90000 },
-    { role_name: "AGM Salary", annual_salary: assumptions?.agm_salary_annual || 65000 },
-    { role_name: "KM Salary", annual_salary: assumptions?.km_salary_annual || 75000 },
+    { role_name: "GM Salary", annual_salary: assumptions?.gm_salary_annual || 90000, category: "FOH" },
+    { role_name: "AGM Salary", annual_salary: assumptions?.agm_salary_annual || 65000, category: "FOH" },
+    { role_name: "KM Salary", annual_salary: assumptions?.km_salary_annual || 75000, category: "BOH" },
   ]);
 
   // Load benchmarks when active concept changes
@@ -106,7 +106,7 @@ export function LaborAssumptions({
 
   const loadPositionMix = async (concept: string) => {
     try {
-      const response = await fetch(`/api/proforma/labor-position-mix?concept=${encodeURIComponent(concept)}`);
+      const response = await fetch(`/api/proforma/labor-position-mix?scenarioId=${scenarioId}&concept=${encodeURIComponent(concept)}`);
       if (response.ok) {
         const data = await response.json();
         setPositionMix(data);
@@ -129,91 +129,127 @@ export function LaborAssumptions({
   };
 
   const loadRevenueData = async () => {
+    console.log('Loading revenue data for scenario:', scenarioId);
     try {
       // Import supabase client
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
 
-      // Get service periods
-      const { data: services } = await supabase
+      // Get service periods with avg_check
+      const { data: services, error: servicesError } = await supabase
         .from('proforma_revenue_service_periods')
-        .select('id, operating_days')
+        .select('id, operating_days, avg_check')
         .eq('scenario_id', scenarioId);
 
-      // Get revenue centers
-      const { data: centers } = await supabase
-        .from('proforma_revenue_centers')
-        .select('id, is_pdr, is_bar')
-        .eq('scenario_id', scenarioId);
+      console.log('Services:', services, 'Error:', servicesError);
 
-      if (!services || !centers || services.length === 0 || centers.length === 0) {
+      if (!services || services.length === 0) {
+        console.log('No services found');
         setRevenueData({ annual_revenue: 0, annual_covers: 0 });
         setLoadingRevenue(false);
         return;
       }
 
-      // Get covers
-      const { data: covers } = await supabase
+      // Note: proforma_center_service_metrics table doesn't exist in current schema
+      // Revenue is calculated from service.avg_check or from bar_revenue/pdr_revenue in participation
+      const centerMetrics = null;
+
+      // Get covers (for regular dining) - fallback if metrics not available
+      const { data: covers, error: coversError } = await supabase
         .from('proforma_service_period_covers')
         .select('*')
-        .in('revenue_center_id', centers.map((c: any) => c.id))
         .in('service_period_id', services.map((s: any) => s.id));
 
-      // Get metrics
-      const { data: metrics } = await supabase
-        .from('proforma_center_service_metrics')
+      // Get participation data (for bar_guests, pdr_revenue, bar_revenue)
+      const { data: participation, error: participationError } = await supabase
+        .from('proforma_center_service_participation')
         .select('*')
-        .in('revenue_center_id', centers.map((c: any) => c.id))
         .in('service_period_id', services.map((s: any) => s.id));
 
-      // Calculate totals
+      // Calculate totals - matching RevenueMatrixView logic (lines 426-449)
       let totalAnnualRevenue = 0;
       let totalAnnualCovers = 0;
+
+      console.log('=== REVENUE CALC DEBUG V3 ===');
+      console.log('All services:', services.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        avg_check: s.avg_check,
+        avg_covers_per_service: s.avg_covers_per_service
+      })));
 
       for (const service of services) {
         const daysPerWeek = service.operating_days?.length || 7;
         const servicesPerYear = daysPerWeek * 52;
+        const serviceLevelAvgCheck = (service as any).avg_check || 0;
+        const avgCoversPerService = (service as any).avg_covers_per_service || 0;
 
-        for (const center of centers) {
-          const coverRecord = covers?.find(
-            (c: any) => c.revenue_center_id === center.id && c.service_period_id === service.id
-          );
+        // Get participation records for this service
+        const serviceParticipationRecords = participation?.filter((p: any) => p.service_period_id === service.id) || [];
 
-          const metricRecord = metrics?.find(
-            (m: any) => m.revenue_center_id === center.id && m.service_period_id === service.id
-          );
+        // STANDARDIZED COVERS CALCULATION (matching RevenueMatrixView.tsx:246-290)
+        // Get regular dining covers from covers table
+        const serviceCovers = covers?.filter(
+          (c: any) => c.service_period_id === service.id
+        ) || [];
 
-          if (!coverRecord && !metricRecord) continue;
+        const regularCovers = serviceCovers.reduce((sum: number, c: any) => {
+          return sum + (c.covers_per_service || 0);
+        }, 0);
 
-          // Regular dining
-          if (!center.is_pdr && !center.is_bar) {
-            const coversPerService = coverRecord?.covers || 0;
-            const avgCheck = metricRecord?.avg_check || 50;
-            if (coversPerService > 0 && avgCheck > 0) {
-              totalAnnualRevenue += coversPerService * avgCheck * servicesPerYear;
-              totalAnnualCovers += coversPerService * servicesPerYear;
-            }
-          }
-          // Bar
-          else if (center.is_bar && metricRecord?.bar_guests) {
-            const barGuests = metricRecord.bar_guests || 0;
-            const avgSpend = metricRecord.avg_spend_per_guest || metricRecord.bar_avg_check || 0;
-            if (barGuests > 0 && avgSpend > 0) {
-              totalAnnualRevenue += barGuests * avgSpend * servicesPerYear;
-            }
-          }
-          // PDR
-          else if (center.is_pdr && metricRecord?.pdr_revenue) {
-            const pdrRev = metricRecord.pdr_revenue || 0;
-            if (pdrRev > 0) {
-              totalAnnualRevenue += pdrRev * servicesPerYear;
-              if (metricRecord.pdr_covers) {
-                totalAnnualCovers += metricRecord.pdr_covers * servicesPerYear;
-              }
-            }
-          }
-        }
+        // Determine covers to use: avg_covers_per_service (Mode A) or regularCovers (Mode B)
+        const coversToUse = avgCoversPerService > 0 ? avgCoversPerService : regularCovers;
+
+        // Calculate dining revenue: regular covers × service avg_check
+        const diningRevenue = coversToUse * serviceLevelAvgCheck;
+
+        // Get bar guests from participation (count as covers for labor, have separate revenue)
+        const barGuests = serviceParticipationRecords
+          .reduce((sum: number, p: any) => sum + (p.bar_guests || 0), 0);
+
+        // Get PDR covers from participation (count as covers for labor, have separate revenue)
+        const pdrCovers = serviceParticipationRecords
+          .reduce((sum: number, p: any) => sum + (p.pdr_covers || 0), 0);
+
+        // TOTAL covers for labor calculation = dining + bar + PDR
+        const totalCovers = coversToUse + barGuests + pdrCovers;
+        totalAnnualCovers += totalCovers * servicesPerYear;
+
+        // Calculate PDR revenue separately (has its own pricing)
+        const pdrRevenue = serviceParticipationRecords
+          .reduce((sum: number, p: any) => sum + (p.pdr_revenue || 0), 0);
+
+        // Calculate bar revenue separately (has its own pricing)
+        const barRevenue = serviceParticipationRecords
+          .reduce((sum: number, p: any) => sum + (p.bar_revenue || 0), 0);
+
+        // Calculate base dining revenue (covers × avg_check)
+        const baseRevenue = diningRevenue;
+
+        // Total revenue per service
+        const weeklyRevenue = (baseRevenue + barRevenue + pdrRevenue) * daysPerWeek;
+        const serviceRevenue = weeklyRevenue * 52;
+        totalAnnualRevenue += serviceRevenue;
+
+        console.log(`Service ${service.id}:`, {
+          regularCovers,
+          avgCoversPerService,
+          coversToUse,
+          barGuests,
+          pdrCovers,
+          totalCovers,
+          serviceLevelAvgCheck,
+          diningRevenue,
+          barRevenue,
+          pdrRevenue,
+          daysPerWeek,
+          weeklyRevenue,
+          serviceRevenue,
+        });
       }
+      console.log('Total:', { totalAnnualRevenue, totalAnnualCovers });
+      console.log('======================');
+
 
       setRevenueData({
         annual_revenue: Math.round(totalAnnualRevenue),
@@ -273,11 +309,19 @@ export function LaborAssumptions({
     const annualRevenue = revenueData.annual_revenue;
     const annualCovers = revenueData.annual_covers;
 
-    // Hourly labor cost
-    const fohCost = (annualCovers / 100) * formData.foh_hours_per_100_covers * formData.foh_hourly_rate;
-    const bohCost = (annualCovers / 100) * formData.boh_hours_per_100_covers * formData.boh_hourly_rate;
+    // Hourly labor calculation
+    const fohHours = (annualCovers / 100) * formData.foh_hours_per_100_covers;
+    const bohHours = (annualCovers / 100) * formData.boh_hours_per_100_covers;
+    const totalHours = fohHours + bohHours;
+
+    const fohCost = fohHours * formData.foh_hourly_rate;
+    const bohCost = bohHours * formData.boh_hourly_rate;
     const hourlyLaborCost = fohCost + bohCost;
     const hourlyLaborPct = (hourlyLaborCost / annualRevenue) * 100;
+
+    // Productivity metrics (for validation)
+    const coversPerHour = totalHours > 0 ? annualCovers / totalHours : 0;
+    const estimatedFTEs = totalHours / 2080; // 2080 hours = full-time year
 
     // Salaried labor cost
     const totalSalariedCost = coreManagement.reduce((sum, role) => sum + (role.annual_salary || 0), 0);
@@ -289,9 +333,19 @@ export function LaborAssumptions({
     const totalLaborCost = grossLabor + burdenCost;
     const totalLaborPct = (totalLaborCost / annualRevenue) * 100;
 
+    // Validation flags
+    const isUnrealisticLabor = totalLaborPct > 50;
+    const isLowProductivity = coversPerHour < 1;
+    const isHighProductivity = coversPerHour > 10;
+
     return {
       annualRevenue,
       annualCovers,
+      fohHours,
+      bohHours,
+      totalHours,
+      coversPerHour,
+      estimatedFTEs,
       hourlyLaborCost,
       hourlyLaborPct,
       totalSalariedCost,
@@ -299,10 +353,59 @@ export function LaborAssumptions({
       burdenCost,
       totalLaborCost,
       totalLaborPct,
+      isUnrealisticLabor,
+      isLowProductivity,
+      isHighProductivity,
     };
   };
 
   const laborMetrics = calculateLaborMetrics();
+
+  // RECONCILIATION: Layer 1 (blended) vs Layer 2 (position detail)
+  const calculateReconciliation = () => {
+    if (!positionMix || positionMix.foh.length === 0) return null;
+
+    // Layer 1: User-entered blended totals
+    const layer1FOH = formData.foh_hours_per_100_covers;
+    const layer1BOH = formData.boh_hours_per_100_covers;
+    const layer1Total = layer1FOH + layer1BOH;
+
+    // Layer 2: Sum of VOLUME positions from templates
+    const layer2FOH = positionMix.foh
+      .filter((p: any) => p.labor_driver_type === 'VOLUME')
+      .reduce((sum: number, p: any) => sum + (p.hours_per_100_covers || 0), 0);
+    const layer2BOH = positionMix.boh
+      .filter((p: any) => p.labor_driver_type === 'VOLUME')
+      .reduce((sum: number, p: any) => sum + (p.hours_per_100_covers || 0), 0);
+    const layer2Total = layer2FOH + layer2BOH;
+
+    // Calculate variance
+    const varianceFOH = layer1FOH > 0 ? Math.abs(layer1FOH - layer2FOH) / layer1FOH : 0;
+    const varianceBOH = layer1BOH > 0 ? Math.abs(layer1BOH - layer2BOH) / layer1BOH : 0;
+    const varianceTotal = layer1Total > 0 ? Math.abs(layer1Total - layer2Total) / layer1Total : 0;
+
+    // Tolerance: 10% variance allowed
+    const hasSignificantVariance = varianceTotal > 0.10;
+
+    return {
+      layer1: { foh: layer1FOH, boh: layer1BOH, total: layer1Total },
+      layer2: { foh: layer2FOH, boh: layer2BOH, total: layer2Total },
+      variance: { foh: varianceFOH, boh: varianceBOH, total: varianceTotal },
+      hasSignificantVariance,
+    };
+  };
+
+  const reconciliation = calculateReconciliation();
+
+  const syncToPositionTemplates = () => {
+    if (!reconciliation) return;
+
+    setFormData(prev => ({
+      ...prev,
+      foh_hours_per_100_covers: reconciliation.layer2.foh,
+      boh_hours_per_100_covers: reconciliation.layer2.boh,
+    }));
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -313,6 +416,179 @@ export function LaborAssumptions({
         <p className="text-sm text-zinc-400 mb-4">
           Productivity-based labor model (not % of sales). Covers drive everything.
         </p>
+
+        {/* Labor % of Sales - Live Calculation */}
+        {laborMetrics && (
+          <div className="bg-gradient-to-br from-[#D4AF37]/5 to-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg p-4 mb-6">
+            <h4 className="text-sm font-semibold text-zinc-700 mb-3">Labor % of Sales (Live Calculation)</h4>
+            <div className="grid grid-cols-4 gap-4 mb-3">
+              <div className="text-center">
+                <div className="text-xs text-zinc-600 mb-1">Annual Revenue</div>
+                <div className="text-base font-bold text-zinc-900">
+                  ${(laborMetrics.annualRevenue / 1000000).toFixed(2)}M
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  ${laborMetrics.annualRevenue.toLocaleString()}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zinc-600 mb-1">Annual Covers</div>
+                <div className="text-base font-bold text-zinc-900">
+                  {laborMetrics.annualCovers.toLocaleString()}
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  {(laborMetrics.annualRevenue / laborMetrics.annualCovers).toFixed(2)} avg check
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zinc-600 mb-1">Hourly Labor %</div>
+                <div className="text-base font-bold text-blue-600">
+                  {laborMetrics.hourlyLaborPct.toFixed(1)}%
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  ${laborMetrics.hourlyLaborCost.toLocaleString()}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-zinc-600 mb-1">Salaried Labor %</div>
+                <div className="text-base font-bold text-emerald-600">
+                  {laborMetrics.salariedLaborPct.toFixed(1)}%
+                </div>
+                <div className="text-xs text-zinc-500 mt-0.5">
+                  ${laborMetrics.totalSalariedCost.toLocaleString()}
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-[#D4AF37]/30 pt-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-semibold text-zinc-700">Total Labor % (w/ Burden)</div>
+                  <div className="text-xs text-zinc-600 mt-0.5">
+                    Burden: ${laborMetrics.burdenCost.toLocaleString()} ({formData.payroll_burden_pct}%) •
+                    Total: ${laborMetrics.totalLaborCost.toLocaleString()}
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-[#D4AF37]">
+                  {laborMetrics.totalLaborPct.toFixed(1)}%
+                </div>
+              </div>
+              {benchmarks && (
+                <div className="mt-2 text-xs">
+                  <span className="text-zinc-600">Target range for {activeConcept}: </span>
+                  <span className="text-zinc-900 font-medium">{benchmarks.labor_pct_min}–{benchmarks.labor_pct_max}%</span>
+                  {laborMetrics.totalLaborPct < benchmarks.labor_pct_min && (
+                    <span className="text-amber-600 ml-2 font-medium">⚠️ Below target</span>
+                  )}
+                  {laborMetrics.totalLaborPct > benchmarks.labor_pct_max && (
+                    <span className="text-rose-600 ml-2 font-medium">⚠️ Above target</span>
+                  )}
+                  {laborMetrics.totalLaborPct >= benchmarks.labor_pct_min && laborMetrics.totalLaborPct <= benchmarks.labor_pct_max && (
+                    <span className="text-emerald-600 ml-2 font-medium">✓ Within target</span>
+                  )}
+                </div>
+              )}
+
+              {/* Productivity Metrics */}
+              <div className="mt-3 pt-3 border-t border-[#D4AF37]/30">
+                <div className="grid grid-cols-3 gap-4 text-xs">
+                  <div className="text-center">
+                    <div className="text-zinc-600 mb-1">Annual Hours</div>
+                    <div className="font-semibold text-zinc-900">
+                      {laborMetrics.totalHours.toLocaleString()}
+                    </div>
+                    <div className="text-zinc-500 mt-0.5">
+                      ~{laborMetrics.estimatedFTEs.toFixed(1)} FTEs
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-zinc-600 mb-1">Covers/Hour</div>
+                    <div className={`font-semibold ${
+                      laborMetrics.isLowProductivity ? 'text-rose-600' :
+                      laborMetrics.isHighProductivity ? 'text-amber-600' :
+                      'text-emerald-600'
+                    }`}>
+                      {laborMetrics.coversPerHour.toFixed(1)}
+                    </div>
+                    <div className="text-zinc-500 mt-0.5">
+                      {laborMetrics.isLowProductivity && '⚠️ Low productivity'}
+                      {laborMetrics.isHighProductivity && '⚠️ High productivity'}
+                      {!laborMetrics.isLowProductivity && !laborMetrics.isHighProductivity && '✓ Normal'}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-zinc-600 mb-1">Labor/Cover</div>
+                    <div className="font-semibold text-zinc-900">
+                      ${(laborMetrics.totalLaborCost / laborMetrics.annualCovers).toFixed(2)}
+                    </div>
+                    <div className="text-zinc-500 mt-0.5">
+                      {((laborMetrics.totalHours / laborMetrics.annualCovers) * 60).toFixed(0)} min
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Validation Warnings */}
+              {laborMetrics.isUnrealisticLabor && (
+                <div className="mt-3 bg-rose-100 border border-rose-300 rounded p-3">
+                  <div className="text-xs font-semibold text-rose-800 mb-1">⚠️ Unrealistic Labor Cost</div>
+                  <div className="text-xs text-rose-700">
+                    Labor % exceeds 50% of sales. Check your hours per 100 covers settings.
+                  </div>
+                </div>
+              )}
+
+              {/* Layer 1 ↔ Layer 2 Reconciliation Warning */}
+              {reconciliation && reconciliation.hasSignificantVariance && (
+                <div className="mt-3 bg-amber-100 border border-amber-400 rounded p-3">
+                  <div className="text-xs font-semibold text-amber-900 mb-2">
+                    ⚠️ Layer 1 vs Layer 2 Variance Detected
+                  </div>
+                  <div className="text-xs text-amber-800 mb-3">
+                    Your blended hours (Layer 1) differ from position templates (Layer 2) by more than 10%.
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 mb-3 text-xs">
+                    <div className="bg-white/60 rounded p-2">
+                      <div className="text-amber-700 font-medium mb-1">Layer 1 (Blended)</div>
+                      <div className="text-amber-900 font-semibold">
+                        FOH: {reconciliation.layer1.foh.toFixed(1)}<br/>
+                        BOH: {reconciliation.layer1.boh.toFixed(1)}<br/>
+                        Total: {reconciliation.layer1.total.toFixed(1)}
+                      </div>
+                    </div>
+                    <div className="bg-white/60 rounded p-2">
+                      <div className="text-amber-700 font-medium mb-1">Layer 2 (Templates)</div>
+                      <div className="text-amber-900 font-semibold">
+                        FOH: {reconciliation.layer2.foh.toFixed(1)}<br/>
+                        BOH: {reconciliation.layer2.boh.toFixed(1)}<br/>
+                        Total: {reconciliation.layer2.total.toFixed(1)}
+                      </div>
+                    </div>
+                    <div className="bg-white/60 rounded p-2">
+                      <div className="text-amber-700 font-medium mb-1">Variance</div>
+                      <div className="text-amber-900 font-semibold">
+                        FOH: {(reconciliation.variance.foh * 100).toFixed(1)}%<br/>
+                        BOH: {(reconciliation.variance.boh * 100).toFixed(1)}%<br/>
+                        Total: {(reconciliation.variance.total * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={syncToPositionTemplates}
+                    className="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium py-2 px-3 rounded transition-colors"
+                  >
+                    Sync Layer 1 to Match Position Templates
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!laborMetrics && !loadingRevenue && (
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4 mb-6 text-center text-zinc-500 text-sm">
+            Labor % calculation unavailable. Please complete the Revenue assumptions first.
+          </div>
+        )}
 
         {/* Concept Display */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
@@ -479,80 +755,6 @@ export function LaborAssumptions({
         </div>
       </div>
 
-      {/* Labor % of Sales */}
-      {laborMetrics && (
-        <div className="border-t border-zinc-800 pt-4">
-          <h4 className="text-sm font-medium text-zinc-300 mb-3">Labor % of Sales (Live Calculation)</h4>
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
-            <div className="grid grid-cols-4 gap-4 mb-3">
-              <div className="text-center">
-                <div className="text-xs text-zinc-500 mb-1">Annual Revenue</div>
-                <div className="text-sm font-semibold text-zinc-100">
-                  ${(laborMetrics.annualRevenue / 1000000).toFixed(2)}M
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-zinc-500 mb-1">Annual Covers</div>
-                <div className="text-sm font-semibold text-zinc-100">
-                  {laborMetrics.annualCovers.toLocaleString()}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-zinc-500 mb-1">Hourly Labor</div>
-                <div className="text-sm font-semibold text-blue-400">
-                  {laborMetrics.hourlyLaborPct.toFixed(1)}%
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-xs text-zinc-500 mb-1">Salaried Labor</div>
-                <div className="text-sm font-semibold text-green-400">
-                  {laborMetrics.salariedLaborPct.toFixed(1)}%
-                </div>
-              </div>
-            </div>
-            <div className="border-t border-zinc-700 pt-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-zinc-300">Total Labor % (w/ Burden)</div>
-                  <div className="text-xs text-zinc-500 mt-0.5">
-                    ${laborMetrics.hourlyLaborCost.toLocaleString()} hourly +
-                    ${laborMetrics.totalSalariedCost.toLocaleString()} salaried +
-                    ${laborMetrics.burdenCost.toLocaleString()} burden =
-                    ${laborMetrics.totalLaborCost.toLocaleString()}
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-[#D4AF37]">
-                  {laborMetrics.totalLaborPct.toFixed(1)}%
-                </div>
-              </div>
-              {benchmarks && (
-                <div className="mt-2 text-xs text-zinc-500">
-                  Target range for {activeConcept}: {benchmarks.labor_pct_min}–{benchmarks.labor_pct_max}%
-                  {laborMetrics.totalLaborPct < benchmarks.labor_pct_min && (
-                    <span className="text-amber-400 ml-2">⚠️ Below target</span>
-                  )}
-                  {laborMetrics.totalLaborPct > benchmarks.labor_pct_max && (
-                    <span className="text-red-400 ml-2">⚠️ Above target</span>
-                  )}
-                  {laborMetrics.totalLaborPct >= benchmarks.labor_pct_min && laborMetrics.totalLaborPct <= benchmarks.labor_pct_max && (
-                    <span className="text-green-400 ml-2">✓ Within target</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!laborMetrics && !loadingRevenue && (
-        <div className="border-t border-zinc-800 pt-4">
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-            <p className="text-sm text-amber-400">
-              Labor % calculation unavailable. Please complete the Revenue assumptions first.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Position-Level Detail (Optional) */}
       {showPositions && (
@@ -578,32 +780,32 @@ export function LaborAssumptions({
           <div className="grid grid-cols-2 gap-6">
             {/* FOH Positions */}
             <div>
-              <h5 className="text-xs font-semibold text-zinc-400 mb-3">FOH Labor</h5>
+              <h5 className="text-xs font-semibold text-zinc-700 mb-3">FOH Labor</h5>
 
               {/* Class 1: Volume-Elastic */}
               <div className="mb-4">
-                <div className="text-xs text-blue-400 font-medium mb-1.5 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                <div className="text-xs text-blue-600 font-medium mb-1.5 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
                   Class 1: Volume-Elastic
                 </div>
                 <div className="space-y-1">
                   {positionMix.foh.filter((p: any) => p.labor_driver_type === 'VOLUME').map((pos: any) => (
                     <div
                       key={pos.position_name}
-                      className="flex items-center justify-between text-xs bg-zinc-900/50 border border-zinc-800 rounded px-2 py-1.5"
+                      className="flex items-center justify-between text-xs bg-zinc-100 border border-zinc-300 rounded px-2 py-1.5"
                     >
-                      <span className="text-zinc-300">{pos.position_name}</span>
+                      <span className="text-zinc-900 font-medium">{pos.position_name}</span>
                       <div className="flex items-center gap-3">
-                        <span className="text-zinc-500">${pos.hourly_rate}/hr</span>
-                        <span className="font-medium text-[#D4AF37] w-12 text-right">
+                        <span className="text-zinc-700">${pos.hourly_rate}/hr</span>
+                        <span className="font-semibold text-amber-600 w-12 text-right">
                           {pos.position_mix_pct}%
                         </span>
                       </div>
                     </div>
                   ))}
-                  <div className="border-t border-zinc-700 mt-1.5 pt-1.5 flex justify-between text-xs font-semibold">
-                    <span className="text-zinc-400">Volume Total</span>
-                    <span className="text-[#D4AF37]">100%</span>
+                  <div className="border-t border-zinc-400 mt-1.5 pt-1.5 flex justify-between text-xs font-semibold">
+                    <span className="text-zinc-700">Volume Total</span>
+                    <span className="text-amber-600">100%</span>
                   </div>
                 </div>
               </div>
@@ -611,19 +813,19 @@ export function LaborAssumptions({
               {/* Class 2: Presence-Required */}
               {positionMix.foh.some((p: any) => p.labor_driver_type === 'PRESENCE') && (
                 <div className="mb-4">
-                  <div className="text-xs text-green-400 font-medium mb-1.5 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                  <div className="text-xs text-emerald-600 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                     Class 2: Presence-Required
                   </div>
                   <div className="space-y-1">
                     {positionMix.foh.filter((p: any) => p.labor_driver_type === 'PRESENCE').map((pos: any) => (
                       <div
                         key={pos.position_name}
-                        className="flex items-center justify-between text-xs bg-green-950/20 border border-green-900/30 rounded px-2 py-1.5"
+                        className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-300 rounded px-2 py-1.5"
                       >
-                        <span className="text-zinc-300">{pos.position_name}</span>
+                        <span className="text-zinc-900 font-medium">{pos.position_name}</span>
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="text-zinc-500">{pos.staff_per_service}×{pos.hours_per_shift}hr @ ${pos.hourly_rate}</span>
+                          <span className="text-zinc-700">{pos.staff_per_service}×{pos.hours_per_shift}hr @ ${pos.hourly_rate}</span>
                         </div>
                       </div>
                     ))}
@@ -634,18 +836,18 @@ export function LaborAssumptions({
               {/* Class 3: Threshold */}
               {positionMix.foh.some((p: any) => p.labor_driver_type === 'THRESHOLD') && (
                 <div>
-                  <div className="text-xs text-amber-400 font-medium mb-1.5 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <div className="text-xs text-amber-600 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                     Class 3: Threshold
                   </div>
                   <div className="space-y-1">
                     {positionMix.foh.filter((p: any) => p.labor_driver_type === 'THRESHOLD').map((pos: any) => (
                       <div
                         key={pos.position_name}
-                        className="flex items-center justify-between text-xs bg-amber-950/20 border border-amber-900/30 rounded px-2 py-1.5"
+                        className="flex items-center justify-between text-xs bg-amber-50 border border-amber-300 rounded px-2 py-1.5"
                       >
-                        <span className="text-zinc-300">{pos.position_name}</span>
-                        <div className="text-xs text-zinc-500">
+                        <span className="text-zinc-900 font-medium">{pos.position_name}</span>
+                        <div className="text-xs text-zinc-700">
                           After {pos.cover_threshold} cvrs
                         </div>
                       </div>
@@ -657,32 +859,32 @@ export function LaborAssumptions({
 
             {/* BOH Positions */}
             <div>
-              <h5 className="text-xs font-semibold text-zinc-400 mb-3">BOH Labor</h5>
+              <h5 className="text-xs font-semibold text-zinc-700 mb-3">BOH Labor</h5>
 
               {/* Class 1: Volume-Elastic */}
               <div className="mb-4">
-                <div className="text-xs text-blue-400 font-medium mb-1.5 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                <div className="text-xs text-blue-600 font-medium mb-1.5 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
                   Class 1: Volume-Elastic
                 </div>
                 <div className="space-y-1">
                   {positionMix.boh.filter((p: any) => p.labor_driver_type === 'VOLUME').map((pos: any) => (
                     <div
                       key={pos.position_name}
-                      className="flex items-center justify-between text-xs bg-zinc-900/50 border border-zinc-800 rounded px-2 py-1.5"
+                      className="flex items-center justify-between text-xs bg-zinc-100 border border-zinc-300 rounded px-2 py-1.5"
                     >
-                      <span className="text-zinc-300">{pos.position_name}</span>
+                      <span className="text-zinc-900 font-medium">{pos.position_name}</span>
                       <div className="flex items-center gap-3">
-                        <span className="text-zinc-500">${pos.hourly_rate}/hr</span>
-                        <span className="font-medium text-[#D4AF37] w-12 text-right">
+                        <span className="text-zinc-700">${pos.hourly_rate}/hr</span>
+                        <span className="font-semibold text-amber-600 w-12 text-right">
                           {pos.position_mix_pct}%
                         </span>
                       </div>
                     </div>
                   ))}
-                  <div className="border-t border-zinc-700 mt-1.5 pt-1.5 flex justify-between text-xs font-semibold">
-                    <span className="text-zinc-400">Volume Total</span>
-                    <span className="text-[#D4AF37]">100%</span>
+                  <div className="border-t border-zinc-400 mt-1.5 pt-1.5 flex justify-between text-xs font-semibold">
+                    <span className="text-zinc-700">Volume Total</span>
+                    <span className="text-amber-600">100%</span>
                   </div>
                 </div>
               </div>
@@ -690,19 +892,19 @@ export function LaborAssumptions({
               {/* Class 2: Presence-Required */}
               {positionMix.boh.some((p: any) => p.labor_driver_type === 'PRESENCE') && (
                 <div className="mb-4">
-                  <div className="text-xs text-green-400 font-medium mb-1.5 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                  <div className="text-xs text-emerald-600 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                     Class 2: Presence-Required
                   </div>
                   <div className="space-y-1">
                     {positionMix.boh.filter((p: any) => p.labor_driver_type === 'PRESENCE').map((pos: any) => (
                       <div
                         key={pos.position_name}
-                        className="flex items-center justify-between text-xs bg-green-950/20 border border-green-900/30 rounded px-2 py-1.5"
+                        className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-300 rounded px-2 py-1.5"
                       >
-                        <span className="text-zinc-300">{pos.position_name}</span>
+                        <span className="text-zinc-900 font-medium">{pos.position_name}</span>
                         <div className="flex items-center gap-2 text-xs">
-                          <span className="text-zinc-500">{pos.staff_per_service}×{pos.hours_per_shift}hr @ ${pos.hourly_rate}</span>
+                          <span className="text-zinc-700">{pos.staff_per_service}×{pos.hours_per_shift}hr @ ${pos.hourly_rate}</span>
                         </div>
                       </div>
                     ))}
@@ -713,18 +915,18 @@ export function LaborAssumptions({
               {/* Class 3: Threshold */}
               {positionMix.boh.some((p: any) => p.labor_driver_type === 'THRESHOLD') && (
                 <div>
-                  <div className="text-xs text-amber-400 font-medium mb-1.5 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  <div className="text-xs text-amber-600 font-medium mb-1.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                     Class 3: Threshold
                   </div>
                   <div className="space-y-1">
                     {positionMix.boh.filter((p: any) => p.labor_driver_type === 'THRESHOLD').map((pos: any) => (
                       <div
                         key={pos.position_name}
-                        className="flex items-center justify-between text-xs bg-amber-950/20 border border-amber-900/30 rounded px-2 py-1.5"
+                        className="flex items-center justify-between text-xs bg-amber-50 border border-amber-300 rounded px-2 py-1.5"
                       >
-                        <span className="text-zinc-300">{pos.position_name}</span>
-                        <div className="text-xs text-zinc-500">
+                        <span className="text-zinc-900 font-medium">{pos.position_name}</span>
+                        <div className="text-xs text-zinc-700">
                           After {pos.cover_threshold} cvrs
                         </div>
                       </div>
@@ -735,23 +937,23 @@ export function LaborAssumptions({
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-zinc-950/50 border border-zinc-800 rounded text-xs space-y-2">
-            <p className="text-zinc-400">
+          <div className="mt-4 p-3 bg-zinc-100 border border-zinc-300 rounded text-xs space-y-2">
+            <p className="text-zinc-900">
               <Info className="inline w-3 h-3 mr-1" />
               <strong>Three-tier labor classification:</strong>
             </p>
-            <div className="grid grid-cols-3 gap-3 text-zinc-400">
-              <div>
-                <div className="text-blue-400 font-medium mb-1">Volume-Elastic</div>
-                <div>Scales with covers. Example: 90 FOH hrs × 45% = 40.5 server hrs</div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-zinc-800">
+                <div className="text-blue-600 font-medium mb-1">Volume-Elastic</div>
+                <div className="text-zinc-700">Scales with covers. Example: 90 FOH hrs × 45% = 40.5 server hrs</div>
               </div>
-              <div>
-                <div className="text-green-400 font-medium mb-1">Presence-Required</div>
-                <div>Fixed per active service. Example: 2 security × 6 hrs when service is on</div>
+              <div className="text-zinc-800">
+                <div className="text-emerald-600 font-medium mb-1">Presence-Required</div>
+                <div className="text-zinc-700">Fixed per active service. Example: 2 security × 6 hrs when service is on</div>
               </div>
-              <div>
-                <div className="text-amber-400 font-medium mb-1">Threshold</div>
-                <div>Kicks in after volume threshold. Example: +1 maître d' after 250 covers</div>
+              <div className="text-zinc-800">
+                <div className="text-amber-600 font-medium mb-1">Threshold</div>
+                <div className="text-zinc-700">Kicks in after volume threshold. Example: +1 maître d' after 250 covers</div>
               </div>
             </div>
           </div>
@@ -759,7 +961,7 @@ export function LaborAssumptions({
       )}
 
       {!showPositions && (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
           <Button
             type="button"
             size="sm"
@@ -769,6 +971,15 @@ export function LaborAssumptions({
           >
             <Plus className="w-3 h-3 mr-1" />
             Show Position-Level Detail
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="default"
+            onClick={() => window.alert("Position management:\n\n• VOLUME positions: Managed in wizard only\n• PRESENCE/THRESHOLD positions: Add them here (UI coming soon)\n\nFor now, you can add PRESENCE/THRESHOLD positions directly via the database or API.")}
+            className="text-xs bg-[#D4AF37] hover:bg-[#C19B2C] text-zinc-900"
+          >
+            Manage PRESENCE/THRESHOLD Positions
           </Button>
         </div>
       )}
@@ -826,7 +1037,7 @@ export function LaborAssumptions({
         <div className="space-y-2">
           {coreManagement.map((mgmt, index) => (
             <div key={index} className="grid grid-cols-12 gap-2">
-              <div className="col-span-5">
+              <div className="col-span-4">
                 <Input
                   value={mgmt.role_name}
                   onChange={(e) => {
@@ -835,9 +1046,25 @@ export function LaborAssumptions({
                     setCoreManagement(updated);
                   }}
                   placeholder="Role Name"
+                  className="text-sm"
                 />
               </div>
-              <div className="col-span-5">
+              <div className="col-span-2">
+                <select
+                  value={mgmt.category || "FOH"}
+                  onChange={(e) => {
+                    const updated = [...coreManagement];
+                    updated[index].category = e.target.value;
+                    setCoreManagement(updated);
+                  }}
+                  className="w-full h-9 px-3 rounded-md border border-zinc-300 text-sm bg-white"
+                >
+                  <option value="FOH">FOH</option>
+                  <option value="BOH">BOH</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div className="col-span-4">
                 <Input
                   type="number"
                   step="1000"
@@ -848,6 +1075,7 @@ export function LaborAssumptions({
                     setCoreManagement(updated);
                   }}
                   placeholder="Annual Salary"
+                  className="text-sm"
                 />
               </div>
               <div className="col-span-2 flex items-center">
@@ -873,16 +1101,129 @@ export function LaborAssumptions({
             onClick={() => {
               setCoreManagement([
                 ...coreManagement,
-                { role_name: "", annual_salary: 0 },
+                { role_name: "", annual_salary: 0, category: "FOH" },
               ]);
             }}
           >
             <Plus className="w-4 h-4 mr-1" />
             Add Management Position
           </Button>
+
+          {/* Totals by Category */}
+          {coreManagement.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-zinc-700 space-y-2">
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="bg-zinc-100 p-3 rounded border border-zinc-200">
+                  <div className="text-xs text-zinc-600 mb-1">FOH Total</div>
+                  <div className="text-lg font-semibold text-blue-600">
+                    ${coreManagement
+                      .filter(m => m.category === "FOH")
+                      .reduce((sum, m) => sum + (m.annual_salary || 0), 0)
+                      .toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-zinc-100 p-3 rounded border border-zinc-200">
+                  <div className="text-xs text-zinc-600 mb-1">BOH Total</div>
+                  <div className="text-lg font-semibold text-emerald-600">
+                    ${coreManagement
+                      .filter(m => m.category === "BOH")
+                      .reduce((sum, m) => sum + (m.annual_salary || 0), 0)
+                      .toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-zinc-100 p-3 rounded border border-zinc-200">
+                  <div className="text-xs text-zinc-600 mb-1">Other Total</div>
+                  <div className="text-lg font-semibold text-amber-600">
+                    ${coreManagement
+                      .filter(m => m.category === "Other")
+                      .reduce((sum, m) => sum + (m.annual_salary || 0), 0)
+                      .toLocaleString()}
+                  </div>
+                </div>
+              </div>
+              <div className="bg-[#D4AF37]/10 p-3 rounded border border-[#D4AF37]/30">
+                <div className="text-xs text-zinc-600 mb-1">Total Management Salaries</div>
+                <div className="text-xl font-bold text-[#D4AF37]">
+                  ${coreManagement
+                    .reduce((sum, m) => sum + (m.annual_salary || 0), 0)
+                    .toLocaleString()}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
+
+      {/* PRESENCE Roles (Fixed Per Service) */}
+      {positionMix && (positionMix.foh.some((p: any) => p.labor_driver_type === 'PRESENCE') || positionMix.boh.some((p: any) => p.labor_driver_type === 'PRESENCE')) && (
+        <div className="border-t border-zinc-800 pt-4">
+          <h4 className="text-sm font-medium text-zinc-300 mb-2">
+            Fixed Presence Roles
+          </h4>
+          <p className="text-xs text-zinc-500 mb-3">
+            These positions are required per service period regardless of volume (e.g., Security, Maître d')
+          </p>
+
+          <div className="space-y-3">
+            {/* FOH Presence Roles */}
+            {positionMix.foh.filter((p: any) => p.labor_driver_type === 'PRESENCE').map((pos: any) => (
+              <div key={pos.position_name} className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="text-sm font-medium text-emerald-400">{pos.position_name}</div>
+                    <div className="text-xs text-zinc-500 mt-0.5">FOH • Fixed per service</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-zinc-500">Hourly Rate</div>
+                    <div className="text-sm font-semibold text-zinc-300">${pos.hourly_rate}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-zinc-900/50 rounded p-2">
+                    <div className="text-zinc-500 mb-1">Staff per Service</div>
+                    <div className="text-zinc-300 font-medium">{pos.staff_per_service}</div>
+                  </div>
+                  <div className="bg-zinc-900/50 rounded p-2">
+                    <div className="text-zinc-500 mb-1">Hours per Shift</div>
+                    <div className="text-zinc-300 font-medium">{pos.hours_per_shift}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* BOH Presence Roles */}
+            {positionMix.boh.filter((p: any) => p.labor_driver_type === 'PRESENCE').map((pos: any) => (
+              <div key={pos.position_name} className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="text-sm font-medium text-emerald-400">{pos.position_name}</div>
+                    <div className="text-xs text-zinc-500 mt-0.5">BOH • Fixed per service</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-zinc-500">Hourly Rate</div>
+                    <div className="text-sm font-semibold text-zinc-300">${pos.hourly_rate}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-zinc-900/50 rounded p-2">
+                    <div className="text-zinc-500 mb-1">Staff per Service</div>
+                    <div className="text-zinc-300 font-medium">{pos.staff_per_service}</div>
+                  </div>
+                  <div className="bg-zinc-900/50 rounded p-2">
+                    <div className="text-zinc-500 mb-1">Hours per Shift</div>
+                    <div className="text-zinc-300 font-medium">{pos.hours_per_shift}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 text-xs text-zinc-500 bg-zinc-900/50 border border-zinc-800 rounded p-2">
+            💡 These are template defaults from your concept type. You can customize or add more positions below.
+          </div>
+        </div>
+      )}
 
       {/* Payroll Burden */}
       <div className="border-t border-zinc-800 pt-4">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { calculatePositionRate, calculatePositionRateWithBreakdown, type LaborSettings } from "@/lib/labor-rate-calculator";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, ArrowLeft, ArrowRight, Check, AlertTriangle, Pencil } from "lucide-react";
+import { WageCalculationBreakdownUI } from "@/components/proforma/WageCalculationBreakdown";
 import {
   SEATING_BENCHMARKS,
   CONCEPT_TYPES,
@@ -133,6 +135,19 @@ export function CreateProjectDialog({
     selected_days: [],
   });
 
+  // Step 4: Labor Positions
+  const [laborSettings, setLaborSettings] = useState<LaborSettings | null>(null);
+  const [laborWages, setLaborWages] = useState({
+    minWageCity: 15.00,
+    tipCredit: 0.00,
+    marketTier: "MID" as "LOW" | "MID" | "HIGH",
+  });
+  const [positionTemplates, setPositionTemplates] = useState<any[]>([]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
+  const [tippedOverrides, setTippedOverrides] = useState<Record<string, boolean>>({});
+  const [cityPresets, setCityPresets] = useState<any[]>([]);
+
   const DAYS_OF_WEEK = [
     { value: "monday", label: "Mon" },
     { value: "tuesday", label: "Tue" },
@@ -155,7 +170,82 @@ export function CreateProjectDialog({
     });
   };
 
-  // Step 4: Private Dining
+  // Load labor settings and position templates when reaching step 4
+  useEffect(() => {
+    if (step === 4) {
+      if (!laborSettings) {
+        loadLaborSettings();
+      }
+      if (cityPresets.length === 0) {
+        loadCityPresets();
+      }
+      if (positionTemplates.length === 0) {
+        loadPositionTemplates();
+      }
+    }
+  }, [step]);
+
+  const loadLaborSettings = async () => {
+    try {
+      const response = await fetch('/api/proforma/labor-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setLaborSettings(data.settings);
+        // Update default wages from settings
+        setLaborWages(prev => ({
+          ...prev,
+          minWageCity: data.settings.default_min_wage_city,
+          tipCredit: data.settings.default_tip_credit,
+          marketTier: data.settings.default_market_tier,
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load labor settings:', error);
+    }
+  };
+
+  const loadCityPresets = async () => {
+    try {
+      const response = await fetch('/api/proforma/city-wage-presets');
+      if (response.ok) {
+        const data = await response.json();
+        setCityPresets(data.presets || []);
+      }
+    } catch (error) {
+      console.error('Failed to load city presets:', error);
+    }
+  };
+
+  const loadPositionTemplates = async () => {
+    setLoadingPositions(true);
+    try {
+      const conceptType = CONCEPT_TYPES.find(c => c.value === formData.concept_type)?.label || "Casual Dining";
+      const response = await fetch(`/api/proforma/labor-position-mix?concept=${encodeURIComponent(conceptType)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        const allPositions = [...(data.foh || []), ...(data.boh || [])].filter(
+          (p: any) => p.labor_driver_type === 'VOLUME'
+        );
+        setPositionTemplates(allPositions);
+        setSelectedPositions(allPositions.map((p: any) => p.position_name));
+      }
+    } catch (error) {
+      console.error("Failed to load position templates:", error);
+    } finally {
+      setLoadingPositions(false);
+    }
+  };
+
+  const togglePosition = (positionName: string) => {
+    if (selectedPositions.includes(positionName)) {
+      setSelectedPositions(selectedPositions.filter(p => p !== positionName));
+    } else {
+      setSelectedPositions([...selectedPositions, positionName]);
+    }
+  };
+
+  // Step 4: Private Dining (legacy - can be removed)
   const [pdrs, setPdrs] = useState<PDR[]>([]);
   const [newPDR, setNewPDR] = useState<PDR>({
     room_name: "",
@@ -480,7 +570,7 @@ export function CreateProjectDialog({
         const projectData = await projectRes.json();
         project = projectData.project;
 
-        // 2. Create scenario
+        // 2. Create scenario with labor wage parameters
         const scenarioRes = await fetch("/api/proforma/scenarios", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -490,6 +580,9 @@ export function CreateProjectDialog({
             months: formData.months,
             start_month: formData.start_month,
             is_base: true,
+            min_wage_city: laborWages.minWageCity,
+            tip_credit: laborWages.tipCredit,
+            market_tier: laborWages.marketTier,
           }),
         });
 
@@ -519,6 +612,42 @@ export function CreateProjectDialog({
               scenario_id: scenario.id,
               ...services[i],
               sort_order: i,
+            }),
+          });
+        }
+
+        // 5. Add selected labor positions with calculated rates
+        for (const positionName of selectedPositions) {
+          const template = positionTemplates.find(p => p.position_name === positionName);
+          if (!template) continue;
+
+          const isTipped = tippedOverrides[positionName] ?? template.is_tipped;
+          const calculatedRate = calculatePositionRate(
+            {
+              minWageCity: laborWages.minWageCity,
+              tipCredit: laborWages.tipCredit,
+              marketTier: laborWages.marketTier,
+            },
+            {
+              wage_multiplier: template.wage_multiplier,
+              is_tipped: isTipped,
+            }
+          );
+
+          await fetch("/api/proforma/labor-positions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              scenario_id: scenario.id,
+              position_name: template.position_name,
+              category: template.category,
+              labor_driver_type: template.labor_driver_type,
+              hours_per_100_covers: template.hours_per_100_covers,
+              position_mix_pct: template.position_mix_pct,
+              hourly_rate: calculatedRate,
+              staff_per_service: template.staff_per_service,
+              hours_per_shift: template.hours_per_shift,
+              cover_threshold: template.cover_threshold,
             }),
           });
         }
@@ -577,6 +706,13 @@ export function CreateProjectDialog({
                 3
               </div>
               <span className="text-xs font-medium hidden sm:inline">Services</span>
+            </div>
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
+            <div className={`flex items-center gap-2 ${step >= 4 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs ${step >= 4 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+                4
+              </div>
+              <span className="text-xs font-medium hidden sm:inline">Labor</span>
             </div>
           </div>
 
@@ -1278,6 +1414,194 @@ export function CreateProjectDialog({
             </div>
           )}
 
+          {/* Step 4: Labor Positions & Wages */}
+          {step === 4 && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-50">Labor Positions & Wages</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Set your market wage parameters. Position rates will be calculated automatically.
+                </p>
+              </div>
+
+              <Card className="bg-zinc-900/50 border-zinc-800 p-4">
+                <div className="space-y-4">
+                  {/* City Preset Selector */}
+                  {cityPresets.length > 0 && (
+                    <div>
+                      <Label className="text-sm text-zinc-300 mb-2 block">
+                        Quick Select City (Optional)
+                      </Label>
+                      <Select
+                        value=""
+                        onValueChange={(presetId) => {
+                          const preset = cityPresets.find(p => p.id === presetId);
+                          if (preset) {
+                            setLaborWages({
+                              minWageCity: preset.min_wage,
+                              tipCredit: preset.tip_credit,
+                              marketTier: preset.market_tier,
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a city preset..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cityPresets.map((preset) => (
+                            <SelectItem key={preset.id} value={preset.id}>
+                              {preset.city_name}, {preset.state_code} - ${preset.min_wage}/hr
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="minWageCity" className="text-sm text-zinc-300">
+                        Local Min Wage *
+                      </Label>
+                      <Input
+                        id="minWageCity"
+                        type="number"
+                        step="0.01"
+                        value={laborWages.minWageCity}
+                        onChange={(e) => setLaborWages({ ...laborWages, minWageCity: parseFloat(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">Primary wage driver</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="tipCredit" className="text-sm text-zinc-300">
+                        Tip Credit (Optional)
+                      </Label>
+                      <Input
+                        id="tipCredit"
+                        type="number"
+                        step="0.01"
+                        value={laborWages.tipCredit}
+                        onChange={(e) => setLaborWages({ ...laborWages, tipCredit: parseFloat(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">Default 0 = no tip credit</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="marketTier" className="text-sm text-zinc-300">
+                        Market Tier
+                      </Label>
+                      <Select
+                        value={laborWages.marketTier}
+                        onValueChange={(value: "LOW" | "MID" | "HIGH") =>
+                          setLaborWages({ ...laborWages, marketTier: value })
+                        }
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LOW">
+                            LOW ({laborSettings ? `${laborSettings.market_tier_low_multiplier}×` : '0.95×'})
+                          </SelectItem>
+                          <SelectItem value="MID">
+                            MID ({laborSettings ? `${laborSettings.market_tier_mid_multiplier}×` : '1.00×'})
+                          </SelectItem>
+                          <SelectItem value="HIGH">
+                            HIGH ({laborSettings ? `${laborSettings.market_tier_high_multiplier}×` : '1.10×'})
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-zinc-500 mt-1">Market competitiveness</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-zinc-700">
+                    <h4 className="text-sm font-medium text-zinc-300 mb-3">
+                      Select Positions for Your Concept
+                    </h4>
+                    <p className="text-xs text-zinc-500 mb-3">
+                      Check the positions you need. Toggle "Tipped" to adjust if position receives tips.
+                    </p>
+
+                    {loadingPositions ? (
+                      <div className="text-center py-8 text-zinc-500 text-sm">Loading positions...</div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                        {positionTemplates.map((position) => {
+                          const isTipped = tippedOverrides[position.position_name] ?? position.is_tipped;
+                          const breakdown = calculatePositionRateWithBreakdown(
+                            {
+                              minWageCity: laborWages.minWageCity,
+                              tipCredit: laborWages.tipCredit,
+                              marketTier: laborWages.marketTier,
+                            },
+                            {
+                              wage_multiplier: position.wage_multiplier,
+                              is_tipped: isTipped,
+                            },
+                            laborSettings || undefined
+                          );
+                          const calculatedRate = breakdown.final_rate;
+
+                          return (
+                            <div
+                              key={position.position_name}
+                              className={`flex items-center gap-2 p-3 rounded border transition-colors ${
+                                selectedPositions.includes(position.position_name)
+                                  ? "bg-[#D4AF37]/10 border-[#D4AF37]/50"
+                                  : "bg-zinc-900/50 border-zinc-800"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedPositions.includes(position.position_name)}
+                                onChange={() => togglePosition(position.position_name)}
+                                className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-zinc-300 truncate">
+                                  {position.position_name}
+                                </div>
+                                <div className="text-xs text-zinc-500 mt-0.5 flex items-center gap-1">
+                                  <span>{position.category} •</span>
+                                  <WageCalculationBreakdownUI
+                                    breakdown={breakdown}
+                                    positionName={position.position_name}
+                                  />
+                                </div>
+                              </div>
+                              <label className="flex items-center gap-1 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isTipped}
+                                  onChange={(e) => setTippedOverrides({
+                                    ...tippedOverrides,
+                                    [position.position_name]: e.target.checked
+                                  })}
+                                  className="w-3 h-3 rounded border-zinc-700 bg-zinc-900 text-emerald-500"
+                                />
+                                <span className="text-[10px] text-zinc-500">Tipped</span>
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {positionTemplates.length > 0 && (
+                      <div className="mt-3 text-xs text-zinc-500">
+                        {selectedPositions.length} of {positionTemplates.length} positions selected
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
 
           {/* Navigation buttons */}
           <div className="flex justify-between pt-4 border-t border-zinc-800">
@@ -1286,7 +1610,7 @@ export function CreateProjectDialog({
               Back
             </Button>
 
-            {step < 3 ? (
+            {step < 4 ? (
               editMode && step === 1 ? (
                 <Button onClick={handleFinish} disabled={loading}>
                   <Check className="w-4 h-4 mr-2" />

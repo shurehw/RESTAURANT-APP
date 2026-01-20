@@ -8,6 +8,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { ScenarioAssumptions } from "./ScenarioAssumptions";
 import { ScenarioWizard } from "./ScenarioWizard";
+import { CreateScenarioDialog } from "./CreateScenarioDialog";
 
 interface ProformaProjectClientProps {
   project: any;
@@ -90,12 +91,22 @@ export function ProformaProjectClient({ project }: ProformaProjectClientProps) {
         </div>
       )}
 
-      {/* Create Scenario Wizard */}
-      <ScenarioWizard
-        open={showCreateScenario}
-        onOpenChange={setShowCreateScenario}
-        projectId={project.id}
-      />
+      {/* Create Scenario - Use Wizard for first scenario, Dialog for additional ones */}
+      {!baseScenario ? (
+        <ScenarioWizard
+          open={showCreateScenario}
+          onOpenChange={setShowCreateScenario}
+          projectId={project.id}
+        />
+      ) : (
+        <CreateScenarioDialog
+          open={showCreateScenario}
+          onOpenChange={setShowCreateScenario}
+          projectId={project.id}
+          hasBaseScenario={!!baseScenario}
+          baseScenarioId={baseScenario?.id}
+        />
+      )}
     </div>
   );
 }
