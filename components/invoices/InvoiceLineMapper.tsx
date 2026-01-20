@@ -570,7 +570,7 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                         className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                       >
                         <optgroup label="Alcoholic Beverages">
-                          <option value="liquor">Liquor / Spirits</option>
+                          <option value="liquor">Liquor</option>
                           <option value="wine">Wine</option>
                           <option value="beer">Beer</option>
                         </optgroup>
