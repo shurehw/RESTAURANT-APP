@@ -1,6 +1,13 @@
 -- Expand item_category enum to include more specific categories
 -- This allows better categorization for GL mapping and reporting
 
+-- Create the type if it doesn't exist (for databases that haven't run migration 001)
+DO $$ BEGIN
+  CREATE TYPE item_category AS ENUM ('food', 'beverage', 'packaging', 'supplies');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
 -- Add new category values to the enum
 ALTER TYPE item_category ADD VALUE IF NOT EXISTS 'liquor';
 ALTER TYPE item_category ADD VALUE IF NOT EXISTS 'wine';
