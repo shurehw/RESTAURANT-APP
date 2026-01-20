@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
 
+      // Try to insert, but handle duplicate gracefully
       const { data: newVendor, error: vendorError } = await serviceClient
         .from('vendors')
         .insert({
@@ -103,11 +104,26 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (vendorError) {
-        console.error('Failed to create vendor:', vendorError);
-        throw { status: 500, code: 'VENDOR_CREATE_FAILED', message: `Failed to create vendor: ${vendorError.message}` };
-      }
+        // If duplicate, fetch the existing vendor
+        if (vendorError.code === '23505') {
+          const { data: existingVendor } = await serviceClient
+            .from('vendors')
+            .select('id')
+            .eq('normalized_name', normalizedName)
+            .single();
 
-      vendorId = newVendor.id;
+          if (existingVendor) {
+            vendorId = existingVendor.id;
+          } else {
+            throw { status: 500, code: 'VENDOR_CREATE_FAILED', message: `Failed to create vendor: ${vendorError.message}` };
+          }
+        } else {
+          console.error('Failed to create vendor:', vendorError);
+          throw { status: 500, code: 'VENDOR_CREATE_FAILED', message: `Failed to create vendor: ${vendorError.message}` };
+        }
+      } else {
+        vendorId = newVendor.id;
+      }
     }
 
     const fileName = `${Date.now()}-${file.name}`;
