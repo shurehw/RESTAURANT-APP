@@ -209,12 +209,12 @@ export function RevenueAssumptions({
         </h3>
       </div>
 
-      {/* Revenue Summary and Service Period Details */}
-      <RevenueMatrixView scenarioId={scenarioId} />
+      {/* Center Participation Matrix - Assign centers to service periods (FIRST) */}
+      <CenterParticipationMatrix scenarioId={scenarioId} />
 
-      {/* Center Participation Matrix - Assign centers to service periods */}
+      {/* Revenue Summary and Service Period Details */}
       <div className="mt-6">
-        <CenterParticipationMatrix scenarioId={scenarioId} />
+        <RevenueMatrixView scenarioId={scenarioId} />
       </div>
 
       <div className="mt-6 space-y-6">
