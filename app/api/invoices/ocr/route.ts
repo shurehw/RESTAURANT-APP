@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
       invoiceId: invoiceId,
       normalized,
       warnings: normalized.warnings,
-      imageUrl,
+      storagePath,
       needsReview,
       reviewUrl: `/invoices/${invoiceId}/review`,
     });
