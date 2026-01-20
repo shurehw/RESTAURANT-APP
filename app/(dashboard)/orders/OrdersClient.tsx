@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useVenue } from "@/components/providers/VenueProvider";
 import {
   Table,
   TableBody,
@@ -64,6 +65,7 @@ interface OrdersClientProps {
 }
 
 export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
+  const { selectedVenue } = useVenue();
   const [open, setOpen] = useState(false);
   const [vendorId, setVendorId] = useState("");
   const [venueId, setVenueId] = useState("");
@@ -74,6 +76,12 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
 
   const [searchResults, setSearchResults] = useState<Item[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+
+  // Filter orders by selected venue
+  const filteredOrders = useMemo(() => {
+    if (!selectedVenue) return orders;
+    return orders.filter(order => order.venue?.name === selectedVenue.name);
+  }, [orders, selectedVenue]);
 
   // Debounced search effect could be added here, but for simplicity we'll just search on change for now
   // or use a small timeout.
@@ -439,7 +447,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders?.map((order) => (
+            {filteredOrders?.map((order) => (
               <TableRow key={order.id}>
                 <TableCell className="font-mono font-medium">
                   {order.order_number || "—"}
