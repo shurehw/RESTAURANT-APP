@@ -112,7 +112,23 @@ export async function extractInvoiceWithClaude(
     jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
   }
 
-  const invoice: RawOCRInvoice = JSON.parse(jsonText);
+  // Validate JSON is not empty
+  if (!jsonText || jsonText.length === 0) {
+    console.error('[OCR Error] Claude returned empty response');
+    console.error('Raw response:', rawResponse);
+    throw new Error('Claude returned empty response. Please try uploading the invoice again.');
+  }
+
+  let invoice: RawOCRInvoice;
+  try {
+    invoice = JSON.parse(jsonText);
+  } catch (parseError) {
+    console.error('[OCR Error] Failed to parse Claude response as JSON');
+    console.error('JSON text:', jsonText);
+    console.error('Raw response:', rawResponse);
+    console.error('Parse error:', parseError);
+    throw new Error('Failed to parse invoice data from Claude. The response may be malformed. Please try again.');
+  }
 
   return {
     invoice,
@@ -167,7 +183,23 @@ export async function extractInvoiceFromPDF(
     jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
   }
 
-  const invoice: RawOCRInvoice = JSON.parse(jsonText);
+  // Validate JSON is not empty
+  if (!jsonText || jsonText.length === 0) {
+    console.error('[OCR Error] Claude returned empty response for PDF');
+    console.error('Raw response:', rawResponse);
+    throw new Error('Claude returned empty response. Please try uploading the invoice again.');
+  }
+
+  let invoice: RawOCRInvoice;
+  try {
+    invoice = JSON.parse(jsonText);
+  } catch (parseError) {
+    console.error('[OCR Error] Failed to parse Claude PDF response as JSON');
+    console.error('JSON text:', jsonText);
+    console.error('Raw response:', rawResponse);
+    console.error('Parse error:', parseError);
+    throw new Error('Failed to parse invoice data from Claude. The response may be malformed. Please try again.');
+  }
 
   return {
     invoice,
