@@ -79,8 +79,9 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
         body: JSON.stringify({
           name: fullItemName,
           sku: newItemSKU || `AUTO-${Date.now()}`,
-          category: newItemCategory || 'uncategorized',
+          category: newItemCategory || 'COGS',
           base_uom: newItemUOM || 'unit',
+          gl_account_id: glAccountId || null,
         }),
       });
 
@@ -234,6 +235,8 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const [innerPackQty, setInnerPackQty] = useState('');
   const [innerPackUom, setInnerPackUom] = useState('');
   const [isNormalizing, setIsNormalizing] = useState(false);
+  const [glAccountId, setGlAccountId] = useState<string>('');
+  const [glSuggestions, setGlSuggestions] = useState<any[]>([]);
 
   // AI-powered normalization when Create New Item is opened
   useEffect(() => {
@@ -245,6 +248,23 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const normalizeWithAI = async () => {
     setIsNormalizing(true);
     try {
+      // Fetch GL account suggestions
+      const glResponse = await fetch('/api/items/suggest-gl', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: line.description }),
+      });
+
+      if (glResponse.ok) {
+        const glData = await glResponse.json();
+        setGlSuggestions(glData.suggestions || []);
+        if (glData.suggestions?.length > 0) {
+          setGlAccountId(glData.suggestions[0].id); // Auto-select best match
+        }
+        setNewItemCategory(glData.suggestedCategory || 'COGS');
+      }
+
+      // Fetch item normalization
       const response = await fetch('/api/items/normalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -255,7 +275,6 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
         const data = await response.json();
         setNewItemName(data.name || normalizeItemName(line.description));
         setNewItemSKU(data.sku || '');
-        setNewItemCategory(data.category || parseCategoryFromDescription(line.description));
         setNewItemUOM(data.uom || parseUOMFromDescription(line.description));
         setNewItemPackSize(data.packSize || parsePackSizeFromDescription(line.description));
         setOuterPackQty(data.outerPackQty || '1');
@@ -264,7 +283,6 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
       } else {
         // Fallback to regex-based normalization
         setNewItemName(normalizeItemName(line.description));
-        setNewItemCategory(parseCategoryFromDescription(line.description));
         setNewItemUOM(parseUOMFromDescription(line.description));
         setNewItemPackSize(parsePackSizeFromDescription(line.description));
       }
@@ -272,7 +290,6 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
       console.error('AI normalization error:', error);
       // Fallback to regex-based normalization
       setNewItemName(normalizeItemName(line.description));
-      setNewItemCategory(parseCategoryFromDescription(line.description));
       setNewItemUOM(parseUOMFromDescription(line.description));
       setNewItemPackSize(parsePackSizeFromDescription(line.description));
     } finally {
@@ -516,18 +533,44 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     </div>
                   </div>
 
+                  {/* GL Account Selection */}
+                  <div className="mb-3">
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">
+                      GL Account (for accounting) *
+                    </label>
+                    <select
+                      value={glAccountId}
+                      onChange={(e) => setGlAccountId(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                    >
+                      <option value="">Select GL Account...</option>
+                      {glSuggestions.map((gl) => (
+                        <option key={gl.id} value={gl.id}>
+                          {gl.external_code ? `${gl.external_code} - ` : ''}{gl.name} ({gl.section})
+                          {gl.confidence === 'high' && ' ⭐ Best Match'}
+                        </option>
+                      ))}
+                    </select>
+                    {glSuggestions.length > 0 && glSuggestions[0].confidence === 'high' && (
+                      <p className="text-xs text-sage mt-1">✓ AI suggested best match selected</p>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        Category
+                        Category (GL Section)
                       </label>
-                      <input
-                        type="text"
+                      <select
                         value={newItemCategory}
                         onChange={(e) => setNewItemCategory(e.target.value)}
-                        placeholder="e.g. Bar Consumables"
                         className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                      />
+                      >
+                        <option value="COGS">COGS (Cost of Goods Sold)</option>
+                        <option value="Labor">Labor</option>
+                        <option value="Opex">Opex (Operating Expenses)</option>
+                        <option value="Sales">Sales</option>
+                      </select>
                     </div>
 
                     <div>
