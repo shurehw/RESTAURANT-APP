@@ -622,6 +622,12 @@ export function CreateProjectDialog({
           if (!template) continue;
 
           const isTipped = tippedOverrides[positionName] ?? template.is_tipped;
+
+          if (!laborSettings) {
+            console.error('Labor settings not loaded');
+            continue;
+          }
+
           const calculatedRate = calculatePositionRate(
             {
               minWageCity: laborWages.minWageCity,
@@ -631,7 +637,8 @@ export function CreateProjectDialog({
             {
               wage_multiplier: template.wage_multiplier,
               is_tipped: isTipped,
-            }
+            },
+            laborSettings
           );
 
           await fetch("/api/proforma/labor-positions", {

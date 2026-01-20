@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { calculatePositionRate } from "@/lib/labor-rate-calculator";
+import { calculatePositionRate, type LaborSettings } from "@/lib/labor-rate-calculator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +107,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
     tipCredit: 0.00,
     marketTier: "MID" as "LOW" | "MID" | "HIGH",
   });
+  const [laborSettings, setLaborSettings] = useState<LaborSettings | null>(null);
   const [positionTemplates, setPositionTemplates] = useState<any[]>([]);
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [loadingPositions, setLoadingPositions] = useState(false);
@@ -160,10 +161,27 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
 
   // Load position templates when reaching step 5
   useEffect(() => {
-    if (step === 5 && positionTemplates.length === 0) {
-      loadPositionTemplates();
+    if (step === 5) {
+      if (positionTemplates.length === 0) {
+        loadPositionTemplates();
+      }
+      if (!laborSettings) {
+        loadLaborSettings();
+      }
     }
   }, [step]);
+
+  const loadLaborSettings = async () => {
+    try {
+      const response = await fetch('/api/proforma/labor-settings');
+      if (response.ok) {
+        const data = await response.json();
+        setLaborSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Failed to load labor settings:', error);
+    }
+  };
 
   const loadPositionTemplates = async () => {
     setLoadingPositions(true);
@@ -313,6 +331,11 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
         const template = positionTemplates.find(p => p.position_name === positionName);
         if (!template) continue;
 
+        if (!laborSettings) {
+          console.error('Labor settings not loaded');
+          continue;
+        }
+
         const calculatedRate = calculatePositionRate(
           {
             minWageCity: laborWages.minWageCity,
@@ -322,7 +345,8 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
           {
             wage_multiplier: template.wage_multiplier,
             is_tipped: template.is_tipped,
-          }
+          },
+          laborSettings
         );
 
         await fetch("/api/proforma/labor-positions", {
@@ -952,7 +976,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                     ) : (
                       <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
                         {positionTemplates.map((position) => {
-                          const calculatedRate = calculatePositionRate(
+                          const calculatedRate = laborSettings ? calculatePositionRate(
                             {
                               minWageCity: laborWages.minWageCity,
                               tipCredit: laborWages.tipCredit,
@@ -961,8 +985,9 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                             {
                               wage_multiplier: position.wage_multiplier,
                               is_tipped: position.is_tipped,
-                            }
-                          );
+                            },
+                            laborSettings
+                          ) : 0;
 
                           return (
                             <label
