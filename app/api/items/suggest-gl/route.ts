@@ -112,12 +112,85 @@ export async function POST(request: NextRequest) {
     // Sort by score descending
     scoredSuggestions.sort((a, b) => b.score - a.score);
 
-    // Suggest category based on GL section of top suggestion
-    const suggestedCategory = scoredSuggestions[0]?.section || 'COGS';
+    // Suggest category and subcategory based on description keywords
+    let suggestedCategory = 'food';
+    let suggestedSubcategory = '';
+
+    // Liquor/Spirits detection
+    if (desc.includes('tequila') || desc.includes('patron') || desc.includes('casamigos')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Tequila';
+    } else if (desc.includes('mezcal') || desc.includes('conejos')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Mezcal';
+    } else if (desc.includes('vodka') || desc.includes('grey goose') || desc.includes('titos')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Vodka';
+    } else if (desc.includes('whiskey') || desc.includes('bourbon') || desc.includes('scotch') || desc.includes('rye')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = desc.includes('bourbon') ? 'Bourbon' : desc.includes('scotch') ? 'Scotch' : 'Whiskey';
+    } else if (desc.includes('gin')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Gin';
+    } else if (desc.includes('rum')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Rum';
+    } else if (desc.includes('cognac') || desc.includes('brandy')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Cognac/Brandy';
+    } else if (desc.includes('liqueur') || desc.includes('amaretto') || desc.includes('kahlua')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Liqueur';
+    }
+
+    // Wine detection
+    else if (desc.includes('wine') || desc.includes('cabernet') || desc.includes('chardonnay') || desc.includes('pinot') || desc.includes('merlot') || desc.includes('sauvignon')) {
+      suggestedCategory = 'wine';
+      if (desc.includes('red') || desc.includes('cabernet') || desc.includes('merlot') || desc.includes('pinot noir')) {
+        suggestedSubcategory = 'Red Wine';
+      } else if (desc.includes('white') || desc.includes('chardonnay') || desc.includes('sauvignon blanc') || desc.includes('pinot grigio')) {
+        suggestedSubcategory = 'White Wine';
+      } else if (desc.includes('sparkling') || desc.includes('champagne') || desc.includes('prosecco')) {
+        suggestedSubcategory = 'Sparkling Wine';
+      } else if (desc.includes('rose') || desc.includes('rosé')) {
+        suggestedSubcategory = 'Rosé';
+      }
+    }
+
+    // Beer detection
+    else if (desc.includes('beer') || desc.includes('lager') || desc.includes('ipa') || desc.includes('ale') || desc.includes('stout')) {
+      suggestedCategory = 'beer';
+      if (desc.includes('ipa')) suggestedSubcategory = 'IPA';
+      else if (desc.includes('lager')) suggestedSubcategory = 'Lager';
+      else if (desc.includes('stout')) suggestedSubcategory = 'Stout';
+      else if (desc.includes('ale')) suggestedSubcategory = 'Ale';
+    }
+
+    // Food categories
+    else if (desc.includes('meat') || desc.includes('beef') || desc.includes('pork') || desc.includes('chicken')) {
+      suggestedCategory = 'meat';
+      if (desc.includes('beef')) suggestedSubcategory = 'Beef';
+      else if (desc.includes('pork')) suggestedSubcategory = 'Pork';
+      else if (desc.includes('chicken')) suggestedSubcategory = 'Chicken';
+    } else if (desc.includes('seafood') || desc.includes('fish') || desc.includes('salmon') || desc.includes('shrimp')) {
+      suggestedCategory = 'seafood';
+    } else if (desc.includes('produce') || desc.includes('lettuce') || desc.includes('tomato') || desc.includes('onion')) {
+      suggestedCategory = 'produce';
+    } else if (desc.includes('dairy') || desc.includes('cheese') || desc.includes('milk') || desc.includes('cream')) {
+      suggestedCategory = 'dairy';
+    }
+
+    // Supplies
+    else if (desc.includes('packaging') || desc.includes('box') || desc.includes('bag') || desc.includes('container')) {
+      suggestedCategory = 'packaging';
+    } else if (desc.includes('disposable') || desc.includes('cup') || desc.includes('plate') || desc.includes('utensil')) {
+      suggestedCategory = 'disposables';
+    }
 
     return NextResponse.json({
       suggestions: scoredSuggestions.slice(0, 5),
       suggestedCategory,
+      suggestedSubcategory,
     });
   });
 }
