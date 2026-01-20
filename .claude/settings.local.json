@@ -83,7 +83,13 @@
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/check-venues.ts:*)",
       "Bash(export:*)",
       "Bash(awk:*)",
-      "Bash(npx dotenv -e .env.local -- npx tsx scripts/fix-gl-suggestion.ts:*)"
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/fix-gl-suggestion.ts:*)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/add-payment-terms.ts:*)",
+      "Bash(set -a)",
+      "Bash(source .env.local)",
+      "Bash(set +a)",
+      "Bash(Get-Content dev-output.log -Tail 100)",
+      "Bash(Select-String -Pattern \"error|category|item\" -Context 1)"
     ],
     "deny": [],
     "ask": []

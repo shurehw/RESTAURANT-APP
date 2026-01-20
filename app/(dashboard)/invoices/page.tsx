@@ -39,8 +39,8 @@ export default async function InvoicesPage() {
       total_variance_pct,
       variance_severity,
       purchase_order_id,
-      vendor:vendors(name),
-      venue:venues(name),
+      vendor:vendor_id(name),
+      venue:venue_id(name),
       purchase_orders:purchase_order_id(order_number)
     `
     )

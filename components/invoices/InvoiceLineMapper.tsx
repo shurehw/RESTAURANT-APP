@@ -242,6 +242,7 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
   const [mappingUnit, setMappingUnit] = useState<'as_invoiced' | 'case' | 'bottle'>('as_invoiced');
   const [mappedQty, setMappedQty] = useState<number>(line.qty);
   const [packSizeNumber, setPackSizeNumber] = useState<number | null>(null);
+  const [showPackBreakdown, setShowPackBreakdown] = useState(false);
 
   // Parse pack size from description on mount (e.g., "6/Cs" → 6)
   useEffect(() => {
@@ -386,7 +387,10 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                         ? 'border-brass bg-brass/10'
                         : 'border-border hover:bg-muted'
                     }`}
-                    onClick={() => setSelectedItemId(item.id)}
+                    onClick={() => {
+                      setSelectedItemId(item.id);
+                      handleMapItem(item.id);
+                    }}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -546,65 +550,82 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                     />
                   </div>
 
-                  {/* Pack Info - Outer/Inner */}
-                  <div className="border border-brass/30 rounded-md p-3 bg-brass/5">
-                    <div className="text-xs font-semibold text-brass mb-2">Pack Breakdown (for recipes)</div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground block mb-1">
-                          Outer Pack (Case Qty)
-                        </label>
-                        <input
-                          type="number"
-                          value={outerPackQty}
-                          onChange={(e) => setOuterPackQty(e.target.value)}
-                          placeholder="e.g. 4 (for 4/1 gal)"
-                          className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">How many units per case</p>
+                  {/* Pack Info - Collapsible */}
+                  <div className="border border-brass/30 rounded-md bg-brass/5">
+                    <button
+                      type="button"
+                      onClick={() => setShowPackBreakdown(!showPackBreakdown)}
+                      className="w-full p-3 text-left flex items-center justify-between hover:bg-brass/10 transition-colors"
+                    >
+                      <div className="text-xs font-semibold text-brass">
+                        Pack Breakdown <span className="font-normal text-muted-foreground">(Optional - for recipe costing)</span>
                       </div>
+                      <span className="text-brass text-sm">{showPackBreakdown ? '−' : '+'}</span>
+                    </button>
 
-                      <div>
-                        <label className="text-xs font-medium text-muted-foreground block mb-1">
-                          Inner Pack Size
-                        </label>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            value={innerPackQty}
-                            onChange={(e) => setInnerPackQty(e.target.value)}
-                            placeholder="e.g. 1"
-                            className="w-20 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                          />
-                          <select
-                            value={innerPackUom}
-                            onChange={(e) => setInnerPackUom(e.target.value)}
-                            className="flex-1 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                          >
-                            <option value="gal">Gallon</option>
-                            <option value="L">Liter</option>
-                            <option value="mL">Milliliter</option>
-                            <option value="lb">Pound</option>
-                            <option value="oz">Ounce (fl oz)</option>
-                            <option value="g">Gram</option>
-                            <option value="kg">Kilogram</option>
-                            <option value="qt">Quart</option>
-                            <option value="pt">Pint</option>
-                            <option value="cup">Cup</option>
-                            <option value="tbsp">Tablespoon</option>
-                            <option value="tsp">Teaspoon</option>
-                            <option value="case">Case</option>
-                            <option value="box">Box</option>
-                            <option value="bag">Bag</option>
-                            <option value="unit">Unit/Each</option>
-                          </select>
+                    {showPackBreakdown && (
+                      <div className="p-3 pt-0">
+                        <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs mb-3">
+                          <strong>💡 Quick Guide:</strong>
+                          <ul className="mt-1 ml-4 list-disc space-y-1">
+                            <li><strong>Skip this section</strong> if buying single bottles/items</li>
+                            <li><strong>Case with multiple units:</strong> e.g., "6/750mL" = 6 bottles × 750 mL each</li>
+                            <li><strong>Bulk container:</strong> e.g., "4/1 GAL" = 4 cases × 1 gallon each</li>
+                          </ul>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">Size of each individual unit</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">
+                              Units per Case
+                            </label>
+                            <input
+                              type="number"
+                              value={outerPackQty}
+                              onChange={(e) => setOuterPackQty(e.target.value)}
+                              placeholder="1"
+                              className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-medium text-muted-foreground block mb-1">
+                              Size per Unit
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                value={innerPackQty}
+                                onChange={(e) => setInnerPackQty(e.target.value)}
+                                placeholder="1"
+                                className="w-20 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                              />
+                              <select
+                                value={innerPackUom}
+                                onChange={(e) => setInnerPackUom(e.target.value)}
+                                className="flex-1 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                              >
+                                <option value="unit">Unit/Each</option>
+                                <option value="oz">Ounce (fl oz)</option>
+                                <option value="mL">Milliliter</option>
+                                <option value="L">Liter</option>
+                                <option value="gal">Gallon</option>
+                                <option value="qt">Quart</option>
+                                <option value="pt">Pint</option>
+                                <option value="lb">Pound</option>
+                                <option value="g">Gram</option>
+                                <option value="kg">Kilogram</option>
+                                <option value="cup">Cup</option>
+                                <option value="tbsp">Tablespoon</option>
+                                <option value="tsp">Teaspoon</option>
+                                <option value="case">Case</option>
+                                <option value="box">Box</option>
+                                <option value="bag">Bag</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                      <strong>Example:</strong> "4/1 GAL" = {outerPackQty || '4'} cases × {innerPackQty || '1'} {innerPackUom || 'gal'} each
-                    </div>
+                    )}
                   </div>
 
                   {/* GL Account Selection */}
