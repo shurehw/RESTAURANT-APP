@@ -155,6 +155,32 @@ export function validateWithRules(
   };
 }
 
+// Backwards compatibility: alias for validateWithRules
+export const validateSpaceConstraints = validateWithRules;
+
+// Seating density benchmarks
+export const SEATING_BENCHMARKS: Record<string, {
+  sfPerSeat: [number, number];
+  seatsPerThousandSF: [number, number];
+  diningAreaPct: [number, number];
+}> = {
+  'high-density': {
+    sfPerSeat: [10, 15],
+    seatsPerThousandSF: [65, 100],
+    diningAreaPct: [60, 70],
+  },
+  'medium-density': {
+    sfPerSeat: [15, 20],
+    seatsPerThousandSF: [50, 65],
+    diningAreaPct: [55, 65],
+  },
+  'low-density': {
+    sfPerSeat: [20, 30],
+    seatsPerThousandSF: [33, 50],
+    diningAreaPct: [50, 60],
+  },
+};
+
 // Concept type options for dropdowns
 export const CONCEPT_TYPES = [
   { value: "fast-casual", label: "Fast Casual / QSR" },
