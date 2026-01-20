@@ -21,7 +21,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate category is a valid enum value
-    const validCategories = ['beverage', 'packaging', 'food'];
+    const validCategories = [
+      'food', 'beverage', 'packaging', 'supplies',
+      'liquor', 'wine', 'beer', 'spirits', 'non_alcoholic_beverage',
+      'produce', 'meat', 'seafood', 'dairy', 'dry_goods', 'frozen',
+      'disposables', 'chemicals', 'smallwares', 'other'
+    ];
     const itemCategory = validCategories.includes(category?.toLowerCase())
       ? category.toLowerCase()
       : 'food';
