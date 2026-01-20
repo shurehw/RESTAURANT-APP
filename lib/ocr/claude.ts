@@ -75,7 +75,7 @@ export async function extractInvoiceWithClaude(
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 8192, // Increased for large invoices with many line items
+    max_tokens: 16384, // Maximum for large invoices (100+ line items)
     messages: [
       {
         role: 'user',
@@ -146,7 +146,7 @@ export async function extractInvoiceFromPDF(
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 8192, // Increased for large invoices with many line items
+    max_tokens: 16384, // Maximum for large invoices (100+ line items)
     messages: [
       {
         role: 'user',
