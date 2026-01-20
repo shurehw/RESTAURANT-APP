@@ -76,10 +76,20 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const normalized = await normalizeOCR(rawInvoice, supabase);
 
-    // If vendor not found, create it using service role (bypasses RLS)
+    // Validate and handle vendor
     let vendorId = normalized.vendorId;
-    if (!vendorId && normalized.vendorName) {
-      const normalizedName = normalized.vendorName
+    let vendorName = normalized.vendorName?.trim() || '';
+
+    // If vendor name is empty or "UNKNOWN", create a placeholder
+    if (!vendorName || vendorName.toUpperCase() === 'UNKNOWN') {
+      vendorName = `Unknown Vendor - Invoice ${normalized.invoiceNumber || new Date().toISOString()}`;
+      console.warn('[OCR Warning] Vendor name not extracted, using placeholder:', vendorName);
+      normalized.warnings.push('Vendor name could not be extracted from invoice. Please update manually.');
+    }
+
+    // If vendor not found, create it using service role (bypasses RLS)
+    if (!vendorId && vendorName) {
+      const normalizedName = vendorName
         .toLowerCase()
         .replace(/[,\.]/g, '')
         .replace(/\s+/g, ' ')
@@ -106,7 +116,7 @@ export async function POST(request: NextRequest) {
         const { data: newVendor, error: vendorError } = await serviceClient
           .from('vendors')
           .insert({
-            name: normalized.vendorName,
+            name: vendorName,
             normalized_name: normalizedName,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -123,14 +133,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ensure vendor_id is set - invoice cannot be created without vendor
+    if (!vendorId) {
+      throw {
+        status: 400,
+        code: 'MISSING_VENDOR',
+        message: 'Invoice must have a vendor. OCR failed to extract vendor information.'
+      };
+    }
+
+    // Ensure venue_id is set - invoice must be associated with a venue
+    if (!venueId) {
+      throw {
+        status: 400,
+        code: 'MISSING_VENUE',
+        message: 'Invoice must be associated with a venue. Please select a venue before uploading.'
+      };
+    }
+
     const fileName = `${Date.now()}-${file.name}`;
     const { data: uploadData } = await supabase.storage
       .from('opsos-invoices')
       .upload(`raw/${fileName}`, buffer, { contentType: file.type });
 
-    const imageUrl = uploadData
-      ? supabase.storage.from('opsos-invoices').getPublicUrl(uploadData.path).data.publicUrl
-      : null;
+    const storagePath = uploadData?.path || null;
 
     // Prepare data for RPC
     const invoicePayload = {
@@ -139,10 +165,11 @@ export async function POST(request: NextRequest) {
       invoice_number: normalized.invoiceNumber,
       invoice_date: normalized.invoiceDate,
       due_date: normalized.dueDate,
+      payment_terms: normalized.paymentTerms,
       total_amount: normalized.totalAmount,
       ocr_confidence: normalized.ocrConfidence,
       ocr_raw_json: rawInvoice,
-      image_url: imageUrl,
+      storage_path: storagePath,
       is_preopening: isPreopening,
     };
 

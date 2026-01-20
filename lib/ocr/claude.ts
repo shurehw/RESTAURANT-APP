@@ -19,6 +19,7 @@ Analyze this invoice image and extract the following information in JSON format:
   "invoiceNumber": "Invoice number",
   "invoiceDate": "Date in YYYY-MM-DD format",
   "dueDate": "Due date in YYYY-MM-DD format (if present)",
+  "paymentTerms": "Payment terms (e.g., 'Net 30', 'Due on Receipt', 'COD', '2/10 Net 30')",
   "totalAmount": 0.00,
   "confidence": 0.95,
   "deliveryLocation": {
@@ -38,19 +39,37 @@ Analyze this invoice image and extract the following information in JSON format:
   ]
 }
 
-IMPORTANT:
-- Extract ALL line items from the invoice (food, beverage, construction materials, equipment, services, etc.)
-- Look for "Ship To:", "Deliver To:", "Location:", "Job Site:", "Project:", or similar fields to identify the delivery location
-- For each line item, extract the vendor's item code/SKU if visible (could be numeric "12345", alphanumeric "SYS-BEEF-001", or construction codes like "8104-CONCRETE")
-- Include the COMPLETE item description exactly as it appears on the invoice - don't truncate or summarize
-- Use exact vendor name as printed on the invoice letterhead or header
+CRITICAL EXTRACTION REQUIREMENTS:
+1. VENDOR NAME (REQUIRED):
+   - Look in the top left/center of the invoice for the company letterhead
+   - Extract the EXACT vendor/company name as printed (e.g., "Spec's Wine, Spirits & Finer Foods")
+   - If the vendor name is unclear or not visible, set vendor to "UNKNOWN" and confidence to 0.3
+   - Common locations: top of page, "From:", "Sold By:", letterhead logo
+
+2. PAYMENT TERMS:
+   - Look for "Terms:", "Payment Terms:", "Net Days:", or similar labels
+   - Common formats: "Net 30", "Net 15", "Due on Receipt", "COD", "2/10 Net 30"
+   - If not found, set to null
+
+3. DUE DATE:
+   - Look for "Due Date:", "Payment Due:", or calculate from invoice date + payment terms
+   - If "Net 30" terms, calculate due date as invoice date + 30 days
+   - If not found and cannot calculate, set to null
+
+4. LINE ITEMS:
+   - Extract ALL line items from the invoice (food, beverage, construction materials, equipment, services, etc.)
+   - Look for "Ship To:", "Deliver To:", "Location:", "Job Site:", "Project:", or similar fields to identify the delivery location
+   - For each line item, extract the vendor's item code/SKU if visible (could be numeric "12345", alphanumeric "SYS-BEEF-001", or construction codes like "8104-CONCRETE")
+   - Include the COMPLETE item description exactly as it appears on the invoice - don't truncate or summarize
+   - For construction/pre-opening invoices: preserve categories like "General Requirements", "Finishes", "Electrical", etc. in the description
+   - If no item code is visible, set itemCode to null
+
+FORMATTING RULES:
 - Dates must be in YYYY-MM-DD format
 - All amounts should be numbers (not strings)
 - Confidence should be 0.0-1.0 (1.0 = very confident, 0.0 = not confident)
 - For each line item, include quantity, unit price, and line total
-- For construction/pre-opening invoices: preserve categories like "General Requirements", "Finishes", "Electrical", etc. in the description
 - If you cannot extract a field with confidence, set confidence < 0.7
-- If no item code is visible, set itemCode to null
 - If no delivery location is found, set deliveryLocation to null
 - Pay special attention to multi-page invoices - extract ALL pages
 

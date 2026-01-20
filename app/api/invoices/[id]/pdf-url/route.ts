@@ -43,7 +43,7 @@ export async function GET(
     // Get signed URL for the PDF
     const { data: urlData, error: urlError } = await supabase
       .storage
-      .from('invoices')
+      .from('opsos-invoices')
       .createSignedUrl(invoice.storage_path, 3600); // 1 hour expiry
 
     if (urlError) {
