@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { name, sku, category, base_uom } = body;
+    const { name, sku, category, base_uom, gl_account_id, organization_id } = body;
 
     if (!name || !sku) {
       return NextResponse.json(
@@ -26,6 +26,21 @@ export async function POST(request: NextRequest) {
       ? category.toLowerCase()
       : 'food';
 
+    // Get user's organization if not provided
+    let orgId = organization_id;
+    if (!orgId) {
+      const { data: user } = await supabase.auth.getUser();
+      if (user?.user) {
+        const { data: orgUser } = await supabase
+          .from('organization_users')
+          .select('organization_id')
+          .eq('user_id', user.user.id)
+          .eq('is_active', true)
+          .single();
+        orgId = orgUser?.organization_id;
+      }
+    }
+
     // Create the item
     const { data: item, error } = await supabase
       .from('items')
@@ -34,6 +49,8 @@ export async function POST(request: NextRequest) {
         sku,
         category: itemCategory,
         base_uom: base_uom || 'unit',
+        gl_account_id: gl_account_id || null,
+        organization_id: orgId || null,
         is_active: true,
       })
       .select()
