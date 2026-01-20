@@ -9,15 +9,19 @@ async function testFunction() {
   console.log('Testing GL suggestion function directly...\n');
 
   // First, check if function exists by looking at pg_proc
-  const { data: funcCheck, error: funcError } = await supabase
-    .rpc('exec_sql', {
+  let funcCheck = null;
+  try {
+    const result = await supabase.rpc('exec_sql', {
       sql: `
         SELECT proname, pronargs
         FROM pg_proc
         WHERE proname = 'suggest_gl_account_for_item_v2'
       `
-    })
-    .catch(() => ({ data: null, error: null }));
+    });
+    funcCheck = result.data;
+  } catch (e) {
+    // Function doesn't exist, ignore
+  }
 
   if (funcCheck) {
     console.log('Function metadata:', funcCheck);
