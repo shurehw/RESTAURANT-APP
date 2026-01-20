@@ -77,7 +77,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
   }, {} as Record<string, { gl_account: any; total: number; line_count: number }>);
 
   type GLBreakdownItem = { gl_account: any; total: number; line_count: number };
-  const glSummary = Object.values(glBreakdown).sort((a: GLBreakdownItem, b: GLBreakdownItem) => b.total - a.total);
+  const glSummary = (Object.values(glBreakdown) as GLBreakdownItem[]).sort((a, b) => b.total - a.total);
 
   const mappingProgress = allLines.length > 0
     ? Math.round((mappedLines.length / allLines.length) * 100)
