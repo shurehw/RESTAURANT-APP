@@ -492,10 +492,19 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                           >
                             <option value="gal">Gallon</option>
                             <option value="L">Liter</option>
+                            <option value="mL">Milliliter</option>
                             <option value="lb">Pound</option>
-                            <option value="oz">Ounce</option>
+                            <option value="oz">Ounce (fl oz)</option>
+                            <option value="g">Gram</option>
+                            <option value="kg">Kilogram</option>
                             <option value="qt">Quart</option>
                             <option value="pt">Pint</option>
+                            <option value="cup">Cup</option>
+                            <option value="tbsp">Tablespoon</option>
+                            <option value="tsp">Teaspoon</option>
+                            <option value="case">Case</option>
+                            <option value="box">Box</option>
+                            <option value="bag">Bag</option>
                             <option value="unit">Unit/Each</option>
                           </select>
                         </div>
