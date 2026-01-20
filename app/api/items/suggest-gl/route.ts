@@ -141,6 +141,9 @@ export async function POST(request: NextRequest) {
     } else if (desc.includes('liqueur') || desc.includes('amaretto') || desc.includes('kahlua')) {
       suggestedCategory = 'liquor';
       suggestedSubcategory = 'Liqueur';
+    } else if (desc.includes('bitters') || desc.includes('angostura') || desc.includes('aperol') || desc.includes('campari')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Bitters/Aperitifs';
     }
 
     // Wine detection
