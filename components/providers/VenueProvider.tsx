@@ -15,6 +15,7 @@ interface VenueContextType {
   setSelectedVenue: (venue: Venue | null) => void;
   venues: Venue[];
   setVenues: (venues: Venue[]) => void;
+  isHydrated: boolean;
 }
 
 const VenueContext = createContext<VenueContextType | undefined>(undefined);
@@ -30,27 +31,29 @@ export function VenueProvider({
 }) {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(initialVenue);
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
+  const [isHydrated, setIsHydrated] = useState(false);
 
-  // Persist to localStorage
-  useEffect(() => {
-    if (selectedVenue) {
-      localStorage.setItem('selectedVenueId', selectedVenue.id);
-    }
-  }, [selectedVenue]);
-
-  // Restore from localStorage on mount
+  // Restore from localStorage on mount (before hydration completes)
   useEffect(() => {
     const savedVenueId = localStorage.getItem('selectedVenueId');
-    if (savedVenueId && venues.length > 0) {
-      const savedVenue = venues.find(v => v.id === savedVenueId);
+    if (savedVenueId && initialVenues.length > 0) {
+      const savedVenue = initialVenues.find(v => v.id === savedVenueId);
       if (savedVenue) {
         setSelectedVenue(savedVenue);
       }
     }
-  }, [venues]);
+    setIsHydrated(true);
+  }, [initialVenues]);
+
+  // Persist to localStorage
+  useEffect(() => {
+    if (selectedVenue && isHydrated) {
+      localStorage.setItem('selectedVenueId', selectedVenue.id);
+    }
+  }, [selectedVenue, isHydrated]);
 
   return (
-    <VenueContext.Provider value={{ selectedVenue, setSelectedVenue, venues, setVenues }}>
+    <VenueContext.Provider value={{ selectedVenue, setSelectedVenue, venues, setVenues, isHydrated }}>
       {children}
     </VenueContext.Provider>
   );

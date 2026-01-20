@@ -23,9 +23,13 @@ export function ContextBand({
   additionalContext,
   className = '',
 }: ContextBandProps) {
-  const { selectedVenue } = useVenue();
-  const venueName = selectedVenue?.name || propVenueName || 'All Venues';
+  const { selectedVenue, isHydrated } = useVenue();
   const [iconStroke, setIconStroke] = useState(1.25);
+
+  // Use prop during SSR/hydration, then switch to context value
+  const venueName = isHydrated
+    ? (selectedVenue?.name || propVenueName || 'All Venues')
+    : (propVenueName || 'All Venues');
 
   useEffect(() => {
     // Safe client-side only access to getComputedStyle
