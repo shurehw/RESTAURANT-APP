@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useVenue } from '@/components/providers/VenueProvider';
 
 interface Venue {
   id: string;
@@ -24,8 +25,8 @@ interface InvoiceUploadModalProps {
 
 export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUploadModalProps) {
   const router = useRouter();
+  const { selectedVenue } = useVenue();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [venueId, setVenueId] = useState<string>(venues[0]?.id || '');
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -34,6 +35,9 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
     newVendor?: string;
     warnings?: string[];
   } | null>(null);
+
+  // Use selected venue from context
+  const venueId = selectedVenue?.id || venues[0]?.id || '';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -112,21 +116,12 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Venue Selection */}
+          {/* Venue Display (read-only) */}
           <div>
             <label className="block text-sm font-medium mb-2">Venue</label>
-            <select
-              value={venueId}
-              onChange={(e) => setVenueId(e.target.value)}
-              className="w-full border rounded px-3 py-2 bg-white"
-              required
-            >
-              {venues.map((venue) => (
-                <option key={venue.id} value={venue.id}>
-                  {venue.name}
-                </option>
-              ))}
-            </select>
+            <div className="w-full border rounded px-3 py-2 bg-gray-50 text-gray-700">
+              {selectedVenue?.name || venues[0]?.name || 'No venue selected'}
+            </div>
           </div>
 
           {/* File Upload */}
