@@ -56,7 +56,24 @@ CRITICAL EXTRACTION REQUIREMENTS:
    - If "Net 30" terms, calculate due date as invoice date + 30 days
    - If not found and cannot calculate, set to null
 
-4. LINE ITEMS:
+4. QUANTITY EXTRACTION (CRITICAL):
+   - Extract the ACTUAL ORDER QUANTITY from the dedicated quantity column
+   - DO NOT confuse the quantity with pack sizes mentioned in the description
+   - Pack size formats like "6/Cs", "12/Pk", "4/1 GAL" mean units PER case/pack, NOT the order quantity
+   - Example: "3    818 Tequila Reposado 6/Cs    $45.00    $135.00" → qty: 3 (cases ordered), NOT 6
+   - The quantity is usually in its own column, separate from the description
+   - If uncertain, the line total ÷ unit price = actual quantity
+
+5. BOTTLE/PACKAGE SIZE (CRITICAL FOR RECIPES):
+   - ALWAYS include bottle sizes (750mL, 1L, 375mL, etc.) in the description if visible
+   - Common bottle sizes: 750mL, 1L, 1.75L, 375mL, 50mL (mini)
+   - For wine/spirits: bottle size is usually 750mL if not specified
+   - Package sizes like "4/1 GAL", "6/750mL", "12/12oz" are critical - preserve exactly
+   - Examples:
+     * "Grey Goose Vodka 750mL 6/Cs" ✓ (has bottle size 750mL and pack 6/Cs)
+     * "Grey Goose Vodka 6/Cs" ✗ (missing bottle size - add 750mL if wine/spirits)
+
+6. LINE ITEMS:
    - Extract ALL line items from the invoice (food, beverage, construction materials, equipment, services, etc.)
    - Look for "Ship To:", "Deliver To:", "Location:", "Job Site:", "Project:", or similar fields to identify the delivery location
    - For each line item, extract the vendor's item code/SKU if visible (could be numeric "12345", alphanumeric "SYS-BEEF-001", or construction codes like "8104-CONCRETE")

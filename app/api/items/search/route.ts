@@ -57,21 +57,22 @@ export async function GET(request: NextRequest) {
       unit_cost: costMap.get(item.id) || 0,
     }));
 
-    // Optional: Vendor-specific search
+    // Optional: Vendor-specific search (includes pack size matching)
     let finalItems = itemsWithCosts;
     if (vendorId) {
-      const { data: vendorMappings } = await supabase
-        .from('vendor_item_mapping')
-        .select('item_id, vendor_item_name')
+      const { data: vendorAliases } = await supabase
+        .from('vendor_item_aliases')
+        .select('item_id, vendor_description, pack_size')
         .eq('vendor_id', vendorId)
-        .ilike('vendor_item_name', `%${query}%`)
+        .eq('is_active', true)
+        .or(`vendor_description.ilike.%${query}%,vendor_item_code.ilike.%${query}%`)
         .limit(limit);
 
       const vendorItemIds = new Set(
-        (vendorMappings || []).map((vm) => vm.item_id)
+        (vendorAliases || []).map((va) => va.item_id)
       );
 
-      // Prioritize vendor-matched items, then append others
+      // Prioritize vendor-matched items (with pack size), then append others
       const vendorMatched = itemsWithCosts.filter((item) =>
         vendorItemIds.has(item.id)
       );
