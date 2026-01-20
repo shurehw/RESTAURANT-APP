@@ -30,7 +30,7 @@ export default async function ProformaPage() {
 
   const orgIds = orgUsers.map(ou => ou.organization_id);
 
-  // Get all projects for ALL user's organizations
+  // Get all active (non-archived) projects for ALL user's organizations
   const { data: projects, error } = await supabase
     .from("proforma_projects")
     .select(`
@@ -44,6 +44,7 @@ export default async function ProformaPage() {
       )
     `)
     .in("org_id", orgIds)
+    .eq("is_archived", false)
     .order("created_at", { ascending: false });
 
   if (error) {

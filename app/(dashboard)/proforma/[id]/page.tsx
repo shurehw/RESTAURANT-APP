@@ -18,21 +18,22 @@ export default async function ProformaProjectPage({
     redirect("/login");
   }
 
-  // Get user's organization
+  // Get user's organizations
   const { data: orgUsers } = await supabase
     .from("organization_users")
     .select("organization_id")
     .eq("user_id", user.id)
-    .eq("is_active", true)
-    .single();
+    .eq("is_active", true);
 
-  if (!orgUsers?.organization_id) {
+  if (!orgUsers || orgUsers.length === 0) {
     return (
       <div className="p-6">
         <p className="text-red-500">No organization found for user</p>
       </div>
     );
   }
+
+  const orgIds = orgUsers.map(ou => ou.organization_id);
 
   // Get project with scenarios and assumptions
   const { data: project, error } = await supabase
@@ -60,7 +61,7 @@ export default async function ProformaProjectPage({
     `
     )
     .eq("id", id)
-    .eq("org_id", orgUsers.organization_id)
+    .in("org_id", orgIds)
     .single();
 
   if (error || !project) {
