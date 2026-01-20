@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
@@ -75,17 +76,22 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const normalized = await normalizeOCR(rawInvoice, supabase);
 
-    // If vendor not found, create it
+    // If vendor not found, create it using service role (bypasses RLS)
     let vendorId = normalized.vendorId;
     if (!vendorId && normalized.vendorName) {
-      // Import normalizeVendorName from normalize.ts
       const normalizedName = normalized.vendorName
         .toLowerCase()
         .replace(/[,\.]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
 
-      const { data: newVendor, error: vendorError } = await supabase
+      // Use service role client to bypass RLS for vendor creation
+      const serviceClient = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      const { data: newVendor, error: vendorError } = await serviceClient
         .from('vendors')
         .insert({
           name: normalized.vendorName,
