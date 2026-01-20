@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const venueId = formData.get('venue_id') as string;
+    const isPreopening = formData.get('is_preopening') === 'true';
 
     if (!file) throw { status: 400, code: 'NO_FILE', message: 'No file provided' };
     if (!venueId) throw { status: 400, code: 'NO_VENUE', message: 'venue_id is required' };
@@ -123,6 +124,7 @@ export async function POST(request: NextRequest) {
       ocr_confidence: normalized.ocrConfidence,
       ocr_raw_json: rawInvoice,
       image_url: imageUrl,
+      is_preopening: isPreopening,
     };
 
     const linesPayload = normalized.lines.map((line) => ({

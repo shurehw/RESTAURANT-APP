@@ -27,6 +27,7 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
   const router = useRouter();
   const { selectedVenue } = useVenue();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isPreopening, setIsPreopening] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -74,6 +75,7 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
       const formData = new FormData();
       formData.append('file', selectedFile);
       formData.append('venue_id', venueId);
+      formData.append('is_preopening', isPreopening.toString());
 
       const response = await fetch('/api/invoices/ocr', {
         method: 'POST',
@@ -122,6 +124,20 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
             <div className="w-full border rounded px-3 py-2 bg-gray-50 text-gray-700">
               {selectedVenue?.name || venues[0]?.name || 'No venue selected'}
             </div>
+          </div>
+
+          {/* Pre-opening Checkbox */}
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_preopening"
+              checked={isPreopening}
+              onChange={(e) => setIsPreopening(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="is_preopening" className="text-sm font-medium cursor-pointer">
+              Pre-opening expense (before venue opens)
+            </label>
           </div>
 
           {/* File Upload */}
