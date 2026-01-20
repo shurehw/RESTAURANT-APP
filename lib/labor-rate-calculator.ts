@@ -182,7 +182,7 @@ export function calculatePositionRateWithBreakdown(
 export function calculateAllPositionRates(
   params: WageParameters,
   positions: PositionTemplate[],
-  settings?: LaborSettings
+  settings: LaborSettings
 ): Array<PositionTemplate & { calculated_rate: number }> {
   return positions.map(pos => ({
     ...pos,
