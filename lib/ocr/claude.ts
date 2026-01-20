@@ -10,7 +10,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
-const OCR_PROMPT = `You are an expert at extracting structured data from restaurant invoices.
+const OCR_PROMPT = `You are an expert at extracting structured data from restaurant and construction invoices.
 
 Analyze this invoice image and extract the following information in JSON format:
 
@@ -39,18 +39,20 @@ Analyze this invoice image and extract the following information in JSON format:
 }
 
 IMPORTANT:
-- Extract ALL line items from the invoice
-- Look for "Ship To:", "Deliver To:", "Location:", or similar fields to identify the delivery location
-- For each line item, extract the vendor's item code/SKU if visible (usually a number like "12345" or code like "SYS-BEEF-001")
-- Include the complete item description as it appears on the invoice
-- Use exact vendor name as printed on the invoice
+- Extract ALL line items from the invoice (food, beverage, construction materials, equipment, services, etc.)
+- Look for "Ship To:", "Deliver To:", "Location:", "Job Site:", "Project:", or similar fields to identify the delivery location
+- For each line item, extract the vendor's item code/SKU if visible (could be numeric "12345", alphanumeric "SYS-BEEF-001", or construction codes like "8104-CONCRETE")
+- Include the COMPLETE item description exactly as it appears on the invoice - don't truncate or summarize
+- Use exact vendor name as printed on the invoice letterhead or header
 - Dates must be in YYYY-MM-DD format
 - All amounts should be numbers (not strings)
 - Confidence should be 0.0-1.0 (1.0 = very confident, 0.0 = not confident)
 - For each line item, include quantity, unit price, and line total
+- For construction/pre-opening invoices: preserve categories like "General Requirements", "Finishes", "Electrical", etc. in the description
 - If you cannot extract a field with confidence, set confidence < 0.7
 - If no item code is visible, set itemCode to null
 - If no delivery location is found, set deliveryLocation to null
+- Pay special attention to multi-page invoices - extract ALL pages
 
 Return ONLY the JSON object, no other text.`;
 

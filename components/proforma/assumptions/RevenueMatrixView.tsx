@@ -242,11 +242,17 @@ export function RevenueMatrixView({ scenarioId }: RevenueMatrixViewProps) {
     return 'B'; // Center-level allocations (never locked)
   };
 
-  const getDerivedTotal = (serviceId: string): number => {
-    // Regular dining covers (seat-turnover based)
-    const regularCovers = covers
+  // Get ONLY regular dining covers (for multiplying by avg_check)
+  const getRegularCovers = (serviceId: string): number => {
+    return covers
       .filter(c => c.service_period_id === serviceId)
       .reduce((sum, c) => sum + c.covers_per_service, 0);
+  };
+
+  // Get TOTAL covers including bar guests and PDR (for display/count purposes)
+  const getDerivedTotal = (serviceId: string): number => {
+    // Regular dining covers (seat-turnover based)
+    const regularCovers = getRegularCovers(serviceId);
 
     // Bar guests from standing bars (throughput-based, count as covers)
     const barGuests = participation
@@ -426,7 +432,7 @@ export function RevenueMatrixView({ scenarioId }: RevenueMatrixViewProps) {
   // Calculate total revenue across all services
   const totalWeeklyRev = services.reduce((sum, service) => {
     const state = getServiceState(service);
-    const derivedTotal = getDerivedTotal(service.id);
+    const regularCovers = getRegularCovers(service.id);
 
     // Calculate PDR revenue separately (has its own pricing)
     const pdrRevenue = participation
@@ -438,8 +444,8 @@ export function RevenueMatrixView({ scenarioId }: RevenueMatrixViewProps) {
       .filter(p => p.service_period_id === service.id && p.bar_revenue)
       .reduce((barSum, p) => barSum + (p.bar_revenue || 0), 0);
 
-    // Base revenue from covers × avg_check
-    const baseRevenue = (state === 'A' ? (service.avg_covers_per_service || 0) : derivedTotal) *
+    // Base DINING revenue from REGULAR covers × avg_check (NOT bar guests or PDR covers)
+    const baseRevenue = (state === 'A' ? (service.avg_covers_per_service || 0) : regularCovers) *
                         (service.avg_check || 0);
 
     const weeklyRev = (baseRevenue + barRevenue + pdrRevenue) * (service.operating_days?.length || 7);
@@ -518,6 +524,7 @@ export function RevenueMatrixView({ scenarioId }: RevenueMatrixViewProps) {
           const state = getServiceState(service);
           const isExpanded = expandedServices.has(service.id);
           const serviceCovers = covers.filter(c => c.service_period_id === service.id);
+          const regularCovers = getRegularCovers(service.id);
           const derivedTotal = getDerivedTotal(service.id);
 
           // Calculate PDR revenue separately (it has its own pricing, not avg_check)
@@ -530,8 +537,8 @@ export function RevenueMatrixView({ scenarioId }: RevenueMatrixViewProps) {
             .filter(p => p.service_period_id === service.id && p.bar_revenue)
             .reduce((sum, p) => sum + (p.bar_revenue || 0), 0);
 
-          // Base revenue from covers × avg_check (excludes standing bars and PDRs)
-          const baseRevenue = (state === 'A' ? (service.avg_covers_per_service || 0) : derivedTotal) *
+          // Base DINING revenue from REGULAR covers × avg_check (NOT bar guests or PDR covers)
+          const baseRevenue = (state === 'A' ? (service.avg_covers_per_service || 0) : regularCovers) *
                               (service.avg_check || 0);
 
           // Weekly revenue = (base + bar + PDR) × operating days

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { calculatePositionRate } from "@/lib/labor-rate-calculator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,6 +101,16 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
     other_pct: 5,
   });
 
+  // Step 5: Labor Positions
+  const [laborWages, setLaborWages] = useState({
+    minWageCity: 15.00,
+    tipCredit: 0.00,
+    marketTier: "MID" as "LOW" | "MID" | "HIGH",
+  });
+  const [positionTemplates, setPositionTemplates] = useState<any[]>([]);
+  const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
+  const [loadingPositions, setLoadingPositions] = useState(false);
+
   const handleAddService = () => {
     if (!newService.service_name) {
       alert("Please enter a service name");
@@ -145,6 +156,45 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
 
   const handleRemovePDR = (index: number) => {
     setPdrs(pdrs.filter((_, i) => i !== index));
+  };
+
+  // Load position templates when reaching step 5
+  useEffect(() => {
+    if (step === 5 && positionTemplates.length === 0) {
+      loadPositionTemplates();
+    }
+  }, [step]);
+
+  const loadPositionTemplates = async () => {
+    setLoadingPositions(true);
+    try {
+      const conceptType = CONCEPT_TYPES.find(c => c.value === spacePlanning.conceptType)?.label || "Casual Dining";
+      const response = await fetch(`/api/proforma/labor-position-mix?concept=${encodeURIComponent(conceptType)}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        // Combine FOH and BOH, filter VOLUME positions only
+        const allPositions = [...(data.foh || []), ...(data.boh || [])].filter(
+          (p: any) => p.labor_driver_type === 'VOLUME'
+        );
+        setPositionTemplates(allPositions);
+
+        // Pre-select all positions by default
+        setSelectedPositions(allPositions.map((p: any) => p.position_name));
+      }
+    } catch (error) {
+      console.error("Failed to load position templates:", error);
+    } finally {
+      setLoadingPositions(false);
+    }
+  };
+
+  const togglePosition = (positionName: string) => {
+    if (selectedPositions.includes(positionName)) {
+      setSelectedPositions(selectedPositions.filter(p => p !== positionName));
+    } else {
+      setSelectedPositions([...selectedPositions, positionName]);
+    }
   };
 
   const handleNext = () => {
@@ -210,7 +260,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
 
       if (!projectUpdateRes.ok) throw new Error("Failed to update project");
 
-      // 2. Create scenario
+      // 2. Create scenario with labor wage parameters
       const scenarioRes = await fetch("/api/proforma/scenarios", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -220,6 +270,9 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
           months: basicInfo.months,
           start_month: basicInfo.start_month,
           is_base: true,
+          min_wage_city: laborWages.minWageCity,
+          tip_credit: laborWages.tipCredit,
+          market_tier: laborWages.marketTier,
         }),
       });
 
@@ -251,6 +304,41 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
             food_pct: pdr.food_pct / 100,
             bev_pct: pdr.bev_pct / 100,
             other_pct: pdr.other_pct / 100,
+          }),
+        });
+      }
+
+      // 5. Add selected labor positions with calculated rates
+      for (const positionName of selectedPositions) {
+        const template = positionTemplates.find(p => p.position_name === positionName);
+        if (!template) continue;
+
+        const calculatedRate = calculatePositionRate(
+          {
+            minWageCity: laborWages.minWageCity,
+            tipCredit: laborWages.tipCredit,
+            marketTier: laborWages.marketTier,
+          },
+          {
+            wage_multiplier: template.wage_multiplier,
+            is_tipped: template.is_tipped,
+          }
+        );
+
+        await fetch("/api/proforma/labor-positions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scenario_id: scenario.id,
+            position_name: template.position_name,
+            category: template.category,
+            labor_driver_type: template.labor_driver_type,
+            hours_per_100_covers: template.hours_per_100_covers,
+            position_mix_pct: template.position_mix_pct,
+            hourly_rate: calculatedRate,
+            staff_per_service: template.staff_per_service,
+            hours_per_shift: template.hours_per_shift,
+            cover_threshold: template.cover_threshold,
           }),
         });
       }
@@ -302,6 +390,13 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
                 4
               </div>
               <span className="font-medium">PDR</span>
+            </div>
+            <div className="flex-1 h-px bg-zinc-800 mx-2" />
+            <div className={`flex items-center gap-2 ${step >= 5 ? "text-[#D4AF37]" : "text-zinc-600"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center ${step >= 5 ? "bg-[#D4AF37] text-black" : "bg-zinc-800"}`}>
+                5
+              </div>
+              <span className="font-medium">Labor</span>
             </div>
           </div>
 
@@ -778,6 +873,138 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
             </div>
           )}
 
+          {/* Step 5: Labor Positions */}
+          {step === 5 && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-zinc-50">Labor Positions & Wages</h3>
+                <p className="text-sm text-zinc-400 mt-1">
+                  Set your market wage parameters. Position rates will be calculated automatically.
+                </p>
+              </div>
+
+              <Card className="bg-zinc-900/50 border-zinc-800 p-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="minWageCity" className="text-sm text-zinc-300">
+                        Local Min Wage *
+                      </Label>
+                      <Input
+                        id="minWageCity"
+                        type="number"
+                        step="0.01"
+                        value={laborWages.minWageCity}
+                        onChange={(e) => setLaborWages({ ...laborWages, minWageCity: parseFloat(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">Primary wage driver</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="tipCredit" className="text-sm text-zinc-300">
+                        Tip Credit (Optional)
+                      </Label>
+                      <Input
+                        id="tipCredit"
+                        type="number"
+                        step="0.01"
+                        value={laborWages.tipCredit}
+                        onChange={(e) => setLaborWages({ ...laborWages, tipCredit: parseFloat(e.target.value) || 0 })}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-zinc-500 mt-1">Default 0 = no tip credit</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="marketTier" className="text-sm text-zinc-300">
+                        Market Tier
+                      </Label>
+                      <Select
+                        value={laborWages.marketTier}
+                        onValueChange={(value: "LOW" | "MID" | "HIGH") =>
+                          setLaborWages({ ...laborWages, marketTier: value })
+                        }
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LOW">LOW (0.95×)</SelectItem>
+                          <SelectItem value="MID">MID (1.00×)</SelectItem>
+                          <SelectItem value="HIGH">HIGH (1.10×)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-zinc-500 mt-1">Market competitiveness</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-zinc-700">
+                    <h4 className="text-sm font-medium text-zinc-300 mb-3">
+                      Select Positions for Your Concept
+                    </h4>
+                    <p className="text-xs text-zinc-500 mb-3">
+                      Check the positions you need. Rates are calculated automatically based on your wage parameters.
+                    </p>
+
+                    {loadingPositions ? (
+                      <div className="text-center py-8 text-zinc-500 text-sm">Loading positions...</div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                        {positionTemplates.map((position) => {
+                          const calculatedRate = calculatePositionRate(
+                            {
+                              minWageCity: laborWages.minWageCity,
+                              tipCredit: laborWages.tipCredit,
+                              marketTier: laborWages.marketTier,
+                            },
+                            {
+                              wage_multiplier: position.wage_multiplier,
+                              is_tipped: position.is_tipped,
+                            }
+                          );
+
+                          return (
+                            <label
+                              key={position.position_name}
+                              className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${
+                                selectedPositions.includes(position.position_name)
+                                  ? "bg-[#D4AF37]/10 border-[#D4AF37]/50"
+                                  : "bg-zinc-900/50 border-zinc-800 hover:border-zinc-700"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedPositions.includes(position.position_name)}
+                                onChange={() => togglePosition(position.position_name)}
+                                className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-[#D4AF37] focus:ring-[#D4AF37]"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-zinc-300 truncate">
+                                  {position.position_name}
+                                </div>
+                                <div className="text-xs text-zinc-500 mt-0.5">
+                                  {position.category} • ${calculatedRate.toFixed(2)}/hr
+                                  {position.is_tipped && " (tipped)"}
+                                </div>
+                              </div>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {positionTemplates.length > 0 && (
+                      <div className="mt-3 text-xs text-zinc-500">
+                        {selectedPositions.length} of {positionTemplates.length} positions selected
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
           {/* Navigation buttons */}
           <div className="flex justify-between pt-4 border-t border-zinc-800">
             <Button variant="outline" onClick={handleBack} disabled={step === 1}>
@@ -785,7 +1012,7 @@ export function ScenarioWizard({ open, onOpenChange, projectId }: ScenarioWizard
               Back
             </Button>
 
-            {step < 4 ? (
+            {step < 5 ? (
               <Button onClick={handleNext}>
                 Next
                 <ArrowRight className="w-4 h-4 ml-2" />

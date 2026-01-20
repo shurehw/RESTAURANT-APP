@@ -75,7 +75,15 @@
       "Bash(Select-String -Pattern \"Error|error|constraint|PATCH\" -Context 2)",
       "Bash(if exist \".next\\dev\\lock\" del \".next\\dev\\lock\")",
       "Bash(pkill:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(Get-Process -Name node -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object Id, ProcessName)",
+      "Bash(tasklist)",
+      "Read(//c/**)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/check-venues.ts:*)",
+      "Bash(export:*)",
+      "Bash(awk:*)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/fix-gl-suggestion.ts:*)"
     ],
     "deny": [],
     "ask": []
