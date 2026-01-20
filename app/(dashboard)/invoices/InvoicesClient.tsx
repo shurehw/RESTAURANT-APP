@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import {
 import { InvoiceUploadButton } from "@/components/invoices/InvoiceUploadButton";
 import { Download, Check, AlertCircle, CheckCircle, Zap, List, X } from "lucide-react";
 import Link from "next/link";
+import { useVenue } from "@/components/providers/VenueProvider";
 
 type Invoice = {
   id: string;
@@ -45,9 +46,16 @@ interface InvoicesClientProps {
 
 export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
   const router = useRouter();
+  const { selectedVenue } = useVenue();
   const [loading, setLoading] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
+
+  // Filter invoices by selected venue
+  const filteredInvoices = useMemo(() => {
+    if (!selectedVenue) return invoices;
+    return invoices.filter(inv => inv.venue?.name === selectedVenue.name);
+  }, [invoices, selectedVenue]);
 
   const handleAutoMatch = async (invoiceId: string) => {
     setLoading(invoiceId);
@@ -174,7 +182,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices?.map((invoice) => (
+            {filteredInvoices?.map((invoice) => (
               <TableRow key={invoice.id}>
                 <TableCell className="font-mono font-medium">
                   {invoice.invoice_number || "—"}
@@ -261,7 +269,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
       </div>
 
       {/* Empty State */}
-      {(!invoices || invoices.length === 0) && (
+      {(!filteredInvoices || filteredInvoices.length === 0) && (
         <div className="empty-state">
           <div className="empty-state-icon">
             <Download className="w-8 h-8" />
