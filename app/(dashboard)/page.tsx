@@ -26,7 +26,6 @@ export default async function DashboardPage() {
   return (
     <div>
       <ContextBand
-        venueName={venues?.[0]?.name || "All Venues"}
         date={new Date().toISOString()}
       />
 

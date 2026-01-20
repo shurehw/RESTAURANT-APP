@@ -8,20 +8,23 @@
 
 import { Calendar, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useVenue } from '@/components/providers/VenueProvider';
 
 interface ContextBandProps {
-  venueName: string;
+  venueName?: string;
   date: string;
   additionalContext?: React.ReactNode;
   className?: string;
 }
 
 export function ContextBand({
-  venueName,
+  venueName: propVenueName,
   date,
   additionalContext,
   className = '',
 }: ContextBandProps) {
+  const { selectedVenue } = useVenue();
+  const venueName = selectedVenue?.name || propVenueName || 'All Venues';
   const [iconStroke, setIconStroke] = useState(1.25);
 
   useEffect(() => {

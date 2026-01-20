@@ -4,15 +4,34 @@ import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { VendorOnboardingLinkDisplay } from './VendorOnboardingLinkDisplay';
 import { createClient } from '@/lib/supabase/client';
+import { useVenue } from '@/components/providers/VenueProvider';
+import { useEffect } from 'react';
 
 interface TopbarActionsProps {
-  venues: Array<{ id: string; name: string }>;
+  venues: Array<{ id: string; name: string; location?: string | null; city?: string | null; state?: string | null }>;
   organizationSlug?: string;
   organizationName?: string;
 }
 
 export function TopbarActions({ venues, organizationSlug, organizationName }: TopbarActionsProps) {
   const showVenueSelector = venues.length > 1;
+  const { selectedVenue, setSelectedVenue, setVenues } = useVenue();
+
+  // Initialize venues in context
+  useEffect(() => {
+    setVenues(venues);
+  }, [venues, setVenues]);
+
+  // Set initial venue if not already set
+  useEffect(() => {
+    if (!selectedVenue && venues.length > 0) {
+      const savedVenueId = localStorage.getItem('selectedVenueId');
+      const initialVenue = savedVenueId
+        ? venues.find(v => v.id === savedVenueId) || venues[0]
+        : venues[0];
+      setSelectedVenue(initialVenue);
+    }
+  }, [selectedVenue, venues, setSelectedVenue]);
 
   const handleTeamSettings = () => {
     // TODO: Navigate to team settings page
@@ -50,9 +69,13 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
           <Building2 className="w-4 h-4 text-opsos-sage-600" />
           <select
             className="text-sm bg-transparent border-none focus:outline-none text-opsos-sage-800 cursor-pointer"
+            value={selectedVenue?.id || ''}
             onChange={(e) => {
-              // TODO: Update selected venue in context/state
-              console.log('Selected venue:', e.target.value);
+              const venue = venues.find(v => v.id === e.target.value);
+              if (venue) {
+                setSelectedVenue(venue);
+                console.log('Selected venue:', venue.name);
+              }
             }}
           >
             {venues.map((venue) => (

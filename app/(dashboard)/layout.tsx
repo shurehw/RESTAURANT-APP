@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
+import { VenueProvider } from "@/components/providers/VenueProvider";
 
 export default async function DashboardLayout({
   children,
@@ -48,30 +49,32 @@ export default async function DashboardLayout({
   // Fetch venues for topbar selector
   const { data: venues } = await supabase
     .from("venues")
-    .select("id, name")
+    .select("id, name, location, city, state")
     .eq("is_active", true);
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <Sidebar />
+    <VenueProvider initialVenues={venues || []}>
+      <div className="flex min-h-screen bg-background">
+        {/* Sidebar */}
+        <Sidebar />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Topbar */}
-        <Topbar
-          venues={venues || []}
-          organizationSlug={organization?.slug}
-          organizationName={organization?.name}
-        />
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Topbar */}
+          <Topbar
+            venues={venues || []}
+            organizationSlug={organization?.slug}
+            organizationName={organization?.name}
+          />
 
-        {/* Page Content */}
-        <main className="flex-1 p-8">{children}</main>
+          {/* Page Content */}
+          <main className="flex-1 p-8">{children}</main>
+        </div>
+
+        {/* Floating Chat Widget - Always Available */}
+        <FloatingChatWidget />
       </div>
-
-      {/* Floating Chat Widget - Always Available */}
-      <FloatingChatWidget />
-    </div>
+    </VenueProvider>
   );
 }
 
@@ -197,7 +200,7 @@ function NavSection({
 }
 
 function Topbar({ venues, organizationSlug, organizationName }: {
-  venues: Array<{ id: string; name: string }>;
+  venues: Array<{ id: string; name: string; location?: string | null; city?: string | null; state?: string | null }>;
   organizationSlug?: string;
   organizationName?: string;
 }) {
