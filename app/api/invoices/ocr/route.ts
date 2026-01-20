@@ -133,14 +133,17 @@ export async function POST(request: NextRequest) {
       is_preopening: isPreopening,
     };
 
-    const linesPayload = normalized.lines.map((line) => ({
-      item_id: line.itemId || null, // Explicitly set to null if undefined
-      description: line.description,
-      quantity: line.qty,
-      unit_cost: line.unitCost,
-      // line_total is a generated column, don't send it
-      ocr_confidence: line.ocrConfidence,
-    }));
+    // Filter out lines with zero quantity (violates il_positive_qty constraint)
+    const linesPayload = normalized.lines
+      .filter((line) => line.qty > 0)
+      .map((line) => ({
+        item_id: line.itemId || null, // Explicitly set to null if undefined
+        description: line.description,
+        quantity: line.qty,
+        unit_cost: line.unitCost,
+        // line_total is a generated column, don't send it
+        ocr_confidence: line.ocrConfidence,
+      }));
 
     // Call RPC
     const { data: invoiceId, error: rpcError } = await supabase.rpc(
