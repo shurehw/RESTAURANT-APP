@@ -155,8 +155,10 @@ export function validateWithRules(
   };
 }
 
-// Backwards compatibility: alias for validateWithRules
-export const validateSpaceConstraints = validateWithRules;
+// Backwards compatibility: wrapper for validateWithRules with empty rules array
+export function validateSpaceConstraints(constraints: SpaceConstraints): ValidationResult {
+  return validateWithRules(constraints, []);
+}
 
 // Seating density benchmarks
 export const SEATING_BENCHMARKS: Record<string, {
