@@ -306,9 +306,9 @@ export default async function InvoiceReviewPage({ params }: Props) {
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={
-                          item.gl_account.section === 'COGS' ? 'default' :
-                          item.gl_account.section === 'Opex' ? 'outline' :
-                          'secondary'
+                          item.gl_account.section === 'COGS' ? 'sage' :
+                          item.gl_account.section === 'Opex' ? 'brass' :
+                          'outline'
                         } className="text-xs">
                           {item.gl_account.section}
                         </Badge>
