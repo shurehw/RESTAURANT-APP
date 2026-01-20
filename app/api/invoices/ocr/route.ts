@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   return guard(async () => {
     await rateLimit(request, ':invoice-ocr');
     const user = await requireUser();
-    const { venueIds } = await getUserOrgAndVenues(user.id);
+    const { organizationId, venueIds } = await getUserOrgAndVenues(user.id);
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
         .insert({
           name: normalized.vendorName,
           normalized_name: normalizedName,
+          organization_id: organizationId,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
