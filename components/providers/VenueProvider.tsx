@@ -16,6 +16,7 @@ interface VenueContextType {
   venues: Venue[];
   setVenues: (venues: Venue[]) => void;
   isHydrated: boolean;
+  isAllVenues: boolean; // True when "The h.wood Group" (all venues) is selected
 }
 
 const VenueContext = createContext<VenueContextType | undefined>(undefined);
@@ -52,8 +53,11 @@ export function VenueProvider({
     }
   }, [selectedVenue, isHydrated]);
 
+  // Check if "all venues" is selected (parent organization view)
+  const isAllVenues = selectedVenue?.id === 'all';
+
   return (
-    <VenueContext.Provider value={{ selectedVenue, setSelectedVenue, venues, setVenues, isHydrated }}>
+    <VenueContext.Provider value={{ selectedVenue, setSelectedVenue, venues, setVenues, isHydrated, isAllVenues }}>
       {children}
     </VenueContext.Provider>
   );
