@@ -55,14 +55,14 @@ export default async function ProductsPage() {
   if (items && items.length > 0) {
     const itemIds = items.map(item => item.id);
     const { data: packConfigs } = await supabase
-      .from('item_pack_configs')
+      .from('item_pack_configurations')
       .select('*')
       .in('item_id', itemIds);
 
     // Attach pack configs to items
     itemsWithConfigs = items.map(item => ({
       ...item,
-      item_pack_configs: packConfigs?.filter(pc => pc.item_id === item.id) || []
+      item_pack_configurations: packConfigs?.filter(pc => pc.item_id === item.id) || []
     }));
   }
 

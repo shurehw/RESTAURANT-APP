@@ -23,12 +23,12 @@ interface Product {
   subcategory: string | null;
   base_uom: string;
   gl_account_id: string | null;
-  item_pack_configs: Array<{
+  item_pack_configurations: Array<{
     pack_type: string;
     units_per_pack: number;
     unit_size: number;
     unit_size_uom: string;
-    vendor_sku?: string | null;
+    vendor_item_code?: string | null;
   }>;
 }
 
@@ -135,11 +135,11 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                   <TableCell className="font-mono">{product.base_uom}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {product.item_pack_configs.map((config, idx) => (
+                      {product.item_pack_configurations.map((config, idx) => (
                         <span
                           key={idx}
                           className="px-2 py-0.5 bg-brass/10 text-brass rounded text-xs font-mono"
-                          title={config.vendor_sku ? `Vendor SKU: ${config.vendor_sku}` : undefined}
+                          title={config.vendor_item_code ? `Vendor SKU: ${config.vendor_item_code}` : undefined}
                         >
                           {config.units_per_pack > 1
                             ? `${config.units_per_pack} × ${config.unit_size}${config.unit_size_uom}`
@@ -147,7 +147,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                           }
                         </span>
                       ))}
-                      {product.item_pack_configs.length === 0 && (
+                      {product.item_pack_configurations.length === 0 && (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </div>

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     if (brand) {
       const { data: existingItems } = await supabase
         .from('items')
-        .select('id, name, item_pack_configs(pack_type, units_per_pack, unit_size, unit_size_uom)')
+        .select('id, name, item_pack_configurations(pack_type, units_per_pack, unit_size, unit_size_uom)')
         .eq('organization_id', orgId)
         .eq('is_active', true)
         .ilike('name', `%${brand}%`)
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         const packConfigMap = new Map<string, number>();
 
         for (const item of existingItems) {
-          const configs = (item as any).item_pack_configs;
+          const configs = (item as any).item_pack_configurations;
           if (configs && configs.length > 0) {
             // Use first pack config from each item
             const config = configs[0];

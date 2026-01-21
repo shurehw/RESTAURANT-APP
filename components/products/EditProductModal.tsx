@@ -14,7 +14,7 @@ interface Product {
   subcategory: string | null;
   base_uom: string;
   gl_account_id: string | null;
-  item_pack_configs: Array<{
+  item_pack_configurations: Array<{
     id?: string;
     pack_type: string;
     units_per_pack: number;
@@ -190,8 +190,8 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
             </label>
             <PackConfigurationManager
               baseUom={editedProduct.base_uom}
-              packConfigs={editedProduct.item_pack_configs}
-              onChange={(configs) => setEditedProduct({ ...editedProduct, item_pack_configs: configs })}
+              packConfigs={editedProduct.item_pack_configurations}
+              onChange={(configs) => setEditedProduct({ ...editedProduct, item_pack_configurations: configs })}
             />
           </div>
         </div>

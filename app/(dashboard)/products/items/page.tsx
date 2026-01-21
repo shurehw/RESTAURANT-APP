@@ -55,7 +55,7 @@ export default async function ItemsPage() {
     // Attach pack configs to items
     if (packConfigs) {
       recentItems.forEach((item: any) => {
-        item.item_pack_configs = packConfigs.filter(pc => pc.item_id === item.id);
+        item.item_pack_configurations = packConfigs.filter(pc => pc.item_id === item.id);
       });
     }
   }

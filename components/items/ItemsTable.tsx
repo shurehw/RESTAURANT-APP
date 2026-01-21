@@ -12,7 +12,7 @@ interface Item {
   subcategory: string;
   base_uom: string;
   created_at: string;
-  item_pack_configs?: PackConfig[];
+  item_pack_configurations?: PackConfig[];
 }
 
 interface PackConfig {
@@ -58,7 +58,7 @@ export function ItemsTable({ items, onUpdate }: ItemsTableProps) {
           <tbody>
             {items && items.length > 0 ? (
               items.map((item) => {
-                const configs = (item as any).item_pack_configs || [];
+                const configs = (item as any).item_pack_configurations || [];
                 const caseConfig = configs.find((c: PackConfig) => c.pack_type === 'case');
 
                 return (

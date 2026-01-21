@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
               units_per_pack: unitsPerPack,
               unit_size: unitSize,
               unit_size_uom: unitSizeUom,
-              vendor_sku: row.SKU?.toString().trim() || null,
+              vendor_item_code: row.SKU?.toString().trim() || null,
             };
           } else if (singleMatch) {
             // Single bottle: "750ml"
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
               units_per_pack: 1,
               unit_size: unitSize,
               unit_size_uom: unitSizeUom,
-              vendor_sku: row.SKU?.toString().trim() || null,
+              vendor_item_code: row.SKU?.toString().trim() || null,
             };
           }
 
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
         // Insert pack configs
         if (packConfigs.length > 0) {
           const { error: packError } = await supabase
-            .from('item_pack_configs')
+            .from('item_pack_configurations')
             .insert(packConfigs);
 
           if (packError) {
