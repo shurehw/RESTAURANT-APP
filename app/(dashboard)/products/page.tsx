@@ -30,25 +30,17 @@ export default async function ProductsPage() {
 
   const orgId = orgUsers?.[0]?.organization_id;
 
-  // First fetch items without the join
+  // Fetch ALL items without the join (no limit - pagination is client-side)
   const { data: items, error: itemsError } = await supabase
     .from("items")
     .select("*")
     .eq('organization_id', orgId || '')
     .eq('is_active', true)
-    .order("created_at", { ascending: false })
-    .limit(50);
+    .order("created_at", { ascending: false });
 
   if (itemsError) {
     console.error('Error fetching items:', itemsError);
   }
-
-  console.log('Items query result:', {
-    count: items?.length,
-    orgId,
-    hasItems: !!items,
-    firstItem: items?.[0]?.name
-  });
 
   // Fetch pack configs separately for the items we got
   let itemsWithConfigs = items || [];
@@ -64,6 +56,12 @@ export default async function ProductsPage() {
       ...item,
       item_pack_configurations: packConfigs?.filter(pc => pc.item_id === item.id) || []
     }));
+
+    console.log('Pack configs loaded:', {
+      totalItems: items.length,
+      totalPackConfigs: packConfigs?.length || 0,
+      itemsWithPacks: itemsWithConfigs.filter(i => i.item_pack_configurations.length > 0).length
+    });
   }
 
   const { count: totalCount } = await supabase
