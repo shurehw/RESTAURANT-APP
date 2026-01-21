@@ -110,8 +110,8 @@ export async function POST(request: NextRequest) {
         const firstRowSKU = firstRow.SKU?.toString().trim();
         const sku = firstRowSKU || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        // Create the item
-        const { data: newItem, error: itemError } = await supabase
+        // Create the item with R365 fields for round-trip compatibility
+        const { data: newItem, error: itemError} = await supabase
           .from('items')
           .insert({
             organization_id: orgId,
@@ -122,6 +122,14 @@ export async function POST(request: NextRequest) {
             base_uom: baseUom,
             gl_account_id: glAccountId,
             is_active: true,
+            // R365 integration fields
+            r365_measure_type: firstRow.Measure_Type || null,
+            r365_reporting_uom: firstRow.Reporting_U_of_M || null,
+            r365_inventory_uom: firstRow.Inventory_U_of_M || null,
+            r365_cost_account: firstRow.Cost_Account || null,
+            r365_inventory_account: firstRow.Inventory_Account || null,
+            r365_cost_update_method: firstRow.Cost_Update_Method || null,
+            r365_key_item: firstRow.Key_Item || false,
           })
           .select()
           .single();
