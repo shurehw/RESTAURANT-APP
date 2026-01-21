@@ -48,9 +48,12 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
   };
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    window.location.href = '/login';
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -71,13 +74,27 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
             className="text-sm bg-transparent border-none focus:outline-none text-opsos-sage-800 cursor-pointer"
             value={selectedVenue?.id || ''}
             onChange={(e) => {
-              const venue = venues.find(v => v.id === e.target.value);
-              if (venue) {
-                setSelectedVenue(venue);
-                console.log('Selected venue:', venue.name);
+              if (e.target.value === 'all') {
+                // Select "The h.wood Group" (all venues)
+                setSelectedVenue({
+                  id: 'all',
+                  name: 'The h.wood Group',
+                  location: null,
+                  city: null,
+                  state: null,
+                });
+                console.log('Selected: All Venues');
+              } else {
+                const venue = venues.find(v => v.id === e.target.value);
+                if (venue) {
+                  setSelectedVenue(venue);
+                  console.log('Selected venue:', venue.name);
+                }
               }
             }}
           >
+            <option value="all">The h.wood Group (All Venues)</option>
+            <option disabled>──────────</option>
             {venues.map((venue) => (
               <option key={venue.id} value={venue.id}>
                 {venue.name}
