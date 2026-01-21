@@ -50,17 +50,27 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   // Map line to selected item
   const handleMapItem = async (itemId: string) => {
     try {
-      const response = await fetch(`/api/invoices/lines/${line.id}/map`, {
+      console.log('Mapping line', line.id, 'to item', itemId);
+      const response = await fetch(`/api/invoice-lines/${line.id}/map`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item_id: itemId }),
       });
 
-      if (response.ok) {
-        window.location.reload(); // Refresh to show updated mapping
+      const data = await response.json();
+      console.log('Mapping response:', response.status, data);
+
+      if (!response.ok) {
+        console.error('Mapping failed:', data);
+        alert(`Failed to map item: ${data.error || data.message || 'Unknown error'}`);
+        return;
       }
+
+      console.log('Mapping successful, reloading...');
+      window.location.reload(); // Refresh to show updated mapping
     } catch (error) {
       console.error('Map error:', error);
+      alert(`Error mapping item: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
