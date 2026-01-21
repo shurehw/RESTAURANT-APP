@@ -176,6 +176,11 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     if (/box/i.test(normalized)) return 'box';
     if (/(ea\b|each)/i.test(normalized)) return 'unit';
 
+    // Default for beverages (liquor, wine, beer, bitters, etc.) → ounce
+    if (/(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(normalized)) {
+      return 'oz';
+    }
+
     return 'unit';
   };
 
@@ -345,18 +350,72 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
               unit_size: unitSize,
               unit_size_uom: unitSizeUom
             }]);
+          } else {
+            // Pattern 3: Common beverage defaults (no size found)
+            // If it's liquor/bitters and no size detected, assume standard 750mL bottle
+            const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
+            if (isBeverage) {
+              setPackConfigs([{
+                pack_type: 'bottle',
+                units_per_pack: 1,
+                unit_size: 750,
+                unit_size_uom: 'ml'
+              }]);
+            }
           }
         }
       } else {
         // Fallback to regex-based normalization
         setNewItemName(normalizeItemName(line.description));
         setNewItemUOM(parseUOMFromDescription(line.description));
+
+        // Also try pack config parsing in fallback
+        const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
+        if (bottleMatch) {
+          setPackConfigs([{
+            pack_type: 'bottle',
+            units_per_pack: 1,
+            unit_size: parseFloat(bottleMatch[1]),
+            unit_size_uom: bottleMatch[2].toLowerCase()
+          }]);
+        } else {
+          const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
+          if (isBeverage) {
+            setPackConfigs([{
+              pack_type: 'bottle',
+              units_per_pack: 1,
+              unit_size: 750,
+              unit_size_uom: 'ml'
+            }]);
+          }
+        }
       }
     } catch (error) {
       console.error('AI normalization error:', error);
       // Fallback to regex-based normalization
       setNewItemName(normalizeItemName(line.description));
       setNewItemUOM(parseUOMFromDescription(line.description));
+
+      // Pack config fallback
+      const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
+      if (bottleMatch) {
+        setPackConfigs([{
+          pack_type: 'bottle',
+          units_per_pack: 1,
+          unit_size: parseFloat(bottleMatch[1]),
+          unit_size_uom: bottleMatch[2].toLowerCase()
+        }]);
+      } else {
+        const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
+        if (isBeverage) {
+          setPackConfigs([{
+            pack_type: 'bottle',
+            units_per_pack: 1,
+            unit_size: 750,
+            unit_size_uom: 'ml'
+          }]);
+        }
+      }
     } finally {
       setIsNormalizing(false);
     }
