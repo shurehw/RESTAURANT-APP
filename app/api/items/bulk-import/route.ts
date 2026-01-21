@@ -151,9 +151,9 @@ export async function POST(request: NextRequest) {
           const packSize = row.PACK_SIZE?.trim();
           if (!packSize) continue;
 
-          // Parse pack size (e.g., "6 x 750ml" or "750ml")
-          const packMatch = packSize.match(/^(\d+)\s*x\s*(\d+\.?\d*)(ml|l|oz)$/i);
-          const singleMatch = packSize.match(/^(\d+\.?\d*)(ml|l|oz)$/i);
+          // Parse pack size (e.g., "6 x 750ml" or "750ml" or "1kg" or "3.3 x 1lb")
+          const packMatch = packSize.match(/^(\d+\.?\d*)\s*x\s*(\d+\.?\d*)(ml|l|oz|fl\.oz|gal|lb|kg|g|each|case|pack|quart)$/i);
+          const singleMatch = packSize.match(/^(\d+\.?\d*)(ml|l|oz|fl\.oz|gal|lb|kg|g|each|case|pack|quart)$/i);
 
           let configKey = '';
           let config: any = null;
