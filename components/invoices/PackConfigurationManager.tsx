@@ -22,7 +22,7 @@ export function PackConfigurationManager({
   packConfigs,
   onChange,
 }: PackConfigurationManagerProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const addPackConfig = () => {
     onChange([...packConfigs, {
