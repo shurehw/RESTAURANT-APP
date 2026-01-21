@@ -302,12 +302,19 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
       if (glResponse.ok) {
         const glData = await glResponse.json();
+        console.log('GL suggestions:', glData);
         setGlSuggestions(glData.suggestions || []);
         if (glData.suggestions?.length > 0) {
           setGlAccountId(glData.suggestions[0].id); // Auto-select best match
+          console.log('Auto-selected GL account:', glData.suggestions[0]);
+        } else {
+          console.warn('No GL suggestions found');
         }
         setNewItemCategory(glData.suggestedCategory || 'food');
         setNewItemSubcategory(glData.suggestedSubcategory || '');
+        console.log('Suggested category:', glData.suggestedCategory, 'subcategory:', glData.suggestedSubcategory);
+      } else {
+        console.error('GL suggestion API failed:', await glResponse.text());
       }
 
       // Fetch item normalization
@@ -324,6 +331,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         setNewItemUOM(data.uom || parseUOMFromDescription(line.description));
 
         // Parse pack configuration from description
+        console.log('Parsing pack config from:', line.description);
         // Pattern 1: "6/750mL" = 6 bottles per case, 750mL each
         const casePackMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g|cs)/i);
         if (casePackMatch) {
@@ -331,6 +339,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           const unitSize = parseFloat(casePackMatch[2]);
           const unitSizeUom = casePackMatch[3].toLowerCase();
 
+          console.log('Pattern 1 matched (case pack):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
           setPackConfigs([{
             pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
             units_per_pack: unitsPerPack,
@@ -344,6 +353,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             const unitSize = parseFloat(bottleMatch[1]);
             const unitSizeUom = bottleMatch[2].toLowerCase();
 
+            console.log('Pattern 2 matched (bottle):', bottleMatch[0], '→ 1 bottle @', unitSize, unitSizeUom);
             setPackConfigs([{
               pack_type: 'bottle',
               units_per_pack: 1,
@@ -354,7 +364,9 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             // Pattern 3: Common beverage defaults (no size found)
             // If it's liquor/bitters and no size detected, assume standard 750mL bottle
             const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
+            console.log('No size pattern matched. Is beverage?', isBeverage);
             if (isBeverage) {
+              console.log('Defaulting to 750mL bottle');
               setPackConfigs([{
                 pack_type: 'bottle',
                 units_per_pack: 1,
