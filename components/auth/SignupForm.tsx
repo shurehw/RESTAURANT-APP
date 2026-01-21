@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 
 export function SignupForm() {
@@ -21,28 +20,28 @@ export function SignupForm() {
     setSuccess(false);
 
     try {
-      const supabase = createClient();
+      // Validate email domain
+      if (!email.endsWith('@hwoodgroup.com')) {
+        throw new Error('Only @hwoodgroup.com emails are allowed during beta');
+      }
 
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: 'readonly', // Default role
-          },
-        },
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName }),
       });
 
-      if (signUpError) {
-        throw signUpError;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Signup failed');
       }
 
       setSuccess(true);
 
-      // Redirect to dashboard after 2 seconds
+      // Redirect to login after 2 seconds
       setTimeout(() => {
-        router.push('/');
+        router.push('/login');
         router.refresh();
       }, 2000);
     } catch (err) {
@@ -62,7 +61,7 @@ export function SignupForm() {
 
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-800 rounded p-3 text-sm">
-          Account created successfully! Redirecting...
+          Account created successfully! Redirecting to login...
         </div>
       )}
 

@@ -92,7 +92,9 @@
       "Bash(Select-String -Pattern \"error|category|item\" -Context 1)",
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/backfill-proforma-defaults.ts:*)",
       "Bash(git reset:*)",
-      "Bash(npx dotenv -e .env.local -- npx tsx scripts/check-latest-invoice.ts:*)"
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/check-latest-invoice.ts:*)",
+      "Bash(npm exec:*)",
+      "Bash(npx dotenv -e .env.local -- npx tsx scripts/backfill-subcategories.ts:*)"
     ],
     "deny": [],
     "ask": []

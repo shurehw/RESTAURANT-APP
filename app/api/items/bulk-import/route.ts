@@ -104,8 +104,11 @@ export async function POST(request: NextRequest) {
         // For beverages, we always use 'oz' as recipe unit (consistent with existing logic)
         // Pack configs will handle conversion from ml/L to oz
 
-        // Generate SKU
-        const sku = `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Use SKU from first row if available, otherwise generate
+        // Note: In R365 exports, same item can have multiple SKUs for different pack sizes
+        // We'll use the first SKU as the master SKU, and store others in pack configs
+        const firstRowSKU = firstRow.SKU?.toString().trim();
+        const sku = firstRowSKU || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         // Create the item
         const { data: newItem, error: itemError } = await supabase
@@ -133,14 +136,19 @@ export async function POST(request: NextRequest) {
         }
 
         // Create pack configurations for each pack size
-        const packConfigs: any[] = [];
+        // Group by unique pack size to avoid duplicates, but keep vendor SKU from each
+        const packConfigMap = new Map<string, any>();
+
         for (const row of rows) {
           const packSize = row.PACK_SIZE?.trim();
           if (!packSize) continue;
 
           // Parse pack size (e.g., "6 x 750ml" or "750ml")
-          const packMatch = packSize.match(/^(\d+)\s*x\s*(\d+\.?\d*)(ml|l)$/i);
-          const singleMatch = packSize.match(/^(\d+\.?\d*)(ml|l)$/i);
+          const packMatch = packSize.match(/^(\d+)\s*x\s*(\d+\.?\d*)(ml|l|oz)$/i);
+          const singleMatch = packSize.match(/^(\d+\.?\d*)(ml|l|oz)$/i);
+
+          let configKey = '';
+          let config: any = null;
 
           if (packMatch) {
             // Case pack: "6 x 750ml"
@@ -148,29 +156,39 @@ export async function POST(request: NextRequest) {
             const unitSize = parseFloat(packMatch[2]);
             const unitSizeUom = packMatch[3].toLowerCase();
 
-            packConfigs.push({
+            configKey = `case-${unitsPerPack}-${unitSize}-${unitSizeUom}`;
+            config = {
               item_id: newItem.id,
               pack_type: 'case',
               units_per_pack: unitsPerPack,
               unit_size: unitSize,
               unit_size_uom: unitSizeUom,
-              vendor_sku: row.SKU || null,
-            });
+              vendor_sku: row.SKU?.toString().trim() || null,
+            };
           } else if (singleMatch) {
             // Single bottle: "750ml"
             const unitSize = parseFloat(singleMatch[1]);
             const unitSizeUom = singleMatch[2].toLowerCase();
 
-            packConfigs.push({
+            configKey = `bottle-1-${unitSize}-${unitSizeUom}`;
+            config = {
               item_id: newItem.id,
               pack_type: 'bottle',
               units_per_pack: 1,
               unit_size: unitSize,
               unit_size_uom: unitSizeUom,
-              vendor_sku: row.SKU || null,
-            });
+              vendor_sku: row.SKU?.toString().trim() || null,
+            };
+          }
+
+          // Only add if we haven't seen this exact pack config yet
+          // (Some items have same pack size with different vendor SKUs - keep first one)
+          if (config && !packConfigMap.has(configKey)) {
+            packConfigMap.set(configKey, config);
           }
         }
+
+        const packConfigs = Array.from(packConfigMap.values());
 
         // Insert pack configs
         if (packConfigs.length > 0) {

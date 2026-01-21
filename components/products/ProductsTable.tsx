@@ -28,6 +28,7 @@ interface Product {
     units_per_pack: number;
     unit_size: number;
     unit_size_uom: string;
+    vendor_sku?: string | null;
   }>;
 }
 
@@ -135,7 +136,11 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {product.item_pack_configs.map((config, idx) => (
-                        <span key={idx} className="px-2 py-0.5 bg-brass/10 text-brass rounded text-xs font-mono">
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 bg-brass/10 text-brass rounded text-xs font-mono"
+                          title={config.vendor_sku ? `Vendor SKU: ${config.vendor_sku}` : undefined}
+                        >
                           {config.units_per_pack > 1
                             ? `${config.units_per_pack} × ${config.unit_size}${config.unit_size_uom}`
                             : `${config.unit_size}${config.unit_size_uom}`
@@ -172,8 +177,8 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between p-4 border border-opsos-sage-200 rounded-md bg-white">
+          <div className="text-sm font-medium text-ledger-black">
             Showing {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length}
           </div>
 
@@ -183,6 +188,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
+              className="border-opsos-sage-300"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
@@ -208,7 +214,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                     variant={currentPage === pageNum ? "brass" : "outline"}
                     size="sm"
                     onClick={() => setCurrentPage(pageNum)}
-                    className="w-8 h-8 p-0"
+                    className={currentPage === pageNum ? "w-9 h-9" : "w-9 h-9 border-opsos-sage-300"}
                   >
                     {pageNum}
                   </Button>
@@ -221,6 +227,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
+              className="border-opsos-sage-300"
             >
               Next
               <ChevronRight className="w-4 h-4" />
