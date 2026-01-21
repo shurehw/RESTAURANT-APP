@@ -23,7 +23,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       subcategory,
       base_uom,
       gl_account_id,
-      item_pack_configs,
+      item_pack_configurations,
     } = body;
 
     // Get user's organization
@@ -90,26 +90,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update pack configurations if provided
-    if (item_pack_configs && Array.isArray(item_pack_configs)) {
+    if (item_pack_configurations && Array.isArray(item_pack_configurations)) {
       // Delete existing pack configs
       await supabase
-        .from('item_pack_configs')
+        .from('item_pack_configurations')
         .delete()
         .eq('item_id', id);
 
       // Insert new pack configs
-      if (item_pack_configs.length > 0) {
-        const newConfigs = item_pack_configs.map((config: any) => ({
+      if (item_pack_configurations.length > 0) {
+        const newConfigs = item_pack_configurations.map((config: any) => ({
           item_id: id,
           pack_type: config.pack_type,
           units_per_pack: config.units_per_pack,
           unit_size: config.unit_size,
           unit_size_uom: config.unit_size_uom,
-          vendor_sku: config.vendor_sku || null,
+          vendor_item_code: config.vendor_item_code || null,
         }));
 
         const { error: packError } = await supabase
-          .from('item_pack_configs')
+          .from('item_pack_configurations')
           .insert(newConfigs);
 
         if (packError) {
