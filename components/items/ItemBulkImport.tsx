@@ -120,20 +120,21 @@ export function ItemBulkImport() {
 
       {/* File Upload */}
       <div className="mb-6">
-        <label className="block mb-2">
-          <div className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-opsos-sage-300 rounded-md cursor-pointer hover:border-brass hover:bg-brass/5 transition-colors">
+        <label htmlFor="excel-upload" className="block mb-2 cursor-pointer">
+          <div className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-opsos-sage-300 rounded-md hover:border-brass hover:bg-brass/5 transition-colors">
             <Upload className="w-5 h-5 text-muted-foreground" />
             <span className="text-sm font-medium">
-              {file ? file.name : 'Choose Excel file (.xlsx)'}
+              {file ? file.name : 'Click to choose Excel file (.xlsx)'}
             </span>
           </div>
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
         </label>
+        <input
+          id="excel-upload"
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
 
         {parsedData.length > 0 && (
           <div className="mt-2 flex items-center gap-2 text-sm text-sage">

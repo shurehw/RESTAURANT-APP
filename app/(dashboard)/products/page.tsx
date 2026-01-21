@@ -30,13 +30,41 @@ export default async function ProductsPage() {
 
   const orgId = orgUsers?.[0]?.organization_id;
 
-  const { data: items } = await supabase
+  // First fetch items without the join
+  const { data: items, error: itemsError } = await supabase
     .from("items")
-    .select("*, item_pack_configs(pack_type, units_per_pack, unit_size, unit_size_uom)")
+    .select("*")
     .eq('organization_id', orgId || '')
     .eq('is_active', true)
-    .order("name", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(50);
+
+  if (itemsError) {
+    console.error('Error fetching items:', itemsError);
+  }
+
+  console.log('Items query result:', {
+    count: items?.length,
+    orgId,
+    hasItems: !!items,
+    firstItem: items?.[0]?.name
+  });
+
+  // Fetch pack configs separately for the items we got
+  let itemsWithConfigs = items || [];
+  if (items && items.length > 0) {
+    const itemIds = items.map(item => item.id);
+    const { data: packConfigs } = await supabase
+      .from('item_pack_configs')
+      .select('*')
+      .in('item_id', itemIds);
+
+    // Attach pack configs to items
+    itemsWithConfigs = items.map(item => ({
+      ...item,
+      item_pack_configs: packConfigs?.filter(pc => pc.item_id === item.id) || []
+    }));
+  }
 
   const { count: totalCount } = await supabase
     .from("items")
@@ -80,7 +108,7 @@ export default async function ProductsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items?.map((item) => {
+            {itemsWithConfigs?.map((item) => {
               const configs = (item as any).item_pack_configs || [];
               return (
                 <TableRow key={item.id}>
@@ -114,20 +142,10 @@ export default async function ProductsPage() {
         </Table>
       </div>
 
-      {/* Empty State */}
-      {(!items || items.length === 0) && (
-        <div className="empty-state">
-          <div className="empty-state-icon">
-            <Plus className="w-8 h-8" />
-          </div>
-          <h3 className="empty-state-title">No items found</h3>
-          <p className="empty-state-description">
-            Add your first item to get started
-          </p>
-          <Button variant="brass">
-            <Plus className="w-4 h-4" />
-            Add Item
-          </Button>
+      {/* Debug Info */}
+      {itemsError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-900">Error: {itemsError.message}</p>
         </div>
       )}
     </div>
