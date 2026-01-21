@@ -187,6 +187,11 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
               <p className="font-semibold mb-2">Success!</p>
               <p className="text-sm mb-2">
                 Invoice created with {result.normalized.lines.length} line items
+                {result.normalized.lines.filter((l: any) => l.qty === 0).length > 0 && (
+                  <span className="text-orange-700 ml-1">
+                    ({result.normalized.lines.filter((l: any) => l.qty === 0).length} backordered)
+                  </span>
+                )}
               </p>
               {result.warnings && result.warnings.length > 0 && (
                 <div className="mt-2">

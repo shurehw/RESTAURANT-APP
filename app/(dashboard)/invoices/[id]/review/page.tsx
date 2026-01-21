@@ -57,6 +57,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
   const allLines = lines || [];
   const mappedLines = allLines.filter((l) => l.item_id !== null);
   const unmappedLines = allLines.filter((l) => l.item_id === null);
+  const backorderedLines = allLines.filter((l) => l.qty === 0);
 
   // Calculate GL breakdown for mapped items
   const glBreakdown = mappedLines.reduce((acc, line) => {
@@ -218,14 +219,67 @@ export default async function InvoiceReviewPage({ params }: Props) {
         </div>
       )}
 
+      {/* Backordered Items Section */}
+      {backorderedLines.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <XCircle className="w-5 h-5 text-orange-600" />
+              Backordered Items ({backorderedLines.length})
+            </h2>
+          </div>
+          <Card className="overflow-hidden border-orange-200">
+            <table className="w-full">
+              <thead className="bg-orange-50 border-b-2 border-orange-300">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold">Description</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold">Mapped To</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold">Unit Price</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {backorderedLines.map((line) => (
+                  <tr key={line.id} className="border-b border-border hover:bg-orange-50/30">
+                    <td className="px-4 py-3 text-sm">{line.description}</td>
+                    <td className="px-4 py-3">
+                      {line.item_id ? (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="sage" className="text-xs">
+                            {line.item?.name || "—"}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground font-mono">
+                            {line.item?.sku}
+                          </span>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">Unmapped</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right text-sm font-mono">
+                      ${line.unit_cost?.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">
+                        Not Shipped
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      )}
+
       {/* Mapped Items Section */}
       <div>
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-sage" />
-          Mapped Items ({mappedLines.length})
+          Mapped Items ({mappedLines.filter(l => l.qty > 0).length})
         </h2>
 
-        {mappedLines.length > 0 ? (
+        {mappedLines.filter(l => l.qty > 0).length > 0 ? (
           <Card className="overflow-hidden">
             <table className="w-full">
               <thead className="bg-muted border-b-2 border-brass">
@@ -238,7 +292,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {mappedLines.map((line) => (
+                {mappedLines.filter(l => l.qty > 0).map((line) => (
                   <tr key={line.id} className="border-b border-border hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm">{line.description}</td>
                     <td className="px-4 py-3">
