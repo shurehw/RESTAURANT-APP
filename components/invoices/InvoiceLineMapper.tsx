@@ -295,6 +295,10 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     }
   }, [showCreateNew]);
 
+  const [packConfigSource, setPackConfigSource] = useState<'parsed' | 'learned' | 'web_search' | null>(null);
+  const [packConfigBrand, setPackConfigBrand] = useState<string | null>(null);
+  const [packConfigSampleCount, setPackConfigSampleCount] = useState<number>(0);
+
   const normalizeWithAI = async () => {
     setIsNormalizing(true);
     try {
@@ -322,6 +326,35 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         console.error('GL suggestion API failed:', await glResponse.text());
       }
 
+      // Learn pack configuration from existing items (brand-based learning + web search)
+      const learnResponse = await fetch('/api/items/learn-pack-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: line.description, vendor_name: vendorName }),
+      });
+
+      let learnedPackConfig = null;
+      if (learnResponse.ok) {
+        const learnData = await learnResponse.json();
+        console.log('Pack config learning response:', learnData);
+
+        // Prioritize learned config over web search
+        if (learnData.learned) {
+          learnedPackConfig = learnData.learned;
+          setPackConfigSource('learned');
+          setPackConfigBrand(learnData.brand);
+          setPackConfigSampleCount(learnData.learned.sample_count);
+          console.log(`✓ Learned pack config from ${learnData.learned.sample_count} existing ${learnData.brand} items`);
+        } else if (learnData.web_search) {
+          learnedPackConfig = learnData.web_search;
+          setPackConfigSource('web_search');
+          setPackConfigBrand(learnData.brand);
+          console.log('✓ Found pack config via web search');
+        }
+      } else {
+        console.error('Pack config learning API failed:', await learnResponse.text());
+      }
+
       // Fetch item normalization
       const response = await fetch('/api/items/normalize', {
         method: 'POST',
@@ -344,8 +377,11 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         setNewItemSKU(data.sku || '');
         setNewItemUOM(finalUOM);
 
-        // Parse pack configuration from description
+        // Parse pack configuration - prioritize learned > parsed > default
         console.log('Parsing pack config from:', line.description);
+
+        let parsedPackConfig = null;
+
         // Pattern 1: "6/750mL" = 6 bottles per case, 750mL each
         const casePackMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g|cs)/i);
         if (casePackMatch) {
@@ -354,12 +390,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           const unitSizeUom = casePackMatch[3].toLowerCase();
 
           console.log('Pattern 1 matched (case pack):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
-          setPackConfigs([{
+          parsedPackConfig = {
             pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
             units_per_pack: unitsPerPack,
             unit_size: unitSize,
             unit_size_uom: unitSizeUom === 'cs' ? 'ml' : unitSizeUom
-          }]);
+          };
+          setPackConfigSource('parsed');
         } else {
           // Pattern 2: "750ML" (single bottle size, no case pack)
           const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
@@ -368,27 +405,43 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             const unitSizeUom = bottleMatch[2].toLowerCase();
 
             console.log('Pattern 2 matched (bottle):', bottleMatch[0], '→ 1 bottle @', unitSize, unitSizeUom);
-            setPackConfigs([{
+            parsedPackConfig = {
               pack_type: 'bottle',
               units_per_pack: 1,
               unit_size: unitSize,
               unit_size_uom: unitSizeUom
-            }]);
+            };
+            setPackConfigSource('parsed');
           } else {
             // Pattern 3: Common beverage defaults (no size found)
-            // If it's liquor/bitters and no size detected, assume standard 750mL bottle
             const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
             console.log('No size pattern matched. Is beverage?', isBeverage);
             if (isBeverage) {
               console.log('Defaulting to 750mL bottle');
-              setPackConfigs([{
+              parsedPackConfig = {
                 pack_type: 'bottle',
                 units_per_pack: 1,
                 unit_size: 750,
                 unit_size_uom: 'ml'
-              }]);
+              };
+              setPackConfigSource('parsed');
             }
           }
+        }
+
+        // Use learned config if available and confident, otherwise use parsed
+        if (learnedPackConfig && (!parsedPackConfig || learnedPackConfig.confidence === 'high')) {
+          console.log('Using learned pack config:', learnedPackConfig);
+          setPackConfigs([{
+            pack_type: learnedPackConfig.pack_type,
+            units_per_pack: learnedPackConfig.units_per_pack,
+            unit_size: learnedPackConfig.unit_size,
+            unit_size_uom: learnedPackConfig.unit_size_uom
+          }]);
+          // packConfigSource already set above
+        } else if (parsedPackConfig) {
+          console.log('Using parsed pack config:', parsedPackConfig);
+          setPackConfigs([parsedPackConfig]);
         }
       } else {
         // Fallback to regex-based normalization
@@ -716,6 +769,33 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                       💡 This is the unit recipes will use. Pack configurations below will convert to this unit.
                     </p>
                   </div>
+
+                  {/* Pack Configuration Source Indicator */}
+                  {packConfigSource && (
+                    <div className={`mb-2 p-2 rounded-md text-xs ${
+                      packConfigSource === 'learned'
+                        ? 'bg-sage-50 border border-sage-200 text-sage-900'
+                        : packConfigSource === 'web_search'
+                        ? 'bg-blue-50 border border-blue-200 text-blue-900'
+                        : 'bg-gray-50 border border-gray-200 text-gray-900'
+                    }`}>
+                      {packConfigSource === 'learned' && (
+                        <>
+                          <span className="font-semibold">✓ Learned from your data:</span> Based on {packConfigSampleCount} existing {packConfigBrand} item{packConfigSampleCount !== 1 ? 's' : ''}
+                        </>
+                      )}
+                      {packConfigSource === 'web_search' && (
+                        <>
+                          <span className="font-semibold">🌐 Found via web search:</span> {packConfigBrand ? `${packConfigBrand} ` : ''}pack size from product specs
+                        </>
+                      )}
+                      {packConfigSource === 'parsed' && (
+                        <>
+                          <span className="font-semibold">📄 Parsed from invoice:</span> Extracted from "{line.description}"
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   {/* Pack Configurations - Collapsible */}
                   <PackConfigurationManager
