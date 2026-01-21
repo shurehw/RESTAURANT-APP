@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Download } from "lucide-react";
 import { ItemBulkImport } from "@/components/items/ItemBulkImport";
-import { Badge } from "@/components/ui/badge";
+import { ProductsTable } from "@/components/products/ProductsTable";
 
 export default async function ProductsPage() {
   const supabase = await createClient();
@@ -92,62 +92,11 @@ export default async function ProductsPage() {
       {/* Bulk Import */}
       <ItemBulkImport />
 
-      {/* Recent Products Table */}
-      <div className="border border-opsos-sage-200 rounded-md overflow-hidden">
-        <div className="p-4 bg-opsos-sage-50 border-b border-opsos-sage-200">
-          <h2 className="text-sm font-semibold text-ledger-black">Recent Products (50 of {totalCount})</h2>
-        </div>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product Name</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Recipe Unit</TableHead>
-              <TableHead>Pack Configs</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {itemsWithConfigs?.map((item) => {
-              const configs = (item as any).item_pack_configs || [];
-              return (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{item.sku}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {item.subcategory || item.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono">{item.base_uom}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {configs.map((config: any, idx: number) => (
-                        <span key={idx} className="px-2 py-0.5 bg-brass/10 text-brass rounded text-xs font-mono">
-                          {config.units_per_pack > 1
-                            ? `${config.units_per_pack} × ${config.unit_size}${config.unit_size_uom}`
-                            : `${config.unit_size}${config.unit_size_uom}`
-                          }
-                        </span>
-                      ))}
-                      {configs.length === 0 && (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Debug Info */}
-      {itemsError && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-900">Error: {itemsError.message}</p>
-        </div>
-      )}
+      {/* Products Table with Search, Filter, Pagination */}
+      <ProductsTable
+        initialProducts={itemsWithConfigs as any}
+        totalCount={totalCount || 0}
+      />
     </div>
   );
 }
