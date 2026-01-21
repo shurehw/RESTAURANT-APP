@@ -2,7 +2,7 @@
  * OpsOS Products Page
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -42,21 +42,37 @@ export default async function ProductsPage() {
     console.error('Error fetching items:', itemsError);
   }
 
-  // Fetch ALL pack configs for the organization (avoid .in() limit issues with 950 items)
+  // Fetch pack configs for items in this organization using admin client
   let itemsWithConfigs = items || [];
-  if (items && items.length > 0) {
-    // Fetch all pack configs at once
-    const { data: packConfigs, error: packError } = await supabase
-      .from('item_pack_configurations')
-      .select('*');
+  if (items && items.length > 0 && orgId) {
+    const adminClient = createAdminClient();
+    const itemIds = items.map(i => i.id);
 
-    if (packError) {
-      console.error('Error fetching pack configs:', packError);
+    // Fetch pack configs for these items (split into batches to avoid .in() limits)
+    const batchSize = 300;
+    const allPackConfigs: any[] = [];
+
+    for (let i = 0; i < itemIds.length; i += batchSize) {
+      const batch = itemIds.slice(i, i + batchSize);
+      const { data: packConfigs, error: packError } = await adminClient
+        .from('item_pack_configurations')
+        .select('*')
+        .in('item_id', batch);
+
+      if (packError) {
+        console.error('Error fetching pack configs batch:', packError);
+        console.error('Batch size:', batch.length);
+      } else {
+        console.log(`Batch ${Math.floor(i/batchSize) + 1}: fetched ${packConfigs?.length || 0} pack configs for ${batch.length} items`);
+        if (packConfigs) {
+          allPackConfigs.push(...packConfigs);
+        }
+      }
     }
 
     // Create a map for faster lookup
     const packConfigsByItem = new Map<string, any[]>();
-    packConfigs?.forEach(pc => {
+    allPackConfigs.forEach(pc => {
       if (!packConfigsByItem.has(pc.item_id)) {
         packConfigsByItem.set(pc.item_id, []);
       }
@@ -71,7 +87,7 @@ export default async function ProductsPage() {
 
     console.log('Pack configs loaded:', {
       totalItems: items.length,
-      totalPackConfigs: packConfigs?.length || 0,
+      totalPackConfigs: allPackConfigs.length,
       itemsWithPacks: itemsWithConfigs.filter(i => i.item_pack_configurations.length > 0).length,
       sampleItem: itemsWithConfigs[0]?.name,
       samplePacks: itemsWithConfigs[0]?.item_pack_configurations?.length
