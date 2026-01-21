@@ -213,6 +213,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
                 key={line.id}
                 line={line}
                 vendorId={invoice.vendor_id}
+                vendorName={invoice.vendor?.name}
               />
             ))}
           </div>
