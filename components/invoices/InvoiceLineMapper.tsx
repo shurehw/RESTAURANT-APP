@@ -96,7 +96,9 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
       });
 
       if (!createResponse.ok) {
-        alert('Failed to create item');
+        const errorData = await createResponse.json();
+        console.error('Failed to create item:', errorData);
+        alert(`Failed to create item: ${errorData.error || errorData.details || 'Unknown error'}`);
         return;
       }
 

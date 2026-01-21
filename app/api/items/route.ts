@@ -36,13 +36,13 @@ export async function POST(request: NextRequest) {
     if (!orgId) {
       const { data: user } = await supabase.auth.getUser();
       if (user?.user) {
-        const { data: orgUser } = await supabase
+        const { data: orgUsers } = await supabase
           .from('organization_users')
           .select('organization_id')
           .eq('user_id', user.user.id)
-          .eq('is_active', true)
-          .single();
-        orgId = orgUser?.organization_id;
+          .eq('is_active', true);
+        // Use first organization if user belongs to multiple
+        orgId = orgUsers?.[0]?.organization_id;
       }
     }
 
