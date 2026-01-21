@@ -42,25 +42,39 @@ export default async function ProductsPage() {
     console.error('Error fetching items:', itemsError);
   }
 
-  // Fetch pack configs separately for the items we got
+  // Fetch ALL pack configs for the organization (avoid .in() limit issues with 950 items)
   let itemsWithConfigs = items || [];
   if (items && items.length > 0) {
-    const itemIds = items.map(item => item.id);
-    const { data: packConfigs } = await supabase
+    // Fetch all pack configs at once
+    const { data: packConfigs, error: packError } = await supabase
       .from('item_pack_configurations')
-      .select('*')
-      .in('item_id', itemIds);
+      .select('*');
+
+    if (packError) {
+      console.error('Error fetching pack configs:', packError);
+    }
+
+    // Create a map for faster lookup
+    const packConfigsByItem = new Map<string, any[]>();
+    packConfigs?.forEach(pc => {
+      if (!packConfigsByItem.has(pc.item_id)) {
+        packConfigsByItem.set(pc.item_id, []);
+      }
+      packConfigsByItem.get(pc.item_id)!.push(pc);
+    });
 
     // Attach pack configs to items
     itemsWithConfigs = items.map(item => ({
       ...item,
-      item_pack_configurations: packConfigs?.filter(pc => pc.item_id === item.id) || []
+      item_pack_configurations: packConfigsByItem.get(item.id) || []
     }));
 
     console.log('Pack configs loaded:', {
       totalItems: items.length,
       totalPackConfigs: packConfigs?.length || 0,
-      itemsWithPacks: itemsWithConfigs.filter(i => i.item_pack_configurations.length > 0).length
+      itemsWithPacks: itemsWithConfigs.filter(i => i.item_pack_configurations.length > 0).length,
+      sampleItem: itemsWithConfigs[0]?.name,
+      samplePacks: itemsWithConfigs[0]?.item_pack_configurations?.length
     });
   }
 
