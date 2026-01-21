@@ -15,6 +15,21 @@ import {
 } from "@/components/ui/table";
 import { EditProductModal } from './EditProductModal';
 
+// Normalize category names for display
+function normalizeCategoryName(category: string): string {
+  const categoryMap: Record<string, string> = {
+    'liquor': 'Liquor',
+    'wine': 'Wine',
+    'beer': 'Beer',
+    'beverage': 'Beer',
+    'bar_consumables': 'Bar Consumables',
+    'non_alcoholic_beverage': 'Non-Alcoholic Beverage',
+    'food': 'Food',
+    'packaging': 'Packaging',
+  };
+  return categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}
+
 interface Product {
   id: string;
   name: string;
@@ -99,7 +114,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
         >
           <option value="all">All Categories</option>
           {categories.map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
+            <option key={cat} value={cat}>{normalizeCategoryName(cat)}</option>
           ))}
         </select>
 
@@ -129,7 +144,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                   <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-xs">
-                      {product.subcategory || product.category}
+                      {product.subcategory || normalizeCategoryName(product.category)}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-mono">{product.base_uom}</TableCell>
