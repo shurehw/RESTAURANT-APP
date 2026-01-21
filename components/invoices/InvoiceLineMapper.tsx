@@ -435,27 +435,21 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
   return (
     <Card className="p-4 border-l-4 border-brass">
-      <div className="grid grid-cols-12 gap-4">
-        {/* Line Item Details */}
-        <div className="col-span-6">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-brass/10 flex items-center justify-center flex-shrink-0 mt-1">
-              <span className="text-xs font-semibold text-brass">?</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm mb-1">{line.description}</div>
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>Qty: {line.qty}</span>
-                <span>Unit: ${line.unit_cost?.toFixed(2)}</span>
-                <span className="font-semibold">Total: ${line.line_total?.toFixed(2)}</span>
-              </div>
-            </div>
+      {/* Invoice Context - Always Visible */}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+        <div className="text-xs font-semibold text-blue-900 mb-2">📄 Invoice Line (OCR Extracted):</div>
+        <div className="space-y-1 text-xs">
+          <div><span className="font-medium text-blue-800">Description:</span> <span className="font-mono text-blue-900">{line.description}</span></div>
+          {vendorName && <div><span className="font-medium text-blue-800">Vendor:</span> {vendorName}</div>}
+          <div className="flex gap-4">
+            <div><span className="font-medium text-blue-800">Qty:</span> {line.qty}</div>
+            <div><span className="font-medium text-blue-800">Unit Cost:</span> ${line.unit_cost?.toFixed(2)}</div>
+            <div><span className="font-medium text-blue-800">Total:</span> <span className="font-semibold">${line.line_total?.toFixed(2)}</span></div>
           </div>
         </div>
+      </div>
 
-        {/* Search & Map */}
-        <div className="col-span-6">
-          <div className="space-y-3">
+      <div className="space-y-3">
             {/* Search Input */}
             <div className="flex gap-2">
               <input
@@ -813,8 +807,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                 )}
               </div>
             )}
-          </div>
-        </div>
       </div>
     </Card>
   );
