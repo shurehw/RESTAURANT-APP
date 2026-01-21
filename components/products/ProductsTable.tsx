@@ -22,6 +22,7 @@ interface Product {
   category: string;
   subcategory: string | null;
   base_uom: string;
+  gl_account_id: string | null;
   item_pack_configs: Array<{
     pack_type: string;
     units_per_pack: number;
