@@ -16,9 +16,10 @@ interface InvoiceLineMapperProps {
     line_total: number;
   };
   vendorId: string;
+  vendorName?: string;
 }
 
-export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
+export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMapperProps) {
   const [searchQuery, setSearchQuery] = useState(line.description);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
@@ -307,15 +308,34 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
         setNewItemSKU(data.sku || '');
         setNewItemUOM(data.uom || parseUOMFromDescription(line.description));
 
-        // Parse pack configuration from description (e.g., "6/750mL")
-        const packMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)/i);
-        if (packMatch) {
+        // Parse pack configuration from description
+        // Pattern 1: "6/750mL" = 6 bottles per case, 750mL each
+        const casePackMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g|cs)/i);
+        if (casePackMatch) {
+          const unitsPerPack = parseInt(casePackMatch[1]);
+          const unitSize = parseFloat(casePackMatch[2]);
+          const unitSizeUom = casePackMatch[3].toLowerCase();
+
           setPackConfigs([{
-            pack_type: 'case',
-            units_per_pack: parseInt(packMatch[1]),
-            unit_size: parseFloat(packMatch[2]),
-            unit_size_uom: packMatch[3].toLowerCase()
+            pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
+            units_per_pack: unitsPerPack,
+            unit_size: unitSize,
+            unit_size_uom: unitSizeUom === 'cs' ? 'ml' : unitSizeUom
           }]);
+        } else {
+          // Pattern 2: "750ML" (single bottle size, no case pack)
+          const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
+          if (bottleMatch) {
+            const unitSize = parseFloat(bottleMatch[1]);
+            const unitSizeUom = bottleMatch[2].toLowerCase();
+
+            setPackConfigs([{
+              pack_type: 'bottle',
+              units_per_pack: 1,
+              unit_size: unitSize,
+              unit_size_uom: unitSizeUom
+            }]);
+          }
         }
       } else {
         // Fallback to regex-based normalization
@@ -525,6 +545,20 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                   </Button>
                 </div>
 
+                {/* Invoice Context - Always Visible */}
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="text-xs font-semibold text-blue-900 mb-2">📄 Invoice Line Details:</div>
+                  <div className="space-y-1 text-xs">
+                    <div><span className="font-medium text-blue-800">Description:</span> <span className="font-mono text-blue-900">{line.description}</span></div>
+                    {vendorName && <div><span className="font-medium text-blue-800">Vendor:</span> {vendorName}</div>}
+                    <div className="flex gap-4">
+                      <div><span className="font-medium text-blue-800">Qty:</span> {line.qty}</div>
+                      <div><span className="font-medium text-blue-800">Unit Cost:</span> ${line.unit_cost?.toFixed(2)}</div>
+                      <div><span className="font-medium text-blue-800">Total:</span> <span className="font-semibold">${line.line_total?.toFixed(2)}</span></div>
+                    </div>
+                  </div>
+                </div>
+
                 {isNormalizing ? (
                   <div className="py-8 text-center">
                     <div className="animate-spin w-8 h-8 border-4 border-brass border-t-transparent rounded-full mx-auto mb-3" />
@@ -533,34 +567,35 @@ export function InvoiceLineMapper({ line, vendorId }: InvoiceLineMapperProps) {
                 ) : (
                   <div className="space-y-3">
                     <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1">
-                      Item Name *
+                    <label className="text-xs font-medium text-muted-foreground block mb-1 flex items-center gap-1">
+                      Item Name * {newItemName && <span className="text-sage">✓ Auto-filled</span>}
                     </label>
                     <input
                       type="text"
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
                       className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      placeholder="Normalized item name"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1">
-                      SKU (AI Generated)
+                    <label className="text-xs font-medium text-muted-foreground block mb-1 flex items-center gap-1">
+                      SKU {newItemSKU && <span className="text-sage">✓ AI Generated</span>}
                     </label>
                     <input
                       type="text"
                       value={newItemSKU}
                       onChange={(e) => setNewItemSKU(e.target.value)}
-                      placeholder="Auto-generated"
+                      placeholder="Auto-generated on save"
                       className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     />
                   </div>
 
                   {/* Recipe Unit (base_uom) - ALWAYS VISIBLE */}
                   <div>
-                    <label className="text-xs font-medium text-muted-foreground block mb-1">
-                      Recipe Unit (How recipes measure this) *
+                    <label className="text-xs font-medium text-muted-foreground block mb-1 flex items-center gap-1">
+                      Recipe Unit (How recipes measure this) * {newItemUOM && <span className="text-sage">✓ Auto-detected</span>}
                     </label>
                     <select
                       value={newItemUOM}
