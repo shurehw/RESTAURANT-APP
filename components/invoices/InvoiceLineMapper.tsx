@@ -165,21 +165,24 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const parseUOMFromDescription = (desc: string): string => {
     const normalized = desc.toLowerCase();
 
-    // Check for specific patterns in order of priority
+    // Check for beverages FIRST (before case/unit checks)
+    // Recipe unit for beverages is always 'oz' regardless of how they're sold (case, bottle, etc.)
+    if (/(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(normalized)) {
+      return 'oz';
+    }
+
+    // Check for specific size patterns
     if (/(\d+\s*(l|lt)\b|liter)/i.test(normalized)) return 'L';
     if (/(\d+\s*gal\b|gallon)/i.test(normalized)) return 'gal';
     if (/(\d+\s*qt\b|quart)/i.test(normalized)) return 'qt';
     if (/(\d+\s*pt\b|pint)/i.test(normalized)) return 'pt';
     if (/(\d+\s*oz\b|ounce)/i.test(normalized)) return 'oz';
     if (/(\d+\s*lb\b|pound)/i.test(normalized)) return 'lb';
+
+    // Generic pack types (only for non-beverages)
     if (/(cs\b|case)/i.test(normalized)) return 'case';
     if (/box/i.test(normalized)) return 'box';
     if (/(ea\b|each)/i.test(normalized)) return 'unit';
-
-    // Default for beverages (liquor, wine, beer, bitters, etc.) → ounce
-    if (/(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(normalized)) {
-      return 'oz';
-    }
 
     return 'unit';
   };
