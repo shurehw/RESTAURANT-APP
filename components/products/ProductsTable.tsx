@@ -57,8 +57,27 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [sortColumn, setSortColumn] = useState<keyof Product | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const itemsPerPage = 50;
+
+  // Debug pack configs
+  console.log('ProductsTable - First product:', {
+    name: initialProducts[0]?.name,
+    packConfigs: initialProducts[0]?.item_pack_configurations,
+    packCount: initialProducts[0]?.item_pack_configurations?.length
+  });
+
+  // Sort function
+  const handleSort = (column: keyof Product) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
 
   // Filter products
   const filteredProducts = initialProducts.filter(product => {
@@ -75,11 +94,25 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
     return matchesSearch && matchesCategory;
   });
 
+  // Sort products
+  const sortedProducts = sortColumn
+    ? [...filteredProducts].sort((a, b) => {
+        const aValue = a[sortColumn];
+        const bValue = b[sortColumn];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+        return sortDirection === 'asc' ? comparison : -comparison;
+      })
+    : filteredProducts;
+
   // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  const currentProducts = sortedProducts.slice(startIndex, endIndex);
 
   // Get unique categories for filter
   const categories = Array.from(new Set(
@@ -128,18 +161,41 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Product Name</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Recipe Unit</TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-opsos-sage-50"
+                onClick={() => handleSort('name')}
+              >
+                Product Name {sortColumn === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-opsos-sage-50"
+                onClick={() => handleSort('sku')}
+              >
+                SKU {sortColumn === 'sku' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-opsos-sage-50"
+                onClick={() => handleSort('category')}
+              >
+                Category {sortColumn === 'category' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-opsos-sage-50"
+                onClick={() => handleSort('base_uom')}
+              >
+                Recipe Unit {sortColumn === 'base_uom' && (sortDirection === 'asc' ? '↑' : '↓')}
+              </TableHead>
               <TableHead>Pack Configs</TableHead>
-              <TableHead className="w-20"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {currentProducts.length > 0 ? (
               currentProducts.map((product) => (
-                <TableRow key={product.id}>
+                <TableRow
+                  key={product.id}
+                  className="cursor-pointer hover:bg-opsos-sage-50"
+                  onClick={() => setSelectedProduct(product)}
+                >
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
                   <TableCell>
@@ -148,7 +204,7 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                     </Badge>
                   </TableCell>
                   <TableCell className="font-mono">{product.base_uom}</TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex flex-wrap gap-1">
                       {product.item_pack_configurations.map((config, idx) => (
                         <span
@@ -167,21 +223,11 @@ export function ProductsTable({ initialProducts, totalCount }: ProductsTableProp
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedProduct(product)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   No products found matching your filters
                 </TableCell>
               </TableRow>
