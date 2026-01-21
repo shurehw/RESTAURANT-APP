@@ -78,8 +78,10 @@ async function addPackConfigs() {
         const packSize = row.PACK_SIZE?.trim();
         if (!packSize) continue;
 
-        const packMatch = packSize.match(/^(\d+)\s*x\s*(\d+\.?\d*)(ml|l|oz)$/i);
-        const singleMatch = packSize.match(/^(\d+\.?\d*)(ml|l|oz)$/i);
+        // Match case format: "6 x 750ml" or "3.3 x 1lb" or "400 x 1g" or "1 x 1case"
+        const packMatch = packSize.match(/^(\d+\.?\d*)\s*x\s*(\d+\.?\d*)(ml|l|oz|fl\.oz|gal|lb|kg|g|each|case|pack|quart)$/i);
+        // Match single unit: "750ml" or "1gal" or "1kg" or "1case" or "1pack" or "1quart"
+        const singleMatch = packSize.match(/^(\d+\.?\d*)(ml|l|oz|fl\.oz|gal|lb|kg|g|each|case|pack|quart)$/i);
 
         let configKey = '';
         let config: any = null;
