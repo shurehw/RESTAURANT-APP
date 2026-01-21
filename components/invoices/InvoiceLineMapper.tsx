@@ -326,9 +326,12 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
       if (response.ok) {
         const data = await response.json();
+        console.log('AI normalization response:', data);
+        const parsedUOM = parseUOMFromDescription(line.description);
+        console.log('Parsed UOM from description:', parsedUOM);
         setNewItemName(data.name || normalizeItemName(line.description));
         setNewItemSKU(data.sku || '');
-        setNewItemUOM(data.uom || parseUOMFromDescription(line.description));
+        setNewItemUOM(data.uom || parsedUOM);
 
         // Parse pack configuration from description
         console.log('Parsing pack config from:', line.description);

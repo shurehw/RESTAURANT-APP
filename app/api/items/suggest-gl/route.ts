@@ -28,19 +28,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: orgUser } = await supabase
+    const { data: orgUsers } = await supabase
       .from('organization_users')
       .select('organization_id')
       .eq('user_id', user.user.id)
-      .eq('is_active', true)
-      .single();
+      .eq('is_active', true);
 
-    if (!orgUser?.organization_id) {
+    if (!orgUsers || orgUsers.length === 0) {
       return NextResponse.json(
         { error: 'User not associated with an organization' },
         { status: 403 }
       );
     }
+
+    // Use first organization if user belongs to multiple
+    const orgUser = orgUsers[0];
 
     // Get GL account suggestions based on description and category
     // We'll use a simplified matching logic here since we don't have an item_id yet
