@@ -329,9 +329,15 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         console.log('AI normalization response:', data);
         const parsedUOM = parseUOMFromDescription(line.description);
         console.log('Parsed UOM from description:', parsedUOM);
+
+        // Prefer parsed UOM over AI UOM for beverages (AI often returns 'unit' incorrectly)
+        const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
+        const finalUOM = isBeverage ? parsedUOM : (data.uom || parsedUOM);
+        console.log('Final UOM:', finalUOM, '(beverage override:', isBeverage, ')');
+
         setNewItemName(data.name || normalizeItemName(line.description));
         setNewItemSKU(data.sku || '');
-        setNewItemUOM(data.uom || parsedUOM);
+        setNewItemUOM(finalUOM);
 
         // Parse pack configuration from description
         console.log('Parsing pack config from:', line.description);
