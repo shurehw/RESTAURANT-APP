@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   return guard(async () => {
     const supabase = await createClient();
     const body = await request.json();
-    const { items } = body; // Array of parsed Excel rows
+    const { items, item_type } = body; // Array of parsed Excel rows
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
             base_uom: baseUom,
             gl_account_id: glAccountId,
             is_active: true,
+            item_type: item_type || 'beverage', // Default to beverage for backwards compatibility
             // R365 integration fields
             r365_measure_type: firstRow.Measure_Type || null,
             r365_reporting_uom: firstRow.Reporting_U_of_M || null,

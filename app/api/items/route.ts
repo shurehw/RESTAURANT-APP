@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     const body = await request.json();
-    const { name, sku, category, subcategory, base_uom, gl_account_id, organization_id } = body;
+    const { name, sku, category, subcategory, base_uom, gl_account_id, organization_id, item_type } = body;
 
     if (!name || !sku) {
       return NextResponse.json(
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
         gl_account_id: gl_account_id || null,
         organization_id: orgId || null,
         is_active: true,
+        item_type: item_type || 'beverage', // Default to beverage for now
       })
       .select()
       .single();

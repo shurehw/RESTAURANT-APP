@@ -95,7 +95,10 @@
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/check-latest-invoice.ts:*)",
       "Bash(npm exec:*)",
       "Bash(npx dotenv -e .env.local -- npx tsx scripts/backfill-subcategories.ts:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "Bash(Get-Content dev-output.log -Tail 50)",
+      "Bash(Select-String -Pattern \"Pack configs|error|Error\" -Context 2)",
+      "Bash(. .env.local)"
     ],
     "deny": [],
     "ask": []
