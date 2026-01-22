@@ -26,6 +26,7 @@ export function ItemBulkImport() {
   const [parsedData, setParsedData] = useState<ParsedItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importResults, setImportResults] = useState<any>(null);
+  const [itemType, setItemType] = useState<'beverage' | 'food' | 'other'>('beverage');
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFile = e.target.files?.[0];
@@ -77,7 +78,7 @@ export function ItemBulkImport() {
       const response = await fetch('/api/items/bulk-import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: parsedData }),
+        body: JSON.stringify({ items: parsedData, item_type: itemType }),
       });
 
       const result = await response.json();
@@ -116,6 +117,39 @@ export function ItemBulkImport() {
         <p className="text-sm text-muted-foreground">
           Upload an R365 Excel export to bulk import items. Items with multiple pack sizes will be consolidated.
         </p>
+      </div>
+
+      {/* Item Type Selector */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-ledger-black mb-2">
+          Item Type
+        </label>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={itemType === 'beverage' ? 'brass' : 'outline'}
+            size="sm"
+            onClick={() => setItemType('beverage')}
+          >
+            Beverage
+          </Button>
+          <Button
+            type="button"
+            variant={itemType === 'food' ? 'brass' : 'outline'}
+            size="sm"
+            onClick={() => setItemType('food')}
+          >
+            Food
+          </Button>
+          <Button
+            type="button"
+            variant={itemType === 'other' ? 'brass' : 'outline'}
+            size="sm"
+            onClick={() => setItemType('other')}
+          >
+            Other
+          </Button>
+        </div>
       </div>
 
       {/* File Upload */}

@@ -30,10 +30,10 @@ export default async function ProductsPage() {
 
   const orgId = orgUsers?.[0]?.organization_id;
 
-  // Fetch ALL items without the join (no limit - pagination is client-side)
+  // Fetch ALL items with R365 fields (no limit - pagination is client-side)
   const { data: items, error: itemsError } = await supabase
     .from("items")
-    .select("*")
+    .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, created_at, organization_id, is_active")
     .eq('organization_id', orgId || '')
     .eq('is_active', true)
     .order("created_at", { ascending: false });
@@ -124,6 +124,7 @@ export default async function ProductsPage() {
       <ProductsTable
         initialProducts={itemsWithConfigs as any}
         totalCount={totalCount || 0}
+        orgId={orgId || ''}
       />
     </div>
   );

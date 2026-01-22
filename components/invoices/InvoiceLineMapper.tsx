@@ -92,6 +92,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           subcategory: newItemSubcategory || null,
           base_uom: newItemUOM || 'unit',
           gl_account_id: glAccountId || null,
+          item_type: 'beverage', // Set to beverage since we're processing beverage invoices
         }),
       });
 
