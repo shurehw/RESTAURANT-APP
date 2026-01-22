@@ -38,14 +38,12 @@ export default async function ProductsPage() {
     .eq('is_active', true)
     .order("created_at", { ascending: false });
 
-  type ItemWithPackConfigs = typeof items extends (infer T)[] ? T & { item_pack_configurations: any[] } : never;
-
   if (itemsError) {
     console.error('Error fetching items:', itemsError);
   }
 
   // Fetch pack configs for items in this organization using admin client
-  let itemsWithConfigs: ItemWithPackConfigs[] = (items || []).map(item => ({
+  let itemsWithConfigs: any[] = (items || []).map(item => ({
     ...item,
     item_pack_configurations: []
   }));
