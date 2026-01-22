@@ -1,10 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/api/guard';
+import { cookies } from 'next/headers';
 
 export async function GET(request: NextRequest) {
   return guard(async () => {
     const supabase = await createClient();
+
+    // Get user's organization
+    const cookieStore = await cookies();
+    const userIdCookie = cookieStore.get('user_id');
+
+    if (!userIdCookie?.value) {
+      return NextResponse.json({ items: [], recipes: [] });
+    }
+
+    const { data: orgUsers } = await supabase
+      .from('organization_users')
+      .select('organization_id')
+      .eq('user_id', userIdCookie.value)
+      .eq('is_active', true);
+
+    const orgId = orgUsers?.[0]?.organization_id;
+
+    if (!orgId) {
+      return NextResponse.json({ items: [], recipes: [] });
+    }
 
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('q')?.trim();
@@ -17,11 +38,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ items: [], recipes: [] });
     }
 
+    // Use admin client to bypass RLS and filter by organization
+    const adminClient = createAdminClient();
+
     // Use trigram similarity search for fuzzy matching (from migration 058)
     // This leverages the GIN indexes we created on name and SKU
-    const { data: items, error: itemsError } = await supabase
+    const { data: items, error: itemsError } = await adminClient
       .from('items')
       .select('id, sku, name, category, base_uom')
+      .eq('organization_id', orgId)
       .eq('is_active', true)
       .or(`name.ilike.%${query}%,sku.ilike.%${query}%`)
       .order('name')

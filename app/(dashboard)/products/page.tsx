@@ -15,31 +15,63 @@ import {
 import { Plus, Download } from "lucide-react";
 import { ItemBulkImport } from "@/components/items/ItemBulkImport";
 import { ProductsTable } from "@/components/products/ProductsTable";
+import { cookies } from 'next/headers';
 
 export default async function ProductsPage() {
   const supabase = await createClient();
 
-  // Get user's organization
-  const { data: user } = await supabase.auth.getUser();
+  // Get user ID from cookie (custom auth system)
+  const cookieStore = await cookies();
+  const userIdCookie = cookieStore.get('user_id');
 
+  if (!userIdCookie?.value) {
+    return <div className="p-8">Not authenticated. Please log in.</div>;
+  }
+
+  const userId = userIdCookie.value;
+
+  // Get user's organization
   const { data: orgUsers } = await supabase
     .from('organization_users')
     .select('organization_id')
-    .eq('user_id', user.user?.id || '')
+    .eq('user_id', userId)
     .eq('is_active', true);
+
+  console.log('Organization users query result:', { userId, orgUsers, count: orgUsers?.length });
 
   const orgId = orgUsers?.[0]?.organization_id;
 
-  // Fetch ALL items with R365 fields (no limit - pagination is client-side)
-  const { data: items, error: itemsError } = await supabase
-    .from("items")
-    .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, created_at, organization_id, is_active")
-    .eq('organization_id', orgId || '')
-    .eq('is_active', true)
-    .order("created_at", { ascending: false });
+  // Don't query if no org ID
+  let items: any[] | null = null;
+  let itemsError: any = null;
 
-  if (itemsError) {
-    console.error('Error fetching items:', itemsError);
+  if (orgId) {
+    // Use admin client to bypass RLS (user is already authenticated via cookie)
+    const adminClient = createAdminClient();
+
+    // Fetch ALL items with R365 fields (no limit - pagination is client-side)
+    const result = await adminClient
+      .from("items")
+      .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, r365_inventory_account, created_at, organization_id, is_active")
+      .eq('organization_id', orgId)
+      .eq('is_active', true)
+      .order("created_at", { ascending: false });
+
+    items = result.data;
+    itemsError = result.error;
+
+    console.log('Items fetch result:', {
+      orgId,
+      itemsCount: items?.length || 0,
+      error: itemsError,
+      firstItem: items?.[0]?.name
+    });
+
+    if (itemsError) {
+      console.error('Error fetching items:', itemsError);
+    }
+  } else {
+    console.error('No organization ID found for user:', userId);
   }
 
   // Fetch pack configs for items in this organization using admin client
@@ -98,7 +130,8 @@ export default async function ProductsPage() {
     });
   }
 
-  const { count: totalCount } = await supabase
+  const adminClient = createAdminClient();
+  const { count: totalCount } = await adminClient
     .from("items")
     .select("*", { count: 'exact', head: true })
     .eq('organization_id', orgId || '')

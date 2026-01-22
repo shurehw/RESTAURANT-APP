@@ -3,7 +3,7 @@
  * Review OCR-extracted invoice and map unmapped items
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -22,7 +22,9 @@ interface Props {
 
 export default async function InvoiceReviewPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
+
+  // Use admin client to bypass RLS (user is already authenticated via middleware)
+  const supabase = createAdminClient();
 
   // Fetch invoice with vendor and venue
   const { data: invoice } = await supabase
