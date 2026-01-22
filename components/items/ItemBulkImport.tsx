@@ -209,7 +209,7 @@ export function ItemBulkImport() {
                     </td>
                     <td className="p-2 text-muted-foreground">{rows[0].SUBCATEGORY || 'N/A'}</td>
                     <td className="p-2 text-muted-foreground font-mono text-xs">
-                      {rows[0].Item_Category_1 || 'N/A'}
+                      {rows[0].Cost_Account || 'N/A'}
                     </td>
                   </tr>
                 ))}
