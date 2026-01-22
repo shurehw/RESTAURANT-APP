@@ -6,6 +6,54 @@ import { Input } from '@/components/ui/input';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { PackConfigurationManager } from '@/components/invoices/PackConfigurationManager';
 
+// Normalize category names for display
+function normalizeCategoryName(category: string): string {
+  const categoryMap: Record<string, string> = {
+    'liquor': 'Liquor',
+    'wine': 'Wine',
+    'beer': 'Beer',
+    'bar_consumables': 'Bar Consumables',
+    'non_alcoholic_beverage': 'Non-Alcoholic Beverage',
+    'produce': 'Produce',
+    'meat': 'Meat',
+    'seafood': 'Seafood',
+    'dairy': 'Dairy',
+    'bakery': 'Bakery',
+    'grocery': 'Grocery',
+    'dry_goods': 'Dry Goods',
+    'frozen': 'Frozen',
+    'food': 'Food',
+    'packaging': 'Packaging',
+    'disposables': 'Disposables',
+    'chemicals': 'Chemicals / Cleaning',
+    'smallwares': 'Smallwares',
+    'supplies': 'Supplies',
+    'other': 'Other',
+  };
+  return categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+// Normalize UOM names for display
+function normalizeUomName(uom: string): string {
+  const uomMap: Record<string, string> = {
+    'oz': 'Ounce (oz)',
+    'cup': 'Cup',
+    'pt': 'Pint',
+    'qt': 'Quart',
+    'gal': 'Gallon',
+    'lb': 'Pound (lb)',
+    'oz-wt': 'Ounce (weight)',
+    'ml': 'Milliliter (ml)',
+    'L': 'Liter (L)',
+    'g': 'Gram (g)',
+    'kg': 'Kilogram (kg)',
+    'unit': 'Unit/Each',
+    'each': 'Unit/Each',
+    'case': 'Case',
+  };
+  return uomMap[uom] || uom;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -117,11 +165,14 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
                   <option value="meat">Meat</option>
                   <option value="seafood">Seafood</option>
                   <option value="dairy">Dairy</option>
+                  <option value="bakery">Bakery</option>
+                  <option value="grocery">Grocery</option>
                   <option value="dry_goods">Dry Goods</option>
                   <option value="frozen">Frozen</option>
                   <option value="food">Food (General)</option>
                 </optgroup>
                 <optgroup label="Supplies">
+                  <option value="bar_consumables">Bar Consumables</option>
                   <option value="packaging">Packaging</option>
                   <option value="disposables">Disposables</option>
                   <option value="chemicals">Chemicals / Cleaning</option>

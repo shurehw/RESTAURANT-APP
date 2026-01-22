@@ -33,7 +33,19 @@ function normalizeCategoryName(category: string): string {
     'bar_consumables': 'Bar Consumables',
     'non_alcoholic_beverage': 'Non-Alcoholic Beverage',
     'food': 'Food',
+    'produce': 'Produce',
+    'meat': 'Meat',
+    'seafood': 'Seafood',
+    'dairy': 'Dairy',
+    'bakery': 'Bakery',
+    'grocery': 'Grocery',
+    'dry_goods': 'Dry Goods',
+    'frozen': 'Frozen',
     'packaging': 'Packaging',
+    'disposables': 'Disposables',
+    'chemicals': 'Chemicals',
+    'smallwares': 'Smallwares',
+    'supplies': 'Supplies',
   };
   return categoryMap[category] || category.charAt(0).toUpperCase() + category.slice(1);
 }
@@ -50,6 +62,7 @@ interface Product {
   r365_reporting_uom: string | null;
   r365_inventory_uom: string | null;
   r365_cost_account: string | null;
+  r365_inventory_account: string | null;
   item_pack_configurations: Array<{
     pack_type: string;
     units_per_pack: number;

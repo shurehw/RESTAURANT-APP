@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { cookies } from 'next/headers';
 
 type GuardHandler = () => Promise<NextResponse>;
 
@@ -28,11 +28,11 @@ export class ApiError extends Error {
  */
 export async function guard(handler: GuardHandler): Promise<NextResponse> {
   try {
-    // Verify auth
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Verify auth using custom auth cookie
+    const cookieStore = await cookies();
+    const userIdCookie = cookieStore.get('user_id');
 
-    if (authError || !user) {
+    if (!userIdCookie?.value) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

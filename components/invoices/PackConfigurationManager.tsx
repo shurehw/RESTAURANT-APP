@@ -156,22 +156,22 @@ export function PackConfigurationManager({
                       className="flex-1 px-2 py-1.5 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     >
                       <optgroup label="Volume">
-                        <option value="oz">oz (fl)</option>
+                        <option value="oz">Oz (fl)</option>
                         <option value="mL">mL</option>
                         <option value="L">L</option>
-                        <option value="gal">gal</option>
-                        <option value="qt">qt</option>
-                        <option value="pt">pt</option>
+                        <option value="gal">Gal</option>
+                        <option value="qt">Qt</option>
+                        <option value="pt">Pt</option>
                       </optgroup>
                       <optgroup label="Weight">
-                        <option value="lb">lb</option>
-                        <option value="oz">oz (wt)</option>
-                        <option value="g">g</option>
-                        <option value="kg">kg</option>
+                        <option value="lb">Lb</option>
+                        <option value="oz">Oz (wt)</option>
+                        <option value="g">G</option>
+                        <option value="kg">Kg</option>
                       </optgroup>
                       <optgroup label="Other">
-                        <option value="unit">unit</option>
-                        <option value="each">each</option>
+                        <option value="unit">Unit</option>
+                        <option value="each">Each</option>
                       </optgroup>
                     </select>
                   </div>
