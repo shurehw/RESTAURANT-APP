@@ -86,29 +86,49 @@ export async function POST(request: NextRequest) {
 
         // Map R365 subcategory to our category
         const subcategory = firstRow.SUBCATEGORY?.trim();
-        let category = 'liquor';
-        if (['Tequila', 'Whiskey', 'Vodka', 'Gin', 'Rum', 'Cognac'].includes(subcategory)) {
-          category = 'liquor';
-        } else if (['Liqueur', 'Aperitif'].includes(subcategory)) {
-          category = 'liquor';
-        } else if (subcategory === 'Wine') {
-          category = 'wine';
-        } else if (subcategory === 'Beer') {
-          category = 'beer';
+        const itemCategory = firstRow.Item_Category_1?.trim(); // FOOD or BEV
+
+        let category = 'food'; // Default
+
+        // For food items, use the subcategory as the category if present, otherwise use 'food'
+        if (item_type === 'food') {
+          if (subcategory) {
+            category = subcategory.toLowerCase();
+          } else {
+            category = 'food';
+          }
+        } else {
+          // Beverage logic
+          if (['Tequila', 'Whiskey', 'Vodka', 'Gin', 'Rum', 'Cognac'].includes(subcategory)) {
+            category = 'liquor';
+          } else if (['Liqueur', 'Aperitif'].includes(subcategory)) {
+            category = 'liquor';
+          } else if (subcategory === 'Wine') {
+            category = 'wine';
+          } else if (subcategory === 'Beer') {
+            category = 'beer';
+          } else {
+            category = 'liquor'; // Default for beverages
+          }
         }
 
-        // Parse base UOM from Reporting U of M (750ml, 1L, etc.)
+        // Parse base UOM from Reporting U of M
         const reportingUOM = firstRow.Reporting_U_of_M?.toLowerCase() || 'oz';
-        let baseUom = 'oz'; // Default for beverages
+        let baseUom = reportingUOM; // Use reporting UOM as base
 
         // For beverages, we always use 'oz' as recipe unit (consistent with existing logic)
-        // Pack configs will handle conversion from ml/L to oz
+        if (item_type === 'beverage') {
+          baseUom = 'oz';
+        }
 
         // Use SKU from first row if available, otherwise generate
         // Note: In R365 exports, same item can have multiple SKUs for different pack sizes
         // We'll use the first SKU as the master SKU, and store others in pack configs
         const firstRowSKU = firstRow.SKU?.toString().trim();
         const sku = firstRowSKU || `AUTO-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Only set subcategory if it's different from category
+        const finalSubcategory = (subcategory && subcategory.toLowerCase() !== category) ? subcategory : null;
 
         // Create the item with R365 fields for round-trip compatibility
         const { data: newItem, error: itemError} = await supabase
@@ -118,7 +138,7 @@ export async function POST(request: NextRequest) {
             name: itemName,
             sku,
             category,
-            subcategory: subcategory || null,
+            subcategory: finalSubcategory,
             base_uom: baseUom,
             gl_account_id: glAccountId,
             is_active: true,
