@@ -118,8 +118,11 @@ export async function POST(request: NextRequest) {
     let suggestedCategory = 'food';
     let suggestedSubcategory = '';
 
-    // Liquor/Spirits detection
-    if (desc.includes('tequila') || desc.includes('patron') || desc.includes('casamigos')) {
+    // Liquor/Spirits detection (check liqueur FIRST before ale to avoid false positive from "RoyALE")
+    if (desc.includes('liqueur') || desc.includes('amaretto') || desc.includes('kahlua') || desc.includes('baileys') || desc.includes('frangelico')) {
+      suggestedCategory = 'liquor';
+      suggestedSubcategory = 'Liqueur';
+    } else if (desc.includes('tequila') || desc.includes('patron') || desc.includes('casamigos')) {
       suggestedCategory = 'liquor';
       suggestedSubcategory = 'Tequila';
     } else if (desc.includes('mezcal') || desc.includes('conejos')) {
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
     } else if (desc.includes('whiskey') || desc.includes('bourbon') || desc.includes('scotch') || desc.includes('rye')) {
       suggestedCategory = 'liquor';
       suggestedSubcategory = desc.includes('bourbon') ? 'Bourbon' : desc.includes('scotch') ? 'Scotch' : 'Whiskey';
-    } else if (desc.includes('gin')) {
+    } else if (desc.includes('gin') && !desc.includes('ginger')) {
       suggestedCategory = 'liquor';
       suggestedSubcategory = 'Gin';
     } else if (desc.includes('rum')) {
@@ -140,9 +143,6 @@ export async function POST(request: NextRequest) {
     } else if (desc.includes('cognac') || desc.includes('brandy')) {
       suggestedCategory = 'liquor';
       suggestedSubcategory = 'Cognac/Brandy';
-    } else if (desc.includes('liqueur') || desc.includes('amaretto') || desc.includes('kahlua')) {
-      suggestedCategory = 'liquor';
-      suggestedSubcategory = 'Liqueur';
     } else if (desc.includes('bitters') || desc.includes('angostura') || desc.includes('aperol') || desc.includes('campari')) {
       suggestedCategory = 'liquor';
       suggestedSubcategory = 'Bitters/Aperitifs';
@@ -162,13 +162,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Beer detection
-    else if (desc.includes('beer') || desc.includes('lager') || desc.includes('ipa') || desc.includes('ale') || desc.includes('stout')) {
+    // Beer detection (check for whole words to avoid "RoyALE" false positive)
+    else if (desc.includes('beer') || desc.includes('lager') || desc.includes('ipa') || desc.includes('stout') || /\bale\b/i.test(description)) {
       suggestedCategory = 'beer';
       if (desc.includes('ipa')) suggestedSubcategory = 'IPA';
       else if (desc.includes('lager')) suggestedSubcategory = 'Lager';
       else if (desc.includes('stout')) suggestedSubcategory = 'Stout';
-      else if (desc.includes('ale')) suggestedSubcategory = 'Ale';
+      else if (/\bale\b/i.test(description)) suggestedSubcategory = 'Ale';
     }
 
     // Food categories
