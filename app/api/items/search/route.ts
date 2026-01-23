@@ -42,6 +42,11 @@ export async function GET(request: NextRequest) {
     // OCR often adds *, -, etc. and category/origin words that won't match database items
     let normalizedQuery = query
       .replace(/[*\-_\/\\|]/g, ' ')  // Replace special chars with spaces
+      .replace(/\d+[°']/g, ' ')  // Remove proof/ABV ratings (80', 90°, etc.) - removed \b requirement
+      .replace(/\b\d+yr\b/gi, ' ')  // Remove age statements (12yr, 18yr, etc.)
+      .replace(/\bmalt\b/gi, ' ')  // Remove generic "malt" word
+      .replace(/\bcase\b/gi, ' ')  // Remove "case" word
+      .replace(/\b\d+\s*$/g, ' ')  // Remove trailing numbers (pack counts like "6" at end)
       .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal)\b/gi, ' ') // Remove spirit categories
       .replace(/\b(japanese|french|scottish|american|mexican|irish|canadian)\b/gi, ' ') // Remove origin words
       .replace(/\b(wh|whis|whisk)\b/gi, ' ') // Remove truncated whiskey variants
