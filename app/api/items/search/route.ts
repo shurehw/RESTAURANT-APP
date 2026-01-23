@@ -38,11 +38,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ items: [], recipes: [] });
     }
 
-    // Normalize search query: remove special chars, extra spaces, redundant category words
-    // OCR often adds *, -, etc. and category words that won't match database items
+    // Normalize search query: remove special chars, extra spaces, redundant words
+    // OCR often adds *, -, etc. and category/origin words that won't match database items
     const normalizedQuery = query
       .replace(/[*\-_\/\\|]/g, ' ')  // Replace special chars with spaces
-      .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal)\b/gi, ' ') // Remove redundant category words
+      .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal)\b/gi, ' ') // Remove spirit categories
+      .replace(/\b(japanese|french|scottish|american|mexican|irish|canadian)\b/gi, ' ') // Remove origin words
+      .replace(/\b(wh|whis|whisk)\b/gi, ' ') // Remove truncated whiskey variants
       .replace(/\s+/g, ' ')           // Collapse multiple spaces
       .trim();
 
