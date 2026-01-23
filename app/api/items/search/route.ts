@@ -38,10 +38,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ items: [], recipes: [] });
     }
 
-    // Normalize search query: remove special chars, extra spaces
-    // OCR often adds *, -, etc. that won't match database items
+    // Normalize search query: remove special chars, extra spaces, redundant category words
+    // OCR often adds *, -, etc. and category words that won't match database items
     const normalizedQuery = query
       .replace(/[*\-_\/\\|]/g, ' ')  // Replace special chars with spaces
+      .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal)\b/gi, ' ') // Remove redundant category words
       .replace(/\s+/g, ' ')           // Collapse multiple spaces
       .trim();
 
