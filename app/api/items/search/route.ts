@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
       .replace(/\b(japanese|french|scottish|american|mexican|irish|canadian)\b/gi, ' ') // Remove origin words
       .replace(/\b(wh|whis|whisk)\b/gi, ' ') // Remove truncated whiskey variants
       .replace(/\b(el0|oro|elo)\b/gi, ' ') // Remove OCR artifacts (El0 -> Oro)
+      .replace(/\b(fresh|juice|syrup)\b/gi, ' ') // Remove generic descriptors
+      .replace(/\b6\/cs\b/gi, ' ') // Remove pack notation
       .replace(/\s+/g, ' ')           // Collapse multiple spaces
       .trim();
 
@@ -53,6 +55,31 @@ export async function GET(request: NextRequest) {
     normalizedQuery = normalizedQuery
       .replace(/\bfamily\b/gi, 'familia')  // Family -> Familia (Cuervo)
       .replace(/\breserva\b/gi, 'reposado') // Reserva -> Reposado (tequila aging terms)
+      .replace(/\baperitivo\b/gi, 'apertivo') // Aperitivo -> Apertivo (Nonino)
+
+    // Fix truncated words (OCR cuts off end of line)
+    normalizedQuery = normalizedQuery
+      .replace(/\bliqueu\b/gi, 'liqueur')  // Truncated liqueur
+      .replace(/\bbergamett\b/gi, 'bergamotto') // Truncated bergamotto
+      .replace(/\bvermou\b/gi, 'vermouth') // Truncated vermouth
+      .replace(/\bchampag\b/gi, 'champagne') // Truncated champagne
+      .replace(/\breposad\b/gi, 'reposado') // Truncated reposado
+
+    // Normalize word order for common brands (search both ways)
+    const wordOrderFixes: Record<string, string> = {
+      'nonino amaro': 'amaro nonino',
+      'mr black': 'mr. black',
+      'st germain': 'st. germain',
+      'noilly pratt': 'noilly prat',
+    };
+
+    const lowerQuery = normalizedQuery.toLowerCase();
+    for (const [variant, canonical] of Object.entries(wordOrderFixes)) {
+      if (lowerQuery.includes(variant)) {
+        normalizedQuery = canonical;
+        break;
+      }
+    }
 
     // Use admin client to bypass RLS and filter by organization
     const adminClient = createAdminClient();
