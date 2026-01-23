@@ -31,10 +31,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const supabase = await createClient();
 
-    // Get the invoice line details to extract vendor and pack size
+    // Get the invoice line details including cost info for history tracking
     const { data: invoiceLine } = await supabase
       .from('invoice_lines')
-      .select('description, invoice_id, vendor_item_code, invoices(vendor_id)')
+      .select('description, invoice_id, vendor_item_code, unit_cost, invoices(vendor_id, venue_id, invoice_date)')
       .eq('id', lineId)
       .single();
 
@@ -46,7 +46,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const packSizeMatch = invoiceLine.description.match(/(\d+\/\d+|\d+\s*(ml|l|gal|oz|lb|cs|case))/i);
     const packSize = packSizeMatch ? packSizeMatch[0] : null;
 
-    const vendorId = (invoiceLine.invoices as any)?.vendor_id;
+    const invoice = invoiceLine.invoices as any;
+    const vendorId = invoice?.vendor_id;
+    const venueId = invoice?.venue_id;
+    const invoiceDate = invoice?.invoice_date;
 
     // Update the invoice line with the mapped item
     const { error: updateError } = await supabase
@@ -70,6 +73,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
         }, {
           onConflict: 'vendor_id,vendor_item_code',
         });
+    }
+
+    // Record cost history for the newly mapped item
+    if (invoiceLine.unit_cost != null) {
+      await supabase.from('item_cost_history').insert({
+        item_id: validated.item_id,
+        vendor_id: vendorId || null,
+        venue_id: venueId || null,
+        cost: invoiceLine.unit_cost,
+        effective_date: invoiceDate || new Date().toISOString(),
+        source: 'invoice',
+        source_id: lineId,
+      });
     }
 
     return NextResponse.json({ success: true });
