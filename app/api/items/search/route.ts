@@ -38,6 +38,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ items: [], recipes: [] });
     }
 
+    // Normalize search query: remove special chars, extra spaces
+    // OCR often adds *, -, etc. that won't match database items
+    const normalizedQuery = query
+      .replace(/[*\-_\/\\|]/g, ' ')  // Replace special chars with spaces
+      .replace(/\s+/g, ' ')           // Collapse multiple spaces
+      .trim();
+
     // Use admin client to bypass RLS and filter by organization
     const adminClient = createAdminClient();
 
@@ -48,7 +55,7 @@ export async function GET(request: NextRequest) {
       .select('id, sku, name, category, base_uom')
       .eq('organization_id', orgId)
       .eq('is_active', true)
-      .or(`name.ilike.%${query}%,sku.ilike.%${query}%`)
+      .or(`name.ilike.%${normalizedQuery}%,sku.ilike.%${normalizedQuery}%`)
       .order('name')
       .limit(limit);
 
@@ -90,7 +97,7 @@ export async function GET(request: NextRequest) {
         .select('item_id, vendor_description, pack_size')
         .eq('vendor_id', vendorId)
         .eq('is_active', true)
-        .or(`vendor_description.ilike.%${query}%,vendor_item_code.ilike.%${query}%`)
+        .or(`vendor_description.ilike.%${normalizedQuery}%,vendor_item_code.ilike.%${normalizedQuery}%`)
         .limit(limit);
 
       const vendorItemIds = new Set(
@@ -115,7 +122,7 @@ export async function GET(request: NextRequest) {
         .from('recipes')
         .select('id, name, recipe_type, category, yield_uom')
         .eq('is_active', true)
-        .ilike('name', `%${query}%`)
+        .ilike('name', `%${normalizedQuery}%`)
         .order('name', { ascending: true })
         .limit(limit);
 
