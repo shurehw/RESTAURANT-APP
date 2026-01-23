@@ -40,13 +40,19 @@ export async function GET(request: NextRequest) {
 
     // Normalize search query: remove special chars, extra spaces, redundant words
     // OCR often adds *, -, etc. and category/origin words that won't match database items
-    const normalizedQuery = query
+    let normalizedQuery = query
       .replace(/[*\-_\/\\|]/g, ' ')  // Replace special chars with spaces
       .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal)\b/gi, ' ') // Remove spirit categories
       .replace(/\b(japanese|french|scottish|american|mexican|irish|canadian)\b/gi, ' ') // Remove origin words
       .replace(/\b(wh|whis|whisk)\b/gi, ' ') // Remove truncated whiskey variants
+      .replace(/\b(el0|oro|elo)\b/gi, ' ') // Remove OCR artifacts (El0 -> Oro)
       .replace(/\s+/g, ' ')           // Collapse multiple spaces
       .trim();
+
+    // Normalize Spanish/English equivalents for better matching
+    normalizedQuery = normalizedQuery
+      .replace(/\bfamily\b/gi, 'familia')  // Family -> Familia (Cuervo)
+      .replace(/\breserva\b/gi, 'reposado') // Reserva -> Reposado (tequila aging terms)
 
     // Use admin client to bypass RLS and filter by organization
     const adminClient = createAdminClient();
