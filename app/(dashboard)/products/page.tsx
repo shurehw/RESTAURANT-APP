@@ -49,13 +49,14 @@ export default async function ProductsPage() {
     // Use admin client to bypass RLS (user is already authenticated via cookie)
     const adminClient = createAdminClient();
 
-    // Fetch ALL items with R365 fields (no limit - pagination is client-side)
+    // Fetch ALL items with R365 fields (set high limit for large catalogs)
     const result = await adminClient
       .from("items")
       .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, r365_inventory_account, created_at, organization_id, is_active")
       .eq('organization_id', orgId)
       .eq('is_active', true)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(10000);
 
     items = result.data;
     itemsError = result.error;
