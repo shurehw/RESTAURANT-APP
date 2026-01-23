@@ -22,6 +22,9 @@ interface InvoiceLineMapperProps {
 export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMapperProps) {
   const [searchQuery, setSearchQuery] = useState(line.description);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<any | null>(null);
+  const [selectedItemPackConfigs, setSelectedItemPackConfigs] = useState<PackConfig[]>([]);
+  const [showPackConfigEditor, setShowPackConfigEditor] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showCreateNew, setShowCreateNew] = useState(false);
@@ -557,9 +560,19 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                         ? 'border-brass bg-brass/10'
                         : 'border-border hover:bg-muted'
                     }`}
-                    onClick={() => {
+                    onClick={async () => {
                       setSelectedItemId(item.id);
-                      handleMapItem(item.id);
+                      setSelectedItem(item);
+                      // Fetch full item details including pack configurations
+                      try {
+                        const response = await fetch(`/api/items/${item.id}`);
+                        const data = await response.json();
+                        if (data.item?.pack_configurations) {
+                          setSelectedItemPackConfigs(data.item.pack_configurations);
+                        }
+                      } catch (error) {
+                        console.error('Error fetching item details:', error);
+                      }
                     }}
                   >
                     <div className="flex-1 min-w-0">
@@ -591,6 +604,106 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Selected Item Pack Configuration Editor */}
+            {selectedItemId && selectedItem && (
+              <div className="mt-4 p-4 border-2 border-blue-300 rounded-md bg-blue-50">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-semibold text-sm text-blue-900">
+                    Selected: {selectedItem.name}
+                  </h4>
+                  <button
+                    onClick={() => {
+                      setSelectedItemId(null);
+                      setSelectedItem(null);
+                      setSelectedItemPackConfigs([]);
+                      setShowPackConfigEditor(false);
+                    }}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <div className="text-xs text-blue-700 mb-3">
+                  SKU: {selectedItem.sku} • Base UOM: {selectedItem.base_uom}
+                </div>
+
+                {/* Existing Pack Configurations */}
+                {selectedItemPackConfigs.length > 0 && (
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-blue-900 mb-2">Existing Pack Sizes:</div>
+                    <div className="space-y-1">
+                      {selectedItemPackConfigs.map((pack: any, idx: number) => (
+                        <div key={idx} className="text-xs text-blue-800 bg-white p-2 rounded border border-blue-200">
+                          {pack.pack_type}: {pack.units_per_pack} × {pack.unit_size} {pack.unit_size_uom}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Add New Pack Configuration */}
+                {!showPackConfigEditor && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowPackConfigEditor(true)}
+                    className="w-full mb-3"
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add New Pack Size (e.g., 750ml)
+                  </Button>
+                )}
+
+                {showPackConfigEditor && (
+                  <div className="mb-3 p-3 border border-blue-300 rounded bg-white">
+                    <div className="text-xs font-semibold text-blue-900 mb-2">Add New Pack Configuration:</div>
+                    <PackConfigurationManager
+                      baseUom={selectedItem.base_uom}
+                      packConfigs={selectedItemPackConfigs}
+                      onChange={setSelectedItemPackConfigs}
+                    />
+                  </div>
+                )}
+
+                {/* Map Button */}
+                <Button
+                  size="sm"
+                  variant="brass"
+                  className="w-full"
+                  onClick={async () => {
+                    // Save pack configurations if modified
+                    if (showPackConfigEditor && selectedItemPackConfigs.length > 0) {
+                      try {
+                        const response = await fetch(`/api/items/${selectedItemId}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            item_pack_configurations: selectedItemPackConfigs
+                          })
+                        });
+
+                        if (!response.ok) {
+                          console.error('Failed to update pack configurations');
+                          alert('Failed to save pack configurations');
+                          return;
+                        }
+                      } catch (error) {
+                        console.error('Error updating pack configurations:', error);
+                        alert('Error saving pack configurations');
+                        return;
+                      }
+                    }
+                    // Map the invoice line
+                    await handleMapItem(selectedItemId);
+                  }}
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  {showPackConfigEditor ? 'Save Pack Size & Map Item' : 'Map to This Item'}
+                </Button>
               </div>
             )}
 
@@ -642,27 +755,18 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
-              {selectedItemId && (
+            {!selectedItemId && (
+              <div className="flex gap-2">
                 <Button
                   size="sm"
-                  variant="brass"
-                  className="flex-1"
-                  onClick={() => handleMapItem(selectedItemId)}
+                  variant="outline"
+                  onClick={() => setShowCreateNew(true)}
                 >
-                  <Check className="w-4 h-4 mr-1" />
-                  Map to Selected Item
+                  <Plus className="w-4 h-4 mr-1" />
+                  Create New Item
                 </Button>
-              )}
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCreateNew(true)}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Create New Item
-              </Button>
-            </div>
+              </div>
+            )}
 
             {/* Help Text */}
             {suggestions.length > 0 && (
