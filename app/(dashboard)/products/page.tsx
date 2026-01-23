@@ -53,17 +53,37 @@ export default async function ProductsPage() {
     // Use admin client to bypass RLS (user is already authenticated via cookie)
     const adminClient = createAdminClient();
 
-    // Fetch ALL items with R365 fields (set high limit for large catalogs)
-    const result = await adminClient
-      .from("items")
-      .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, r365_inventory_account, created_at, organization_id, is_active")
-      .eq('organization_id', orgId)
-      .eq('is_active', true)
-      .order("created_at", { ascending: false })
-      .limit(10000);
+    // Fetch ALL items using pagination (Supabase has 1000 row limit per request)
+    const allItems: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    items = result.data;
-    itemsError = result.error;
+    while (hasMore) {
+      const result = await adminClient
+        .from("items")
+        .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, r365_inventory_account, created_at, organization_id, is_active")
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
+        .order("created_at", { ascending: false })
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (result.error) {
+        itemsError = result.error;
+        break;
+      }
+
+      if (result.data && result.data.length > 0) {
+        allItems.push(...result.data);
+        page++;
+        hasMore = result.data.length === pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    items = allItems;
+    itemsError = itemsError;
 
     console.log('Items fetch result:', {
       orgId,
