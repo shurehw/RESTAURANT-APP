@@ -118,7 +118,7 @@ export default async function ProductsPage() {
       console.error('Error fetching items:', itemsError);
     }
   } else {
-    console.error('No organization ID found for user:', userId);
+    console.error('No organization ID found for user:', customUserId);
   }
 
   // Fetch pack configs for items in this organization using admin client
