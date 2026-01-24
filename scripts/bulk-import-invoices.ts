@@ -9,7 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const INVOICE_DIR = 'C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\5310 Liquor. Cost';
+const INVOICE_DIR = process.env.INVOICE_DIR || 'C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\5310 Liquor. Cost';
 
 // Get venue from command line arg or env var
 const VENUE_NAME = process.argv[2] || process.env.VENUE_NAME || 'Delilah Dallas';
