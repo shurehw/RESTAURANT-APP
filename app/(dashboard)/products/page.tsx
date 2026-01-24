@@ -63,7 +63,7 @@ export default async function ProductsPage() {
     .eq('user_id', authUserId)
     .eq('is_active', true);
 
-  console.log('Organization users query result:', { userId, orgUsers, count: orgUsers?.length });
+  console.log('Organization users query result:', { customUserId, authUserId, orgUsers, count: orgUsers?.length });
 
   const orgId = orgUsers?.[0]?.organization_id;
 
