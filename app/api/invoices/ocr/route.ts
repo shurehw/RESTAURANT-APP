@@ -142,7 +142,6 @@ export async function POST(request: NextRequest) {
     const { invoice: rawInvoice } = isPDF
       ? await extractInvoiceFromPDF(buffer)
       : await extractInvoiceWithClaude(buffer, actualMimeType);
-    const supabase = await createClient();
     const normalized = await normalizeOCR(rawInvoice, supabase);
 
     // Validate and handle vendor
