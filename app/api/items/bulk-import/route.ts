@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
       try {
         const firstRow = rows[0];
 
-        // Parse GL Account from "5310 - Liquor Cost" format
-        const glAccountCode = firstRow.Item_Category_1?.match(/^(\d+)/)?.[1];
+        // Parse GL Account from Cost_Account field (e.g., "5310 - Liquor Cost")
+        const glAccountCode = firstRow.Cost_Account?.match(/^(\d+)/)?.[1];
         let glAccountId = null;
 
         if (glAccountCode) {
@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
             .select('id')
             .eq('organization_id', orgId)
             .eq('external_code', glAccountCode)
-            .single();
+            .maybeSingle();
 
-          glAccountId = glAccount?.id;
+          glAccountId = glAccount?.id || null;
         }
 
         // Map R365 subcategory to our category
