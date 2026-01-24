@@ -308,10 +308,17 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     setIsNormalizing(true);
     try {
       // Fetch ALL GL accounts first (fallback)
+      console.log('Fetching GL accounts...');
       const allGlResponse = await fetch('/api/gl-accounts');
+      console.log('GL accounts response status:', allGlResponse.status);
+
       if (allGlResponse.ok) {
         const allGlData = await allGlResponse.json();
+        console.log('GL accounts loaded:', allGlData.accounts?.length || 0);
         setAllGlAccounts(allGlData.accounts || []);
+      } else {
+        const errorText = await allGlResponse.text();
+        console.error('Failed to load GL accounts:', allGlResponse.status, errorText);
       }
 
       // Fetch GL account suggestions
@@ -954,6 +961,9 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     </select>
                     {glSuggestions.length > 0 && glSuggestions[0]?.confidence === 'high' && (
                       <p className="text-xs text-sage mt-1">✓ AI suggested best match selected</p>
+                    )}
+                    {glSuggestions.length === 0 && allGlAccounts.length === 0 && !isNormalizing && (
+                      <p className="text-xs text-orange-600 mt-1">⚠️ GL accounts failed to load. Check console for errors.</p>
                     )}
                   </div>
 
