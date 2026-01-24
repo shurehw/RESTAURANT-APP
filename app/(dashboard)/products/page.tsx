@@ -73,7 +73,7 @@ export default async function ProductsPage() {
 
   if (orgId) {
     // Use admin client to bypass RLS (user is already authenticated via cookie)
-    const adminClient = createAdminClient();
+    // adminClient already created above
 
     // Fetch ALL items using pagination (Supabase has 1000 row limit per request)
     const allItems: any[] = [];
@@ -128,7 +128,7 @@ export default async function ProductsPage() {
   }));
 
   if (items && items.length > 0 && orgId) {
-    const adminClient = createAdminClient();
+    // adminClient already created above
     const itemIds = items.map(i => i.id);
 
     // Fetch pack configs for these items (split into batches to avoid .in() limits)
