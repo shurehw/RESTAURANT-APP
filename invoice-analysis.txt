@@ -1,0 +1,774 @@
+
+═══════════════════════════════════════════════════
+INVOICE MATCHING ANALYSIS: 1841471
+Vendor: Spec's Wine, Spirits & Finer Foods
+Organization: 13dacb8a-d2b5-42b8-bcc3-50bc372c0a41
+═══════════════════════════════════════════════════
+
+📊 SUMMARY
+─────────────────────────────────────────────────
+  Total lines: 124
+  Mapped: 26 (21%)
+  Unmapped: 98 (79%)
+
+🔍 ANALYZING UNMAPPED ITEMS (98)
+═══════════════════════════════════════════════════
+
+📦 Case*Scrappy's Firewater Ti
+   Qty: 1 | Unit Cost: $199.2 | Total: $199.2
+   Normalized: "Case Scrappy's Firewater Ti"
+   ❌ No matches found
+   💡 Possible matches for "Case":
+      - 818 Tequila Reposado (6/Case)
+      - Baby Mix Lettuce Whole 1case
+      - Butter Lettuce 1Case
+
+📦 Cincoro Tequila*Reposado 6
+   Qty: 2 | Unit Cost: $77 | Total: $154
+   Normalized: "Cincoro Reposado 6"
+   ❌ No matches found
+   💡 Possible matches for "Cincoro":
+      - Cincoro Tequila Anejo
+      - Cincoro Tequila Blanco
+      - Cincoro Blanco 750ml
+
+📦 Clement Banana Liqueur
+   Qty: 1 | Unit Cost: $28.19 | Total: $28.19
+   Normalized: "Clement Banana"
+   ❌ No matches found
+   💡 Possible matches for "Clement":
+      - Clement Bana Canne 700ml
+
+📦 Codigo Tequila*Anejo White
+   Qty: 6 | Unit Cost: $33.36 | Total: $200.16
+   Normalized: "Codigo Anejo White"
+   ❌ No matches found
+
+📦 Codigo Tequila*Blanco
+   Qty: 1 | Unit Cost: $33.01 | Total: $33.01
+   Normalized: "Codigo Blanco"
+   ❌ No matches found
+
+📦 Cuervo Family Reserva*El0*
+   Qty: 3 | Unit Cost: $159.34 | Total: $478.02
+   Normalized: "Cuervo familia reposado"
+   ✅ Found 1 match(es):
+      - Jose Cuervo Familia Reposado 750ml (9429315)
+
+📦 Dolin Blanc Vermouth
+   Qty: 3 | Unit Cost: $8.3 | Total: $24.9
+   Normalized: "Dolin Blanc Vermouth"
+   ❌ No matches found
+   💡 Possible matches for "Dolin":
+      - Dolin Vermouth de Chambery Dry 375ml
+
+📦 Don Julio Tequila*Anejo
+   Qty: 3 | Unit Cost: $44.7 | Total: $134.1
+   Normalized: "Don Julio Anejo"
+   ✅ Found 1 match(es):
+      - Don Julio Anejo 750ml (973347)
+
+📦 Don Julio Tequila*Reposado
+   Qty: 3 | Unit Cost: $41.51 | Total: $124.53
+   Normalized: "Don Julio Reposado"
+   ✅ Found 1 match(es):
+      - Don Julio Reposado 750ml (660251)
+
+📦 Giffard*Villa De Hedoges
+   Qty: 1 | Unit Cost: $46.74 | Total: $46.74
+   Normalized: "Giffard Villa De Hedoges"
+   ❌ No matches found
+   💡 Possible matches for "Giffard":
+      - Giffard Elderflower 750ml
+      - Giffard Lichi-Li 750ml
+      - Giffard Pamplemouse (Grapefruit) 750ml
+
+📦 Hakushu Japanese Malt*12Yr
+   Qty: 2 | Unit Cost: $148.4 | Total: $296.8
+   Normalized: "Hakushu Malt 12Yr"
+   ❌ No matches found
+   💡 Possible matches for "Hakushu":
+      - Hakushu 18yr 750ml
+
+📦 Hennessy Cognac*Vs
+   Qty: 3 | Unit Cost: $45.79 | Total: $137.37
+   Normalized: "Hennessy Vs"
+   ✅ Found 3 match(es):
+      - Hennessy VSOP 1L (325635)
+      - Hennessy VSOP 750ml (582504)
+      - Hennessy VS 1L (AUTO-1768968917481-3gknf3f8p)
+
+📦 Hennessy Cognac*Xo
+   Qty: 3 | Unit Cost: $182.92 | Total: $548.76
+   Normalized: "Hennessy Xo"
+   ✅ Found 1 match(es):
+      - Hennessy XO 750ml (637824)
+
+📦 Hibiki Harmony Japanese Wh
+   Qty: 3 | Unit Cost: $73.77 | Total: $221.31
+   Normalized: "Hibiki Harmony"
+   ✅ Found 1 match(es):
+      - Hibiki Harmony 750ml (AUTO-1768968918350-kmv3xv1xa)
+
+📦 Italicus Rosolio Bergamett
+   Qty: 2 | Unit Cost: $28.72 | Total: $57.44
+   Normalized: "Italicus Rosolio Bergamett"
+   ❌ No matches found
+   💡 Possible matches for "Italicus":
+      - Italicus Rosolio Bergamotto 750ml
+
+📦 Jim Beam Bourbon
+   Qty: 3 | Unit Cost: $18.42 | Total: $55.26
+   Normalized: "Jim Beam"
+   ✅ Found 4 match(es):
+      - Jim Beam Black 1L (618251)
+      - Jim Beam Bourbon 1L (975690)
+      - Jim Beam Bourbon 750ml (975691)
+      - Jim Beam Rye 1L (619040)
+
+📦 Jim Beam Rye Whiskey*80'
+   Qty: 3 | Unit Cost: $19 | Total: $57
+   Normalized: "Jim Beam Rye 80'"
+   ❌ No matches found
+   💡 Possible matches for "Jim":
+      - Jimmy Nardello Peppers 1lb
+      - Jim Beam Black 1L
+      - Jim Beam Bourbon 1L
+
+📦 Johnnie Walker Black
+   Qty: 3 | Unit Cost: $41.6 | Total: $124.8
+   Normalized: "Johnnie Walker Black"
+   ✅ Found 2 match(es):
+      - Johnnie Walker Black 1L (24672)
+      - Johnnie Walker Black 750ml (264700)
+
+📦 Johnnie Walker Blue 6/Cs
+   Qty: 3 | Unit Cost: $184.99 | Total: $554.97
+   Normalized: "Johnnie Walker Blue 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Johnnie":
+      - Johnnie Walker Black 1L
+      - Johnnie Walker Black 750ml
+      - Johnnie Walker Blue 1L
+
+📦 Juliette Royale Peach Lique
+   Qty: 6 | Unit Cost: $27.24 | Total: $163.44
+   Normalized: "Juliette Royale Peach Lique"
+   ❌ No matches found
+   💡 Possible matches for "Juliette":
+      - Juliette Peach Liqueur 1L 1L
+
+📦 Ketel One Vodka
+   Qty: 6 | Unit Cost: $25.95 | Total: $155.7
+   Normalized: "Ketel One"
+   ✅ Found 2 match(es):
+      - Ketel One 1L (36126)
+      - Ketel One Citroen 1L (97617)
+
+📦 Knob Creek*Rye 7Yr
+   Qty: 3 | Unit Cost: $35 | Total: $105
+   Normalized: "Knob Creek Rye 7Yr"
+   ❌ No matches found
+   💡 Possible matches for "Knob":
+      - Knob Creek 750ml
+      - Knob Creek Rye 1L
+      - Knob Creek Rye 375ml
+
+📦 Knob Creek Bourbon
+   Qty: 3 | Unit Cost: $35 | Total: $105
+   Normalized: "Knob Creek"
+   ✅ Found 5 match(es):
+      - Knob Creek 750ml (986040)
+      - Knob Creek Rye 1L (581363)
+      - Knob Creek Rye 375ml (581365)
+      - Knob Creek Rye 750ml (581362)
+      - Knob Creek 1L (AUTO-1768968921872-r6n35wb8j)
+
+📦 Komos Tequila*Anejo Crista
+   Qty: 3 | Unit Cost: $105.04 | Total: $315.12
+   Normalized: "Komos Anejo Crista"
+   ❌ No matches found
+   💡 Possible matches for "Komos":
+      - Komos Extra Anejo 750ml
+      - Komos Reposado Rosa 750ml
+      - Komos Reserva Anejo 750ml
+
+📦 Komos Tequila*Anejo Reserv
+   Qty: 3 | Unit Cost: $98.06 | Total: $294.18
+   Normalized: "Komos Anejo Reserv"
+   ❌ No matches found
+   💡 Possible matches for "Komos":
+      - Komos Extra Anejo 750ml
+      - Komos Reposado Rosa 750ml
+      - Komos Reserva Anejo 750ml
+
+📦 Komos Tequila*Extra Anejo
+   Qty: 12 | Unit Cost: $136.2 | Total: $1634.4
+   Normalized: "Komos Extra Anejo"
+   ✅ Found 1 match(es):
+      - Komos Extra Anejo 750ml (9625624)
+
+📦 Komos Tequila*Reposado Ros
+   Qty: 3 | Unit Cost: $75 | Total: $225
+   Normalized: "Komos Reposado Ros"
+   ✅ Found 2 match(es):
+      - Komos Reposado Rosa 750ml (AUTO-1768968923075-5zw9mkvdu)
+      - Komos Reposado Rosa ***Miami 750ml (9619880)
+
+📦 Lagavulin Malt*16Yr
+   Qty: 3 | Unit Cost: $83.35 | Total: $250.05
+   Normalized: "Lagavulin Malt 16Yr"
+   ❌ No matches found
+   💡 Possible matches for "Lagavulin":
+      - Lagavulin 16yr 750ml
+
+📦 Laphroaig Malt*10Yr
+   Qty: 2 | Unit Cost: $50.79 | Total: $101.58
+   Normalized: "Laphroaig Malt 10Yr"
+   ❌ No matches found
+   💡 Possible matches for "Laphroaig":
+      - Laphroaig 10yr 750ml
+
+📦 Lillet Blanc Aperitif Blon
+   Qty: 3 | Unit Cost: $0.05 | Total: $0.15
+   Normalized: "Lillet Blanc Aperitif Blon"
+   ❌ No matches found
+   💡 Possible matches for "Lillet":
+      - Lillet Blanc 750ml
+
+📦 Liquid Alchemist*Blood Ora
+   Qty: 2 | Unit Cost: $20.85 | Total: $41.7
+   Normalized: "Liquid Alchemist Blood Ora"
+   ✅ Found 2 match(es):
+      - Liquid Alchemist Blood Orange 375ml (983135)
+      - Liquid Alchemist Blood Orange 750ml (991802)
+
+📦 Liquid Alchemist*Ginger Sy
+   Qty: 2 | Unit Cost: $20.85 | Total: $41.7
+   Normalized: "Liquid Alchemist Ginger Sy"
+   ✅ Found 1 match(es):
+      - Liquid Alchemist Ginger Syrup 375ml (981535)
+
+📦 Liquid Alchemist*Prickly P
+   Qty: 2 | Unit Cost: $20.85 | Total: $41.7
+   Normalized: "Liquid Alchemist Prickly P"
+   ❌ No matches found
+   💡 Possible matches for "Liquid":
+      - Liquid Smoke 1gal
+      - Liquid Alchemist Grenadine 750ml
+      - Liquid Alchemist Orgeat 375ml
+
+📦 Liquid Alchemist*Tamarindo
+   Qty: 1 | Unit Cost: $10.93 | Total: $10.93
+   Normalized: "Liquid Alchemist Tamarindo"
+   ❌ No matches found
+   💡 Possible matches for "Liquid":
+      - Liquid Smoke 1gal
+      - Liquid Alchemist Grenadine 750ml
+      - Liquid Alchemist Orgeat 375ml
+
+📦 Liquid Alchemist Syrup*Tam
+   Qty: 2 | Unit Cost: $11.12 | Total: $22.24
+   Normalized: "Liquid Alchemist Syrup Tam"
+   ❌ No matches found
+   💡 Possible matches for "Liquid":
+      - Liquid Smoke 1gal
+      - Liquid Alchemist Grenadine 750ml
+      - Liquid Alchemist Orgeat 375ml
+
+📦 Lobos 1707 Tequila*Anejo
+   Qty: 3 | Unit Cost: $28.01 | Total: $84.03
+   Normalized: "Lobos 1707 Anejo"
+   ❌ No matches found
+   💡 Possible matches for "Lobos":
+      - Lobos Joven 1L
+      - Lobos Reposado 1L
+      - Lobos Reposado 750ml
+
+📦 Lobos 1707 Tequila*Reposad
+   Qty: 3 | Unit Cost: $34.21 | Total: $102.63
+   Normalized: "Lobos 1707 Reposad"
+   ❌ No matches found
+   💡 Possible matches for "Lobos":
+      - Lobos Joven 1L
+      - Lobos Reposado 1L
+      - Lobos Reposado 750ml
+
+📦 Maestro Dobel Tequila*Diam
+   Qty: 6 | Unit Cost: $38.95 | Total: $233.7
+   Normalized: "Maestro Dobel Diam"
+   ✅ Found 1 match(es):
+      - Maestro Dobel Diamante 750ml (354481)
+
+📦 Maestro Dobel Tequila*Silv
+   Qty: 3 | Unit Cost: $38.95 | Total: $116.85
+   Normalized: "Maestro Dobel Silv"
+   ❌ No matches found
+   💡 Possible matches for "Maestro":
+      - Maestro Dobel Blanco 750ml
+      - Maestro Dobel Diamante 750ml
+
+📦 Makers Mark Bourbon 90
+   Qty: 3 | Unit Cost: $31.51 | Total: $94.53
+   Normalized: "Makers Mark 90"
+   ❌ No matches found
+   💡 Possible matches for "Makers":
+      - Makers Mark 1L
+      - Makers Mark 46 750ml
+
+📦 Map 31 Grapefruit*Fresh Jui
+   Qty: 1 | Unit Cost: $42.7 | Total: $42.7
+   Normalized: "Map 31 Grapefruit Fresh Jui"
+   ❌ No matches found
+   💡 Possible matches for "Map":
+      - Maple Syrup 1gal
+      - Turkey Maple Sausage 1lb
+
+📦 Map 31 Lemon*Fresh Juice
+   Qty: 1 | Unit Cost: $45 | Total: $45
+   Normalized: "Map 31 Lemon Fresh Juice"
+   ❌ No matches found
+   💡 Possible matches for "Map":
+      - Maple Syrup 1gal
+      - Turkey Maple Sausage 1lb
+
+📦 Map 31 Lime*Fresh Juice
+   Qty: 1 | Unit Cost: $45 | Total: $45
+   Normalized: "Map 31 Lime Fresh Juice"
+   ❌ No matches found
+   💡 Possible matches for "Map":
+      - Maple Syrup 1gal
+      - Turkey Maple Sausage 1lb
+
+📦 Map 31 Pineapple*Fresh Juic
+   Qty: 1 | Unit Cost: $42.7 | Total: $42.7
+   Normalized: "Map 31 Pineapple Fresh Juic"
+   ❌ No matches found
+   💡 Possible matches for "Map":
+      - Maple Syrup 1gal
+      - Turkey Maple Sausage 1lb
+
+📦 Moet Imperial Brut Champag
+   Qty: 2 | Unit Cost: $46.41 | Total: $92.82
+   Normalized: "Moet Imperial Brut Champag"
+   ❌ No matches found
+   💡 Possible matches for "Moet":
+      - Moet Imperal, Nectar Rose 750ml 750ml
+      - Moet Imperal, Brut 375ml
+      - Moet Nectar Rose Pharrell Luminous 750ml
+
+📦 Mount Gay Eclipse*Silver
+   Qty: 4 | Unit Cost: $13.5 | Total: $54
+   Normalized: "Mount Gay Eclipse Silver"
+   ❌ No matches found
+   💡 Possible matches for "Mount":
+      - Mount Gay Ecliplse 1L
+      - Mount Gay Eclipse 750ml
+      - Mount Gay Silver 1L
+
+📦 Mount Gay Rum*Eclipse
+   Qty: 3 | Unit Cost: $21.96 | Total: $65.88
+   Normalized: "Mount Gay Eclipse"
+   ✅ Found 1 match(es):
+      - Mount Gay Eclipse 750ml (102327)
+
+📦 Mr. Black Cold Brew Liqueu
+   Qty: 6 | Unit Cost: $23.14 | Total: $138.84
+   Normalized: "Mr. Black Cold Brew Liqueu"
+   ❌ No matches found
+   💡 Possible matches for "Mr.":
+      - Mr. Black Coffee Liqueur 750ml
+
+📦 Nonino Amaro Liqueur
+   Qty: 3 | Unit Cost: $42.7 | Total: $128.1
+   Normalized: "Nonino Amaro"
+   ❌ No matches found
+   💡 Possible matches for "Nonino":
+      - Amaro Nonino 750ml
+      - Quintessentia Nonino 750ml
+      - L'Apertivo Nonino 750ml
+
+📦 Nonino Aperitivo 6/Cs
+   Qty: 2 | Unit Cost: $27.66 | Total: $55.32
+   Normalized: "Nonino Aperitivo 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Nonino":
+      - Amaro Nonino 750ml
+      - Quintessentia Nonino 750ml
+      - L'Apertivo Nonino 750ml
+
+📦 Peychaud Bitters
+   Qty: 10 | Unit Cost: $7 | Total: $70
+   Normalized: "Peychaud Bitters"
+   ❌ No matches found
+
+📦 Regans Orange Bitters
+   Qty: 3 | Unit Cost: $6.85 | Total: $20.55
+   Normalized: "Regans Orange Bitters"
+   ❌ No matches found
+
+📦 Remy Martin Cognac*Louis X
+   Qty: 1 | Unit Cost: $3996.85 | Total: $3996.85
+   Normalized: "Remy Martin Louis X"
+   ❌ No matches found
+   💡 Possible matches for "Remy":
+      - Remy Martin VSOP 750ml
+      - Remy 1738 1L
+      - Remy Martin VSOP 1L
+
+📦 Remy Martin Cognac*Xo
+   Qty: 3 | Unit Cost: $146.93 | Total: $440.79
+   Normalized: "Remy Martin Xo"
+   ❌ No matches found
+   💡 Possible matches for "Remy":
+      - Remy Martin VSOP 750ml
+      - Remy 1738 1L
+      - Remy Martin VSOP 1L
+
+📦 Rosaluna Mezcal*Joven 6/Cs
+   Qty: 3 | Unit Cost: $70.26 | Total: $210.78
+   Normalized: "Rosaluna Joven 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Rosaluna":
+      - Rosaluna 1L
+      - Rosaluna 750ml
+
+📦 St. Germain Elderflower Li
+   Qty: 3 | Unit Cost: $28.85 | Total: $86.55
+   Normalized: "St. Germain Elderflower Li"
+   ❌ No matches found
+   💡 Possible matches for "St.":
+      - St. Germain 375ml
+      - St. Germain 750ml
+      - St. George Spiced Pear Liqueur 750ml
+
+📦 Sunny Vodka
+   Qty: 3 | Unit Cost: $20.5 | Total: $61.5
+   Normalized: "Sunny"
+   ❌ No matches found
+
+📦 Suntory Roku Gin 6/Cs
+   Qty: 6 | Unit Cost: $27.25 | Total: $163.5
+   Normalized: "Suntory Roku 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Suntory":
+      - Suntory Toki 1L
+      - Suntory Toki, Black 750ml
+
+📦 Suntory Toki Japanese Whisk
+   Qty: 3 | Unit Cost: $33 | Total: $99
+   Normalized: "Suntory Toki"
+   ✅ Found 2 match(es):
+      - Suntory Toki 1L (916648)
+      - Suntory Toki, Black 750ml (677389)
+
+📦 Suntory Yamazaki 12Yr
+   Qty: 3 | Unit Cost: $149.21 | Total: $447.63
+   Normalized: "Suntory Yamazaki 12Yr"
+   ❌ No matches found
+   💡 Possible matches for "Suntory":
+      - Suntory Toki 1L
+      - Suntory Toki, Black 750ml
+
+📦 Sweetens Cove Tennessee Wh
+   Qty: 1 | Unit Cost: $36.01 | Total: $36.01
+   Normalized: "Sweetens Cove Tennessee"
+   ❌ No matches found
+
+📦 Tanqueray Gin
+   Qty: 6 | Unit Cost: $28.74 | Total: $172.44
+   Normalized: "Tanqueray"
+   ✅ Found 2 match(es):
+      - Tanqueray 1L (637122)
+      - Tanqueray 750ml (278244)
+
+📦 The Botanist Islay Dry Gin
+   Qty: 5 | Unit Cost: $36.38 | Total: $181.9
+   Normalized: "The Botanist Islay Dry"
+   ❌ No matches found
+   💡 Possible matches for "The":
+      - Fee Brothers Fee Foam
+      - Christian Brothers Brandy 1L
+      - Hen Of The Woods Mushroom 1lb
+
+📦 Volcan De Mi Tierra Tequil
+   Qty: 3 | Unit Cost: $34.92 | Total: $104.76
+   Normalized: "Volcan De Mi Tierra Tequil"
+   ❌ No matches found
+   💡 Possible matches for "Volcan":
+      - Volcan De Mi Tierra Blanco 750ml
+      - Volcan De Mi Tierra X.A Reposado 750ml
+
+📦 Woodinville Bourbon
+   Qty: 3 | Unit Cost: $34.99 | Total: $104.97
+   Normalized: "Woodinville"
+   ✅ Found 2 match(es):
+      - Woodinville 750ml (633943)
+      - Woodinville 1L (626382)
+
+📦 Aperol Liqueur 6/Cs
+   Qty: 12 | Unit Cost: $26.4 | Total: $316.8
+   Normalized: "Aperol 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Aperol":
+      - Aperol Liqueur
+      - Aperol 1L
+      - Aperol 750ml
+
+📦 Averna Amaro Bitters 6/Cs
+   Qty: 3 | Unit Cost: $36.79 | Total: $110.37
+   Normalized: "Averna Amaro Bitters 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Averna":
+      - Averna Amaro 750ml
+      - Averna 750ml
+
+📦 Baileys Irish Cream
+   Qty: 3 | Unit Cost: $32.39 | Total: $97.17
+   Normalized: "Baileys Cream"
+   ❌ No matches found
+   💡 Possible matches for "Baileys":
+      - Baileys 1L
+
+📦 Cardamaro Vino Amaro
+   Qty: 4 | Unit Cost: $19.95 | Total: $79.8
+   Normalized: "Cardamaro Vino Amaro"
+   ✅ Found 2 match(es):
+      - Cardamaro Vino Amaro (CARD-AMARO)
+      - Tosti Cardamaro Vino Amaro 17% 750ml (27253)
+
+📦 Chartreuse Green 116
+   Qty: 4 | Unit Cost: $19.95 | Total: $79.8
+   Normalized: "Chartreuse Green 116"
+   ❌ No matches found
+   💡 Possible matches for "Chartreuse":
+      - Chartreuse, Green 750ml
+      - Chartreuse, Yellow 750ml
+
+📦 Cuarenta Tres Licor 43
+   Qty: 18 | Unit Cost: $33.36 | Total: $600.48
+   Normalized: "Cuarenta Tres Licor 43"
+   ❌ No matches found
+
+📦 Cynar Artichoke Liqueur 70
+   Qty: 6 | Unit Cost: $27.1 | Total: $162.6
+   Normalized: "Cynar Artichoke 70"
+   ❌ No matches found
+   💡 Possible matches for "Cynar":
+      - Cynar 1L
+
+📦 Frangelico Hazelnut Liqueu
+   Qty: 2 | Unit Cost: $31.91 | Total: $63.82
+   Normalized: "Frangelico Hazelnut Liqueu"
+   ❌ No matches found
+   💡 Possible matches for "Frangelico":
+      - Frangelico 1L
+
+📦 Giffard*Creme De Violette
+   Qty: 2 | Unit Cost: $22.59 | Total: $45.18
+   Normalized: "Giffard Creme De Violette"
+   ❌ No matches found
+   💡 Possible matches for "Giffard":
+      - Giffard Elderflower 750ml
+      - Giffard Lichi-Li 750ml
+      - Giffard Pamplemouse (Grapefruit) 750ml
+
+📦 Giffard*Vanille De Madagas
+   Qty: 8 | Unit Cost: $26.78 | Total: $214.24
+   Normalized: "Giffard Vanille De Madagas"
+   ✅ Found 1 match(es):
+      - Giffard Vanille de Madagascar 750ml (123145)
+
+📦 Grand Marnier Orange Liqueu
+   Qty: 4 | Unit Cost: $35 | Total: $140
+   Normalized: "Grand Marnier Orange Liqueu"
+   ❌ No matches found
+   💡 Possible matches for "Grand":
+      - Kaluga Grand Cru Caviar 1g
+      - Kaluga Grand Cru Caviar 1kg
+      - Grand Marnier 1L
+
+📦 Hennessy Cognac*Vs
+   Qty: 3 | Unit Cost: $45.79 | Total: $137.37
+   Normalized: "Hennessy Vs"
+   ✅ Found 3 match(es):
+      - Hennessy VSOP 1L (325635)
+      - Hennessy VSOP 750ml (582504)
+      - Hennessy VS 1L (AUTO-1768968917481-3gknf3f8p)
+
+📦 Hennessy Cognac*Xo
+   Qty: 1 | Unit Cost: $182.92 | Total: $182.92
+   Normalized: "Hennessy Xo"
+   ✅ Found 1 match(es):
+      - Hennessy XO 750ml (637824)
+
+📦 Juliette Royale Peach Lique
+   Qty: 6 | Unit Cost: $27.24 | Total: $163.44
+   Normalized: "Juliette Royale Peach Lique"
+   ❌ No matches found
+   💡 Possible matches for "Juliette":
+      - Juliette Peach Liqueur 1L 1L
+
+📦 Luxardo*Maraschino Liqueur
+   Qty: 3 | Unit Cost: $29.75 | Total: $89.25
+   Normalized: "Luxardo Maraschino"
+   ✅ Found 3 match(es):
+      - Luxardo Maraschino 750ml (650981)
+      - Luxardo Maraschino Cherries 1g (318964)
+      - Luxardo Maraschino Cherries 1kg (929494)
+
+📦 Mcqueen And Violet Fog Gin
+   Qty: 3 | Unit Cost: $27.93 | Total: $83.79
+   Normalized: "Mcqueen And Violet Fog"
+   ❌ No matches found
+
+📦 Mr. Black Cold Brew Liqueu
+   Qty: 18 | Unit Cost: $23.14 | Total: $416.52
+   Normalized: "Mr. Black Cold Brew Liqueu"
+   ❌ No matches found
+   💡 Possible matches for "Mr.":
+      - Mr. Black Coffee Liqueur 750ml
+
+📦 Nonino Amaro Liqueur
+   Qty: 4 | Unit Cost: $42.7 | Total: $170.8
+   Normalized: "Nonino Amaro"
+   ❌ No matches found
+   💡 Possible matches for "Nonino":
+      - Amaro Nonino 750ml
+      - Quintessentia Nonino 750ml
+      - L'Apertivo Nonino 750ml
+
+📦 Pernod Anise
+   Qty: 2 | Unit Cost: $29.78 | Total: $59.56
+   Normalized: "Pernod Anise"
+   ❌ No matches found
+   💡 Possible matches for "Pernod":
+      - Pernod Absinthe 750ml
+
+📦 Remy Martin Cognac*Vsop
+   Qty: 3 | Unit Cost: $51.58 | Total: $154.74
+   Normalized: "Remy Martin Vsop"
+   ✅ Found 2 match(es):
+      - Remy Martin VSOP 750ml (105219)
+      - Remy Martin VSOP 1L (159912)
+
+📦 Soho Lychee Liqueur 6/Cs
+   Qty: 12 | Unit Cost: $15.99 | Total: $191.88
+   Normalized: "Soho Lychee 6 Cs"
+   ❌ No matches found
+   💡 Possible matches for "Soho":
+      - SOHO Lychee Liqueur 750ml
+
+📦 St. Germain Elderflower Li
+   Qty: 18 | Unit Cost: $28.83 | Total: $518.94
+   Normalized: "St. Germain Elderflower Li"
+   ❌ No matches found
+   💡 Possible matches for "St.":
+      - St. Germain 375ml
+      - St. Germain 750ml
+      - St. George Spiced Pear Liqueur 750ml
+
+📦 Noilly Pratt Vermou
+   Qty: 2 | Unit Cost: $8.82 | Total: $17.64
+   Normalized: "Noilly Pratt Vermou"
+   ❌ No matches found
+   💡 Possible matches for "Noilly":
+      - Noilly Prat Vermouth Dry 1L
+
+📦 Filthy Foods*Onion
+   Qty: 8 | Unit Cost: $6.25 | Total: $50
+   Normalized: "Filthy Foods Onion"
+   ❌ No matches found
+   💡 Possible matches for "Filthy":
+      - Filthy Blue Cheese Olives 64oz
+      - Filthy Olive Brine, Pouch 8fl.oz
+      - Filthy Bloody Mary Mix 8fl.oz
+
+📦 Fee Brothers Water * Rose
+   Qty: 1 | Unit Cost: $5.04 | Total: $5.04
+   Normalized: "Fee Brothers Water Rose"
+   ❌ No matches found
+   💡 Possible matches for "Fee":
+      - Fee Brothers Fee Foam
+      - Chicken Feet 1lb
+      - Fee Bros Aztec Chocolate Bitters 5fl.oz
+
+📦 Bols * Creme De Banana
+   Qty: 1 | Unit Cost: $13.79 | Total: $13.79
+   Normalized: "Bols Creme De Banana"
+   ❌ No matches found
+
+📦 Evan Williams Bourbon * Black Label
+   Qty: 1 | Unit Cost: $19.94 | Total: $19.94
+   Normalized: "Evan Williams Black Label"
+   ❌ No matches found
+
+📦 Mozart Dark Chocolate Liqueur
+   Qty: 1 | Unit Cost: $55.84 | Total: $55.84
+   Normalized: "Mozart Dark Chocolate"
+   ❌ No matches found
+
+📦 Remy Martin Cognac * 38 Accord
+   Qty: 2 | Unit Cost: $69.83 | Total: $139.66
+   Normalized: "Remy Martin 38 Accord"
+   ❌ No matches found
+   💡 Possible matches for "Remy":
+      - Remy Martin VSOP 750ml
+      - Remy 1738 1L
+      - Remy Martin VSOP 1L
+
+📦 Ron Corina Rum * 15 1'
+   Qty: 1 | Unit Cost: $8.3 | Total: $8.3
+   Normalized: "Ron Corina 15 1'"
+   ❌ No matches found
+   💡 Possible matches for "Ron":
+      - Pepperoni 1lb
+      - Saffron 1oz
+      - Ron Zacap Rum Centenario 23yr 750ml
+
+📦 818 Tequila*Eight Reserve
+   Qty: 3 | Unit Cost: $79.79 | Total: $239.37
+   Normalized: "818 Eight Reserve"
+   ❌ No matches found
+   💡 Possible matches for "818":
+      - 818 Tequila Anejo (6/750ml)
+      - 818 Tequila Blanco (6/750ml)
+      - 818 Tequila Eight Reserve
+
+📦 Hakushu Japanese Malt*12Yr
+   Qty: 1 | Unit Cost: $148.4 | Total: $148.4
+   Normalized: "Hakushu Malt 12Yr"
+   ❌ No matches found
+   💡 Possible matches for "Hakushu":
+      - Hakushu 18yr 750ml
+
+📦 Riedel Rest. Decanter Caber
+   Qty: 11 | Unit Cost: $38.03 | Total: $418.33
+   Normalized: "Riedel Rest. Decanter Caber"
+   ❌ No matches found
+
+
+✅ MAPPED ITEMS (26)
+═══════════════════════════════════════════════════
+
+  400 Conejos Mezcal*Espadin
+    → 400 Conejos Mezcal Espadin (400C-MZCL-ESP)
+  818 Tequila*Anejo 6/Cs
+    → 818 Tequila Anejo (6/750ml) (818-TEQ-ANJ6)
+  818 Tequila*Blanco 6/Cs
+    → 818 Tequila Blanco (6/750ml) (818-TEQ-BLNC)
+  818 Tequila*Eight Reserve
+    → 818 Tequila Eight Reserve (818-TEQ-RES)
+  818 Tequila*Reposado 6/Cs
+    → 818 Tequila Reposado (6/Case) (818-TEQU-REPO)
+  Ancho Reyes Verde Chile Po
+    → Ancho Reyes Verde Chile Poblano Liqueur (ANCHO-VERDE)
+  Angostura Bitters
+    → Angostura Bitters (ANGOS-BITTERS)
+  Aperol Liqueur 6/Cs
+    → Aperol Liqueur (APEROL-LIQ-6CT)
+  Ardbeg Malt*10Yr 6/Cs
+    → Ardbeg Malt 10 Year (ARDBEG-10YR)
+  Belvedere Organic Vodka
+    → Belvedere Organic Vodka (BELV-VODKA-ORG)
+  ... and 16 more

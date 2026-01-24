@@ -13,6 +13,7 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isImage, setIsImage] = useState(false);
 
   useEffect(() => {
     if (isOpen && !pdfUrl && !error) {
@@ -29,6 +30,12 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
         const data = await response.json();
         console.log("PDF URL:", data.url);
         setPdfUrl(data.url);
+
+        // Detect if it's an image based on URL extension
+        const url = data.url.toLowerCase();
+        const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+        const isImageFile = imageExtensions.some(ext => url.includes(ext));
+        setIsImage(isImageFile);
       } else {
         const errorData = await response.json();
         console.error("Failed to load PDF:", errorData);
@@ -65,32 +72,42 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
               </Button>
             </div>
 
-            {/* PDF Viewer */}
+            {/* PDF/Image Viewer */}
             <div className="flex-1 overflow-hidden">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-muted-foreground">Loading PDF...</div>
+                  <div className="text-muted-foreground">Loading invoice...</div>
                 </div>
               ) : error ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                   <AlertCircle className="w-12 h-12 text-brass mb-4" />
-                  <h3 className="font-semibold text-lg mb-2">PDF Not Available</h3>
+                  <h3 className="font-semibold text-lg mb-2">Invoice Not Available</h3>
                   <p className="text-muted-foreground max-w-md">
                     {error === "Object not found"
-                      ? "The original PDF file could not be found. It may not have been uploaded or the file path is incorrect."
+                      ? "The original invoice file could not be found. It may not have been uploaded or the file path is incorrect."
                       : error
                     }
                   </p>
                 </div>
               ) : pdfUrl ? (
-                <iframe
-                  src={pdfUrl}
-                  className="w-full h-full border-0"
-                  title="Invoice PDF"
-                />
+                isImage ? (
+                  <div className="w-full h-full overflow-auto flex items-start justify-center bg-slate-100 p-4">
+                    <img
+                      src={pdfUrl}
+                      alt="Invoice"
+                      className="max-w-full h-auto object-contain"
+                    />
+                  </div>
+                ) : (
+                  <iframe
+                    src={pdfUrl}
+                    className="w-full h-full border-0"
+                    title="Invoice PDF"
+                  />
+                )
               ) : (
                 <div className="flex items-center justify-center h-full">
-                  <div className="text-muted-foreground">PDF not available</div>
+                  <div className="text-muted-foreground">Invoice not available</div>
                 </div>
               )}
             </div>

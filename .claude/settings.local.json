@@ -98,7 +98,18 @@
       "Bash(npx:*)",
       "Bash(Get-Content dev-output.log -Tail 50)",
       "Bash(Select-String -Pattern \"Pack configs|error|Error\" -Context 2)",
-      "Bash(. .env.local)"
+      "Bash(. .env.local)",
+      "Bash(Select-String -Pattern \"invoice|upload|unauthorized|401|403\" -Context 3)",
+      "Bash(node_modules/.bin/tsx:*)",
+      "Bash(chmod:*)",
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\5315 Bar Consumables\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\5320 Wine Cost\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR='C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\5320 Wine Cost' bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\5335 NA Bev Cost\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Bev\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
+      "Bash(Get-Content .env.local)",
+      "Bash(Select-String \"NEXT_PUBLIC_SUPABASE_URL\")",
+      "Bash(Select-String -Pattern \"GL|dropdown|select\" -Context 2)"
     ],
     "deny": [],
     "ask": []

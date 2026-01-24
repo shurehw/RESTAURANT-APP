@@ -59,7 +59,7 @@ export interface NormalizedInvoice {
 export function normalizeVendorName(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[,\.]/g, '')
+    .replace(/[,\.']/g, '') // Remove commas, periods, and apostrophes
     .replace(/\s+/g, ' ')
     .trim();
 }
