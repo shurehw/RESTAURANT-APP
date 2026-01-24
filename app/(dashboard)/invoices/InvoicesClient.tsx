@@ -139,32 +139,33 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
   return (
     <div>
       {/* Page Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6 md:mb-8">
         <div>
           <h1 className="page-header">Invoices</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm md:text-base">
             Auto-match to POs, manage approvals, and R365 exports
           </p>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
-          <Button variant="outline" asChild>
+        <div className="flex flex-wrap gap-2 md:gap-3">
+          <Button variant="outline" asChild className="text-sm flex-1 md:flex-none">
             <Link href="/invoices/bulk-review">
               <List className="w-4 h-4 mr-2" />
-              Bulk Item Mapping
+              <span className="hidden sm:inline">Bulk Item Mapping</span>
+              <span className="sm:hidden">Bulk Map</span>
             </Link>
           </Button>
           <InvoiceUploadButton venues={venues || []} />
-          <Button variant="brass">
+          <Button variant="brass" className="text-sm hidden md:flex">
             <Download className="w-4 h-4" />
             Export to R365
           </Button>
         </div>
       </div>
 
-      {/* Invoice Table */}
-      <div className="border border-border rounded-md overflow-hidden">
+      {/* Invoice Table - Desktop */}
+      <div className="hidden md:block border border-border rounded-md overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -266,6 +267,92 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Invoice Cards - Mobile */}
+      <div className="md:hidden space-y-3">
+        {filteredInvoices?.map((invoice) => (
+          <div
+            key={invoice.id}
+            className="border border-border rounded-lg p-4 space-y-3 bg-white"
+            onClick={() => router.push(`/invoices/${invoice.id}/review`)}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="font-mono font-medium text-sm truncate">
+                  {invoice.invoice_number || "—"}
+                </div>
+                <div className="text-sm text-muted-foreground truncate">
+                  {invoice.vendor?.name || "Unknown"}
+                </div>
+              </div>
+              <StatusBadge status={invoice.status} />
+            </div>
+
+            {/* Details */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">Date:</span>{" "}
+                {new Date(invoice.invoice_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </div>
+              <div className="text-right">
+                <span className="text-muted-foreground">Amount:</span>{" "}
+                <span className="font-semibold">${invoice.total_amount?.toFixed(2) || "0.00"}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">OCR:</span>{" "}
+                <OCRConfidenceBadge confidence={invoice.ocr_confidence} />
+              </div>
+              <div className="text-right">
+                <VarianceBadge
+                  severity={invoice.variance_severity}
+                  variancePct={invoice.total_variance_pct}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+              {!invoice.purchase_order_id && invoice.status === "draft" && (
+                <Button
+                  variant="brass"
+                  size="sm"
+                  className="flex-1 text-xs h-8"
+                  onClick={() => handleAutoMatch(invoice.id)}
+                  disabled={loading === invoice.id}
+                >
+                  <Zap className="w-3 h-3 mr-1" />
+                  {loading === invoice.id ? "Matching..." : "Match"}
+                </Button>
+              )}
+              {invoice.status === "pending_approval" && (
+                <>
+                  <Button
+                    variant="sage"
+                    size="sm"
+                    className="flex-1 text-xs h-8"
+                    onClick={() => handleApprove(invoice.id)}
+                    disabled={approving === invoice.id || rejecting === invoice.id}
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    {approving === invoice.id ? "..." : "Approve"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1 text-xs h-8"
+                    onClick={() => handleReject(invoice.id)}
+                    disabled={approving === invoice.id || rejecting === invoice.id}
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    {rejecting === invoice.id ? "..." : "Reject"}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Empty State */}

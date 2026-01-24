@@ -109,15 +109,15 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
-          <DialogTitle>Upload Invoice</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Upload Invoice</DialogTitle>
+          <DialogDescription className="text-sm">
             Upload an invoice image and Claude will extract the data automatically
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Venue Display (read-only) */}
           <div>
             <label className="block text-sm font-medium mb-2">Venue</label>
@@ -146,29 +146,32 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
             <input
               type="file"
               accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+              capture="environment"
               onChange={handleFileChange}
               className="block w-full text-sm text-slate-500
-                file:mr-4 file:py-2 file:px-4
+                file:mr-2 sm:file:mr-4 file:py-3 sm:file:py-2 file:px-4
                 file:rounded file:border-0
                 file:text-sm file:font-semibold
                 file:bg-primary file:text-primary-foreground
                 hover:file:bg-primary/90
-                cursor-pointer"
+                active:file:bg-primary/80
+                cursor-pointer
+                touch-manipulation"
               required
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Supported formats: JPEG, PNG, WebP, PDF
+              Tap to take photo or choose file • JPEG, PNG, WebP, PDF
             </p>
           </div>
 
           {/* Preview */}
           {preview && (
-            <div className="border rounded-lg p-4">
+            <div className="border rounded-lg p-3 sm:p-4">
               <p className="text-sm font-medium mb-2">Preview:</p>
               <img
                 src={preview}
                 alt="Invoice preview"
-                className="max-w-full h-auto max-h-64 rounded border"
+                className="max-w-full h-auto max-h-48 sm:max-h-64 rounded border"
               />
             </div>
           )}
@@ -210,11 +213,11 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
           )}
 
           {/* Submit Button */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <Button
               type="submit"
               disabled={!selectedFile || !venueId || uploading}
-              className="min-w-32"
+              className="flex-1 sm:flex-none sm:min-w-32 h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
             >
               {uploading ? 'Processing...' : 'Upload & Process'}
             </Button>
@@ -223,6 +226,7 @@ export function InvoiceUploadModal({ venues, open, onOpenChange }: InvoiceUpload
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={uploading}
+              className="flex-1 sm:flex-none h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
             >
               Cancel
             </Button>
