@@ -30,13 +30,35 @@ export default async function InvoicesPage() {
     return <div className="p-8">Not authenticated. Please log in.</div>;
   }
 
-  const userId = userIdCookie.value;
+  const customUserId = userIdCookie.value;
 
-  // Get user's organization
-  const { data: orgUsers } = await supabase
+  // Get user's email from custom users table
+  const { data: customUser } = await supabase
+    .from('users')
+    .select('email')
+    .eq('id', customUserId)
+    .single();
+
+  if (!customUser) {
+    return <div className="p-8">User not found. Please log in again.</div>;
+  }
+
+  // Get auth user ID from email (organization_users references auth.users)
+  // Use admin client to query auth.users
+  const adminClient = createAdminClient();
+  const { data: authUsers } = await adminClient.auth.admin.listUsers();
+  const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === customUser.email.toLowerCase());
+  const authUserId = authUser?.id;
+
+  if (!authUserId) {
+    return <div className="p-8">No auth user found for this account. Please contact support or sign up again.</div>;
+  }
+
+  // Get user's organization using auth user ID
+  const { data: orgUsers } = await adminClient
     .from('organization_users')
     .select('organization_id')
-    .eq('user_id', userId)
+    .eq('user_id', authUserId)
     .eq('is_active', true);
 
   const orgId = orgUsers?.[0]?.organization_id;
@@ -45,8 +67,7 @@ export default async function InvoicesPage() {
     return <div className="p-8">No organization associated with your account.</div>;
   }
 
-  // Use admin client to bypass RLS
-  const adminClient = createAdminClient();
+  // Admin client already created above
 
   // First get venues for this organization
   const { data: venues } = await adminClient
