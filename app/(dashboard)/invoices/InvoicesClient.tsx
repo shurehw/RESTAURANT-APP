@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { InvoiceUploadButton } from "@/components/invoices/InvoiceUploadButton";
+import { BulkInvoiceUploadButton } from "@/components/invoices/BulkInvoiceUploadButton";
 import { Download, Check, AlertCircle, CheckCircle, Zap, List, X } from "lucide-react";
 import Link from "next/link";
 import { useVenue } from "@/components/providers/VenueProvider";
@@ -157,6 +158,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
             </Link>
           </Button>
           <InvoiceUploadButton venues={venues || []} />
+          <BulkInvoiceUploadButton venues={venues || []} />
           <Button variant="brass" className="text-sm hidden md:flex">
             <Download className="w-4 h-4" />
             Export to R365

@@ -211,9 +211,14 @@ export async function extractInvoiceFromPDF(
 
   const rawResponse = textContent.text;
 
-  // Extract JSON from response (handle markdown code blocks)
+  // Extract JSON from response (handle markdown code blocks and multiple JSON objects)
   let jsonText = rawResponse.trim();
-  if (jsonText.startsWith('```json')) {
+
+  // Handle multiple JSON code blocks - take the first one
+  const jsonMatch = jsonText.match(/```json\s*\n([\s\S]*?)\n```/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[1];
+  } else if (jsonText.startsWith('```json')) {
     jsonText = jsonText.replace(/^```json\n/, '').replace(/\n```$/, '');
   } else if (jsonText.startsWith('```')) {
     jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
@@ -232,7 +237,7 @@ export async function extractInvoiceFromPDF(
   } catch (parseError) {
     console.error('[OCR Error] Failed to parse Claude PDF response as JSON');
     console.error('JSON text:', jsonText);
-    console.error('Raw response:', rawResponse);
+    console.error('Raw response:', rawResponse.substring(0, 1000));
     console.error('Parse error:', parseError);
     throw new Error('Failed to parse invoice data from Claude. The response may be malformed. Please try again.');
   }
