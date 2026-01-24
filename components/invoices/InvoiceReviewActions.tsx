@@ -26,14 +26,15 @@ export function InvoiceReviewActions({
       });
 
       if (!response.ok) {
-        throw new Error("Failed to approve invoice");
+        const result = await response.json();
+        throw new Error(result.details || result.error || "Failed to approve invoice");
       }
 
       router.push("/invoices");
       router.refresh();
     } catch (error) {
       console.error("Error approving invoice:", error);
-      alert("Failed to approve invoice. Please try again.");
+      alert(error instanceof Error ? error.message : "Failed to approve invoice. Please try again.");
     } finally {
       setIsApproving(false);
     }
