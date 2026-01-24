@@ -22,14 +22,25 @@ Given this raw invoice description: "${description}"
 
 Extract and normalize the following information:
 
-1. **Item Name**: Clean, standardized name WITHOUT size/pack info
-   - Remove vendor codes (Pitt#, SKU:, Code:, etc.)
-   - Remove size info (3L, 10L, 4/1 gal, etc.)
-   - Remove pack counts (4/1, 6/4, CS, BOX, etc.)
+1. **Item Name**: Clean, standardized name WITHOUT ANY size/pack info
+   - CRITICAL: Remove ALL size info (3L, 10L, 4/1 gal, 1lb, 750ml, 12oz, etc.)
+   - CRITICAL: Remove ALL pack counts (4/1, 6/4, 6/750ml, 24pk, CS, BOX, etc.)
+   - Remove vendor codes (Pitt#, SKU:, Code:, Item#, etc.)
+   - Remove OCR artifacts (Case*, asterisks, truncated words)
    - Use proper capitalization (Title Case)
-   - Keep acronyms uppercase (EVOO, USDA, etc.)
+   - Keep acronyms uppercase (EVOO, USDA, IPA, etc.)
    - For juices: format as "[Fruit] Juice - [Type]" (e.g., "Orange Juice - Cold Pressed")
    - For oils: expand abbreviations (EVOO → "Extra Virgin Olive Oil")
+   - For beers: keep brand + variant (e.g., "Estrella Jalisco", "Deep Ellum Dallas Blonde")
+   - For spirits: brand + variant (e.g., "Noilly Prat Dry Vermouth", "Gyre's Pink Gin")
+
+   EXAMPLES:
+   - "Case*Estrella Jalisco*Lot 5 12OZ" → "Estrella Jalisco"
+   - "Zucchini Squash, Green 1lb" → "Zucchini Squash - Green"
+   - "Zaatar 1lb" → "Zaatar"
+   - "Yuzu Ponzu 1gal" → "Yuzu Ponzu"
+   - "ECONOMY BUS TUB BLA CK 7\"" → "Economy Bus Tub - Black"
+   - "Gyre's Pink London Spirit* 700ML" → "Gyre's Pink Gin"
 
 2. **Category**: Restaurant inventory category
    - Bar Consumables (mixers, juices for cocktails, syrups, bitters)

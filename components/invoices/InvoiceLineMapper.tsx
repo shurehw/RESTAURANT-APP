@@ -1022,11 +1022,14 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     className="w-full"
                     variant="brass"
                     onClick={handleCreateAndMap}
-                    disabled={!newItemName.trim()}
+                    disabled={!newItemName.trim() || !glAccountId}
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Create & Map Item
                   </Button>
+                  {!glAccountId && newItemName.trim() && (
+                    <p className="text-xs text-red-600 mt-1">⚠️ GL Account is required</p>
+                  )}
                   </div>
                 )}
               </div>
