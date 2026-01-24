@@ -46,11 +46,14 @@ export default async function ProductsPage() {
   }
 
   // Get auth user ID from email (organization_users references auth.users)
-  // Use admin client to query auth.users
+  // Use database function to look up auth user ID
   const adminClient = createAdminClient();
-  const { data: authUsers } = await adminClient.auth.admin.listUsers();
-  const authUser = authUsers?.users?.find(u => u.email?.toLowerCase() === customUser.email.toLowerCase());
-  const authUserId = authUser?.id;
+  const { data: authUserId, error: authLookupError } = await adminClient
+    .rpc('get_auth_user_id_by_email', { user_email: customUser.email });
+  
+  if (authLookupError) {
+    console.error('Error looking up auth user:', authLookupError);
+  }
 
   if (!authUserId) {
     return <div className="p-8">No auth user found for this account. Please contact support or sign up again.</div>;
