@@ -1,19 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
-import { requireUser } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit';
 import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claude';
 import { normalizeOCR } from '@/lib/ocr/normalize';
+import { cookies } from 'next/headers';
 
 /**
  * Vendor invoice upload endpoint with OCR processing
+ * Supports both Supabase auth and cookie-based auth
  */
 export async function POST(request: NextRequest) {
   return guard(async () => {
     await rateLimit(request, ':vendor-invoice-upload');
-    const user = await requireUser();
     const supabase = await createClient();
+
+    // Try Supabase auth first
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    // Fallback to cookie auth
+    const cookieStore = await cookies();
+    const userIdCookie = cookieStore.get('user_id');
+
+    if (!authUser && !userIdCookie?.value) {
+      throw { status: 401, code: 'UNAUTHORIZED', message: 'Authentication required' };
+    }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
