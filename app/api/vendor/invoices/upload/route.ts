@@ -15,18 +15,6 @@ export async function POST(request: NextRequest) {
     const user = await requireUser();
     const supabase = await createClient();
 
-    // Verify user is a vendor
-    const { data: vendorUser, error: vendorError } = await supabase
-      .from('vendor_users')
-      .select('vendor_id, vendors(name)')
-      .eq('user_id', user.id)
-      .eq('is_active', true)
-      .single();
-
-    if (vendorError || !vendorUser) {
-      throw { status: 403, code: 'NOT_VENDOR', message: 'You do not have vendor access' };
-    }
-
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const venueId = formData.get('venue_id') as string | null;
@@ -87,7 +75,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${Date.now()}-${file.name}`;
     const { data: uploadData } = await supabase.storage
       .from('opsos-invoices')
-      .upload(`vendor/${vendorUser.vendor_id}/${fileName}`, buffer, {
+      .upload(`uploads/${fileName}`, buffer, {
         contentType: actualMimeType
       });
 
@@ -112,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Prepare invoice data
     const invoicePayload = {
       venue_id: finalVenueId,
-      vendor_id: vendorUser.vendor_id,
+      vendor_id: normalized.vendorId || null,
       invoice_number: normalized.invoiceNumber,
       invoice_date: normalized.invoiceDate,
       due_date: normalized.dueDate,
@@ -120,7 +108,7 @@ export async function POST(request: NextRequest) {
       ocr_confidence: normalized.ocrConfidence,
       ocr_raw_json: rawInvoice,
       image_url: imageUrl,
-      status: 'pending_approval', // Vendor uploads start as pending
+      status: 'pending_approval',
     };
 
     const linesPayload = normalized.lines.map((line) => ({
