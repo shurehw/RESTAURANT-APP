@@ -182,45 +182,33 @@ async function matchLineItem(
     }
   }
 
-  // 2. Try fuzzy match by description in vendor_items
+  // 2. Try exact match by description in vendor_items (full match only)
   if (vendorId && description) {
-    const { data: fuzzyMatch } = await supabase
+    const normalizedDesc = description.toLowerCase().trim();
+
+    const { data: exactDescMatch } = await supabase
       .from('vendor_items')
-      .select('id, item_id')
+      .select('id, item_id, vendor_description')
       .eq('vendor_id', vendorId)
-      .ilike('vendor_description', `%${description.substring(0, 20)}%`)
-      .eq('is_active', true)
-      .limit(1)
-      .single();
+      .eq('is_active', true);
 
-    if (fuzzyMatch) {
+    // Only auto-map if exact match (case-insensitive)
+    const match = exactDescMatch?.find(
+      vi => vi.vendor_description?.toLowerCase().trim() === normalizedDesc
+    );
+
+    if (match) {
       return {
-        itemId: fuzzyMatch.item_id,
-        vendorItemId: fuzzyMatch.id,
-        matchType: 'fuzzy',
+        itemId: match.item_id,
+        vendorItemId: match.id,
+        matchType: 'exact',
       };
     }
   }
 
-  // 3. Try direct item match by description (fallback)
-  const keywords = description.toLowerCase().trim().split(/\s+/);
-  if (keywords.length > 0) {
-    const { data: itemMatch } = await supabase
-      .from('items')
-      .select('id')
-      .ilike('name', `%${keywords[0]}%`)
-      .eq('is_active', true)
-      .limit(1)
-      .single();
-
-    if (itemMatch) {
-      return {
-        itemId: itemMatch.id,
-        vendorItemId: null,
-        matchType: 'fuzzy',
-      };
-    }
-  }
+  // 3. DO NOT auto-map on fuzzy description matches
+  // Fuzzy matching is too unreliable and causes incorrect mappings
+  // Instead, return 'none' and let the user review suggestions in the UI
 
   return {
     itemId: null,

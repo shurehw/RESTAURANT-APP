@@ -12,6 +12,7 @@ import { InvoiceLineMapper } from "@/components/invoices/InvoiceLineMapper";
 import { InvoiceReviewActions } from "@/components/invoices/InvoiceReviewActions";
 import { InvoicePDFModal } from "@/components/invoices/InvoicePDFModal";
 import { BulkItemMapper } from "@/components/invoices/BulkItemMapper";
+import { MappedItemsTable } from "@/components/invoices/MappedItemsTable";
 import { redirect } from "next/navigation";
 
 interface Props {
@@ -282,49 +283,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
           Mapped Items ({mappedLines.filter(l => l.qty > 0).length})
         </h2>
 
-        {mappedLines.filter(l => l.qty > 0).length > 0 ? (
-          <Card className="overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-muted border-b-2 border-brass">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold">Description</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold">Mapped To</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold">Qty</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold">Unit Price</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mappedLines.filter(l => l.qty > 0).map((line) => (
-                  <tr key={line.id} className="border-b border-border hover:bg-muted/50">
-                    <td className="px-4 py-3 text-sm">{line.description}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="sage" className="text-xs">
-                          {line.item?.name || "—"}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground font-mono">
-                          {line.item?.sku}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-mono">{line.qty}</td>
-                    <td className="px-4 py-3 text-right text-sm font-mono">
-                      ${line.unit_cost?.toFixed(2)}
-                    </td>
-                    <td className="px-4 py-3 text-right text-sm font-mono font-medium">
-                      ${line.line_total?.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        ) : (
-          <Card className="p-8 text-center text-muted-foreground">
-            No items have been mapped yet
-          </Card>
-        )}
+        <MappedItemsTable lines={mappedLines.filter(l => l.qty > 0)} />
       </div>
 
       {/* GL Account Summary */}
