@@ -258,6 +258,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [isNormalizing, setIsNormalizing] = useState(false);
   const [glAccountId, setGlAccountId] = useState<string>('');
   const [glSuggestions, setGlSuggestions] = useState<any[]>([]);
+  const [allGlAccounts, setAllGlAccounts] = useState<any[]>([]);
   const [mappingUnit, setMappingUnit] = useState<'as_invoiced' | 'case' | 'bottle'>('as_invoiced');
   const [mappedQty, setMappedQty] = useState<number>(line.qty);
   const [packSizeNumber, setPackSizeNumber] = useState<number | null>(null);
@@ -306,6 +307,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const normalizeWithAI = async () => {
     setIsNormalizing(true);
     try {
+      // Fetch ALL GL accounts first (fallback)
+      const allGlResponse = await fetch('/api/gl-accounts');
+      if (allGlResponse.ok) {
+        const allGlData = await allGlResponse.json();
+        setAllGlAccounts(allGlData.accounts || []);
+      }
+
       // Fetch GL account suggestions
       const glResponse = await fetch('/api/items/suggest-gl', {
         method: 'POST',
@@ -920,14 +928,31 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                       className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     >
                       <option value="">Select GL Account...</option>
-                      {glSuggestions.map((gl) => (
-                        <option key={gl.id} value={gl.id}>
-                          {gl.external_code ? `${gl.external_code} - ` : ''}{gl.name} ({gl.section})
-                          {gl.confidence === 'high' && ' ⭐ Best Match'}
-                        </option>
-                      ))}
+                      {/* AI Suggestions First */}
+                      {glSuggestions.length > 0 && (
+                        <optgroup label="🤖 AI Suggested">
+                          {glSuggestions.map((gl) => (
+                            <option key={gl.id} value={gl.id}>
+                              {gl.external_code ? `${gl.external_code} - ` : ''}{gl.name} ({gl.section})
+                              {gl.confidence === 'high' && ' ⭐ Best Match'}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {/* All Other GL Accounts */}
+                      {allGlAccounts.length > 0 && (
+                        <optgroup label="All GL Accounts">
+                          {allGlAccounts
+                            .filter(gl => !glSuggestions.find(s => s.id === gl.id))
+                            .map((gl) => (
+                              <option key={gl.id} value={gl.id}>
+                                {gl.external_code ? `${gl.external_code} - ` : ''}{gl.name} ({gl.section})
+                              </option>
+                            ))}
+                        </optgroup>
+                      )}
                     </select>
-                    {glSuggestions.length > 0 && glSuggestions[0].confidence === 'high' && (
+                    {glSuggestions.length > 0 && glSuggestions[0]?.confidence === 'high' && (
                       <p className="text-xs text-sage mt-1">✓ AI suggested best match selected</p>
                     )}
                   </div>

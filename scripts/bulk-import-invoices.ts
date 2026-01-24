@@ -104,9 +104,7 @@ async function processInvoice(filePath: string, fileName: string, venueId: strin
       console.error('  ❌ Storage upload failed:', uploadError);
     }
 
-    const imageUrl = uploadData
-      ? supabase.storage.from('opsos-invoices').getPublicUrl(uploadData.path).data.publicUrl
-      : null;
+    const finalStoragePath = uploadData?.path || null;
 
     // Create invoice in database
     const invoicePayload = {
@@ -118,7 +116,7 @@ async function processInvoice(filePath: string, fileName: string, venueId: strin
       total_amount: normalized.totalAmount,
       ocr_confidence: normalized.ocrConfidence,
       ocr_raw_json: rawInvoice,
-      image_url: imageUrl,
+      storage_path: finalStoragePath,
       status: 'draft',
     };
 
