@@ -153,6 +153,13 @@ async function processInvoice(filePath: string, fileName: string, venueId: strin
     return { success: true, invoiceId, fileName };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null ? JSON.stringify(error) : 'Unknown error');
+
+    // Check if it's a duplicate invoice error
+    if (errorMsg.includes('invoices_vendor_invoice_unique') || errorMsg.includes('23505')) {
+      console.warn(`  ⚠️  Skipped: Duplicate invoice (already exists)`);
+      return { success: false, fileName, error: 'Duplicate invoice - already imported', skipped: true };
+    }
+
     console.error(`  ❌ Failed: ${errorMsg}`);
     if (error instanceof Error && error.stack) {
       console.error(`  Stack: ${error.stack.split('\n').slice(0, 3).join('\n')}`);
