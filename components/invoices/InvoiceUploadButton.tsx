@@ -18,7 +18,11 @@ export function InvoiceUploadButton({ venues }: InvoiceUploadButtonProps) {
 
   return (
     <>
-      <Button variant="outline" onClick={() => setOpen(true)}>
+      <Button
+        variant="outline"
+        onClick={() => setOpen(true)}
+        className="flex-1 md:flex-none text-sm touch-manipulation"
+      >
         Upload Invoice
       </Button>
       <InvoiceUploadModal venues={venues} open={open} onOpenChange={setOpen} />
