@@ -41,19 +41,44 @@ export async function GET(request: NextRequest) {
     // Normalize search query: remove special chars, extra spaces, redundant words
     // OCR often adds *, -, etc. and category/origin words that won't match database items
     let normalizedQuery = query
-      .replace(/[*\-_\/\\|]/g, ' ')  // Replace special chars with spaces
-      .replace(/\d+[°']/g, ' ')  // Remove proof/ABV ratings (80', 90°, etc.) - removed \b requirement
+      // Step 1: Handle "Case*Brand*Variant" format from OCR
+      .replace(/^case\*([^*]+)\*/gi, '$1 ')  // "Case*Brand*Variant" -> "Brand Variant"
+      .replace(/\*+/g, ' ')  // Remove remaining asterisks
+
+      // Step 2: Remove special chars and punctuation
+      .replace(/['\-_\/\\|]/g, ' ')  // Replace special chars with spaces (including apostrophes)
+      .replace(/\d+[°']/g, ' ')  // Remove proof/ABV ratings (80', 90°, etc.)
+
+      // Step 3: Remove pack notation and size info
       .replace(/\b\d+yr\b/gi, ' ')  // Remove age statements (12yr, 18yr, etc.)
       .replace(/\bmalt\b/gi, ' ')  // Remove generic "malt" word
       .replace(/\bcase\b/gi, ' ')  // Remove "case" word
-      .replace(/\b\d+\s*$/g, ' ')  // Remove trailing numbers (pack counts like "6" at end)
-      .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal)\b/gi, ' ') // Remove spirit categories
-      .replace(/\b(japanese|french|scottish|american|mexican|irish|canadian)\b/gi, ' ') // Remove origin words
-      .replace(/\b(wh|whis|whisk)\b/gi, ' ') // Remove truncated whiskey variants
-      .replace(/\b(el0|oro|elo)\b/gi, ' ') // Remove OCR artifacts (El0 -> Oro)
-      .replace(/\b(fresh|juice|syrup)\b/gi, ' ') // Remove generic descriptors
-      .replace(/\b6\/cs\b/gi, ' ') // Remove pack notation
-      .replace(/\s+/g, ' ')           // Collapse multiple spaces
+      .replace(/\bloose\b/gi, ' ')  // Remove "loose" word
+      .replace(/\b\d+pk\b/gi, ' ')  // Remove pack counts (24pk, 6pk, etc.)
+      .replace(/\b\d+\s*(oz|ml|lt|l|gal)\b/gi, ' ')  // Remove size info (12oz, 750ml, 1lt, etc.)
+      .replace(/\b\d+\s*$/g, ' ')  // Remove trailing numbers
+      .replace(/\b6\/cs\b/gi, ' ')  // Remove pack notation
+
+      // Step 4: Remove category words
+      .replace(/\b(tequila|vodka|whiskey|whisky|gin|rum|bourbon|scotch|cognac|brandy|liqueur|wine|beer|champagne|mezcal|spirit|ale|ipa|lager|stout)\b/gi, ' ')
+      .replace(/\b(water|juice|syrup|soda)\b/gi, ' ')  // Beverage descriptors
+
+      // Step 5: Remove origin/descriptor words
+      .replace(/\b(japanese|french|scottish|american|mexican|irish|canadian|london)\b/gi, ' ')
+      .replace(/\b(fresh|organic|natural|pure|premium)\b/gi, ' ')
+
+      // Step 6: Fix OCR truncation and artifacts
+      .replace(/\b(wh|whis|whisk)\b/gi, 'whiskey')  // Expand truncated whiskey
+      .replace(/\b(el0|elo)\b/gi, 'oro')  // Fix OCR artifacts (El0 -> Oro)
+      .replace(/\b(bla\s*ck|blac\s*k)\b/gi, 'black')  // Fix truncated "black"
+      .replace(/\b(vermou)\b/gi, 'vermouth')  // Fix truncated vermouth
+      .replace(/\b(pellegrino|pelligrino)\b/gi, 'san pellegrino')  // Normalize San Pellegrino
+
+      // Step 7: Normalize size abbreviations
+      .replace(/\b(lt|ltr|liter)\b/gi, 'l')  // Normalize liter variations to "l"
+
+      // Step 8: Clean up
+      .replace(/\s+/g, ' ')  // Collapse multiple spaces
       .trim();
 
     // Normalize Spanish/English equivalents for better matching
