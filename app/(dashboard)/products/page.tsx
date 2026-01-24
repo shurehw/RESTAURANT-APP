@@ -177,7 +177,7 @@ export default async function ProductsPage() {
     });
   }
 
-  const adminClient = createAdminClient();
+  // adminClient already created above
   const { count: totalCount } = await adminClient
     .from("items")
     .select("*", { count: 'exact', head: true })
