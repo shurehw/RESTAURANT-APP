@@ -1,18 +1,84 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { createClient as createServiceClient } from '@supabase/supabase-js';
 import { guard } from '@/lib/route-guard';
-import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { rateLimit } from '@/lib/rate-limit';
 import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claude';
 import { normalizeOCR } from '@/lib/ocr/normalize';
+import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   return guard(async () => {
     await rateLimit(request, ':invoice-ocr');
-    const user = await requireUser();
-    const { orgId, venueIds } = await getUserOrgAndVenues(user.id);
+    const supabase = await createClient();
+
+    // Try Supabase auth first
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+
+    // Fallback to cookie auth
+    const cookieStore = await cookies();
+    const userIdCookie = cookieStore.get('user_id');
+
+    if (!authUser && !userIdCookie?.value) {
+      throw { status: 401, code: 'UNAUTHORIZED', message: 'Authentication required' };
+    }
+
+    const customUserId = userIdCookie?.value;
+
+    // Get organization and venues
+    let orgId: string | undefined;
+    let venueIds: string[] = [];
+
+    if (authUser) {
+      // Use Supabase auth user
+      const { data: orgUsers } = await supabase
+        .from('organization_users')
+        .select('organization_id')
+        .eq('user_id', authUser.id)
+        .eq('is_active', true);
+
+      orgId = orgUsers?.[0]?.organization_id;
+
+      if (orgId) {
+        const { data: venues } = await supabase
+          .from('venues')
+          .select('id')
+          .eq('organization_id', orgId);
+        venueIds = venues?.map(v => v.id) || [];
+      }
+    } else if (customUserId) {
+      // Use cookie auth - need to look up auth user from custom user
+      const adminClient = createAdminClient();
+
+      const { data: customUser } = await adminClient
+        .from('users')
+        .select('email')
+        .eq('id', customUserId)
+        .single();
+
+      if (customUser?.email) {
+        const { data: authUserId } = await adminClient
+          .rpc('get_auth_user_id_by_email', { user_email: customUser.email });
+
+        if (authUserId) {
+          const { data: orgUsers } = await adminClient
+            .from('organization_users')
+            .select('organization_id')
+            .eq('user_id', authUserId)
+            .eq('is_active', true);
+
+          orgId = orgUsers?.[0]?.organization_id;
+
+          if (orgId) {
+            const { data: venues } = await adminClient
+              .from('venues')
+              .select('id')
+              .eq('organization_id', orgId);
+            venueIds = venues?.map(v => v.id) || [];
+          }
+        }
+      }
+    }
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -22,7 +88,10 @@ export async function POST(request: NextRequest) {
     if (!file) throw { status: 400, code: 'NO_FILE', message: 'No file provided' };
     if (!venueId) throw { status: 400, code: 'NO_VENUE', message: 'venue_id is required' };
 
-    assertVenueAccess(venueId, venueIds);
+    // Check venue access
+    if (!venueIds.includes(venueId)) {
+      throw { status: 403, code: 'FORBIDDEN', message: 'You do not have access to this venue' };
+    }
 
     // File size validation: 10MB limit
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
