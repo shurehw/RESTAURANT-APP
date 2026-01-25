@@ -27,7 +27,7 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: process.cwd(),
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb',
+      bodySizeLimit: '150mb', // Increased for large multi-invoice PDFs
     },
   },
   async headers() {
