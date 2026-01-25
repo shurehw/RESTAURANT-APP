@@ -109,10 +109,10 @@ export async function GET(request: NextRequest) {
 
     // Build suggested items list
     const suggestedItems = pars
-      .filter((par) => par.item.is_active)
+      .filter((par) => par.item?.[0]?.is_active)
       .map((par) => {
-        const balance = balanceMap.get(par.item.id);
-        const alias = aliasMap.get(par.item.id);
+        const balance = balanceMap.get(par.item?.[0]?.id);
+        const alias = aliasMap.get(par.item?.[0]?.id);
         const qtyOnHand = balance?.quantity_on_hand || 0;
         const lastCost = alias?.last_unit_cost || balance?.last_cost || 0;
         
@@ -124,11 +124,11 @@ export async function GET(request: NextRequest) {
         const belowReorder = qtyOnHand < par.reorder_point;
 
         return {
-          item_id: par.item.id,
-          item_name: par.item.name,
-          sku: par.item.sku,
-          category: par.item.category,
-          base_uom: par.item.base_uom,
+          item_id: par.item?.[0]?.id,
+          item_name: par.item?.[0]?.name,
+          sku: par.item?.[0]?.sku,
+          category: par.item?.[0]?.category,
+          base_uom: par.item?.[0]?.base_uom,
           qty_on_hand: qtyOnHand,
           reorder_point: par.reorder_point,
           par_level: par.par_level,
