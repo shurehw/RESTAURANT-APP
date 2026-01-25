@@ -137,15 +137,24 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
 
     setUploading(false);
 
-    // Auto-close after 2 seconds if all succeeded
-    const allSuccess = files.every(f => f.status === 'success');
-    if (allSuccess) {
-      setTimeout(() => {
-        onOpenChange(false);
-        router.refresh();
-        setFiles([]);
-      }, 2000);
-    }
+    // Wait a bit for state to settle, then check results
+    setTimeout(() => {
+      setFiles(current => {
+        const allSuccess = current.every(f => f.status === 'success');
+        const anySuccess = current.some(f => f.status === 'success');
+
+        // Auto-close after showing results if any succeeded
+        if (anySuccess) {
+          setTimeout(() => {
+            onOpenChange(false);
+            router.refresh();
+            setFiles([]);
+          }, 3000); // Give user time to see the results
+        }
+
+        return current;
+      });
+    }, 100);
   };
 
   const handleClose = () => {
