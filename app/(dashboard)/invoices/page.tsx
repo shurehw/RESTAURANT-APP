@@ -22,29 +22,32 @@ export default async function InvoicesPage() {
   }
 
   const orgId = ctx.orgId;
+  const isPlatformAdmin = ctx.isPlatformAdmin;
   
   console.log('Invoices page context:', { 
     authUserId: ctx.authUserId, 
     email: ctx.email, 
     orgId, 
-    role: ctx.role 
+    role: ctx.role,
+    isPlatformAdmin 
   });
 
-  if (!orgId) {
+  if (!orgId && !isPlatformAdmin) {
     return <div className="p-8">No organization associated with your account.</div>;
   }
 
   // ========================================================================
   // Data queries use admin client with explicit org filter
-  // (Safe: org is derived from authenticated user's membership)
+  // Platform admins see all data (RLS bypass handles filtering)
   // ========================================================================
   const adminClient = createAdminClient();
 
-  // First get venues for this organization
-  const { data: venues } = await adminClient
-    .from("venues")
-    .select("id, name")
-    .eq('organization_id', orgId);
+  // Get venues - platform admins see all, regular users see their org only
+  let venuesQuery = adminClient.from("venues").select("id, name");
+  if (!isPlatformAdmin && orgId) {
+    venuesQuery = venuesQuery.eq('organization_id', orgId);
+  }
+  const { data: venues } = await venuesQuery;
 
   const venueIds = venues?.map(v => v.id) || [];
 
@@ -52,8 +55,8 @@ export default async function InvoicesPage() {
   let invoices: any[] = [];
   let error = null;
 
-  if (venueIds.length > 0) {
-    const result = await adminClient
+  if (venueIds.length > 0 || isPlatformAdmin) {
+    let invoicesQuery = adminClient
       .from("invoices")
       .select(
         `
@@ -73,9 +76,15 @@ export default async function InvoicesPage() {
         purchase_orders:purchase_order_id(order_number)
       `
       )
-      .in('venue_id', venueIds)
       .order("created_at", { ascending: false })
       .limit(50);
+    
+    // Only filter by venue if not platform admin
+    if (!isPlatformAdmin && venueIds.length > 0) {
+      invoicesQuery = invoicesQuery.in('venue_id', venueIds);
+    }
+    
+    const result = await invoicesQuery;
 
     invoices = result.data || [];
     error = result.error;

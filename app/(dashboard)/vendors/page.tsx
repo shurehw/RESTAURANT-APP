@@ -32,15 +32,17 @@ export default async function VendorsPage() {
   }
 
   const orgId = ctx.orgId;
+  const isPlatformAdmin = ctx.isPlatformAdmin;
   
   console.log('Vendors page context:', { 
     authUserId: ctx.authUserId, 
     email: ctx.email, 
     orgId, 
-    role: ctx.role 
+    role: ctx.role,
+    isPlatformAdmin 
   });
 
-  if (!orgId) {
+  if (!orgId && !isPlatformAdmin) {
     return (
       <div className="p-8">
         <div className="empty-state">
@@ -58,17 +60,22 @@ export default async function VendorsPage() {
 
   // ========================================================================
   // Data queries use admin client with explicit org filter
-  // (Safe: org is derived from authenticated user's membership)
+  // Platform admins see all data (RLS bypass handles filtering)
   // ========================================================================
   const adminClient = createAdminClient();
 
-  // Fetch vendors for this organization
-  const { data: vendors } = await adminClient
+  // Fetch vendors - platform admins see all, regular users see their org only
+  let vendorsQuery = adminClient
     .from("vendors")
     .select("*")
-    .eq("organization_id", orgId!)
     .order("name", { ascending: true })
     .limit(100);
+  
+  if (!isPlatformAdmin && orgId) {
+    vendorsQuery = vendorsQuery.eq("organization_id", orgId);
+  }
+  
+  const { data: vendors } = await vendorsQuery;
 
   return (
     <div>

@@ -16,6 +16,7 @@ export type TenantContext = {
   orgId: string | null;
   role: 'owner' | 'admin' | 'manager' | 'viewer' | null;
   isAuthenticated: boolean;
+  isPlatformAdmin: boolean;
 };
 
 /**
@@ -37,6 +38,18 @@ export async function resolveContext(): Promise<TenantContext | null> {
   
   if (authUser) {
     // User has valid Supabase session - this is the clean path
+    const adminClient = createAdminClient();
+    
+    // Check if user is a platform admin
+    const { data: platformAdmin } = await adminClient
+      .from('platform_admins')
+      .select('id')
+      .eq('user_id', authUser.id)
+      .eq('is_active', true)
+      .single();
+    
+    const isPlatformAdmin = !!platformAdmin;
+
     const { data: orgMembership } = await supabase
       .from('organization_users')
       .select('organization_id, role')
@@ -51,6 +64,7 @@ export async function resolveContext(): Promise<TenantContext | null> {
       orgId: orgMembership?.organization_id || null,
       role: orgMembership?.role as TenantContext['role'] || null,
       isAuthenticated: true,
+      isPlatformAdmin,
     };
   }
 
@@ -95,8 +109,19 @@ export async function resolveContext(): Promise<TenantContext | null> {
       orgId: null,
       role: null,
       isAuthenticated: false, // Degraded state
+      isPlatformAdmin: false,
     };
   }
+
+  // Check if user is a platform admin
+  const { data: platformAdmin } = await adminClient
+    .from('platform_admins')
+    .select('id')
+    .eq('user_id', matchingAuthUser.id)
+    .eq('is_active', true)
+    .single();
+  
+  const isPlatformAdmin = !!platformAdmin;
 
   // Get organization membership using auth user ID
   const { data: orgMembership } = await adminClient
@@ -113,18 +138,27 @@ export async function resolveContext(): Promise<TenantContext | null> {
     orgId: orgMembership?.organization_id || null,
     role: orgMembership?.role as TenantContext['role'] || null,
     isAuthenticated: true,
+    isPlatformAdmin,
   };
 }
 
 /**
  * Simplified helper that throws if not authenticated or no org access.
  * Use in pages/routes that require authentication.
+ * 
+ * Platform admins are allowed through even without org membership
+ * (they can see all orgs via RLS bypass).
  */
 export async function requireContext(): Promise<TenantContext> {
   const ctx = await resolveContext();
   
   if (!ctx || !ctx.isAuthenticated) {
     throw { status: 401, code: 'UNAUTHORIZED', message: 'Not authenticated' };
+  }
+  
+  // Platform admins can access without org membership
+  if (ctx.isPlatformAdmin) {
+    return ctx;
   }
   
   if (!ctx.orgId) {
