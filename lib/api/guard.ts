@@ -28,11 +28,16 @@ export class ApiError extends Error {
  */
 export async function guard(handler: GuardHandler): Promise<NextResponse> {
   try {
-    // Verify auth using custom auth cookie
+    // Verify auth using custom auth cookie OR Supabase session cookie
     const cookieStore = await cookies();
     const userIdCookie = cookieStore.get('user_id');
+    const supabaseAuthToken = cookieStore.get('sb-access-token') ||
+                              cookieStore.get('sb-refresh-token') ||
+                              // Check for Supabase v2 cookie format
+                              Array.from(cookieStore.getAll()).find(c => c.name.includes('sb-') && c.name.includes('-auth-token'));
 
-    if (!userIdCookie?.value) {
+    // Allow if either custom cookie or Supabase session exists
+    if (!userIdCookie?.value && !supabaseAuthToken) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
