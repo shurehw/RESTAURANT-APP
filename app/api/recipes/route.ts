@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     assertRole(role, ['owner', 'admin', 'manager']);
 
     const body = await request.json();
-    const { name, recipe_type, item_category, category, yield_qty, yield_uom, labor_minutes, menu_price, pos_sku, food_cost_target, components } = body;
+    const { name, recipe_type, item_category, category, yield_qty, yield_uom, labor_minutes, menu_price, pos_sku, food_cost_target, components, venue_id } = body;
 
     if (!name || !recipe_type || !yield_qty || !yield_uom) {
       throw { status: 400, code: 'MISSING_FIELDS', message: 'Missing required fields' };
@@ -23,8 +23,22 @@ export async function POST(request: NextRequest) {
       throw { status: 400, code: 'NO_COMPONENTS', message: 'Recipe must have at least one component' };
     }
 
-    const venueId = venueIds[0];
+    // Use provided venue_id if valid, otherwise default to first venue
+    let venueId = venue_id;
+    if (!venueId || !venueIds.includes(venueId)) {
+      venueId = venueIds[0];
+    }
+
     const supabase = await createClient();
+
+    // Get venue's labor rate
+    const { data: venue } = await supabase
+      .from('venues')
+      .select('labor_rate_per_hour')
+      .eq('id', venueId)
+      .single();
+    
+    const laborRate = venue?.labor_rate_per_hour || 15;
 
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
@@ -55,25 +69,25 @@ export async function POST(request: NextRequest) {
       uom: comp.uom,
     }));
 
+    // Insert components - trigger will auto-calculate cost
     const { error: componentsError } = await supabase.from('recipe_items').insert(componentData);
     if (componentsError) {
       await supabase.from('recipes').delete().eq('id', recipe.id);
       throw componentsError;
     }
 
-    const { data: costData } = await supabase
-      .from('v_recipe_costs')
-      .select('line_cost')
-      .eq('recipe_id', recipe.id);
+    // Fetch updated recipe with calculated cost
+    const { data: updatedRecipe } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('id', recipe.id)
+      .single();
 
-    const ingredientCost = costData?.reduce((sum, row) => sum + (row.line_cost || 0), 0) || 0;
-    const laborCost = (labor_minutes / 60) * 15;
-    const totalCost = ingredientCost + laborCost;
-    const costPerUnit = yield_qty > 0 ? totalCost / yield_qty : 0;
-
-    await supabase.from('recipes').update({ cost_per_unit: costPerUnit }).eq('id', recipe.id);
-
-    return NextResponse.json({ success: true, recipe: { ...recipe, cost_per_unit: costPerUnit } });
+    return NextResponse.json({ 
+      success: true, 
+      recipe: updatedRecipe || recipe,
+      laborRate, // Return for UI
+    });
   });
 }
 
@@ -81,11 +95,12 @@ export async function GET(request: NextRequest) {
   return guard(async () => {
     rateLimit(request, ':recipes-list');
     const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const { venueIds } = await getUserOrgAndVenues(user.id);
 
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get('type');
     const category = searchParams.get('category');
+    const includeVenues = searchParams.get('include_venues') === 'true';
 
     const supabase = await createClient();
     let query = supabase
@@ -100,6 +115,18 @@ export async function GET(request: NextRequest) {
     const { data: recipes, error } = await query;
     if (error) throw error;
 
-    return NextResponse.json({ recipes });
+    // Optionally include venues for venue selector in UI
+    let venues = null;
+    if (includeVenues && venueIds.length > 0) {
+      const { data: venueData } = await supabase
+        .from('venues')
+        .select('id, name, labor_rate_per_hour')
+        .in('id', venueIds)
+        .eq('is_active', true)
+        .order('name');
+      venues = venueData;
+    }
+
+    return NextResponse.json({ recipes, venues });
   });
 }

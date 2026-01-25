@@ -598,7 +598,7 @@ export function OrderDetailClient({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { variant: "default" | "brass" | "sage" | "destructive"; icon: any }> = {
+  const config: Record<string, { variant: "default" | "brass" | "sage" | "error" | "outline"; icon: any }> = {
     draft: { variant: "default", icon: Clock },
     pending: { variant: "brass", icon: Clock },
     ordered: { variant: "brass", icon: Truck },
@@ -627,11 +627,11 @@ function LineStatusBadge({ ordered, received }: { ordered: number; received: num
 }
 
 function SeverityBadge({ severity }: { severity: string }) {
-  const config: Record<string, "default" | "brass" | "destructive"> = {
+  const config: Record<string, "default" | "brass" | "error"> = {
     none: "default",
     minor: "default",
     warning: "brass",
-    critical: "destructive",
+    critical: "error",
   };
 
   return (
