@@ -55,6 +55,18 @@ async function processInvoice(filePath: string, fileName: string, venueId: strin
   console.log(`\n📄 Processing: ${fileName}`);
 
   try {
+    // Check if this file was already imported (by filename in storage path)
+    const { data: existingByPath } = await supabase
+      .from('invoices')
+      .select('id, invoice_number, created_at')
+      .like('storage_path', `%${fileName}%`)
+      .limit(1);
+
+    if (existingByPath && existingByPath.length > 0) {
+      console.warn(`  ⚠️  Skipped: File already imported (Invoice #${existingByPath[0].invoice_number}, ID: ${existingByPath[0].id})`);
+      return { success: false, fileName, error: 'File already imported', skipped: true };
+    }
+
     // Read file
     const buffer = await readFile(filePath);
     const ext = extname(fileName).toLowerCase();
@@ -91,6 +103,22 @@ async function processInvoice(filePath: string, fileName: string, venueId: strin
     console.log(`  📊 Found: ${normalized.vendorName || 'Unknown'}, Invoice #${normalized.invoiceNumber || 'N/A'}`);
     console.log(`  💰 Total: $${normalized.totalAmount?.toFixed(2) || '0.00'}`);
     console.log(`  📦 Lines: ${normalized.lines.length}`);
+
+    // Check if this invoice already exists (vendor + invoice_number + date)
+    if (normalized.vendorId && normalized.invoiceNumber && normalized.invoiceDate) {
+      const { data: existingInvoice } = await supabase
+        .from('invoices')
+        .select('id, invoice_number, total_amount')
+        .eq('vendor_id', normalized.vendorId)
+        .eq('invoice_number', normalized.invoiceNumber)
+        .eq('invoice_date', normalized.invoiceDate)
+        .limit(1);
+
+      if (existingInvoice && existingInvoice.length > 0) {
+        console.warn(`  ⚠️  Skipped: Invoice already exists in database (ID: ${existingInvoice[0].id})`);
+        return { success: false, fileName, error: 'Duplicate invoice - already in database', skipped: true };
+      }
+    }
 
     // Upload to storage
     const fileName_clean = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
