@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
+import { cookies } from 'next/headers';
 
 /**
  * GET /api/gl-accounts
@@ -9,24 +10,27 @@ import { guard } from '@/lib/api/guard';
 export async function GET() {
   return guard(async () => {
     const supabase = await createClient();
+    const cookieStore = await cookies();
 
-    // Get user from session
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get user ID from cookie (our custom auth) or Supabase session
+    let userId: string | null = null;
 
-    // Debug logging
-    if (!user) {
-      console.error('[GL Accounts] No user found in session. Auth error:', authError);
-      console.error('[GL Accounts] This might be a cookie/session issue');
+    // Try Supabase session first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+    } else {
+      // Fallback to custom user_id cookie
+      const userIdCookie = cookieStore.get('user_id');
+      userId = userIdCookie?.value || null;
     }
 
-    if (!user) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized - No active session', details: 'User not authenticated. Please log in again.' },
         { status: 401 }
       );
     }
-
-    const userId = user.id;
 
     // Get user's organization
     const { data: orgUsers, error: orgError } = await supabase
