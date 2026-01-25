@@ -12,20 +12,22 @@ interface Venue {
 
 interface BulkInvoiceUploadButtonProps {
   venues: Venue[];
+  variant?: 'default' | 'outline';
+  label?: string;
 }
 
-export function BulkInvoiceUploadButton({ venues }: BulkInvoiceUploadButtonProps) {
+export function BulkInvoiceUploadButton({ venues, variant = 'outline', label }: BulkInvoiceUploadButtonProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <Button
-        variant="outline"
+        variant={variant}
         onClick={() => setOpen(true)}
         className="flex-1 md:flex-none text-sm touch-manipulation"
       >
         <Upload className="w-4 h-4 mr-2" />
-        Bulk Upload
+        {label || 'Upload Invoices'}
       </Button>
       <BulkInvoiceUploadModal venues={venues} open={open} onOpenChange={setOpen} />
     </>

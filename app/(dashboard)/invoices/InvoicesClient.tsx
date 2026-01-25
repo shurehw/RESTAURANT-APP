@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { InvoiceUploadButton } from "@/components/invoices/InvoiceUploadButton";
 import { BulkInvoiceUploadButton } from "@/components/invoices/BulkInvoiceUploadButton";
 import { Download, Check, AlertCircle, CheckCircle, Zap, List, X } from "lucide-react";
 import Link from "next/link";
@@ -157,7 +156,6 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
               <span className="sm:hidden">Bulk Map</span>
             </Link>
           </Button>
-          <InvoiceUploadButton venues={venues || []} />
           <BulkInvoiceUploadButton venues={venues || []} />
           <Button variant="brass" className="text-sm hidden md:flex">
             <Download className="w-4 h-4" />
@@ -367,7 +365,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
           <p className="empty-state-description">
             Upload your first invoice to get started
           </p>
-          <InvoiceUploadButton venues={venues || []} />
+          <BulkInvoiceUploadButton venues={venues || []} variant="default" label="Upload Invoice" />
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@
  */
 
 import { createAdminClient } from "@/lib/supabase/server";
+import { resolveContext } from "@/lib/auth/resolveContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -24,7 +25,26 @@ interface Props {
 export default async function InvoiceReviewPage({ params }: Props) {
   const { id } = await params;
 
-  // Use admin client to bypass RLS (user is already authenticated via middleware)
+  // ========================================================================
+  // Use centralized context resolver (handles both Supabase auth and legacy)
+  // ========================================================================
+  const ctx = await resolveContext();
+
+  if (!ctx || !ctx.isAuthenticated) {
+    redirect("/login");
+  }
+
+  console.log('Invoice review page context:', { 
+    authUserId: ctx.authUserId, 
+    email: ctx.email, 
+    orgId: ctx.orgId, 
+    role: ctx.role 
+  });
+
+  // ========================================================================
+  // Data queries use admin client
+  // (User's org membership is verified via resolveContext)
+  // ========================================================================
   const supabase = createAdminClient();
 
   // Fetch invoice with vendor and venue

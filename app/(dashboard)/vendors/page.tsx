@@ -2,7 +2,8 @@
  * OpsOS Vendors Page
  */
 
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { resolveContext } from "@/lib/auth/resolveContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,33 +16,51 @@ import {
 } from "@/components/ui/table";
 import { Plus, Users, Phone, Mail } from "lucide-react";
 import Link from "next/link";
-import { cookies } from "next/headers";
 
 export default async function VendorsPage() {
-  const supabase = await createClient();
-  const cookieStore = await cookies();
+  // ========================================================================
+  // Use centralized context resolver (handles both Supabase auth and legacy)
+  // ========================================================================
+  const ctx = await resolveContext();
 
-  // Get user's organization
-  let userId: string | null = null;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    userId = user.id;
-  } else {
-    const userIdCookie = cookieStore.get('user_id');
-    userId = userIdCookie?.value || null;
+  if (!ctx || !ctx.isAuthenticated) {
+    return <div className="p-8">Not authenticated. Please log in.</div>;
   }
 
-  // Use admin client to bypass RLS and get org-specific vendors
+  if (!ctx.authUserId) {
+    return <div className="p-8">No auth user found for this account. Please log out and log back in.</div>;
+  }
+
+  const orgId = ctx.orgId;
+  
+  console.log('Vendors page context:', { 
+    authUserId: ctx.authUserId, 
+    email: ctx.email, 
+    orgId, 
+    role: ctx.role 
+  });
+
+  if (!orgId) {
+    return (
+      <div className="p-8">
+        <div className="empty-state">
+          <div className="empty-state-icon">
+            <Users className="w-8 h-8" />
+          </div>
+          <h3 className="empty-state-title">No organization access</h3>
+          <p className="empty-state-description">
+            Your account is not associated with any organization. Please contact support.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================================================================
+  // Data queries use admin client with explicit org filter
+  // (Safe: org is derived from authenticated user's membership)
+  // ========================================================================
   const adminClient = createAdminClient();
-
-  // Get user's organization
-  const { data: orgUsers } = await adminClient
-    .from('organization_users')
-    .select('organization_id')
-    .eq('user_id', userId!)
-    .eq('is_active', true);
-
-  const orgId = orgUsers?.[0]?.organization_id;
 
   // Fetch vendors for this organization
   const { data: vendors } = await adminClient

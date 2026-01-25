@@ -139,9 +139,72 @@ export async function POST(request: NextRequest) {
 
     // Handle PDF or image (use detected MIME type, not declared)
     const isPDF = actualMimeType === 'application/pdf';
-    const { invoice: rawInvoice } = isPDF
+    const ocrResult = isPDF
       ? await extractInvoiceFromPDF(buffer)
       : await extractInvoiceWithClaude(buffer, actualMimeType);
+
+    // Check if we have multiple invoices
+    const rawInvoices = ocrResult.invoices || [ocrResult.invoice!];
+    const isMultiInvoice = rawInvoices.length > 1;
+
+    console.log(`[OCR] Detected ${rawInvoices.length} invoice(s) in uploaded file`);
+
+    // Process each invoice
+    const results: any[] = [];
+    const errors: any[] = [];
+
+    for (let i = 0; i < rawInvoices.length; i++) {
+      const rawInvoice = rawInvoices[i];
+      const invoiceIndex = i + 1;
+
+      try {
+        console.log(`[OCR] Processing invoice ${invoiceIndex}/${rawInvoices.length}...`);
+        const result = await processInvoice(rawInvoice, venueId, isPreopening, file, buffer, supabase, invoiceIndex, rawInvoices.length);
+        results.push(result);
+      } catch (error: any) {
+        console.error(`[OCR] Failed to process invoice ${invoiceIndex}:`, error);
+        errors.push({
+          invoiceNumber: rawInvoice.invoiceNumber || `Invoice ${invoiceIndex}`,
+          vendor: rawInvoice.vendor || 'Unknown',
+          error: error.message || error,
+          code: error.code,
+        });
+      }
+    }
+
+    // Return multi-invoice result
+    if (isMultiInvoice) {
+      return NextResponse.json({
+        success: results.length > 0,
+        multiInvoice: true,
+        total: rawInvoices.length,
+        succeeded: results.length,
+        failed: errors.length,
+        results,
+        errors,
+      });
+    }
+
+    // Single invoice - throw error if failed, return result if succeeded
+    if (errors.length > 0) {
+      throw errors[0].error;
+    }
+
+    return NextResponse.json(results[0]);
+  });
+}
+
+// Helper function to process a single invoice
+async function processInvoice(
+  rawInvoice: any,
+  venueId: string,
+  isPreopening: boolean,
+  file: File,
+  buffer: Buffer,
+  supabase: any,
+  invoiceIndex: number,
+  totalInvoices: number
+) {
     const normalized = await normalizeOCR(rawInvoice, supabase);
 
     // Validate and handle vendor
@@ -219,10 +282,15 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    const fileName = `${Date.now()}-${file.name}`;
+    // For multi-invoice PDFs, append index to filename
+    const baseFileName = file.name.replace(/\.pdf$/i, '');
+    const fileName = totalInvoices > 1
+      ? `${Date.now()}-${baseFileName}-invoice-${invoiceIndex}.pdf`
+      : `${Date.now()}-${file.name}`;
+
     const { data: uploadData } = await supabase.storage
       .from('opsos-invoices')
-      .upload(`raw/${fileName}`, buffer, { contentType: file.type });
+      .upload(`raw/${fileName}`, buffer, { contentType: 'application/pdf' });
 
     const storagePath = uploadData?.path || null;
 
@@ -261,17 +329,36 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    if (rpcError) throw rpcError;
+    if (rpcError) {
+      // Provide better error messages for common issues
+      if (rpcError.code === '23505') {
+        // Unique constraint violation - duplicate invoice
+        const invoiceNum = normalized.invoiceNumber || 'Unknown';
+        const vendorName = normalized.vendorName || 'Unknown Vendor';
+        throw {
+          status: 409,
+          code: 'DUPLICATE_INVOICE',
+          message: `Duplicate invoice: ${invoiceNum} from ${vendorName} already exists in the system.`,
+          details: {
+            invoiceNumber: invoiceNum,
+            vendorName: vendorName,
+          }
+        };
+      }
+      throw rpcError;
+    }
 
     const needsReview = normalized.lines.some(l => l.matchType === 'none');
-    return NextResponse.json({
+    return {
       success: true,
       invoiceId: invoiceId,
+      invoiceNumber: normalized.invoiceNumber,
+      vendor: normalized.vendorName,
+      totalAmount: normalized.totalAmount,
       normalized,
       warnings: normalized.warnings,
       storagePath,
       needsReview,
       reviewUrl: `/invoices/${invoiceId}/review`,
-    });
-  });
+    };
 }

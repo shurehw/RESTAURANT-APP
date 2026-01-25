@@ -6,69 +6,39 @@
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Download } from "lucide-react";
+import { createAdminClient } from "@/lib/supabase/server";
+import { resolveContext } from "@/lib/auth/resolveContext";
 import { ItemBulkImport } from "@/components/items/ItemBulkImport";
 import { ProductsTable } from "@/components/products/ProductsTable";
-import { cookies } from 'next/headers';
 
 export default async function ProductsPage() {
-  const supabase = await createClient();
+  // ========================================================================
+  // Use centralized context resolver (handles both Supabase auth and legacy)
+  // ========================================================================
+  const ctx = await resolveContext();
 
-  // Get user ID from cookie (custom auth system)
-  const cookieStore = await cookies();
-  const userIdCookie = cookieStore.get('user_id');
-
-  if (!userIdCookie?.value) {
+  if (!ctx || !ctx.isAuthenticated) {
     return <div className="p-8">Not authenticated. Please log in.</div>;
   }
 
-  const customUserId = userIdCookie.value;
-
-  // Get user's email from custom users table
-  const { data: customUser } = await supabase
-    .from('users')
-    .select('email')
-    .eq('id', customUserId)
-    .single();
-
-  if (!customUser) {
-    return <div className="p-8">User not found. Please log in again.</div>;
+  if (!ctx.authUserId) {
+    return <div className="p-8">No auth user found for this account. Please log out and log back in.</div>;
   }
 
-  // Get auth user ID from email (organization_users references auth.users)
-  // Use database function to look up auth user ID
-  const adminClient = createAdminClient();
-  const { data: authUserId, error: authLookupError } = await adminClient
-    .rpc('get_auth_user_id_by_email', { user_email: customUser.email });
+  const orgId = ctx.orgId;
   
-  if (authLookupError) {
-    console.error('Error looking up auth user:', authLookupError);
-  }
+  console.log('Products page context:', { 
+    authUserId: ctx.authUserId, 
+    email: ctx.email, 
+    orgId, 
+    role: ctx.role 
+  });
 
-  if (!authUserId) {
-    return <div className="p-8">No auth user found for this account. Please contact support or sign up again.</div>;
-  }
-
-  // Get user's organization using auth user ID (use admin client to bypass RLS if needed)
-  const { data: orgUsers } = await adminClient
-    .from('organization_users')
-    .select('organization_id')
-    .eq('user_id', authUserId)
-    .eq('is_active', true);
-
-  console.log('Organization users query result:', { customUserId, authUserId, orgUsers, count: orgUsers?.length });
-
-  const orgId = orgUsers?.[0]?.organization_id;
+  // ========================================================================
+  // Data queries use admin client with explicit org filter
+  // (Safe: org is derived from authenticated user's membership)
+  // ========================================================================
+  const adminClient = createAdminClient();
 
   // Don't query if no org ID
   let items: any[] | null = null;
@@ -121,7 +91,7 @@ export default async function ProductsPage() {
       console.error('Error fetching items:', itemsError);
     }
   } else {
-    console.error('No organization ID found for user:', customUserId);
+    console.error('No organization ID found for user:', ctx.authUserId);
   }
 
   // Fetch pack configs for items in this organization using admin client

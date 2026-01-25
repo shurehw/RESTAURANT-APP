@@ -18,8 +18,9 @@ const anthropic = new Anthropic({
 
 const OCR_PROMPT = `You are an expert at extracting structured data from restaurant and construction invoices.
 
-Analyze this invoice image and extract the following information in JSON format:
+**IMPORTANT: This PDF may contain MULTIPLE separate invoices. If you detect multiple invoices (multiple invoice numbers, dates, or vendor letterheads), return an ARRAY of invoice objects.**
 
+For a SINGLE invoice, return this format:
 {
   "vendor": "Vendor company name",
   "invoiceNumber": "Invoice number",
@@ -42,6 +43,15 @@ Analyze this invoice image and extract the following information in JSON format:
       "lineTotal": 0.00,
       "confidence": 0.95
     }
+  ]
+}
+
+For MULTIPLE invoices, return this format:
+{
+  "invoices": [
+    { /* invoice 1 object with all fields above */ },
+    { /* invoice 2 object with all fields above */ },
+    { /* etc */ }
   ]
 }
 
@@ -99,7 +109,8 @@ FORMATTING RULES:
 Return ONLY the JSON object, no other text.`;
 
 export interface OCRResult {
-  invoice: RawOCRInvoice;
+  invoice?: RawOCRInvoice;
+  invoices?: RawOCRInvoice[];
   rawResponse: string;
 }
 
@@ -237,9 +248,9 @@ export async function extractInvoiceFromPDF(
     throw new Error('Claude returned empty response. Please try uploading the invoice again.');
   }
 
-  let invoice: RawOCRInvoice;
+  let parsedData: any;
   try {
-    invoice = JSON.parse(jsonText);
+    parsedData = JSON.parse(jsonText);
   } catch (parseError) {
     console.error('[OCR Error] Failed to parse Claude PDF response as JSON');
     console.error('JSON text:', jsonText);
@@ -248,8 +259,18 @@ export async function extractInvoiceFromPDF(
     throw new Error('Failed to parse invoice data from Claude. The response may be malformed. Please try again.');
   }
 
-  return {
-    invoice,
-    rawResponse,
-  };
+  // Handle both single invoice and multiple invoices format
+  if (parsedData.invoices && Array.isArray(parsedData.invoices)) {
+    // Multiple invoices detected
+    return {
+      invoices: parsedData.invoices as RawOCRInvoice[],
+      rawResponse,
+    };
+  } else {
+    // Single invoice
+    return {
+      invoice: parsedData as RawOCRInvoice,
+      rawResponse,
+    };
+  }
 }
