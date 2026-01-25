@@ -26,25 +26,27 @@ export default async function ProductsPage() {
   }
 
   const orgId = ctx.orgId;
+  const isPlatformAdmin = ctx.isPlatformAdmin;
   
   console.log('Products page context:', { 
     authUserId: ctx.authUserId, 
     email: ctx.email, 
     orgId, 
-    role: ctx.role 
+    role: ctx.role,
+    isPlatformAdmin 
   });
 
   // ========================================================================
   // Data queries use admin client with explicit org filter
-  // (Safe: org is derived from authenticated user's membership)
+  // Platform admins see all data (RLS bypass handles filtering)
   // ========================================================================
   const adminClient = createAdminClient();
 
-  // Don't query if no org ID
+  // Don't query if no org ID (unless platform admin)
   let items: any[] | null = null;
   let itemsError: any = null;
 
-  if (orgId) {
+  if (orgId || isPlatformAdmin) {
     // Use admin client to bypass RLS (user is already authenticated via cookie)
     // adminClient already created above
 
@@ -55,13 +57,19 @@ export default async function ProductsPage() {
     let hasMore = true;
 
     while (hasMore) {
-      const result = await adminClient
+      let query = adminClient
         .from("items")
         .select("id, name, sku, category, subcategory, base_uom, gl_account_id, r365_measure_type, r365_reporting_uom, r365_inventory_uom, r365_cost_account, r365_inventory_account, created_at, organization_id, is_active")
-        .eq('organization_id', orgId)
         .eq('is_active', true)
         .order("created_at", { ascending: false })
         .range(page * pageSize, (page + 1) * pageSize - 1);
+      
+      // Only filter by org if not platform admin
+      if (!isPlatformAdmin && orgId) {
+        query = query.eq('organization_id', orgId);
+      }
+      
+      const result = await query;
 
       if (result.error) {
         itemsError = result.error;
@@ -82,6 +90,7 @@ export default async function ProductsPage() {
 
     console.log('Items fetch result:', {
       orgId,
+      isPlatformAdmin,
       itemsCount: items?.length || 0,
       error: itemsError,
       firstItem: items?.[0]?.name
@@ -100,7 +109,7 @@ export default async function ProductsPage() {
     item_pack_configurations: []
   }));
 
-  if (items && items.length > 0 && orgId) {
+  if (items && items.length > 0 && (orgId || isPlatformAdmin)) {
     // adminClient already created above
     const itemIds = items.map(i => i.id);
 
