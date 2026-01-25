@@ -28,8 +28,20 @@ export async function POST(request: NextRequest) {
     // Get organization and venues
     let orgId: string | undefined;
     let venueIds: string[] = [];
+    let isPlatformAdmin = false;
 
     if (authUser) {
+      // Check platform admin (allows cross-org access without membership)
+      const adminClient = createAdminClient();
+      const { data: platformAdmin } = await adminClient
+        .from('platform_admins')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      isPlatformAdmin = !!platformAdmin;
+
       // Use Supabase auth user
       const { data: orgUsers } = await supabase
         .from('organization_users')
@@ -61,6 +73,16 @@ export async function POST(request: NextRequest) {
           .rpc('get_auth_user_id_by_email', { user_email: customUser.email });
 
         if (authUserId) {
+          // Check platform admin (allows cross-org access without membership)
+          const { data: platformAdmin } = await adminClient
+            .from('platform_admins')
+            .select('id')
+            .eq('user_id', authUserId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          isPlatformAdmin = !!platformAdmin;
+
           const { data: orgUsers } = await adminClient
             .from('organization_users')
             .select('organization_id')
@@ -89,12 +111,14 @@ export async function POST(request: NextRequest) {
     if (!venueId) throw { status: 400, code: 'NO_VENUE', message: 'venue_id is required' };
 
     // Check venue access
-    if (!venueIds.includes(venueId)) {
+    // Platform admins bypass org membership checks and can upload to any venue
+    if (!isPlatformAdmin && !venueIds.includes(venueId)) {
       const availableVenues = venueIds.length > 0 ? venueIds.join(', ') : 'none';
       console.error('Venue access denied:', {
         requestedVenueId: venueId,
         userVenueIds: venueIds,
         orgId,
+        isPlatformAdmin,
         authMethod: authUser ? 'supabase' : 'cookie',
         userId: authUser?.id || customUserId
       });
