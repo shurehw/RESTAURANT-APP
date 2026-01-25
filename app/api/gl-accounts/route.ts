@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
 import { cookies } from 'next/headers';
@@ -32,8 +32,12 @@ export async function GET() {
       );
     }
 
+    // Use admin client to bypass RLS for organization and GL queries
+    // This is necessary because custom auth users don't have auth.uid() set
+    const adminClient = createAdminClient();
+
     // Get user's organization
-    const { data: orgUsers, error: orgError } = await supabase
+    const { data: orgUsers, error: orgError } = await adminClient
       .from('organization_users')
       .select('organization_id')
       .eq('user_id', userId)
@@ -62,7 +66,8 @@ export async function GET() {
 
     // Fetch only COGS and Opex GL accounts (relevant for items/inventory)
     // Exclude Revenue, Assets, Liabilities, Equity, and other non-operational accounts
-    const { data: accounts, error } = await supabase
+    // Use admin client to bypass RLS (we've already verified user has access to this org)
+    const { data: accounts, error } = await adminClient
       .from('gl_accounts')
       .select('id, external_code, name, section, display_order')
       .eq('org_id', orgUser.organization_id)
