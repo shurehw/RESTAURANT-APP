@@ -294,20 +294,6 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                   100% { background-position: 200% 0; }
                 }
               `}</style>
-              {completed === files.length && files.length > 0 && (
-                <div className="flex gap-4 mt-2 text-sm">
-                  <span className="text-green-600 flex items-center gap-1">
-                    <CheckCircle className="w-4 h-4" />
-                    {successCount} succeeded
-                  </span>
-                  {errorCount > 0 && (
-                    <span className="text-red-600 flex items-center gap-1">
-                      <AlertCircle className="w-4 h-4" />
-                      {errorCount} failed
-                    </span>
-                  )}
-                </div>
-              )}
             </div>
           )}
 
