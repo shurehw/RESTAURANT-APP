@@ -71,10 +71,14 @@ export function VendorInvoiceList({ invoices }: VendorInvoiceListProps) {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Button variant="outline" size="sm" asChild>
+            <Button
+              variant={invoice.status === "draft" ? "brass" : "outline"}
+              size="sm"
+              asChild
+            >
               <Link href={`/invoices/${invoice.id}/review`}>
                 <Eye className="w-4 h-4 mr-2" />
-                View Invoice
+                {invoice.status === "draft" ? "Review & Map" : "View Invoice"}
               </Link>
             </Button>
             <InvoicePDFModal invoiceId={invoice.id} />
