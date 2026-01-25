@@ -76,8 +76,7 @@ export default async function InvoicesPage() {
         purchase_orders:purchase_order_id(order_number)
       `
       )
-      .order("created_at", { ascending: false })
-      .limit(50);
+      .order("created_at", { ascending: false });
     
     // Only filter by venue if not platform admin
     if (!isPlatformAdmin && venueIds.length > 0) {
