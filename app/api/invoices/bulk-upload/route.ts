@@ -112,9 +112,18 @@ export async function POST(request: NextRequest) {
 
         // Extract with OCR
         const isPDF = actualMimeType === 'application/pdf';
-        const { invoice: rawInvoice } = isPDF
+        const ocrResult = isPDF
           ? await extractInvoiceFromPDF(buffer)
           : await extractInvoiceWithClaude(buffer, actualMimeType);
+
+        // For bulk upload, we only process single invoices (multi-invoice PDFs not supported here)
+        const rawInvoice = ocrResult.invoice || (ocrResult.invoices ? ocrResult.invoices[0] : undefined);
+
+        if (!rawInvoice) {
+          result.error = 'OCR failed to extract invoice data';
+          results.push(result);
+          continue;
+        }
 
         const normalized = await normalizeOCR(rawInvoice, supabase);
 
