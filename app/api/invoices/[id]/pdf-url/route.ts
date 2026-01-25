@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
+import { cookies } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
@@ -9,13 +10,50 @@ export async function GET(
   return guard(async () => {
     const { id } = await params;
     const supabase = await createClient();
+    const cookieStore = await cookies();
 
     console.log('Fetching PDF for invoice:', id);
 
+    // Get user ID from cookie (custom auth) or Supabase session
+    let userId: string | null = null;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+    } else {
+      const userIdCookie = cookieStore.get('user_id');
+      userId = userIdCookie?.value || null;
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No active session' },
+        { status: 401 }
+      );
+    }
+
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
+    // Verify user has access to this invoice's organization
+    const { data: orgUsers } = await adminClient
+      .from('organization_users')
+      .select('organization_id')
+      .eq('user_id', userId)
+      .eq('is_active', true);
+
+    if (!orgUsers || orgUsers.length === 0) {
+      return NextResponse.json(
+        { error: 'User not associated with an organization' },
+        { status: 403 }
+      );
+    }
+
+    const userOrgIds = orgUsers.map(ou => ou.organization_id);
+
     // Fetch invoice to get storage path
-    const { data: invoice, error: invoiceError } = await supabase
+    const { data: invoice, error: invoiceError } = await adminClient
       .from('invoices')
-      .select('storage_path')
+      .select('storage_path, organization_id')
       .eq('id', id)
       .single();
 
@@ -30,6 +68,14 @@ export async function GET(
       );
     }
 
+    // Verify user has access to this invoice's organization
+    if (!invoice?.organization_id || !userOrgIds.includes(invoice.organization_id)) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      );
+    }
+
     if (!invoice?.storage_path) {
       console.log('No storage path found for invoice');
       return NextResponse.json(
@@ -40,8 +86,8 @@ export async function GET(
 
     console.log('Storage path:', invoice.storage_path);
 
-    // Get signed URL for the PDF
-    const { data: urlData, error: urlError } = await supabase
+    // Get signed URL for the PDF using admin client
+    const { data: urlData, error: urlError } = await adminClient
       .storage
       .from('opsos-invoices')
       .createSignedUrl(invoice.storage_path, 3600); // 1 hour expiry
