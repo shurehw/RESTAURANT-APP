@@ -2,7 +2,7 @@
  * OpsOS Vendors Page
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,7 +17,8 @@ import { Plus, Users, Phone, Mail } from "lucide-react";
 import Link from "next/link";
 
 export default async function VendorsPage() {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS (vendors are global, not org-specific)
+  const supabase = createAdminClient();
 
   const { data: vendors } = await supabase
     .from("vendors")
