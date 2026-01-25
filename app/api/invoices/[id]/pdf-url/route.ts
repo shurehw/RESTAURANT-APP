@@ -48,8 +48,17 @@ export async function GET(
 
     if (urlError) {
       console.error('Error creating signed URL:', urlError);
+      console.error('Storage path attempted:', invoice.storage_path);
+      console.error('Bucket:', 'opsos-invoices');
+
+      // Return more detailed error
       return NextResponse.json(
-        { error: 'Failed to access PDF', details: urlError.message },
+        {
+          error: 'Failed to access PDF',
+          details: urlError.message,
+          storagePath: invoice.storage_path,
+          bucket: 'opsos-invoices'
+        },
         { status: 500 }
       );
     }
