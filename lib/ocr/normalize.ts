@@ -98,7 +98,7 @@ function isJunkOCRLine(description: string, unitPrice: number, lineTotal: number
     /^CANNED\s+&\s+DRY$/i,
   ];
 
-  for (const pattern of junk patterns) {
+  for (const pattern of junkPatterns) {
     if (pattern.test(desc)) return true;
   }
 

@@ -123,7 +123,8 @@
       "Bash(then rm \".next/dev/lock\")",
       "Bash(else echo \"No lock file\")",
       "Bash(fi)",
-      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food - Split\" node_modules/.bin/tsx scripts/import-small-chunks.ts \"Delilah Dallas\")"
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food - Split\" node_modules/.bin/tsx scripts/import-small-chunks.ts \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR=\"/c/Users/JacobShure/OneDrive - Hwood Group/Finance - Delilah Dallas Finance - Temp Invoice Scans/Multiple Food Split\" node_modules/.bin/tsx scripts/import-small-chunks.ts \"Delilah Dallas\")"
     ],
     "deny": [],
     "ask": []
