@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
 import { cookies } from 'next/headers';
@@ -41,8 +41,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
     // Get user's organization
-    const { data: orgUsers } = await supabase
+    const { data: orgUsers } = await adminClient
       .from('organization_users')
       .select('organization_id')
       .eq('user_id', userId)
@@ -74,8 +77,8 @@ export async function POST(request: NextRequest) {
       desc.includes('labor') || desc.includes('wage') || desc.includes('salary'),
     ];
 
-    // Query GL accounts with keyword matching
-    const { data: suggestions, error } = await supabase
+    // Query GL accounts with keyword matching using admin client
+    const { data: suggestions, error } = await adminClient
       .from('gl_accounts')
       .select('id, external_code, name, section')
       .eq('org_id', orgUser.organization_id)

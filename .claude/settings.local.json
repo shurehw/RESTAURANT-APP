@@ -117,7 +117,12 @@
       "Bash(INVOICE_DIR='C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food' node_modules/.bin/tsx scripts/bulk-import-invoices.ts \"Delilah Dallas\")",
       "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food\" npx dotenv -e .env.local -- npx tsx scripts/bulk-import-invoices.ts \"Delilah Dallas\")",
       "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food\" node_modules/.bin/tsx scripts/bulk-import-invoices.ts \"Delilah Dallas\")",
-      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food - Small\" node_modules/.bin/tsx scripts/import-small-chunks.ts \"Delilah Dallas\")"
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food - Small\" node_modules/.bin/tsx scripts/import-small-chunks.ts \"Delilah Dallas\")",
+      "Bash(Select-String -Pattern \"invoice-lines|map|404|POST\" -Context 2)",
+      "Bash(if [ -f \".next/dev/lock\" ])",
+      "Bash(then rm \".next/dev/lock\")",
+      "Bash(else echo \"No lock file\")",
+      "Bash(fi)"
     ],
     "deny": [],
     "ask": []
