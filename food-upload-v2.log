@@ -17,3 +17,1085 @@
   📄 INVOICE 4_page_0001.pdf
   📄 INVOICE 4_page_0002.pdf
   📄 INVOICE 4_page_0003.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 2/47 (files 4-6):
+
+  📄 INVOICE 4_page_0004.pdf
+  📄 INVOICE 4_page_0005.pdf
+  📄 INVOICE 4_page_0006.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 3/47 (files 7-9):
+
+  📄 INVOICE 4_page_0007.pdf
+  📄 INVOICE 4_page_0008.pdf
+  📄 INVOICE 4_page_0009.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 4/47 (files 10-12):
+
+  📄 INVOICE 4_page_0010.pdf
+  📄 INVOICE 4_page_0011.pdf
+  📄 INVOICE 4_page_0012.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 5/47 (files 13-15):
+
+  📄 INVOICE 4_page_0013.pdf
+  📄 INVOICE 4_page_0014.pdf
+  📄 INVOICE 4_page_0015.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 6/47 (files 16-18):
+
+  📄 invoices 5_page_0001.pdf
+  📄 invoices 5_page_0002.pdf
+  📄 invoices 5_page_0003.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 7/47 (files 19-21):
+
+  📄 invoices 5_page_0004.pdf
+  📄 invoices 5_page_0005.pdf
+  📄 invoices 5_page_0006.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 8/47 (files 22-24):
+
+  📄 invoices 5_page_0007.pdf
+  📄 invoices 5_page_0008.pdf
+  📄 invoices 5_page_0009.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 9/47 (files 25-27):
+
+  📄 invoices 5_page_0010.pdf
+  📄 invoices 5_page_0011.pdf
+  📄 invoices 5_page_0012.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 10/47 (files 28-30):
+
+  📄 invoices 5_page_0013.pdf
+  📄 Invoices Kitchen (1)_page_0001.pdf
+  📄 Invoices Kitchen (1)_page_0002.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 11/47 (files 31-33):
+
+  📄 Invoices Kitchen (1)_page_0003.pdf
+  📄 Invoices Kitchen (1)_page_0004.pdf
+  📄 Invoices Kitchen (1)_page_0005.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 12/47 (files 34-36):
+
+  📄 Invoices Kitchen (1)_page_0006.pdf
+  📄 Invoices Kitchen (1)_page_0007.pdf
+  📄 Invoices Kitchen (2)_page_0001.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 13/47 (files 37-39):
+
+  📄 Invoices Kitchen (2)_page_0002.pdf
+  📄 Invoices Kitchen (2)_page_0003.pdf
+  📄 Invoices Kitchen (2)_page_0004.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 14/47 (files 40-42):
+
+  📄 Invoices Kitchen (2)_page_0005.pdf
+  📄 Invoices Kitchen (2)_page_0006.pdf
+  📄 Invoices Kitchen (2)_page_0007.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 15/47 (files 43-45):
+
+  📄 Invoices Kitchen (2)_page_0008.pdf
+  📄 Invoices Kitchen (2)_page_0009.pdf
+  📄 Invoices Kitchen (2)_page_0010.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 16/47 (files 46-48):
+
+  📄 Invoices Kitchen (2)_page_0011.pdf
+  📄 Invoices Kitchen (2)_page_0012.pdf
+  📄 Invoices Kitchen (2)_page_0013.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 17/47 (files 49-51):
+
+  📄 Invoices Kitchen (2)_page_0014.pdf
+  📄 Invoices Kitchen_page_0001.pdf
+  📄 Invoices Kitchen_page_0002.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 18/47 (files 52-54):
+
+  📄 Invoices Kitchen_page_0003.pdf
+  📄 Invoices Kitchen_page_0004.pdf
+  📄 Invoices Kitchen_page_0005.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 19/47 (files 55-57):
+
+  📄 Invoices Kitchen_page_0006.pdf
+  📄 Invoices Kitchen_page_0007.pdf
+  📄 Invoices Kitchen_page_0008.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 20/47 (files 58-60):
+
+  📄 Invoices Kitchen_page_0009.pdf
+  📄 Invoices Kitchen_page_0010.pdf
+  📄 Invoices Kitchen_page_0011.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 21/47 (files 61-63):
+
+  📄 Invoics Kitchen_page_0001.pdf
+  📄 Invoics Kitchen_page_0002.pdf
+  📄 Invoics Kitchen_page_0003.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 22/47 (files 64-66):
+
+  📄 Invoics Kitchen_page_0004.pdf
+  📄 Invoics Kitchen_page_0005.pdf
+  📄 Invoics Kitchen_page_0006.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 23/47 (files 67-69):
+
+  📄 Invoics Kitchen_page_0007.pdf
+  📄 Invoics Kitchen_page_0008.pdf
+  📄 Invoics Kitchen_page_0009.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 24/47 (files 70-72):
+
+  📄 Invoics Kitchen_page_0010.pdf
+  📄 Invoics Kitchen_page_0011.pdf
+  📄 Invoics Kitchen_page_0012.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 25/47 (files 73-75):
+
+  📄 Invoics Kitchen_page_0013.pdf
+  📄 Invoics Kitchen_page_0014.pdf
+  📄 Invoics Kitchen_page_0015.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 26/47 (files 76-78):
+
+  📄 Invoics Kitchen_page_0016.pdf
+  📄 Invoics Kitchen_page_0017.pdf
+  📄 Invoics Kitchen_page_0018.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 27/47 (files 79-81):
+
+  📄 Invoics Kitchen_page_0019.pdf
+  📄 Invoics Kitchen_page_0020.pdf
+  📄 Invoics Kitchen_page_0021.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 28/47 (files 82-84):
+
+  📄 Invoics Kitchen_page_0022.pdf
+  📄 Invoics Kitchen_page_0023.pdf
+  📄 Invoics Kitchen_page_0024.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 29/47 (files 85-87):
+
+  📄 Kitchen Invoices 3_page_0001.pdf
+  📄 Kitchen Invoices 3_page_0002.pdf
+  📄 Kitchen Invoices 3_page_0003.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 30/47 (files 88-90):
+
+  📄 Kitchen Invoices 3_page_0004.pdf
+  📄 Kitchen Invoices 3_page_0005.pdf
+  📄 Kitchen Invoices 3_page_0006.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 31/47 (files 91-93):
+
+  📄 Kitchen Invoices 3_page_0007.pdf
+  📄 Kitchen Invoices 3_page_0008.pdf
+  📄 Kitchen Invoices 3_page_0009.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 32/47 (files 94-96):
+
+  📄 Kitchen Invoices 3_page_0010.pdf
+  📄 Kitchen Invoices 3_page_0011.pdf
+  📄 Kitchen Invoices 3_page_0012.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 33/47 (files 97-99):
+
+  📄 Kitchen Invoices 3_page_0013.pdf
+  📄 Kitchen Invoices 6_page_0001.pdf
+  📄 Kitchen Invoices 6_page_0002.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 34/47 (files 100-102):
+
+  📄 Kitchen Invoices 6_page_0003.pdf
+  📄 Kitchen Invoices 6_page_0004.pdf
+  📄 Kitchen Invoices 6_page_0005.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 35/47 (files 103-105):
+
+  📄 Kitchen Invoices 6_page_0006.pdf
+  📄 Kitchen Invoices 6_page_0007.pdf
+  📄 Kitchen Invoices 6_page_0008.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 36/47 (files 106-108):
+
+  📄 Kitchen Invoices 6_page_0009.pdf
+  📄 Kitchen Invoices 6_page_0010.pdf
+  📄 Kitchen Invoices 6_page_0011.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 37/47 (files 109-111):
+
+  📄 Kitchen Invoices 6_page_0012.pdf
+  📄 Kitchen Invoices 6_page_0013.pdf
+  📄 Kitchen Invoices 6_page_0014.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 38/47 (files 112-114):
+
+  📄 Kitchen Invoices 6_page_0015.pdf
+  📄 Kitchen Invoices 7_page_0001.pdf
+  📄 Kitchen Invoices 7_page_0002.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 39/47 (files 115-117):
+
+  📄 Kitchen Invoices 7_page_0003.pdf
+  📄 Kitchen Invoices 7_page_0004.pdf
+  📄 Kitchen Invoices 7_page_0005.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 40/47 (files 118-120):
+
+  📄 Kitchen Invoices 7_page_0006.pdf
+  📄 Kitchen Invoices 7_page_0007.pdf
+  📄 Kitchen Invoices 7_page_0008.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 41/47 (files 121-123):
+
+  📄 Kitchen Invoices 8_page_0001.pdf
+  📄 Kitchen Invoices 8_page_0002.pdf
+  📄 Kitchen Invoices 8_page_0003.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 42/47 (files 124-126):
+
+  📄 Kitchen Invoices 8_page_0004.pdf
+  📄 Kitchen Invoices 8_page_0005.pdf
+  📄 Kitchen Invoices 8_page_0006.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 43/47 (files 127-129):
+
+  📄 Kitchen Invoices 8_page_0007.pdf
+  📄 Kitchen Invoices 8_page_0008.pdf
+  📄 Kitchen Invoices 8_page_0009.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 44/47 (files 130-132):
+
+  📄 Kitchen Invoices 8_page_0010.pdf
+  📄 Kitchen Invoices 9_page_0001.pdf
+  📄 Kitchen Invoices 9_page_0002.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 45/47 (files 133-135):
+
+  📄 Kitchen Invoices 9_page_0003.pdf
+  📄 Kitchen Invoices 9_page_0004.pdf
+  📄 Kitchen Invoices 9_page_0005.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 46/47 (files 136-138):
+
+  📄 Kitchen Invoices 9_page_0006.pdf
+  📄 Kitchen Invoices 9_page_0007.pdf
+  📄 Kitchen Invoices 9_page_0008.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/3 successful
+  Overall: 0/140 complete (0.0%)
+
+  ⏳ Waiting 3s before next batch...
+
+📦 Batch 47/47 (files 139-140):
+
+  📄 Kitchen Invoices 9_page_0009.pdf
+  📄 Kitchen Invoices 9_page_0010.pdf
+     ❌ Error: fetch failed
+     ❌ Error: fetch failed
+
+  Batch complete: 0/2 successful
+  Overall: 0/140 complete (0.0%)
+
+
+════════════════════════════════════════════════════════════
+
+📊 FINAL RESULTS:
+
+Total processed: 140
+✅ Successful: 0 (0.0%)
+❌ Failed: 140 (100.0%)
+
+⚠️  FAILED FILES:
+
+1. INVOICE 4_page_0001.pdf
+   Error: TypeError: fetch failed
+
+2. INVOICE 4_page_0002.pdf
+   Error: TypeError: fetch failed
+
+3. INVOICE 4_page_0003.pdf
+   Error: TypeError: fetch failed
+
+4. INVOICE 4_page_0004.pdf
+   Error: TypeError: fetch failed
+
+5. INVOICE 4_page_0005.pdf
+   Error: TypeError: fetch failed
+
+6. INVOICE 4_page_0006.pdf
+   Error: TypeError: fetch failed
+
+7. INVOICE 4_page_0007.pdf
+   Error: TypeError: fetch failed
+
+8. INVOICE 4_page_0008.pdf
+   Error: TypeError: fetch failed
+
+9. INVOICE 4_page_0009.pdf
+   Error: TypeError: fetch failed
+
+10. INVOICE 4_page_0010.pdf
+   Error: TypeError: fetch failed
+
+11. INVOICE 4_page_0011.pdf
+   Error: TypeError: fetch failed
+
+12. INVOICE 4_page_0012.pdf
+   Error: TypeError: fetch failed
+
+13. INVOICE 4_page_0013.pdf
+   Error: TypeError: fetch failed
+
+14. INVOICE 4_page_0014.pdf
+   Error: TypeError: fetch failed
+
+15. INVOICE 4_page_0015.pdf
+   Error: TypeError: fetch failed
+
+16. invoices 5_page_0001.pdf
+   Error: TypeError: fetch failed
+
+17. invoices 5_page_0002.pdf
+   Error: TypeError: fetch failed
+
+18. invoices 5_page_0003.pdf
+   Error: TypeError: fetch failed
+
+19. invoices 5_page_0004.pdf
+   Error: TypeError: fetch failed
+
+20. invoices 5_page_0005.pdf
+   Error: TypeError: fetch failed
+
+21. invoices 5_page_0006.pdf
+   Error: TypeError: fetch failed
+
+22. invoices 5_page_0007.pdf
+   Error: TypeError: fetch failed
+
+23. invoices 5_page_0008.pdf
+   Error: TypeError: fetch failed
+
+24. invoices 5_page_0009.pdf
+   Error: TypeError: fetch failed
+
+25. invoices 5_page_0010.pdf
+   Error: TypeError: fetch failed
+
+26. invoices 5_page_0011.pdf
+   Error: TypeError: fetch failed
+
+27. invoices 5_page_0012.pdf
+   Error: TypeError: fetch failed
+
+28. invoices 5_page_0013.pdf
+   Error: TypeError: fetch failed
+
+29. Invoices Kitchen (1)_page_0001.pdf
+   Error: TypeError: fetch failed
+
+30. Invoices Kitchen (1)_page_0002.pdf
+   Error: TypeError: fetch failed
+
+31. Invoices Kitchen (1)_page_0003.pdf
+   Error: TypeError: fetch failed
+
+32. Invoices Kitchen (1)_page_0004.pdf
+   Error: TypeError: fetch failed
+
+33. Invoices Kitchen (1)_page_0005.pdf
+   Error: TypeError: fetch failed
+
+34. Invoices Kitchen (1)_page_0006.pdf
+   Error: TypeError: fetch failed
+
+35. Invoices Kitchen (1)_page_0007.pdf
+   Error: TypeError: fetch failed
+
+36. Invoices Kitchen (2)_page_0001.pdf
+   Error: TypeError: fetch failed
+
+37. Invoices Kitchen (2)_page_0002.pdf
+   Error: TypeError: fetch failed
+
+38. Invoices Kitchen (2)_page_0003.pdf
+   Error: TypeError: fetch failed
+
+39. Invoices Kitchen (2)_page_0004.pdf
+   Error: TypeError: fetch failed
+
+40. Invoices Kitchen (2)_page_0005.pdf
+   Error: TypeError: fetch failed
+
+41. Invoices Kitchen (2)_page_0006.pdf
+   Error: TypeError: fetch failed
+
+42. Invoices Kitchen (2)_page_0007.pdf
+   Error: TypeError: fetch failed
+
+43. Invoices Kitchen (2)_page_0008.pdf
+   Error: TypeError: fetch failed
+
+44. Invoices Kitchen (2)_page_0009.pdf
+   Error: TypeError: fetch failed
+
+45. Invoices Kitchen (2)_page_0010.pdf
+   Error: TypeError: fetch failed
+
+46. Invoices Kitchen (2)_page_0011.pdf
+   Error: TypeError: fetch failed
+
+47. Invoices Kitchen (2)_page_0012.pdf
+   Error: TypeError: fetch failed
+
+48. Invoices Kitchen (2)_page_0013.pdf
+   Error: TypeError: fetch failed
+
+49. Invoices Kitchen (2)_page_0014.pdf
+   Error: TypeError: fetch failed
+
+50. Invoices Kitchen_page_0001.pdf
+   Error: TypeError: fetch failed
+
+51. Invoices Kitchen_page_0002.pdf
+   Error: TypeError: fetch failed
+
+52. Invoices Kitchen_page_0003.pdf
+   Error: TypeError: fetch failed
+
+53. Invoices Kitchen_page_0004.pdf
+   Error: TypeError: fetch failed
+
+54. Invoices Kitchen_page_0005.pdf
+   Error: TypeError: fetch failed
+
+55. Invoices Kitchen_page_0006.pdf
+   Error: TypeError: fetch failed
+
+56. Invoices Kitchen_page_0007.pdf
+   Error: TypeError: fetch failed
+
+57. Invoices Kitchen_page_0008.pdf
+   Error: TypeError: fetch failed
+
+58. Invoices Kitchen_page_0009.pdf
+   Error: TypeError: fetch failed
+
+59. Invoices Kitchen_page_0010.pdf
+   Error: TypeError: fetch failed
+
+60. Invoices Kitchen_page_0011.pdf
+   Error: TypeError: fetch failed
+
+61. Invoics Kitchen_page_0001.pdf
+   Error: TypeError: fetch failed
+
+62. Invoics Kitchen_page_0002.pdf
+   Error: TypeError: fetch failed
+
+63. Invoics Kitchen_page_0003.pdf
+   Error: TypeError: fetch failed
+
+64. Invoics Kitchen_page_0004.pdf
+   Error: TypeError: fetch failed
+
+65. Invoics Kitchen_page_0005.pdf
+   Error: TypeError: fetch failed
+
+66. Invoics Kitchen_page_0006.pdf
+   Error: TypeError: fetch failed
+
+67. Invoics Kitchen_page_0007.pdf
+   Error: TypeError: fetch failed
+
+68. Invoics Kitchen_page_0008.pdf
+   Error: TypeError: fetch failed
+
+69. Invoics Kitchen_page_0009.pdf
+   Error: TypeError: fetch failed
+
+70. Invoics Kitchen_page_0010.pdf
+   Error: TypeError: fetch failed
+
+71. Invoics Kitchen_page_0011.pdf
+   Error: TypeError: fetch failed
+
+72. Invoics Kitchen_page_0012.pdf
+   Error: TypeError: fetch failed
+
+73. Invoics Kitchen_page_0013.pdf
+   Error: TypeError: fetch failed
+
+74. Invoics Kitchen_page_0014.pdf
+   Error: TypeError: fetch failed
+
+75. Invoics Kitchen_page_0015.pdf
+   Error: TypeError: fetch failed
+
+76. Invoics Kitchen_page_0016.pdf
+   Error: TypeError: fetch failed
+
+77. Invoics Kitchen_page_0017.pdf
+   Error: TypeError: fetch failed
+
+78. Invoics Kitchen_page_0018.pdf
+   Error: TypeError: fetch failed
+
+79. Invoics Kitchen_page_0019.pdf
+   Error: TypeError: fetch failed
+
+80. Invoics Kitchen_page_0020.pdf
+   Error: TypeError: fetch failed
+
+81. Invoics Kitchen_page_0021.pdf
+   Error: TypeError: fetch failed
+
+82. Invoics Kitchen_page_0022.pdf
+   Error: TypeError: fetch failed
+
+83. Invoics Kitchen_page_0023.pdf
+   Error: TypeError: fetch failed
+
+84. Invoics Kitchen_page_0024.pdf
+   Error: TypeError: fetch failed
+
+85. Kitchen Invoices 3_page_0001.pdf
+   Error: TypeError: fetch failed
+
+86. Kitchen Invoices 3_page_0002.pdf
+   Error: TypeError: fetch failed
+
+87. Kitchen Invoices 3_page_0003.pdf
+   Error: TypeError: fetch failed
+
+88. Kitchen Invoices 3_page_0004.pdf
+   Error: TypeError: fetch failed
+
+89. Kitchen Invoices 3_page_0005.pdf
+   Error: TypeError: fetch failed
+
+90. Kitchen Invoices 3_page_0006.pdf
+   Error: TypeError: fetch failed
+
+91. Kitchen Invoices 3_page_0007.pdf
+   Error: TypeError: fetch failed
+
+92. Kitchen Invoices 3_page_0008.pdf
+   Error: TypeError: fetch failed
+
+93. Kitchen Invoices 3_page_0009.pdf
+   Error: TypeError: fetch failed
+
+94. Kitchen Invoices 3_page_0010.pdf
+   Error: TypeError: fetch failed
+
+95. Kitchen Invoices 3_page_0011.pdf
+   Error: TypeError: fetch failed
+
+96. Kitchen Invoices 3_page_0012.pdf
+   Error: TypeError: fetch failed
+
+97. Kitchen Invoices 3_page_0013.pdf
+   Error: TypeError: fetch failed
+
+98. Kitchen Invoices 6_page_0001.pdf
+   Error: TypeError: fetch failed
+
+99. Kitchen Invoices 6_page_0002.pdf
+   Error: TypeError: fetch failed
+
+100. Kitchen Invoices 6_page_0003.pdf
+   Error: TypeError: fetch failed
+
+101. Kitchen Invoices 6_page_0004.pdf
+   Error: TypeError: fetch failed
+
+102. Kitchen Invoices 6_page_0005.pdf
+   Error: TypeError: fetch failed
+
+103. Kitchen Invoices 6_page_0006.pdf
+   Error: TypeError: fetch failed
+
+104. Kitchen Invoices 6_page_0007.pdf
+   Error: TypeError: fetch failed
+
+105. Kitchen Invoices 6_page_0008.pdf
+   Error: TypeError: fetch failed
+
+106. Kitchen Invoices 6_page_0009.pdf
+   Error: TypeError: fetch failed
+
+107. Kitchen Invoices 6_page_0010.pdf
+   Error: TypeError: fetch failed
+
+108. Kitchen Invoices 6_page_0011.pdf
+   Error: TypeError: fetch failed
+
+109. Kitchen Invoices 6_page_0012.pdf
+   Error: TypeError: fetch failed
+
+110. Kitchen Invoices 6_page_0013.pdf
+   Error: TypeError: fetch failed
+
+111. Kitchen Invoices 6_page_0014.pdf
+   Error: TypeError: fetch failed
+
+112. Kitchen Invoices 6_page_0015.pdf
+   Error: TypeError: fetch failed
+
+113. Kitchen Invoices 7_page_0001.pdf
+   Error: TypeError: fetch failed
+
+114. Kitchen Invoices 7_page_0002.pdf
+   Error: TypeError: fetch failed
+
+115. Kitchen Invoices 7_page_0003.pdf
+   Error: TypeError: fetch failed
+
+116. Kitchen Invoices 7_page_0004.pdf
+   Error: TypeError: fetch failed
+
+117. Kitchen Invoices 7_page_0005.pdf
+   Error: TypeError: fetch failed
+
+118. Kitchen Invoices 7_page_0006.pdf
+   Error: TypeError: fetch failed
+
+119. Kitchen Invoices 7_page_0007.pdf
+   Error: TypeError: fetch failed
+
+120. Kitchen Invoices 7_page_0008.pdf
+   Error: TypeError: fetch failed
+
+121. Kitchen Invoices 8_page_0001.pdf
+   Error: TypeError: fetch failed
+
+122. Kitchen Invoices 8_page_0002.pdf
+   Error: TypeError: fetch failed
+
+123. Kitchen Invoices 8_page_0003.pdf
+   Error: TypeError: fetch failed
+
+124. Kitchen Invoices 8_page_0004.pdf
+   Error: TypeError: fetch failed
+
+125. Kitchen Invoices 8_page_0005.pdf
+   Error: TypeError: fetch failed
+
+126. Kitchen Invoices 8_page_0006.pdf
+   Error: TypeError: fetch failed
+
+127. Kitchen Invoices 8_page_0007.pdf
+   Error: TypeError: fetch failed
+
+128. Kitchen Invoices 8_page_0008.pdf
+   Error: TypeError: fetch failed
+
+129. Kitchen Invoices 8_page_0009.pdf
+   Error: TypeError: fetch failed
+
+130. Kitchen Invoices 8_page_0010.pdf
+   Error: TypeError: fetch failed
+
+131. Kitchen Invoices 9_page_0001.pdf
+   Error: TypeError: fetch failed
+
+132. Kitchen Invoices 9_page_0002.pdf
+   Error: TypeError: fetch failed
+
+133. Kitchen Invoices 9_page_0003.pdf
+   Error: TypeError: fetch failed
+
+134. Kitchen Invoices 9_page_0004.pdf
+   Error: TypeError: fetch failed
+
+135. Kitchen Invoices 9_page_0005.pdf
+   Error: TypeError: fetch failed
+
+136. Kitchen Invoices 9_page_0006.pdf
+   Error: TypeError: fetch failed
+
+137. Kitchen Invoices 9_page_0007.pdf
+   Error: TypeError: fetch failed
+
+138. Kitchen Invoices 9_page_0008.pdf
+   Error: TypeError: fetch failed
+
+139. Kitchen Invoices 9_page_0009.pdf
+   Error: TypeError: fetch failed
+
+140. Kitchen Invoices 9_page_0010.pdf
+   Error: TypeError: fetch failed
+
+✅ Results saved to: food-upload-results.json
+
