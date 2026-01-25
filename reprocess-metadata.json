@@ -1,0 +1,1306 @@
+{
+  "total_invoices": 144,
+  "total_missing_value": 1846145.0899999994,
+  "deleted_line_items": 0,
+  "critical_count": 49,
+  "high_count": 55,
+  "medium_count": 40,
+  "invoices": [
+    {
+      "id": "c679f502-a83e-433d-9d5c-61fc030eb17a",
+      "invoice_number": "NE 07",
+      "vendor": "UNKNOWN",
+      "date": "2028-07-01",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310682887-New6_page6.pdf"
+    },
+    {
+      "id": "191090af-b700-491c-9f00-03862bd30832",
+      "invoice_number": "469949.1171",
+      "vendor": "MARONI",
+      "date": "2026-07-22",
+      "invoice_total": 300.25,
+      "missing_value": 300.25,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310235041-New4_page9.pdf"
+    },
+    {
+      "id": "2d47733d-38cb-4eb1-b812-dcbd23459095",
+      "invoice_number": "LC#10000013G",
+      "vendor": "MARION",
+      "date": "2026-07-20",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310690486-New6_page7.pdf"
+    },
+    {
+      "id": "247afc61-0fd3-463f-a4a6-8e6910511f59",
+      "invoice_number": "402454834",
+      "vendor": "OAK FARMS-DALLAS DFA DAIRY BRANDS",
+      "date": "2026-01-29",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307482664-New1_page4.pdf"
+    },
+    {
+      "id": "a977ebef-338d-4248-84a7-a65510dd8252",
+      "invoice_number": "05957",
+      "vendor": "RARE FOODS",
+      "date": "2026-01-23",
+      "invoice_total": 210.92,
+      "missing_value": 210.92,
+      "storage_path": "uploads/1769306996525-Kitchen Invoices 9_pg8-8.pdf"
+    },
+    {
+      "id": "d79b6ce9-7f22-4a36-b1e1-5ac4e4ac93e2",
+      "invoice_number": "70998415",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-23",
+      "invoice_total": 97.51,
+      "missing_value": 97.51,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310244595-New5_page1.pdf"
+    },
+    {
+      "id": "498d6181-7300-4b38-9ef0-246d8d7ff1e1",
+      "invoice_number": "70990569",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-23",
+      "invoice_total": 831.2,
+      "missing_value": 831.2,
+      "storage_path": "uploads/1769304506777-Kitchen Invoices 9_pg6-6.pdf"
+    },
+    {
+      "id": "4eb250e6-12d0-4be3-9efe-c95ac593715d",
+      "invoice_number": "70990569",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-23",
+      "invoice_total": 831.2,
+      "missing_value": 831.2,
+      "storage_path": "uploads/1769306947441-Kitchen Invoices 9_pg5-5.pdf"
+    },
+    {
+      "id": "8d60cba5-a6f9-4115-baaf-da83049598b8",
+      "invoice_number": "70998415",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-23",
+      "invoice_total": 97.51,
+      "missing_value": 97.51,
+      "storage_path": "uploads/1769306974369-Kitchen Invoices 9_pg7-7.pdf"
+    },
+    {
+      "id": "cdf04277-f372-4295-b45f-a3bb2a3676c6",
+      "invoice_number": "01534401",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-22",
+      "invoice_total": 175,
+      "missing_value": 175,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769309773710-New4_page12.pdf"
+    },
+    {
+      "id": "83a41872-5f75-4260-a74f-284508ab47b8",
+      "invoice_number": "01534315",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-22",
+      "invoice_total": 279,
+      "missing_value": 279,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306209016-Kitchen Invoices 8_pg4-4.pdf"
+    },
+    {
+      "id": "92a60f34-3f04-489b-b1c9-d59d12315094",
+      "invoice_number": "05919",
+      "vendor": "RARE FOODS",
+      "date": "2026-01-21",
+      "invoice_total": 114.45,
+      "missing_value": 114.45,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306198354-Kitchen Invoices 7_pg1-1.pdf"
+    },
+    {
+      "id": "745b9e0b-b8be-41b5-b003-498f25846c27",
+      "invoice_number": "70967410",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-21",
+      "invoice_total": 60,
+      "missing_value": 60,
+      "storage_path": "uploads/1769306613973-Kitchen Invoices 7_pg2-2.pdf"
+    },
+    {
+      "id": "efebad81-7325-4a45-b729-4028ccb1b3b9",
+      "invoice_number": "70967410",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-21",
+      "invoice_total": 60,
+      "missing_value": 60,
+      "storage_path": "uploads/1769304142809-Kitchen Invoices 7_pg2-2.pdf"
+    },
+    {
+      "id": "415cadd5-5f9f-4cd0-ab8c-a551a9e12c0a",
+      "invoice_number": "187926",
+      "vendor": "Texas Steakhouse Steaks",
+      "date": "2026-01-20",
+      "invoice_total": 1963.63,
+      "missing_value": 1963.63,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310388085-New5_page9.pdf"
+    },
+    {
+      "id": "c018af9f-4739-4ff0-814c-7fea78a82616",
+      "invoice_number": "70939675",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-20",
+      "invoice_total": 2851.04,
+      "missing_value": 2851.04,
+      "storage_path": "uploads/1769303969752-Kitchen Invoices 6_pg13-13.pdf"
+    },
+    {
+      "id": "6bf7a075-63b3-4c42-89f7-24a266f5b4ad",
+      "invoice_number": "187926",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-20",
+      "invoice_total": 1963.63,
+      "missing_value": 1963.63,
+      "storage_path": "uploads/1769303998314-Kitchen Invoices 6_pg14-14.pdf"
+    },
+    {
+      "id": "ca520482-9be5-4027-ac32-af265bd69fc8",
+      "invoice_number": "26-759590",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2026-01-16",
+      "invoice_total": 387.45,
+      "missing_value": 387.45,
+      "storage_path": "uploads/1769302134542-invoices 5_pg3-3.pdf"
+    },
+    {
+      "id": "81648e3d-2f65-43c3-b5ed-96b55590c20f",
+      "invoice_number": "5679687",
+      "vendor": "Delilah Dallas LLC",
+      "date": "2026-01-15",
+      "invoice_total": 257.34,
+      "missing_value": 257.34,
+      "storage_path": "uploads/1769302005574-INVOICE 4_pg7-7.pdf"
+    },
+    {
+      "id": "ad96aaae-042d-47c7-b7cf-573cd21898bb",
+      "invoice_number": "186469",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-14",
+      "invoice_total": 854.05,
+      "missing_value": 854.05,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310497728-New6_page15.pdf"
+    },
+    {
+      "id": "7c871208-880d-4576-ab32-a051964735d6",
+      "invoice_number": "00257464",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-13",
+      "invoice_total": null,
+      "missing_value": 0,
+      "storage_path": "uploads/1769303818052-Kitchen Invoices 3_pg2-2.pdf"
+    },
+    {
+      "id": "71249697-9d7c-4cc3-ad5d-99a2e77a38e7",
+      "invoice_number": "186269",
+      "vendor": "TEXAS THE GREAT STEAKHOUSE STEAKS",
+      "date": "2026-01-13",
+      "invoice_total": 2320.15,
+      "missing_value": 2320.15,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311080509-New8_page1.pdf"
+    },
+    {
+      "id": "b81728f3-4633-47e6-a6c3-a3e44dd2e7c7",
+      "invoice_number": "INV607063",
+      "vendor": "FARM to TABLE",
+      "date": "2026-01-13",
+      "invoice_total": 208,
+      "missing_value": 208,
+      "storage_path": "uploads/1769306315779-Kitchen Invoices 3_pg4-4.pdf"
+    },
+    {
+      "id": "f6a36f03-2bb8-4c19-869a-af79d4335155",
+      "invoice_number": "136259",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-13",
+      "invoice_total": 2320.15,
+      "missing_value": 2320.15,
+      "storage_path": "uploads/1769303860339-Kitchen Invoices 3_pg6-6.pdf"
+    },
+    {
+      "id": "446ed704-8ced-4f68-9cb4-46f49c4f405a",
+      "invoice_number": "70833430",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-09",
+      "invoice_total": 62.79,
+      "missing_value": 62.79,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306449548-Invoics Kitchen_pg21-21.pdf"
+    },
+    {
+      "id": "111e8ea2-cff1-49de-bee7-5ab38de23041",
+      "invoice_number": "05742",
+      "vendor": "RARE FOODS",
+      "date": "2026-01-09",
+      "invoice_total": 82.72,
+      "missing_value": 82.72,
+      "storage_path": "uploads/1769305395290-Invoices Kitchen (1)_pg3-3.pdf"
+    },
+    {
+      "id": "2213d9f9-0995-47e9-9656-9ec053dc05e5",
+      "invoice_number": "70823749",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-09",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "uploads/1769302792603-Invoices Kitchen_pg1-1.pdf"
+    },
+    {
+      "id": "c348d152-0850-4fd8-bb6f-24147bdb07d2",
+      "invoice_number": "70833430",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-09",
+      "invoice_total": 62.79,
+      "missing_value": 62.79,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306146011-Invoics Kitchen_pg21-21.pdf"
+    },
+    {
+      "id": "eaa3a2a7-ae3d-4166-bd7c-c637a281a7aa",
+      "invoice_number": "185306",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-08",
+      "invoice_total": 972.97,
+      "missing_value": 972.97,
+      "storage_path": "uploads/1769303469360-Invoics Kitchen_pg17-17.pdf"
+    },
+    {
+      "id": "dd60047d-6632-42da-a88e-ea213de1db38",
+      "invoice_number": "971156",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-07",
+      "invoice_total": 18.47,
+      "missing_value": 18.47,
+      "storage_path": "uploads/1769303194146-Invoices Kitchen (2)_pg14-14.pdf"
+    },
+    {
+      "id": "29ec9571-c100-4a50-a873-058bdd49f785",
+      "invoice_number": "06786764",
+      "vendor": "Dairyland Produce",
+      "date": " LLC (dba Hardie's Fresh Foods)",
+      "invoice_total": 2026,
+      "missing_value": 30,
+      "storage_path": "30"
+    },
+    {
+      "id": "09a0c70a-9218-4f9a-ad1c-1a2b3647dc64",
+      "invoice_number": "55050540",
+      "vendor": "MARKOL",
+      "date": "2026-01-06",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "uploads/1769303745585-INVOICE 4_pg3-3.pdf"
+    },
+    {
+      "id": "88727532-454f-4854-bec3-bfd83b2a8180",
+      "invoice_number": "06785216",
+      "vendor": "Dairyland Produce",
+      "date": " LLC",
+      "invoice_total": 2026,
+      "missing_value": 154,
+      "storage_path": "154"
+    },
+    {
+      "id": "708030cc-32cd-4a80-a5d8-3281107cd2c7",
+      "invoice_number": "70761327",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-05",
+      "invoice_total": 2533.42,
+      "missing_value": 2533.42,
+      "storage_path": "uploads/1769303678226-Invoics Kitchen_pg7-7.pdf"
+    },
+    {
+      "id": "235818ae-4f62-4494-aa16-bdf6bb15ed73",
+      "invoice_number": "10000005136",
+      "vendor": "UNKNOWN",
+      "date": "2025-05-26",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310657179-New6_page4.pdf"
+    },
+    {
+      "id": "90fc5410-ab17-4fe7-a3a2-44b8967ae68e",
+      "invoice_number": "M0000005436",
+      "vendor": "Maroon",
+      "date": "2025-02-18",
+      "invoice_total": 26.38,
+      "missing_value": 26.38,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310667656-New6_page5.pdf"
+    },
+    {
+      "id": "04166a17-219a-49af-98c2-3e35c8fa28f5",
+      "invoice_number": "01324051",
+      "vendor": "Chef's Produce",
+      "date": "2024-12-26",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "uploads/1769306778184-Kitchen Invoices 8_pg5-5.pdf"
+    },
+    {
+      "id": "82a6cc73-58f9-4d20-abfb-4db13f6f9531",
+      "invoice_number": "4659491771",
+      "vendor": "Mariani",
+      "date": "2024-11-22",
+      "invoice_total": 435,
+      "missing_value": 435,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311007781-New7_page5.pdf"
+    },
+    {
+      "id": "e9f4b106-f6a4-4be2-bd10-a1690f2f77d7",
+      "invoice_number": "44806C31",
+      "vendor": "MARION",
+      "date": "2024-07-09",
+      "invoice_total": 624,
+      "missing_value": 624,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310958524-New7_page3.pdf"
+    },
+    {
+      "id": "942b59f6-2feb-4a84-af73-78cbd03f289b",
+      "invoice_number": "5670540",
+      "vendor": "Delilah Dallas LLC",
+      "date": "2024-01-15",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "uploads/1769304902589-INVOICE 4_pg3-3.pdf"
+    },
+    {
+      "id": "91f32c83-4c45-4280-b818-9f4533a687f5",
+      "invoice_number": "998-9999 9999",
+      "vendor": "SYSCO North Texas",
+      "date": "2023-07-05",
+      "invoice_total": 1416.77,
+      "missing_value": 1416.77,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307533673-New1_page7.pdf"
+    },
+    {
+      "id": "67d7bad5-9aa8-4036-87d0-c47666a5cbea",
+      "invoice_number": "LCF-1000000368",
+      "vendor": "BILL TO Customer",
+      "date": "2022-07-26",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310224345-New4_page8.pdf"
+    },
+    {
+      "id": "56cd298b-21be-4e12-830b-50798894b6ec",
+      "invoice_number": "5580251",
+      "vendor": "Delilah Dallas LLC",
+      "date": "2022-01-22",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "uploads/1769304364850-Kitchen Invoices 8_pg8-8.pdf"
+    },
+    {
+      "id": "8efbf3d5-94f8-4557-9488-65dcb16c0a31",
+      "invoice_number": "C26601",
+      "vendor": "MARKON",
+      "date": "2020-11-19",
+      "invoice_total": 33946,
+      "missing_value": 33946,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310808614-New7_page13.pdf"
+    },
+    {
+      "id": "46a12e9d-73a1-4063-b8d1-2c0c7a3da006",
+      "invoice_number": "M4853",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2017-07-20",
+      "invoice_total": 21.6,
+      "missing_value": 21.6,
+      "storage_path": "uploads/1769303063797-Invoices Kitchen (1)_pg7-7.pdf"
+    },
+    {
+      "id": "4f1f8ab9-8be8-4d2b-8ce8-2e14c5cc9053",
+      "invoice_number": "5603540",
+      "vendor": "MARKOL",
+      "date": "2017-06-26",
+      "invoice_total": 469949.17,
+      "missing_value": 469949.17,
+      "storage_path": "uploads/1769302533977-INVOICE 4_pg3-3.pdf"
+    },
+    {
+      "id": "4de3b656-f916-46f8-89a5-165bfe55bca9",
+      "invoice_number": "LIC# 10-000005135",
+      "vendor": "Bill Troishner",
+      "date": "2017-02-28",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310920400-New7_page2.pdf"
+    },
+    {
+      "id": "8b940e4b-0158-45f3-b8a8-79d928911c69",
+      "invoice_number": "55755329",
+      "vendor": "Keith Foods",
+      "date": "2017-01-26",
+      "invoice_total": 506.7,
+      "missing_value": 506.7,
+      "storage_path": "uploads/1769304917987-INVOICE 4_pg4-4.pdf"
+    },
+    {
+      "id": "f97e0f36-0a49-4245-99d3-b71b360681d2",
+      "invoice_number": "FR10005156",
+      "vendor": "MARDOM",
+      "date": "2017-01-12",
+      "invoice_total": 28156,
+      "missing_value": 28156,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310105796-New4_page21.pdf"
+    },
+    {
+      "id": "1ed0157c-ce17-4445-bc95-987d834b15fb",
+      "invoice_number": "998-4909",
+      "vendor": "SYSCO North Texas",
+      "date": "2016-11-26",
+      "invoice_total": 1844.19,
+      "missing_value": 1844.19,
+      "storage_path": "uploads/1769306267396-Kitchen Invoices 3_pg12-12.pdf"
+    },
+    {
+      "id": "e1a04701-c355-4715-a8ef-356bc3e75944",
+      "invoice_number": "55753543",
+      "vendor": "Delilah Dallas LLC",
+      "date": "2016-02-01",
+      "invoice_total": 0,
+      "missing_value": 0,
+      "storage_path": "uploads/1769301867630-INVOICE 4_pg1-1.pdf"
+    },
+    {
+      "id": "78066c36-6560-406b-8adf-a92e2d416362",
+      "invoice_number": "26-78971",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2014-11-26",
+      "invoice_total": 92.4,
+      "missing_value": 92.4,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310606867-New6_page22.pdf"
+    },
+    {
+      "id": "9afa4f00-e1bd-4097-b1e1-693ab8dfd237",
+      "invoice_number": "722077-347",
+      "vendor": "SYSCO North Texas",
+      "date": "2007-11-20",
+      "invoice_total": 432.45,
+      "missing_value": 432.45,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769309735096-New4_page1.pdf"
+    },
+    {
+      "id": "b8fc6864-9b95-4332-93ed-36a061da39a7",
+      "invoice_number": "JA-00000163",
+      "vendor": "Maroon",
+      "date": "2007-10-16",
+      "invoice_total": 2.47,
+      "missing_value": 2.47,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310598762-New6_page21.pdf"
+    },
+    {
+      "id": "be1c7658-d321-4bc9-b043-ee46398346e6",
+      "invoice_number": "M453",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2007-07-20",
+      "invoice_total": 21.6,
+      "missing_value": 21.6,
+      "storage_path": "uploads/1769305492262-Invoices Kitchen (1)_pg7-7.pdf"
+    },
+    {
+      "id": "67371754-a3b1-440d-85e8-95cfd6f9b86a",
+      "invoice_number": "10000005.36",
+      "vendor": "MARMON",
+      "date": "2007-01-08",
+      "invoice_total": 18332,
+      "missing_value": 18332,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310780151-New7_page12.pdf"
+    },
+    {
+      "id": "be79a4c6-a23c-4d87-99ee-8965a9f958cc",
+      "invoice_number": "996008797",
+      "vendor": "SYSCO",
+      "date": "2002-07-01",
+      "invoice_total": 1159.94,
+      "missing_value": 1159.94,
+      "storage_path": "uploads/1769306251795-Kitchen Invoices 3_pg11-11.pdf"
+    },
+    {
+      "id": "a0487c49-7eb4-4501-b2e5-099bafaf5120",
+      "invoice_number": "990608797",
+      "vendor": "SYSCO",
+      "date": "2002-07-01",
+      "invoice_total": 11,
+      "missing_value": 11,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311198000-New8_page6.pdf"
+    },
+    {
+      "id": "a6e61d52-0ea2-47f5-ad08-6bd3c3a2c890",
+      "invoice_number": "996115744",
+      "vendor": "SYSCO",
+      "date": "1996-01-23",
+      "invoice_total": 917.45,
+      "missing_value": 917.45,
+      "storage_path": "uploads/1769306935415-Kitchen Invoices 9_pg4-4.pdf"
+    },
+    {
+      "id": "952cc8f9-bb95-41fa-9cc5-f975a8ef0ae3",
+      "invoice_number": "25262",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2026-10-19",
+      "invoice_total": 1155.9,
+      "missing_value": 172.19999999999982,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310646588-New6_page3.pdf"
+    },
+    {
+      "id": "57ee43ce-b9a0-415b-9693-8ee794f2151c",
+      "invoice_number": "26-7/60073",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2026-07-21",
+      "invoice_total": 543.13,
+      "missing_value": 512.23,
+      "storage_path": "uploads/1769304380103-Kitchen Invoices 8_pg9-9.pdf"
+    },
+    {
+      "id": "7a18f86b-3119-4015-87d4-d34d0fe49b08",
+      "invoice_number": "G0252069",
+      "vendor": "OAK FARMS-DALLAS DFA DAIRY BRANDS",
+      "date": "2026-01-28",
+      "invoice_total": 168.24,
+      "missing_value": 72.65,
+      "storage_path": "uploads/1769306405356-Kitchen Invoices 6_pg1-1.pdf"
+    },
+    {
+      "id": "27d19d93-78ae-4830-bac2-4cb1a6ae422b",
+      "invoice_number": "1B8357",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-23",
+      "invoice_total": 1354.87,
+      "missing_value": 1345.6,
+      "storage_path": "uploads/1769304454275-Kitchen Invoices 9_pg3-3.pdf"
+    },
+    {
+      "id": "6ba042ed-0d57-4981-b51a-94cdf34f7b3b",
+      "invoice_number": "188357",
+      "vendor": "Texas Steakhouse",
+      "date": "2026-01-23",
+      "invoice_total": 1354.87,
+      "missing_value": 1345.6,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307257852-New6.pdf"
+    },
+    {
+      "id": "aaf4e8e1-fa5a-4594-bdff-b0b478f783ca",
+      "invoice_number": "01534559",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-23",
+      "invoice_total": 387.84,
+      "missing_value": 206.5,
+      "storage_path": "uploads/1769304551104-Kitchen Invoices 9_pg9-9.pdf"
+    },
+    {
+      "id": "9374dda9-b6f5-4901-bbad-0244a23d6564",
+      "invoice_number": "60252296",
+      "vendor": "OAK FARMS-DALLAS DFA DAIRY BRANDS",
+      "date": "2026-01-23",
+      "invoice_total": 379.95,
+      "missing_value": 274.66999999999996,
+      "storage_path": "uploads/1769306863745-Kitchen Invoices 9_pg1-1.pdf"
+    },
+    {
+      "id": "5998002a-682e-491b-b05a-4874c3e60bb0",
+      "invoice_number": "01535052",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-23",
+      "invoice_total": 344.11,
+      "missing_value": 181.95000000000002,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310085240-New4_page20.pdf"
+    },
+    {
+      "id": "ae46d496-797d-45b2-b52a-0b5692daae4b",
+      "invoice_number": "0153965",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-22",
+      "invoice_total": 363.84,
+      "missing_value": 119.82999999999998,
+      "storage_path": "uploads/1769304263253-Kitchen Invoices 8_pg1-1.pdf"
+    },
+    {
+      "id": "e2eb8607-9f09-46e9-989a-4a819ef18da9",
+      "invoice_number": "980869",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-22",
+      "invoice_total": 319.81,
+      "missing_value": 38.80000000000001,
+      "storage_path": "uploads/1769306811045-Kitchen Invoices 8_pg7-7.pdf"
+    },
+    {
+      "id": "bcce3c6d-87b5-4e3c-8b4d-ed38a24f2953",
+      "invoice_number": "01533965",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-22",
+      "invoice_total": 363.84,
+      "missing_value": 49.410000000000025,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769309824022-New4_page16.pdf"
+    },
+    {
+      "id": "d5f8f3c6-3c1a-47f7-884b-84fd2a56b37c",
+      "invoice_number": "M-3404601",
+      "vendor": "MFW - Maekor Fine Wine",
+      "date": "2026-01-22",
+      "invoice_total": 2169.94,
+      "missing_value": 1943.47,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "b61c2cd8-3f48-40a2-9ce0-b969b381d845",
+      "invoice_number": "01533336",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-21",
+      "invoice_total": 593.5,
+      "missing_value": 279.75,
+      "storage_path": "uploads/1769304193203-Kitchen Invoices 7_pg5-5.pdf"
+    },
+    {
+      "id": "0b98b121-8ead-4073-888b-0e2d455f24dc",
+      "invoice_number": "980215",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-21",
+      "invoice_total": 122.78,
+      "missing_value": 56.620000000000005,
+      "storage_path": "uploads/1769304248032-Kitchen Invoices 7_pg8-8.pdf"
+    },
+    {
+      "id": "dda42f0e-694d-4aa8-812c-6ced58f9019a",
+      "invoice_number": "980565",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-21",
+      "invoice_total": 236.6,
+      "missing_value": 214.85999999999999,
+      "storage_path": "uploads/1769304237216-Kitchen Invoices 7_pg7-7.pdf"
+    },
+    {
+      "id": "3a086fec-eab3-4e27-869b-ce31174acaf6",
+      "invoice_number": "70960274",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-21",
+      "invoice_total": 675.19,
+      "missing_value": 616.9300000000001,
+      "storage_path": "uploads/1769304168212-Kitchen Invoices 7_pg4-4.pdf"
+    },
+    {
+      "id": "7d75b4ea-01b5-4858-9458-a0ef194a2506",
+      "invoice_number": "50252069",
+      "vendor": "OAK FARMS-DALLAS DFA DAIRY BRANDS",
+      "date": "2026-01-20",
+      "invoice_total": 168.24,
+      "missing_value": 72.73000000000002,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310340287-New5_page6.pdf"
+    },
+    {
+      "id": "4a851a11-f083-454d-9bf4-f07ea503d2f6",
+      "invoice_number": "179079",
+      "vendor": "Republic National Distributing Company",
+      "date": "2026-01-20",
+      "invoice_total": 18713,
+      "missing_value": 6942,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "f8f4ea79-8d1f-4c5c-bbb0-a60cc42fe45a",
+      "invoice_number": "05899",
+      "vendor": "RARE FOODS",
+      "date": "2026-01-20",
+      "invoice_total": 738.76,
+      "missing_value": 156,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306178824-Kitchen Invoices 6_pg5-5.pdf"
+    },
+    {
+      "id": "e4197b93-9db3-470b-824c-aba6d16e68d1",
+      "invoice_number": "979569",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-20",
+      "invoice_total": 177.86,
+      "missing_value": 67.69999999999999,
+      "storage_path": "uploads/1769304015536-Kitchen Invoices 6_pg15-15.pdf"
+    },
+    {
+      "id": "645f335a-50cb-43d1-a7a6-a78eade1c53e",
+      "invoice_number": "70923428",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-19",
+      "invoice_total": 2700.14,
+      "missing_value": 2189.21,
+      "storage_path": "uploads/1769302089306-invoices 5_pg11-11.pdf"
+    },
+    {
+      "id": "00724d4f-7dac-40ee-878b-b860f490cb9d",
+      "invoice_number": "5677184",
+      "vendor": "MARION",
+      "date": "2026-01-19",
+      "invoice_total": 596.49,
+      "missing_value": 68.19999999999993,
+      "storage_path": "uploads/1769305153747-invoices 5_pg7-7.pdf"
+    },
+    {
+      "id": "cbdc110f-14f7-4c40-bd42-796c26ae5599",
+      "invoice_number": "978975",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-19",
+      "invoice_total": 210.33,
+      "missing_value": 97.30000000000001,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306010337-invoices 5_pg4-4.pdf"
+    },
+    {
+      "id": "e1e2e78d-486b-4cec-84af-03c2dede5c56",
+      "invoice_number": "70923428",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-19",
+      "invoice_total": 2700.14,
+      "missing_value": 2684.64,
+      "storage_path": "uploads/1769305053117-invoices 5_pg12-12.pdf"
+    },
+    {
+      "id": "d6ad8d7a-e7e1-4d20-955c-6f889804f686",
+      "invoice_number": "187374",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-19",
+      "invoice_total": 1259.17,
+      "missing_value": 1153.64,
+      "storage_path": "uploads/1769302071872-invoices 5_pg10-10.pdf"
+    },
+    {
+      "id": "f3619f88-779b-4740-a6f5-b45975c3b5d1",
+      "invoice_number": "26-79627",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2026-01-19",
+      "invoice_total": 1156.9,
+      "missing_value": 470.5600000000002,
+      "storage_path": "uploads/1769304134690-Kitchen Invoices 6_pg9-9.pdf"
+    },
+    {
+      "id": "fc2fb081-5a6e-45b7-ba0a-15f050f37dc6",
+      "invoice_number": "01532086",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-19",
+      "invoice_total": 0,
+      "missing_value": 1174.39,
+      "storage_path": "uploads/1769302162554-invoices 5_pg5-5.pdf"
+    },
+    {
+      "id": "d8c9ddf1-19af-4c8b-a3c7-1ba32a5e9cfc",
+      "invoice_number": "LDFW1927872",
+      "vendor": "Alsco Uniforms",
+      "date": "2026-01-19",
+      "invoice_total": 129.54,
+      "missing_value": 14.810000000000002,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310754164-New7_page10.pdf"
+    },
+    {
+      "id": "0356a424-7171-4c1c-bb14-962fd4106d05",
+      "invoice_number": "187374",
+      "vendor": "Texas Roadhouse Steaks",
+      "date": "2026-01-19",
+      "invoice_total": 1259.17,
+      "missing_value": 1249.67,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311056501-New7_page8.pdf"
+    },
+    {
+      "id": "bcd6ebf3-bc54-4b55-87c7-23a1c747485b",
+      "invoice_number": "16900368",
+      "vendor": "Spec's Wine",
+      "date": " Spirits & Finer Foods",
+      "invoice_total": 2026,
+      "missing_value": 2611.66,
+      "storage_path": "2175.3600000000015"
+    },
+    {
+      "id": "06709d2a-2c7d-4b9d-abb2-6287f8072e3c",
+      "invoice_number": "977479",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-16",
+      "invoice_total": 677.1,
+      "missing_value": 100.95000000000005,
+      "storage_path": "uploads/1769302115810-invoices 5_pg13-13.pdf"
+    },
+    {
+      "id": "0d50d9c2-5625-4aa5-b30b-8ede4c6d5912",
+      "invoice_number": "INV1876569",
+      "vendor": "Johnson Brothers Maverick of Texas",
+      "date": "2026-01-16",
+      "invoice_total": 18235.16,
+      "missing_value": 10361.66,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "c3371fb6-4ef7-4cd0-81a0-1d6331b0591b",
+      "invoice_number": "85798587",
+      "vendor": "Delilah Data LLC",
+      "date": "2026-01-15",
+      "invoice_total": 257.34,
+      "missing_value": 2333.8799999999997,
+      "storage_path": "uploads/1769304942598-INVOICE 4_pg7-7.pdf"
+    },
+    {
+      "id": "4ddc1798-7336-433d-8c08-da3fe8470244",
+      "invoice_number": "7173361",
+      "vendor": "Republic National Distributing Company",
+      "date": "2026-01-14",
+      "invoice_total": 264702.51,
+      "missing_value": 238806.34,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "18b144d7-a751-445d-b906-efc180cf1f74",
+      "invoice_number": "195459",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-14",
+      "invoice_total": 1045.94,
+      "missing_value": 914.3600000000001,
+      "storage_path": "uploads/1769304843600-INVOICE 4_pg12-12.pdf"
+    },
+    {
+      "id": "121556d9-93e1-4e5a-a844-744ae3213085",
+      "invoice_number": "195469",
+      "vendor": "Allen Brothers Texas",
+      "date": "2026-01-14",
+      "invoice_total": 854.05,
+      "missing_value": 738.6999999999999,
+      "storage_path": "uploads/1769301901372-INVOICE 4_pg12-12.pdf"
+    },
+    {
+      "id": "c4a3773e-aa14-4e9a-973d-ee121e75d0b2",
+      "invoice_number": "70875013",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-14",
+      "invoice_total": 754.69,
+      "missing_value": 429.69000000000005,
+      "storage_path": "uploads/1769301880347-INVOICE 4_pg11-11.pdf"
+    },
+    {
+      "id": "4c409b22-27c2-47e5-a783-344cac9a2dca",
+      "invoice_number": "16880351",
+      "vendor": "Spec's Wine",
+      "date": " Spirits & Finer Foods",
+      "invoice_total": 2026,
+      "missing_value": 8142.52,
+      "storage_path": "276.71000000000095"
+    },
+    {
+      "id": "a121878a-f954-44d9-b1a3-2fbed8a5dc79",
+      "invoice_number": "01529490",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-13",
+      "invoice_total": 487.45,
+      "missing_value": 285.89,
+      "storage_path": "uploads/1769303810028-Kitchen Invoices 3_pg13-13.pdf"
+    },
+    {
+      "id": "650caa6e-bdc7-4693-8c05-e2bf04dc3780",
+      "invoice_number": "INV1876688",
+      "vendor": "Johnson Brothers of Texas",
+      "date": "2026-01-13",
+      "invoice_total": 18236.16,
+      "missing_value": 8572.720000000001,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "22a113b7-c556-46c1-86ef-820463d8542b",
+      "invoice_number": "70859984",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-13",
+      "invoice_total": 2928.2,
+      "missing_value": 2908.2,
+      "storage_path": "uploads/1769306219148-Kitchen Invoices 3_pg10-10.pdf"
+    },
+    {
+      "id": "fc8dc37b-cbf0-4ea9-8f13-74e4d7ca754a",
+      "invoice_number": "70859984",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-13",
+      "invoice_total": 2928.2,
+      "missing_value": 2543.2,
+      "storage_path": "uploads/1769303893208-Kitchen Invoices 3_pg8-8.pdf"
+    },
+    {
+      "id": "90b6ee20-339a-476a-af53-7b3eb677d0eb",
+      "invoice_number": "26-7537773",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2026-01-13",
+      "invoice_total": 1032.96,
+      "missing_value": 1011.76,
+      "storage_path": "uploads/1769306326663-Kitchen Invoices 3_pg5-5.pdf"
+    },
+    {
+      "id": "d7fb6c38-fc28-4d40-8e72-a588ac1d9bd0",
+      "invoice_number": "70846878",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-12",
+      "invoice_total": 1422.32,
+      "missing_value": 458.3699999999999,
+      "storage_path": "uploads/1769302265587-Invoices Kitchen_pg2-2.pdf"
+    },
+    {
+      "id": "7bd15598-7e8a-460e-9e55-d3bc31b41f43",
+      "invoice_number": "70846878",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-12",
+      "invoice_total": 1422.32,
+      "missing_value": 552.4499999999998,
+      "storage_path": "uploads/1769302841446-Invoices Kitchen_pg2-2.pdf"
+    },
+    {
+      "id": "4b8874be-cf6b-408e-bd4e-a28e513021c8",
+      "invoice_number": "974296",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-12",
+      "invoice_total": 441.8,
+      "missing_value": 128.45000000000005,
+      "storage_path": "uploads/1769303275737-Invoices Kitchen (2)_pg6-6.pdf"
+    },
+    {
+      "id": "6d99440e-4274-483c-bda0-7f5915441d9e",
+      "invoice_number": "55703540",
+      "vendor": "Delilah Dallas LLC",
+      "date": "2026-01-11",
+      "invoice_total": 62.64,
+      "missing_value": 1808.06,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306290105-INVOICE 4_pg2-2.pdf"
+    },
+    {
+      "id": "8e33de98-3b81-4110-a2ca-c318dbd5dd2d",
+      "invoice_number": "973102",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-10",
+      "invoice_total": 181.57,
+      "missing_value": 38,
+      "storage_path": "uploads/1769303247737-Invoices Kitchen (2)_pg5-5.pdf"
+    },
+    {
+      "id": "f35f6df0-f1ee-4641-9282-261eecb1a6ca",
+      "invoice_number": "01527696",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-09",
+      "invoice_total": 531.96,
+      "missing_value": 392.28000000000003,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769308068635-New2_page10.pdf"
+    },
+    {
+      "id": "12655edf-809b-4b2a-bb09-907273c08ef5",
+      "invoice_number": "972424",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-09",
+      "invoice_total": 647.04,
+      "missing_value": 328.04999999999995,
+      "storage_path": "uploads/1769303107243-Invoices Kitchen (2)_pg10-10.pdf"
+    },
+    {
+      "id": "815616ac-8103-4199-a3e9-617b327e7d33",
+      "invoice_number": "70823755",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-09",
+      "invoice_total": 676.39,
+      "missing_value": 537.0799999999999,
+      "storage_path": "uploads/1769303583739-Invoics Kitchen_pg23-23.pdf"
+    },
+    {
+      "id": "6daa7339-3376-4d66-ba89-c1394dc232ea",
+      "invoice_number": "70805899",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-08",
+      "invoice_total": 1184.04,
+      "missing_value": 875.49,
+      "storage_path": "uploads/1769303505636-Invoics Kitchen_pg19-19.pdf"
+    },
+    {
+      "id": "49829cf6-f99c-41b3-92b6-98194aff33a8",
+      "invoice_number": "70805899",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-08",
+      "invoice_total": 1184.04,
+      "missing_value": 1119.95,
+      "storage_path": "uploads/1769303539206-Invoics Kitchen_pg20-20.pdf"
+    },
+    {
+      "id": "3ef09cac-e7a9-43fe-9839-81d82ae5ca5f",
+      "invoice_number": "01527112",
+      "vendor": "Chef's Produce",
+      "date": "2026-01-08",
+      "invoice_total": 174.86,
+      "missing_value": 86.50000000000001,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306047279-Invoices Kitchen_pg6-6.pdf"
+    },
+    {
+      "id": "5e735b0d-dab1-447e-ba95-a572d41b5f77",
+      "invoice_number": "70789722",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-07",
+      "invoice_total": 887.1,
+      "missing_value": 846.9,
+      "storage_path": "uploads/1769303212902-Invoices Kitchen (2)_pg2-2.pdf"
+    },
+    {
+      "id": "e2cfb94e-ccf9-456c-9a3c-e130777f9b01",
+      "invoice_number": "971154",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-07",
+      "invoice_total": 208.48,
+      "missing_value": 35.66999999999999,
+      "storage_path": "uploads/1769303186880-Invoices Kitchen (2)_pg13-13.pdf"
+    },
+    {
+      "id": "85a35c65-27e9-433c-b783-984f312c3650",
+      "invoice_number": "70789722",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-07",
+      "invoice_total": 887.1,
+      "missing_value": 623.1,
+      "storage_path": "uploads/1769305655114-Invoices Kitchen (2)_pg4-4.pdf"
+    },
+    {
+      "id": "3c704acf-6669-4dc4-b676-e4a2a3cdf0e8",
+      "invoice_number": "16852177",
+      "vendor": "Spec's Wine",
+      "date": " Spirits & Finer Foods",
+      "invoice_total": 2026,
+      "missing_value": 840.61,
+      "storage_path": "1386.23"
+    },
+    {
+      "id": "0565c9aa-87e0-4285-995d-1898dd265a39",
+      "invoice_number": "70777359",
+      "vendor": "The Chefs Warehouse",
+      "date": "2026-01-06",
+      "invoice_total": 1523.32,
+      "missing_value": 1347.32,
+      "storage_path": "uploads/1769303419135-Invoics Kitchen_pg13-13.pdf"
+    },
+    {
+      "id": "e1b6e468-fed5-4a41-9c6d-74db8bd97296",
+      "invoice_number": "970660",
+      "vendor": "Mr. Greens",
+      "date": "2026-01-06",
+      "invoice_total": 647.04,
+      "missing_value": 383.08,
+      "storage_path": "uploads/1769303128892-Invoices Kitchen (2)_pg11-11.pdf"
+    },
+    {
+      "id": "15bbfb2d-23de-4e7b-962d-f3391491dbfc",
+      "invoice_number": "70777359",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-06",
+      "invoice_total": 1523.32,
+      "missing_value": 1347.32,
+      "storage_path": "uploads/1769305850222-Invoics Kitchen_pg13-13.pdf"
+    },
+    {
+      "id": "24d0e40a-8c89-4d9d-842b-300513fcf13b",
+      "invoice_number": "70761327",
+      "vendor": "Chefs Warehouse Midwest LLC",
+      "date": "2026-01-05",
+      "invoice_total": 2533.42,
+      "missing_value": 2136.53,
+      "storage_path": "uploads/1769303379965-Invoics Kitchen_pg11-11.pdf"
+    },
+    {
+      "id": "d94e9c63-259e-410a-8bf1-3c51bf1cec62",
+      "invoice_number": "06785216",
+      "vendor": "Dairyland Produce",
+      "date": " LLC (dba Hardie's Fresh Foods)",
+      "invoice_total": 2026,
+      "missing_value": 154,
+      "storage_path": "43"
+    },
+    {
+      "id": "a816fa22-82fe-461d-9a24-10c5bd1c9da3",
+      "invoice_number": "1841471",
+      "vendor": "Spec's Wine",
+      "date": " Spirits & Finer Foods",
+      "invoice_total": 2026,
+      "missing_value": 16947.53,
+      "storage_path": "8602.21"
+    },
+    {
+      "id": "1435ad26-685a-4fcf-bdbe-7d35b762a4ae",
+      "invoice_number": "9130139318",
+      "vendor": "Southern Glazer's of TX",
+      "date": "2026-01-02",
+      "invoice_total": 768,
+      "missing_value": 240,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "5cfa5d03-2271-4243-b35b-bf6f184707e5",
+      "invoice_number": "26-179827",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2025-01-19",
+      "invoice_total": 1156.9,
+      "missing_value": 1009.0200000000001,
+      "storage_path": "uploads/1769306605632-Kitchen Invoices 6_pg9-9.pdf"
+    },
+    {
+      "id": "b9735d0b-2584-4f38-90a8-b5ed98126ee0",
+      "invoice_number": "68251026",
+      "vendor": "OAK FARMS-DALLAS DFA DAIRY BRANDS",
+      "date": "2025-01-12",
+      "invoice_total": 268.91,
+      "missing_value": 138.28000000000003,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307497429-New1_page5.pdf"
+    },
+    {
+      "id": "db82eee8-1643-45f6-b6a0-9bc89f712a1c",
+      "invoice_number": "7179054",
+      "vendor": "Republic National Distributing Company",
+      "date": "2024-01-22",
+      "invoice_total": 10576,
+      "missing_value": 4264,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "590f6355-79a5-4631-8e5e-6fff0775efd5",
+      "invoice_number": "7173861",
+      "vendor": "Republic National Distributing Company",
+      "date": "2024-01-14",
+      "invoice_total": 264702.51,
+      "missing_value": 238000,
+      "storage_path": "uploads/1769292489606-Jan_23__Doc_3.pdf"
+    },
+    {
+      "id": "0e01fe08-c6c9-4f1a-af36-f939b39b89fd",
+      "invoice_number": "996071673",
+      "vendor": "SYSCO North Texas",
+      "date": "2024-01-09",
+      "invoice_total": 1016.77,
+      "missing_value": 857.8299999999999,
+      "storage_path": "uploads/1769305482667-Invoices Kitchen (1)_pg5-5.pdf"
+    },
+    {
+      "id": "356c8aeb-e865-42d2-b82e-0919e10478e3",
+      "invoice_number": "9999-9999-9999",
+      "vendor": "SYSCO North Texas",
+      "date": "2020-04-07",
+      "invoice_total": 1989.58,
+      "missing_value": 880.0099999999995,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307561932-New1_page8.pdf"
+    },
+    {
+      "id": "0d68b986-ad84-478f-b9c7-c1f866b97702",
+      "invoice_number": "999-4199-999",
+      "vendor": "SYSCO",
+      "date": "2020-03-07",
+      "invoice_total": 1162.13,
+      "missing_value": 843.1100000000001,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311184551-New8_page5.pdf"
+    },
+    {
+      "id": "5c485f5d-4efb-4a2e-8b05-ecd9f25a885c",
+      "invoice_number": "164414",
+      "vendor": "Sysco San Diego",
+      "date": " Inc.",
+      "invoice_total": 2018,
+      "missing_value": 2332.79,
+      "storage_path": "1091.51"
+    },
+    {
+      "id": "fb37a9cc-87b5-47c2-b3c4-7925da39718b",
+      "invoice_number": "4698981771",
+      "vendor": "BTI To Customer",
+      "date": "2018-01-10",
+      "invoice_total": 1258.16,
+      "missing_value": 689.6500000000001,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310734394-New7_page1.pdf"
+    },
+    {
+      "id": "1ddcbd77-da75-4a18-856f-abdf52692a40",
+      "invoice_number": "00025506",
+      "vendor": "MARQAL",
+      "date": "2017-09-01",
+      "invoice_total": 287.01,
+      "missing_value": 8804.82,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310985248-New7_page4.pdf"
+    },
+    {
+      "id": "a3c8827b-afdb-466a-bbf9-6ea980bf859d",
+      "invoice_number": "996090620",
+      "vendor": "SYSCO",
+      "date": "2017-07-01",
+      "invoice_total": 3039.25,
+      "missing_value": 2917.63,
+      "storage_path": "uploads/1769306546776-Kitchen Invoices 6_pg3-3.pdf"
+    },
+    {
+      "id": "b409134f-df8d-48f8-b6e9-5b8874b7b36c",
+      "invoice_number": "999-9999",
+      "vendor": "SYSCO NORTH TEXAS FOODSERVICE",
+      "date": "2017-03-07",
+      "invoice_total": 2705.61,
+      "missing_value": 2489.9300000000003,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307584480-New1_page9.pdf"
+    },
+    {
+      "id": "3bde5ecc-0504-4e28-8678-c4123df0b42d",
+      "invoice_number": "26-76007B",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2017-01-22",
+      "invoice_total": 519.13,
+      "missing_value": 422.4,
+      "storage_path": "uploads/1769306843570-Kitchen Invoices 8_pg9-9.pdf"
+    },
+    {
+      "id": "7cf2edc9-32d7-445b-9acf-720cc17d6a31",
+      "invoice_number": "996105050",
+      "vendor": "SYSCO North Texas",
+      "date": "2016-11-07",
+      "invoice_total": 2317.72,
+      "missing_value": 1532.5699999999997,
+      "storage_path": "uploads/1769306521256-Kitchen Invoices 6_pg2-2.pdf"
+    },
+    {
+      "id": "6b20ff60-2355-4f5a-bee5-5f51174d9474",
+      "invoice_number": "G260914",
+      "vendor": "Marvin",
+      "date": "2007-11-30",
+      "invoice_total": 660241,
+      "missing_value": 659123.98,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310586352-New6_page20.pdf"
+    },
+    {
+      "id": "72679edb-7e23-42d7-aca9-835489d657e4",
+      "invoice_number": "7507-3471",
+      "vendor": "SYSCO North Texas",
+      "date": "2007-11-12",
+      "invoice_total": 2705.61,
+      "missing_value": 2560.5,
+      "storage_path": "uploads/1769305416550-Invoices Kitchen (1)_pg4-4.pdf"
+    },
+    {
+      "id": "00813ccb-887f-4675-9491-1d0fe8efbd42",
+      "invoice_number": "23950",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2007-07-21",
+      "invoice_total": 2852.88,
+      "missing_value": 2622.88,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310199593-New4_page6.pdf"
+    },
+    {
+      "id": "87faf05b-570c-4ffb-b53b-79b45710e473",
+      "invoice_number": "7507-347",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2007-07-20",
+      "invoice_total": 5671.5,
+      "missing_value": 2659.270000000001,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306089668-Invoices Kitchen (1)_pg6-6.pdf"
+    },
+    {
+      "id": "cba01f71-99ee-45ae-aece-1261a5bd5c58",
+      "invoice_number": "990071673",
+      "vendor": "SYSCO North Texas",
+      "date": "2007-07-20",
+      "invoice_total": 1016.77,
+      "missing_value": 632.51,
+      "storage_path": "invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306390967-Invoices Kitchen (1)_pg6-6.pdf"
+    },
+    {
+      "id": "46ced304-81f3-40cf-9c61-593829032dd7",
+      "invoice_number": "2952",
+      "vendor": "SEAFOOD SUPPLY COMPANY",
+      "date": "2007-01-12",
+      "invoice_total": 1032.96,
+      "missing_value": 608.96,
+      "storage_path": "uploads/1769303845096-Kitchen Invoices 3_pg5-5.pdf"
+    }
+  ]
+}
