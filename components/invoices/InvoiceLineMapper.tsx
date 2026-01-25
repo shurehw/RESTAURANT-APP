@@ -983,6 +983,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                           <option value="beer">Beer</option>
                         </optgroup>
                         <optgroup label="Non-Alcoholic">
+                          <option value="bar_consumable">Bar Consumable</option>
                           <option value="non_alcoholic_beverage">Non-Alcoholic Beverage</option>
                         </optgroup>
                         <optgroup label="Food">

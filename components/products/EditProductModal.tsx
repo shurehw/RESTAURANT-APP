@@ -12,6 +12,7 @@ function normalizeCategoryName(category: string): string {
     'liquor': 'Liquor',
     'wine': 'Wine',
     'beer': 'Beer',
+    'bar_consumable': 'Bar Consumable',
     'bar_consumables': 'Bar Consumables',
     'non_alcoholic_beverage': 'Non-Alcoholic Beverage',
     'produce': 'Produce',
@@ -158,6 +159,7 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
                   <option value="beer">Beer</option>
                 </optgroup>
                 <optgroup label="Non-Alcoholic">
+                  <option value="bar_consumable">Bar Consumable</option>
                   <option value="non_alcoholic_beverage">Non-Alcoholic Beverage</option>
                 </optgroup>
                 <optgroup label="Food">
