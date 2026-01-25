@@ -85,15 +85,21 @@ async function importChunk(filePath: string, fileName: string, venueId: string) 
       return { success: false, reason: 'invoice_create_failed', error: invoiceError.message };
     }
 
-    // Create lines
-    const lineItems = normalized.lines.map((line) => ({
-      invoice_id: invoice.id,
-      description: line.description,
-      qty: line.qty,
-      unit_cost: line.unitCost,
-      item_id: line.itemId || null,
-      ocr_confidence: line.ocrConfidence
-    }));
+    // Create lines (filter out lines with missing qty or unit_cost)
+    const lineItems = normalized.lines
+      .filter(line => line.qty != null && line.unitCost != null)
+      .map((line) => ({
+        invoice_id: invoice.id,
+        description: line.description,
+        qty: line.qty,
+        unit_cost: line.unitCost,
+        item_id: line.itemId || null,
+        ocr_confidence: line.ocrConfidence
+      }));
+
+    if (lineItems.length === 0) {
+      return { success: false, reason: 'no_valid_lines', error: 'All lines have missing qty or unit_cost' };
+    }
 
     const { error: linesError } = await supabase
       .from('invoice_lines')
@@ -142,7 +148,7 @@ async function main() {
 
   const vendorNotFound = new Set<string>();
 
-  for (const folder of folders.slice(0, 3)) { // Test with first 3 folders
+  for (const folder of folders) { // Import all folders
     console.log(`\n📁 ${folder}`);
     const folderPath = join(CHUNKS_FOLDER, folder);
     const files = (await readdir(folderPath)).filter(f => f.toLowerCase().endsWith('.pdf'));
