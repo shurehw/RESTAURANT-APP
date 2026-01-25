@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
+import { cookies } from 'next/headers';
 
 export async function POST(
   request: NextRequest,
@@ -9,6 +10,7 @@ export async function POST(
   return guard(async () => {
     const { id } = await params;
     const supabase = await createClient();
+    const cookieStore = await cookies();
 
     const body = await request.json();
     const { item_id } = body;
@@ -20,8 +22,28 @@ export async function POST(
       );
     }
 
+    // Get user ID from cookie (custom auth) or Supabase session
+    let userId: string | null = null;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+    } else {
+      const userIdCookie = cookieStore.get('user_id');
+      userId = userIdCookie?.value || null;
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No active session' },
+        { status: 401 }
+      );
+    }
+
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
     // Get the invoice line details to learn vendor SKU
-    const { data: invoiceLine } = await supabase
+    const { data: invoiceLine } = await adminClient
       .from('invoice_lines')
       .select('description, vendor_item_code, invoice_id, invoices(vendor_id)')
       .eq('id', id)
@@ -35,7 +57,7 @@ export async function POST(
     }
 
     // Update the invoice line with the mapped item
-    const { error } = await supabase
+    const { error } = await adminClient
       .from('invoice_lines')
       .update({ item_id })
       .eq('id', id);
@@ -57,7 +79,7 @@ export async function POST(
       const packSize = packSizeMatch ? packSizeMatch[0] : null;
 
       // Upsert vendor alias for future matching
-      await supabase
+      await adminClient
         .from('vendor_item_aliases')
         .upsert({
           vendor_id: vendorId,
