@@ -117,6 +117,55 @@ function isJunkOCRLine(description: string, unitPrice: number, lineTotal: number
 }
 
 /**
+ * Converts a vendor name to proper case with special handling
+ */
+function toProperCase(name: string): string {
+  const lowercase = ['and', 'or', 'the', 'of', 'at', 'by', 'for', 'in', 'on', 'to', 'with'];
+  const uppercase = ['llc', 'inc', 'dba', 'usa', 'dfa', 'rndc', 'na', 'co', 'ltd', 'tx', 'mep', 'mfw'];
+
+  const special: { [key: string]: string } = {
+    'sysco': 'Sysco',
+    'sysco north texas': 'Sysco North Texas',
+    'ben e keith': 'Ben E Keith',
+    'oak farms-dallas dfa dairy brands': 'Oak Farms-Dallas DFA Dairy Brands',
+    'chefs warehouse': "Chef's Warehouse",
+    'the chefs warehouse': "The Chef's Warehouse",
+    'the chefswarehouse (midwest llc)': "The Chef's Warehouse (Midwest LLC)",
+    'republic national distributing company': 'Republic National Distributing Company',
+    'dfa dairy brands': 'DFA Dairy Brands',
+    'specs': "Spec's",
+    'mt greens': 'Mt. Greens',
+  };
+
+  const normalized = name.toLowerCase().trim();
+
+  if (special[normalized]) return special[normalized];
+
+  for (const [key, value] of Object.entries(special)) {
+    if (normalized.includes(key)) {
+      return name.replace(new RegExp(key, 'gi'), value);
+    }
+  }
+
+  return name
+    .split(/(\s+|-|&|\.)/)
+    .map((part, index) => {
+      if (/^[\s\-&\.]$/.test(part)) return part;
+      const lower = part.toLowerCase();
+      if (index === 0) {
+        return uppercase.includes(lower)
+          ? part.toUpperCase()
+          : part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+      }
+      if (lowercase.includes(lower)) return lower;
+      if (uppercase.includes(lower)) return part.toUpperCase();
+      if (part.length === 1 && part === part.toUpperCase()) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+    })
+    .join('');
+}
+
+/**
  * Normalizes vendor name to lowercase, removes extra whitespace, punctuation, and legal suffixes.
  * Improved to handle common OCR variations and reduce duplicates.
  */
@@ -185,6 +234,7 @@ export function normalizeDate(dateStr: string): string {
 
 /**
  * Resolves vendor by normalized name with fuzzy matching.
+ * Returns vendor with properly capitalized name.
  */
 async function resolveVendor(
   vendorName: string,
@@ -200,7 +250,13 @@ async function resolveVendor(
     .eq('is_active', true)
     .maybeSingle();
 
-  if (exactMatch) return exactMatch;
+  if (exactMatch) {
+    // Return with proper capitalization
+    return {
+      id: exactMatch.id,
+      name: toProperCase(exactMatch.name),
+    };
+  }
 
   // Fuzzy match: check if normalized name contains or is contained by existing vendor
   // This catches cases like "sysco" vs "sysco north texas"
@@ -231,10 +287,13 @@ async function resolveVendor(
     }
   });
 
-  // Return the shortest match (most specific)
+  // Return the shortest match (most specific) with proper capitalization
   if (matches.length > 0) {
     matches.sort((a, b) => a.normalized_name.length - b.normalized_name.length);
-    return matches[0];
+    return {
+      id: matches[0].id,
+      name: toProperCase(matches[0].name),
+    };
   }
 
   return null;
@@ -452,7 +511,7 @@ export async function normalizeOCR(
   }
 
   return {
-    vendorName: raw.vendor.trim(),
+    vendorName: vendor ? vendor.name : toProperCase(raw.vendor.trim()),
     vendorId: vendor?.id,
     venueId: venue?.id,
     venueName: venue?.name,
