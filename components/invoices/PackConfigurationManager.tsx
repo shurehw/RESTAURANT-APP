@@ -110,14 +110,28 @@ export function PackConfigurationManager({
                     onChange={(e) => updatePackConfig(index, 'pack_type', e.target.value)}
                     className="w-full px-2 py-1.5 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                   >
-                    <option value="case">Case</option>
-                    <option value="bottle">Bottle</option>
-                    <option value="bag">Bag</option>
-                    <option value="box">Box</option>
-                    <option value="each">Each</option>
-                    <option value="keg">Keg</option>
-                    <option value="pail">Pail</option>
-                    <option value="drum">Drum</option>
+                    <optgroup label="Common">
+                      <option value="case">Case</option>
+                      <option value="box">Box</option>
+                      <option value="each">Each</option>
+                      <option value="bag">Bag</option>
+                    </optgroup>
+                    <optgroup label="Beverages">
+                      <option value="bottle">Bottle</option>
+                      <option value="keg">Keg</option>
+                      <option value="can">Can</option>
+                    </optgroup>
+                    <optgroup label="Food">
+                      <option value="pound">Pound (lb)</option>
+                      <option value="piece">Piece (PC)</option>
+                      <option value="dozen">Dozen</option>
+                      <option value="gallon">Gallon</option>
+                    </optgroup>
+                    <optgroup label="Bulk">
+                      <option value="pail">Pail</option>
+                      <option value="drum">Drum</option>
+                      <option value="tote">Tote</option>
+                    </optgroup>
                   </select>
                 </div>
 
