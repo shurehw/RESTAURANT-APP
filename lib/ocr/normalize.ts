@@ -56,14 +56,43 @@ export interface NormalizedInvoice {
 
 /**
  * Normalizes vendor name to lowercase, removes extra whitespace, punctuation, and legal suffixes.
+ * Improved to handle common OCR variations and reduce duplicates.
  */
 export function normalizeVendorName(name: string): string {
-  return name
+  let normalized = name
     .toLowerCase()
-    .replace(/[,\.']/g, '') // Remove commas, periods, and apostrophes
-    .replace(/\b(llc|inc|corp|ltd|company|co)\b/gi, '') // Remove legal suffixes
+    .trim();
+
+  // Remove common prefixes
+  normalized = normalized.replace(/^(the\s+)/i, '');
+
+  // Standardize common words that appear differently
+  normalized = normalized
+    .replace(/\bchef'?s?\b/gi, 'chefs') // "Chef's" -> "chefs", "Chefs'" -> "chefs"
+    .replace(/\bwarehouse\b/gi, 'warehouse') // Ensure consistent spelling
+    .replace(/\brndc\b/gi, 'republic national distributing company') // Expand acronym
+    .replace(/\b(dfa|dfr)\s+dairy\s+brands\b/gi, 'dfa dairy brands') // Standardize dairy brands
+    .replace(/\b(oak|gaf)\s+farms-dallas\b/gi, 'oak farms dallas'); // Standardize farms
+
+  // Remove punctuation (but keep hyphens and spaces for now)
+  normalized = normalized.replace(/[,\.'"()]/g, '');
+
+  // Remove legal suffixes and extra words
+  normalized = normalized
+    .replace(/\b(llc|inc|corp|ltd|limited|company|incorporated)\b/gi, '')
+    .replace(/\b(dba|d\/b\/a)\s+/gi, '') // Remove "dba" prefix
+    .replace(/\s*\([^)]*\)\s*/g, '') // Remove anything in parentheses
+    .replace(/\s+-\s+/g, ' ') // Replace " - " with space
+    .replace(/\s+/g, ' ') // Collapse multiple spaces
+    .trim();
+
+  // Final cleanup
+  normalized = normalized
+    .replace(/[^a-z0-9\s-]/g, '') // Remove any remaining special chars except hyphens
     .replace(/\s+/g, ' ')
     .trim();
+
+  return normalized;
 }
 
 /**
