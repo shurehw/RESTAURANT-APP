@@ -13,9 +13,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BulkInvoiceUploadButton } from "@/components/invoices/BulkInvoiceUploadButton";
-import { Download, Check, AlertCircle, CheckCircle, Zap, List, X } from "lucide-react";
+import { Download, Check, AlertCircle, CheckCircle, Zap, List, X, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useVenue } from "@/components/providers/VenueProvider";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Invoice = {
   id: string;
@@ -51,11 +59,79 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
   const [approving, setApproving] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
 
-  // Filter invoices by selected venue
+  // Search, filter, sort, pagination state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [vendorFilter, setVendorFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"date" | "amount" | "vendor">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+
+  // Get unique vendors for filter
+  const uniqueVendors = useMemo(() => {
+    const vendors = invoices.map(inv => inv.vendor?.name).filter(Boolean);
+    return Array.from(new Set(vendors)).sort();
+  }, [invoices]);
+
+  // Filter, search, and sort invoices
   const filteredInvoices = useMemo(() => {
-    if (!selectedVenue) return invoices;
-    return invoices.filter(inv => inv.venue?.name === selectedVenue.name);
-  }, [invoices, selectedVenue]);
+    let result = invoices;
+
+    // Filter by selected venue
+    if (selectedVenue) {
+      result = result.filter(inv => inv.venue?.name === selectedVenue.name);
+    }
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(inv =>
+        inv.invoice_number?.toLowerCase().includes(term) ||
+        inv.vendor?.name?.toLowerCase().includes(term) ||
+        inv.purchase_orders?.order_number?.toLowerCase().includes(term)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      result = result.filter(inv => inv.status === statusFilter);
+    }
+
+    // Vendor filter
+    if (vendorFilter !== "all") {
+      result = result.filter(inv => inv.vendor?.name === vendorFilter);
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let comparison = 0;
+
+      if (sortBy === "date") {
+        comparison = new Date(a.invoice_date).getTime() - new Date(b.invoice_date).getTime();
+      } else if (sortBy === "amount") {
+        comparison = (a.total_amount || 0) - (b.total_amount || 0);
+      } else if (sortBy === "vendor") {
+        comparison = (a.vendor?.name || "").localeCompare(b.vendor?.name || "");
+      }
+
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
+
+    return result;
+  }, [invoices, selectedVenue, searchTerm, statusFilter, vendorFilter, sortBy, sortOrder]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+  const paginatedInvoices = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredInvoices.slice(start, start + itemsPerPage);
+  }, [filteredInvoices, currentPage]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, vendorFilter, sortBy, sortOrder]);
 
   const handleAutoMatch = async (invoiceId: string) => {
     setLoading(invoiceId);
@@ -164,6 +240,75 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
         </div>
       </div>
 
+      {/* Search and Filters */}
+      <div className="mb-6 space-y-4">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Search invoices, vendors, PO numbers..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Filters and Sort */}
+        <div className="flex flex-wrap gap-3">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={vendorFilter} onValueChange={setVendorFilter}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Filter by vendor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Vendors</SelectItem>
+              {uniqueVendors.map(vendor => (
+                <SelectItem key={vendor} value={vendor as string}>{vendor}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val as "date" | "amount" | "vendor")}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date">Date</SelectItem>
+              <SelectItem value="amount">Amount</SelectItem>
+              <SelectItem value="vendor">Vendor</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+            className="px-3"
+          >
+            <ArrowUpDown className="w-4 h-4 mr-2" />
+            {sortOrder === "asc" ? "Ascending" : "Descending"}
+          </Button>
+
+          {/* Results count */}
+          <div className="flex items-center ml-auto text-sm text-muted-foreground">
+            Showing {paginatedInvoices.length} of {filteredInvoices.length} invoices
+          </div>
+        </div>
+      </div>
+
       {/* Invoice Table - Desktop */}
       <div className="hidden md:block border border-border rounded-md overflow-hidden">
         <Table>
@@ -183,7 +328,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredInvoices?.map((invoice) => (
+            {paginatedInvoices?.map((invoice) => (
               <TableRow key={invoice.id}>
                 <TableCell className="font-mono font-medium">
                   {invoice.invoice_number || "—"}
@@ -271,7 +416,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
 
       {/* Invoice Cards - Mobile */}
       <div className="md:hidden space-y-3">
-        {filteredInvoices?.map((invoice) => (
+        {paginatedInvoices?.map((invoice) => (
           <div
             key={invoice.id}
             className="border border-border rounded-lg p-4 space-y-3 bg-white"
@@ -355,6 +500,35 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
         ))}
       </div>
 
+      {/* Pagination */}
+      {filteredInvoices.length > 0 && totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-sm text-muted-foreground">
+            Page {currentPage} of {totalPages}
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
       {(!filteredInvoices || filteredInvoices.length === 0) && (
         <div className="empty-state">
@@ -363,9 +537,13 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
           </div>
           <h3 className="empty-state-title">No invoices found</h3>
           <p className="empty-state-description">
-            Upload your first invoice to get started
+            {searchTerm || statusFilter !== "all" || vendorFilter !== "all"
+              ? "Try adjusting your filters"
+              : "Upload your first invoice to get started"}
           </p>
-          <BulkInvoiceUploadButton venues={venues || []} variant="default" label="Upload Invoice" />
+          {!searchTerm && statusFilter === "all" && vendorFilter === "all" && (
+            <BulkInvoiceUploadButton venues={venues || []} variant="default" label="Upload Invoice" />
+          )}
         </div>
       )}
     </div>
