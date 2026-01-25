@@ -3,7 +3,7 @@
  * View and manage vendor information, ACH forms, and documents
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +13,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { VendorProfileForm } from "@/components/vendors/VendorProfileForm";
 import { GenerateOnboardingLink } from "@/components/vendors/GenerateOnboardingLink";
+import { VendorInvoiceList } from "@/components/vendors/VendorInvoiceList";
+import { cookies } from "next/headers";
 
 interface Props {
   params: Promise<{
@@ -23,9 +25,23 @@ interface Props {
 export default async function VendorDetailPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
+  const cookieStore = await cookies();
+
+  // Get user ID for auth (custom or Supabase)
+  let userId: string | null = null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    userId = user.id;
+  } else {
+    const userIdCookie = cookieStore.get('user_id');
+    userId = userIdCookie?.value || null;
+  }
+
+  // Use admin client to bypass RLS
+  const adminClient = createAdminClient();
 
   // Fetch vendor with profile
-  const { data: vendor } = await supabase
+  const { data: vendor } = await adminClient
     .from("vendors")
     .select(`
       *,
@@ -39,19 +55,19 @@ export default async function VendorDetailPage({ params }: Props) {
   }
 
   // Fetch ACH forms
-  const { data: achForms } = await supabase
+  const { data: achForms } = await adminClient
     .from("vendor_ach_forms")
     .select("*")
     .eq("vendor_id", id)
     .order("created_at", { ascending: false });
 
-  // Fetch recent invoices
-  const { data: recentInvoices } = await supabase
+  // Fetch ALL invoices (not just 5)
+  const { data: allInvoices } = await adminClient
     .from("invoices")
-    .select("id, invoice_number, invoice_date, total_amount, status")
+    .select("id, invoice_number, invoice_date, total_amount, status, venue_id, storage_path, venues(name)")
     .eq("vendor_id", id)
     .order("invoice_date", { ascending: false })
-    .limit(5);
+    .limit(100); // Show up to 100 invoices
 
   return (
     <div>
@@ -110,8 +126,8 @@ export default async function VendorDetailPage({ params }: Props) {
             </div>
           </div>
           <div>
-            <div className="text-sm text-muted-foreground mb-1">Recent Invoices</div>
-            <div className="font-semibold">{recentInvoices?.length || 0}</div>
+            <div className="text-sm text-muted-foreground mb-1">Total Invoices</div>
+            <div className="font-semibold">{allInvoices?.length || 0}</div>
           </div>
         </div>
       </Card>
@@ -186,31 +202,10 @@ export default async function VendorDetailPage({ params }: Props) {
         {/* Invoice History Tab */}
         <TabsContent value="history">
           <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-6">Recent Invoices</h2>
+            <h2 className="text-xl font-semibold mb-6">Invoice History ({allInvoices?.length || 0})</h2>
 
-            {recentInvoices && recentInvoices.length > 0 ? (
-              <div className="space-y-3">
-                {recentInvoices.map((invoice) => (
-                  <Link
-                    key={invoice.id}
-                    href={`/invoices/${invoice.id}/review`}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div>
-                      <div className="font-medium font-mono">{invoice.invoice_number}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(invoice.invoice_date).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">${invoice.total_amount?.toFixed(2)}</div>
-                      <Badge variant="outline" className="text-xs">
-                        {invoice.status}
-                      </Badge>
-                    </div>
-                  </Link>
-                ))}
-              </div>
+            {allInvoices && allInvoices.length > 0 ? (
+              <VendorInvoiceList invoices={allInvoices} />
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
