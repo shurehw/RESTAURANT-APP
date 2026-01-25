@@ -2,7 +2,7 @@
  * OpsOS Vendors Page
  */
 
-import { createAdminClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,16 +15,41 @@ import {
 } from "@/components/ui/table";
 import { Plus, Users, Phone, Mail } from "lucide-react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 
 export default async function VendorsPage() {
-  // Use admin client to bypass RLS (vendors are global, not org-specific)
-  const supabase = createAdminClient();
+  const supabase = await createClient();
+  const cookieStore = await cookies();
 
-  const { data: vendors } = await supabase
+  // Get user's organization
+  let userId: string | null = null;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    userId = user.id;
+  } else {
+    const userIdCookie = cookieStore.get('user_id');
+    userId = userIdCookie?.value || null;
+  }
+
+  // Use admin client to bypass RLS and get org-specific vendors
+  const adminClient = createAdminClient();
+
+  // Get user's organization
+  const { data: orgUsers } = await adminClient
+    .from('organization_users')
+    .select('organization_id')
+    .eq('user_id', userId!)
+    .eq('is_active', true);
+
+  const orgId = orgUsers?.[0]?.organization_id;
+
+  // Fetch vendors for this organization
+  const { data: vendors } = await adminClient
     .from("vendors")
     .select("*")
+    .eq("organization_id", orgId!)
     .order("name", { ascending: true })
-    .limit(50);
+    .limit(100);
 
   return (
     <div>
