@@ -243,12 +243,28 @@ async function processInvoice(
         // Use existing vendor
         vendorId = existingVendor.id;
       } else {
+        // Get organization_id from venue for new vendor
+        const { data: venueData } = await serviceClient
+          .from('venues')
+          .select('organization_id')
+          .eq('id', venueId)
+          .single();
+
+        if (!venueData?.organization_id) {
+          throw {
+            status: 400,
+            code: 'MISSING_ORGANIZATION',
+            message: 'Cannot create vendor: venue has no organization'
+          };
+        }
+
         // Create new vendor
         const { data: newVendor, error: vendorError } = await serviceClient
           .from('vendors')
           .insert({
             name: vendorName,
             normalized_name: normalizedName,
+            organization_id: venueData.organization_id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
