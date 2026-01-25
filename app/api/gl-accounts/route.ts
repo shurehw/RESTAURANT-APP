@@ -10,21 +10,29 @@ export async function GET() {
   return guard(async () => {
     const supabase = await createClient();
 
-    // Get user from Supabase session
-    const { data: { user } } = await supabase.auth.getUser();
+    // Get user from session
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    // Debug logging
+    if (!user) {
+      console.error('[GL Accounts] No user found in session. Auth error:', authError);
+      console.error('[GL Accounts] This might be a cookie/session issue');
+    }
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized - No active session' },
+        { error: 'Unauthorized - No active session', details: 'User not authenticated. Please log in again.' },
         { status: 401 }
       );
     }
+
+    const userId = user.id;
 
     // Get user's organization
     const { data: orgUsers, error: orgError } = await supabase
       .from('organization_users')
       .select('organization_id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('is_active', true);
 
     if (orgError) {
