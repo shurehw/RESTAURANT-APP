@@ -55,14 +55,14 @@ export async function createOrder(prevState: CreateOrderState, formData: FormDat
     // Ideally this should be an RPC, but for now we'll do sequential inserts with error checking.
     // Note: If the second insert fails, we have an orphaned order. This is a known risk until we move to RPC.
 
-    // 1. Create Purchase Order
+    // 1. Create Purchase Order (as draft - user can then review and send)
     const { data: order, error: orderError } = await supabase
       .from('purchase_orders')
       .insert({
         vendor_id,
         venue_id,
         delivery_date,
-        status: 'ordered', // Defaulting to ordered for now, or 'draft' if preferred
+        status: 'draft', // Start as draft so user can review before sending
         total_amount,
         created_by: user.id,
       })

@@ -20,11 +20,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Plus, ShoppingCart, Trash2, Search } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, Search, Sparkles, AlertTriangle } from "lucide-react";
 import { createOrder } from "@/app/actions/orders";
 import { searchItems, ItemSearchResult } from "@/app/actions/items";
 import { toast } from "sonner";
 import { useTransition } from "react";
+import Link from "next/link";
 
 type Order = {
   id: string;
@@ -76,6 +77,8 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
 
   const [searchResults, setSearchResults] = useState<Item[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [suggestedItems, setSuggestedItems] = useState<any[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   // Filter orders by selected venue
   const filteredOrders = useMemo(() => {
@@ -104,7 +107,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
     }
   };
 
-  const addItem = (item: Item) => {
+  const addItem = (item: Item, suggestedQty?: number, suggestedPrice?: number) => {
     const existing = orderItems.find((oi) => oi.item_id === item.id);
     if (!existing) {
       setOrderItems([
@@ -113,14 +116,67 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
           item_id: item.id,
           item_name: item.name,
           sku: item.sku,
-          quantity: 1,
-          unit_price: 0,
+          quantity: suggestedQty || 1,
+          unit_price: suggestedPrice || 0,
           base_uom: item.base_uom,
         },
       ]);
     }
     setSearchTerm("");
     setShowItemSearch(false);
+  };
+
+  // Load suggested items when venue and vendor are selected
+  const loadSuggestedItems = async () => {
+    if (!venueId) {
+      toast.error("Please select a venue first");
+      return;
+    }
+
+    setLoadingSuggestions(true);
+    try {
+      const url = vendorId 
+        ? `/api/orders/suggested-items?venue_id=${venueId}&vendor_id=${vendorId}`
+        : `/api/orders/suggested-items?venue_id=${venueId}`;
+      
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestedItems(data.items || []);
+        if (data.items?.length === 0) {
+          toast.info("No items below reorder point");
+        }
+      } else {
+        toast.error("Failed to load suggested items");
+      }
+    } catch (error) {
+      console.error("Error loading suggestions:", error);
+      toast.error("Error loading suggested items");
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
+  const addAllSuggested = () => {
+    const newItems: OrderItem[] = [];
+    for (const suggested of suggestedItems) {
+      const existing = orderItems.find((oi) => oi.item_id === suggested.item_id);
+      if (!existing) {
+        newItems.push({
+          item_id: suggested.item_id,
+          item_name: suggested.item_name,
+          sku: suggested.sku,
+          quantity: suggested.suggested_qty,
+          unit_price: suggested.last_cost,
+          base_uom: suggested.base_uom,
+        });
+      }
+    }
+    if (newItems.length > 0) {
+      setOrderItems([...orderItems, ...newItems]);
+      toast.success(`Added ${newItems.length} suggested items`);
+    }
+    setSuggestedItems([]);
   };
 
   const removeItem = (item_id: string) => {
@@ -182,6 +238,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
     setOrderItems([]);
     setSearchTerm("");
     setShowItemSearch(false);
+    setSuggestedItems([]);
   };
 
   return (
@@ -263,16 +320,83 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
               <div className="border-t pt-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold">Order Items</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowItemSearch(!showItemSearch)}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Item
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={loadSuggestedItems}
+                      disabled={loadingSuggestions || !venueId}
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      {loadingSuggestions ? "Loading..." : "Suggested Items"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowItemSearch(!showItemSearch)}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Item
+                    </Button>
+                  </div>
                 </div>
+
+                {/* Suggested Items Panel */}
+                {suggestedItems.length > 0 && (
+                  <div className="mb-4 p-4 border-2 border-brass rounded-lg bg-brass/5">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-brass" />
+                        <span className="font-medium text-sm">
+                          {suggestedItems.length} items below reorder point
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="brass"
+                        size="sm"
+                        onClick={addAllSuggested}
+                      >
+                        Add All
+                      </Button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {suggestedItems.map((item) => (
+                        <div
+                          key={item.item_id}
+                          className="flex items-center justify-between p-2 bg-white rounded border"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{item.item_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {item.sku} • On hand: {item.qty_on_hand} / Reorder at: {item.reorder_point}
+                            </div>
+                          </div>
+                          <div className="text-right mr-3">
+                            <div className="text-sm font-medium">Qty: {item.suggested_qty}</div>
+                            <div className="text-xs text-muted-foreground">
+                              ${item.last_cost?.toFixed(2)}/ea
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => addItem(
+                              { id: item.item_id, name: item.item_name, sku: item.sku, category: item.category, base_uom: item.base_uom },
+                              item.suggested_qty,
+                              item.last_cost
+                            )}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Item Search */}
                 {showItemSearch && (
@@ -471,9 +595,11 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
                   <StatusBadge status={order.status} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
-                    View
-                  </Button>
+                  <Link href={`/orders/${order.id}`}>
+                    <Button variant="ghost" size="sm">
+                      View
+                    </Button>
+                  </Link>
                 </TableCell>
               </TableRow>
             ))}

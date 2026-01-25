@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,18 +18,51 @@ interface RecipeComponent {
   cost?: number;
 }
 
-export function RecipeBuilder() {
+// Valid item_category values from DB enum
+type ItemCategory = 'food' | 'beverage' | 'liquor' | 'wine' | 'beer' | 'spirits';
+
+// Cost targets by category
+const COST_TARGETS: Record<ItemCategory, number> = {
+  food: 28,
+  beverage: 20,
+  liquor: 18,
+  wine: 22,
+  beer: 20,
+  spirits: 18,
+};
+
+interface RecipeBuilderProps {
+  recipeId?: string; // If provided, we're in edit mode
+  initialData?: {
+    name: string;
+    recipe_type: 'prepared_item' | 'menu_item';
+    item_category: ItemCategory;
+    category: string;
+    yield_qty: number;
+    yield_uom: string;
+    labor_minutes: number;
+    menu_price: number | null;
+    pos_sku: string | null;
+    food_cost_target: number;
+    components: RecipeComponent[];
+  };
+  laborRatePerHour?: number; // From venue/org settings
+}
+
+export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: RecipeBuilderProps) {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [recipeType, setRecipeType] = useState<'prepared_item' | 'menu_item'>('prepared_item');
-  const [itemCategory, setItemCategory] = useState<'food' | 'beverage' | 'alcohol'>('food');
-  const [category, setCategory] = useState('');
-  const [yieldQty, setYieldQty] = useState(1);
-  const [yieldUom, setYieldUom] = useState('portion');
-  const [laborMinutes, setLaborMinutes] = useState(0);
-  const [menuPrice, setMenuPrice] = useState<number>(0);
-  const [posSku, setPosSku] = useState('');
-  const [components, setComponents] = useState<RecipeComponent[]>([]);
+  const isEditMode = !!recipeId;
+  
+  const [name, setName] = useState(initialData?.name || '');
+  const [recipeType, setRecipeType] = useState<'prepared_item' | 'menu_item'>(initialData?.recipe_type || 'prepared_item');
+  const [itemCategory, setItemCategory] = useState<ItemCategory>(initialData?.item_category || 'food');
+  const [category, setCategory] = useState(initialData?.category || '');
+  const [yieldQty, setYieldQty] = useState(initialData?.yield_qty || 1);
+  const [yieldUom, setYieldUom] = useState(initialData?.yield_uom || 'portion');
+  const [laborMinutes, setLaborMinutes] = useState(initialData?.labor_minutes || 0);
+  const [menuPrice, setMenuPrice] = useState<number>(initialData?.menu_price || 0);
+  const [posSku, setPosSku] = useState(initialData?.pos_sku || '');
+  const [components, setComponents] = useState<RecipeComponent[]>(initialData?.components || []);
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,10 +73,10 @@ export function RecipeBuilder() {
   const [searching, setSearching] = useState(false);
 
   // Dynamic target food cost % based on category
-  const targetFoodCostPct = itemCategory === 'food' ? 28 : itemCategory === 'beverage' ? 20 : 18;
+  const targetFoodCostPct = COST_TARGETS[itemCategory] || 28;
 
   const totalCost = components.reduce((sum, c) => sum + (c.cost || 0) * c.qty, 0);
-  const laborCost = (laborMinutes / 60) * 15; // $15/hour labor rate
+  const laborCost = (laborMinutes / 60) * laborRatePerHour;
   const totalRecipeCost = totalCost + laborCost;
   const costPerUnit = yieldQty > 0 ? totalRecipeCost / yieldQty : 0;
   const foodCostPct = menuPrice > 0 ? (costPerUnit / menuPrice) * 100 : 0;
@@ -113,8 +146,11 @@ export function RecipeBuilder() {
     setError(null);
 
     try {
-      const response = await fetch('/api/recipes', {
-        method: 'POST',
+      const url = isEditMode ? `/api/recipes/${recipeId}` : '/api/recipes';
+      const method = isEditMode ? 'PATCH' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -166,9 +202,9 @@ export function RecipeBuilder() {
           </a>
         </Button>
 
-        <h1 className="page-header">New Recipe</h1>
+        <h1 className="page-header">{isEditMode ? 'Edit Recipe' : 'New Recipe'}</h1>
         <p className="text-muted-foreground">
-          Build a recipe with ingredients and sub-recipes
+          {isEditMode ? 'Update recipe ingredients and details' : 'Build a recipe with ingredients and sub-recipes'}
         </p>
       </div>
 
@@ -206,12 +242,15 @@ export function RecipeBuilder() {
                 <label className="block text-sm font-medium mb-2">Primary Category</label>
                 <select
                   value={itemCategory}
-                  onChange={(e) => setItemCategory(e.target.value as any)}
+                  onChange={(e) => setItemCategory(e.target.value as ItemCategory)}
                   className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                 >
                   <option value="food">Food (Target: 28%)</option>
-                  <option value="beverage">Beverage (Target: 20%)</option>
-                  <option value="alcohol">Alcohol (Target: 18%)</option>
+                  <option value="beverage">Non-Alcoholic Beverage (Target: 20%)</option>
+                  <option value="liquor">Liquor/Cocktails (Target: 18%)</option>
+                  <option value="wine">Wine (Target: 22%)</option>
+                  <option value="beer">Beer (Target: 20%)</option>
+                  <option value="spirits">Spirits (Target: 18%)</option>
                 </select>
               </div>
 
@@ -379,7 +418,7 @@ export function RecipeBuilder() {
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-semibold">
-                      {itemCategory === 'food' ? 'Food Cost %' : itemCategory === 'beverage' ? 'Beverage Cost %' : 'Pour Cost %'}
+                      {itemCategory === 'food' ? 'Food Cost %' : 'Pour Cost %'}
                     </span>
                     <span className={`font-mono font-bold text-xl ${
                       foodCostPct <= targetFoodCostPct ? 'text-opsos-sage-600' :
@@ -411,7 +450,7 @@ export function RecipeBuilder() {
                   disabled={!name || components.length === 0 || saving}
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Recipe'}
+                  {saving ? 'Saving...' : isEditMode ? 'Update Recipe' : 'Save Recipe'}
                 </Button>
 
                 <Button
