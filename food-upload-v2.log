@@ -1,0 +1,19 @@
+[dotenv@17.2.3] injecting env (18) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+📤 Uploading Food Invoices from Multiple Food Split
+
+════════════════════════════════════════════════════════════
+
+🏢 Venue: Delilah Dallas (79c33e6a-eb21-419f-9606-7494d1a9584c)
+
+📁 Found 140 PDF files
+
+════════════════════════════════════════════════════════════
+
+🚀 Starting upload (3 at a time, 3s delay)
+
+
+📦 Batch 1/47 (files 1-3):
+
+  📄 INVOICE 4_page_0001.pdf
+  📄 INVOICE 4_page_0002.pdf
+  📄 INVOICE 4_page_0003.pdf
