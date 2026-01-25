@@ -127,11 +127,13 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
           failDetails && `Failed:\n${failDetails}`
         ].filter(Boolean).join('\n\n');
 
+        const progressText = allDetails ? `${summary}\n\n${allDetails}` : summary;
+
         setFiles(prev => prev.map((f, i) =>
           i === index ? {
             ...f,
             status: data.succeeded > 0 ? 'success' as const : 'error' as const,
-            progress: `${summary}\n\n${allDetails}`,
+            progress: progressText,
             invoiceId: data.results[0]?.invoiceId
           } : f
         ));
@@ -336,13 +338,13 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                     <p className="text-xs text-muted-foreground">
                       {(fileStatus.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
-                    {fileStatus.status === 'uploading' && fileStatus.progress && (
+                    {fileStatus.status === 'uploading' && fileStatus.progress && fileStatus.progress.trim() && (
                       <p className="text-xs text-primary mt-1 animate-pulse">{fileStatus.progress}</p>
                     )}
-                    {fileStatus.status === 'success' && fileStatus.progress && (
+                    {fileStatus.status === 'success' && fileStatus.progress && fileStatus.progress.trim() && (
                       <p className="text-xs text-gray-700 mt-1 whitespace-pre-line">{fileStatus.progress}</p>
                     )}
-                    {fileStatus.error && (
+                    {fileStatus.error && fileStatus.error.trim() && (
                       <p className="text-xs text-red-600 mt-1 whitespace-pre-line">{fileStatus.error}</p>
                     )}
                   </div>
