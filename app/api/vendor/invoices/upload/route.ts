@@ -76,9 +76,16 @@ export async function POST(request: NextRequest) {
 
     // Process with OCR
     const isPDF = actualMimeType === 'application/pdf';
-    const { invoice: rawInvoice } = isPDF
+    const ocrResult = isPDF
       ? await extractInvoiceFromPDF(buffer)
       : await extractInvoiceWithClaude(buffer, actualMimeType);
+
+    // For vendor upload, use first invoice if multi-invoice PDF
+    const rawInvoice = ocrResult.invoice || (ocrResult.invoices ? ocrResult.invoices[0] : undefined);
+
+    if (!rawInvoice) {
+      throw { status: 422, code: 'OCR_FAILED', message: 'Failed to extract invoice data' };
+    }
 
     const normalized = await normalizeOCR(rawInvoice, supabase);
 
