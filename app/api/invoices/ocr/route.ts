@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Check venue access
     if (!venueIds.includes(venueId)) {
+      const availableVenues = venueIds.length > 0 ? venueIds.join(', ') : 'none';
       console.error('Venue access denied:', {
         requestedVenueId: venueId,
         userVenueIds: venueIds,
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       throw {
         status: 403,
         code: 'FORBIDDEN',
-        message: `You do not have access to this venue. Requested: ${venueId}, Available: ${venueIds.join(', ') || 'none'}`
+        message: 'Access denied to venue: ' + venueId + '. Available: ' + availableVenues
       };
     }
 
