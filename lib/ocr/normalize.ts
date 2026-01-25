@@ -184,7 +184,7 @@ export function normalizeDate(dateStr: string): string {
 }
 
 /**
- * Resolves vendor by normalized name.
+ * Resolves vendor by normalized name with fuzzy matching.
  */
 async function resolveVendor(
   vendorName: string,
@@ -192,15 +192,52 @@ async function resolveVendor(
 ): Promise<{ id: string; name: string } | null> {
   const normalized = normalizeVendorName(vendorName);
 
-  const { data, error } = await supabase
+  // Try exact match first
+  const { data: exactMatch } = await supabase
     .from('vendors')
-    .select('id, name')
+    .select('id, name, normalized_name')
     .eq('normalized_name', normalized)
     .eq('is_active', true)
-    .single();
+    .maybeSingle();
 
-  if (error || !data) return null;
-  return data;
+  if (exactMatch) return exactMatch;
+
+  // Fuzzy match: check if normalized name contains or is contained by existing vendor
+  // This catches cases like "sysco" vs "sysco north texas"
+  const { data: allVendors } = await supabase
+    .from('vendors')
+    .select('id, name, normalized_name')
+    .eq('is_active', true);
+
+  if (!allVendors || allVendors.length === 0) return null;
+
+  // Find best match
+  const matches = allVendors.filter(vendor => {
+    const vendorNorm = vendor.normalized_name.toLowerCase();
+    const searchNorm = normalized.toLowerCase();
+
+    // Check if one contains the other (must be at word boundary)
+    if (vendorNorm === searchNorm) return true;
+
+    // Split into words for better matching
+    const vendorWords = vendorNorm.split(/\s+/);
+    const searchWords = searchNorm.split(/\s+/);
+
+    // If all words from shorter name are in longer name, it's a match
+    if (vendorWords.length <= searchWords.length) {
+      return vendorWords.every(word => searchWords.includes(word));
+    } else {
+      return searchWords.every(word => vendorWords.includes(word));
+    }
+  });
+
+  // Return the shortest match (most specific)
+  if (matches.length > 0) {
+    matches.sort((a, b) => a.normalized_name.length - b.normalized_name.length);
+    return matches[0];
+  }
+
+  return null;
 }
 
 /**
