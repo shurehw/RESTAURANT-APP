@@ -113,16 +113,25 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       // Handle multi-invoice response
       if (data.multiInvoice) {
         const summary = `Processed ${data.total} invoices: ${data.succeeded} succeeded, ${data.failed} failed`;
-        const details = [
-          ...data.results.map((r: any) => `✓ ${r.invoiceNumber || 'Invoice'} from ${r.vendor || 'Unknown'}`),
-          ...data.errors.map((e: any) => `✗ ${e.invoiceNumber} from ${e.vendor}: ${e.error.message || e.error}`)
-        ].join('\n');
+
+        const successDetails = data.results.length > 0
+          ? data.results.map((r: any) => `✓ ${r.invoiceNumber || 'Invoice'} from ${r.vendor || 'Unknown'}`).join('\n')
+          : '';
+
+        const failDetails = data.errors.length > 0
+          ? data.errors.map((e: any) => `✗ ${e.invoiceNumber} from ${e.vendor}: ${e.error.message || e.error}`).join('\n')
+          : '';
+
+        const allDetails = [
+          successDetails && `Succeeded:\n${successDetails}`,
+          failDetails && `Failed:\n${failDetails}`
+        ].filter(Boolean).join('\n\n');
 
         setFiles(prev => prev.map((f, i) =>
           i === index ? {
             ...f,
             status: data.succeeded > 0 ? 'success' as const : 'error' as const,
-            error: data.failed > 0 ? `${summary}\n\n${details}` : undefined,
+            progress: `${summary}\n\n${allDetails}`,
             invoiceId: data.results[0]?.invoiceId
           } : f
         ));
@@ -245,10 +254,10 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
             <div className="bg-gray-50 border rounded-lg p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">
-                  {uploading ? 'Processing...' : 'Ready to upload'}
+                  {uploading ? 'Processing...' : completed === files.length ? 'Processing Complete' : 'Ready to upload'}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  {completed} / {files.length} files
+                  {completed} / {files.length} files processed
                 </span>
               </div>
               {uploading && (
@@ -329,6 +338,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                     </p>
                     {fileStatus.status === 'uploading' && fileStatus.progress && (
                       <p className="text-xs text-primary mt-1 animate-pulse">{fileStatus.progress}</p>
+                    )}
+                    {fileStatus.status === 'success' && fileStatus.progress && (
+                      <p className="text-xs text-gray-700 mt-1 whitespace-pre-line">{fileStatus.progress}</p>
                     )}
                     {fileStatus.error && (
                       <p className="text-xs text-red-600 mt-1 whitespace-pre-line">{fileStatus.error}</p>
