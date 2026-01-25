@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
+import { cookies } from 'next/headers';
 
 /**
  * POST /api/items
@@ -9,6 +10,7 @@ import { guard } from '@/lib/api/guard';
 export async function POST(request: NextRequest) {
   return guard(async () => {
     const supabase = await createClient();
+    const cookieStore = await cookies();
 
     const body = await request.json();
     const { name, sku, category, subcategory, base_uom, gl_account_id, organization_id, item_type } = body;
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
       'food', 'beverage', 'packaging', 'supplies',
       'liquor', 'wine', 'beer', 'spirits', 'non_alcoholic_beverage',
       'produce', 'meat', 'seafood', 'dairy', 'dry_goods', 'frozen',
-      'disposables', 'chemicals', 'smallwares', 'other'
+      'disposables', 'chemicals', 'smallwares', 'other', 'bar_consumable'
     ];
     const itemCategory = validCategories.includes(category?.toLowerCase())
       ? category.toLowerCase()
@@ -34,20 +36,45 @@ export async function POST(request: NextRequest) {
     // Get user's organization if not provided
     let orgId = organization_id;
     if (!orgId) {
-      const { data: user } = await supabase.auth.getUser();
-      if (user?.user) {
-        const { data: orgUsers } = await supabase
-          .from('organization_users')
-          .select('organization_id')
-          .eq('user_id', user.user.id)
-          .eq('is_active', true);
-        // Use first organization if user belongs to multiple
-        orgId = orgUsers?.[0]?.organization_id;
+      // Get user ID from cookie (custom auth) or Supabase session
+      let userId: string | null = null;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+      } else {
+        const userIdCookie = cookieStore.get('user_id');
+        userId = userIdCookie?.value || null;
       }
+
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Unauthorized - No active session' },
+          { status: 401 }
+        );
+      }
+
+      // Use admin client to bypass RLS for organization query
+      const adminClient = createAdminClient();
+      const { data: orgUsers } = await adminClient
+        .from('organization_users')
+        .select('organization_id')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      // Use first organization if user belongs to multiple
+      orgId = orgUsers?.[0]?.organization_id;
     }
 
-    // Create the item
-    const { data: item, error } = await supabase
+    if (!orgId) {
+      return NextResponse.json(
+        { error: 'User not associated with an organization' },
+        { status: 403 }
+      );
+    }
+
+    // Use admin client to create item (bypasses RLS)
+    const adminClient = createAdminClient();
+    const { data: item, error } = await adminClient
       .from('items')
       .insert({
         name,
@@ -56,7 +83,7 @@ export async function POST(request: NextRequest) {
         subcategory: subcategory || null,
         base_uom: base_uom || 'unit',
         gl_account_id: gl_account_id || null,
-        organization_id: orgId || null,
+        organization_id: orgId,
         is_active: true,
         item_type: item_type || 'beverage', // Default to beverage for now
       })
