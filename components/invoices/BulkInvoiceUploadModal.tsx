@@ -62,35 +62,38 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
     formData.append('venue_id', venueId);
     formData.append('is_preopening', isPreopening.toString());
 
+    // Progress messages to cycle through
+    const progressSteps = [
+      'Uploading file...',
+      'Scanning document...',
+      'Extracting invoice data...',
+      'Matching vendors and items...',
+      'Finalizing...'
+    ];
+
+    let currentStep = 0;
+
     // Set initial uploading state
     setFiles(prev => prev.map((f, i) =>
-      i === index ? { ...f, status: 'uploading' as const, progress: 'Uploading file...' } : f
+      i === index ? { ...f, status: 'uploading' as const, progress: progressSteps[0] } : f
     ));
 
+    // Progress animation interval
+    const progressInterval = setInterval(() => {
+      currentStep = (currentStep + 1) % progressSteps.length;
+      setFiles(prev => prev.map((f, i) =>
+        i === index && f.status === 'uploading' ? { ...f, progress: progressSteps[currentStep] } : f
+      ));
+    }, 1500);
+
     try {
-      // Simulate progress updates
-      setTimeout(() => {
-        setFiles(prev => prev.map((f, i) =>
-          i === index && f.status === 'uploading' ? { ...f, progress: 'Scanning document...' } : f
-        ));
-      }, 500);
-
-      setTimeout(() => {
-        setFiles(prev => prev.map((f, i) =>
-          i === index && f.status === 'uploading' ? { ...f, progress: 'Extracting invoice data...' } : f
-        ));
-      }, 1500);
-
-      setTimeout(() => {
-        setFiles(prev => prev.map((f, i) =>
-          i === index && f.status === 'uploading' ? { ...f, progress: 'Matching vendors and items...' } : f
-        ));
-      }, 3000);
-
       const response = await fetch('/api/invoices/ocr', {
         method: 'POST',
         body: formData,
       });
+
+      // Clear progress interval
+      clearInterval(progressInterval);
 
       const data = await response.json();
 
@@ -131,6 +134,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       }
       setCompleted(prev => prev + 1);
     } catch (error) {
+      // Clear progress interval on error
+      clearInterval(progressInterval);
+
       setFiles(prev => prev.map((f, i) =>
         i === index ? {
           ...f,
@@ -158,24 +164,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
 
     setUploading(false);
 
-    // Wait a bit for state to settle, then check results
-    setTimeout(() => {
-      setFiles(current => {
-        const allSuccess = current.every(f => f.status === 'success');
-        const anySuccess = current.some(f => f.status === 'success');
-
-        // Auto-close after showing results if any succeeded
-        if (anySuccess) {
-          setTimeout(() => {
-            onOpenChange(false);
-            router.refresh();
-            setFiles([]);
-          }, 3000); // Give user time to see the results
-        }
-
-        return current;
-      });
-    }, 100);
+    // Don't auto-close - let user review results and close manually
+    // Auto-refresh the page to show new invoices
+    router.refresh();
   };
 
   const handleClose = () => {
@@ -349,32 +340,45 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
 
           {/* Action Buttons */}
           <div className="flex gap-2 sm:gap-3">
-            <Button
-              onClick={handleUploadAll}
-              disabled={files.length === 0 || !venueId || uploading}
-              className="flex-1 sm:flex-none sm:min-w-32 h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing {completed}/{files.length}
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload {files.length} {files.length === 1 ? 'File' : 'Files'}
-                </>
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={uploading}
-              className="flex-1 sm:flex-none h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
-            >
-              {uploading ? 'Processing...' : 'Cancel'}
-            </Button>
+            {!uploading && completed === files.length && files.length > 0 ? (
+              // Show done button after upload completes
+              <Button
+                onClick={handleClose}
+                className="flex-1 h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Done - View Invoices
+              </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={handleUploadAll}
+                  disabled={files.length === 0 || !venueId || uploading}
+                  className="flex-1 sm:flex-none sm:min-w-32 h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
+                >
+                  {uploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing {completed}/{files.length}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload {files.length} {files.length === 1 ? 'File' : 'Files'}
+                    </>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={uploading}
+                  className="flex-1 sm:flex-none h-11 sm:h-10 text-base sm:text-sm touch-manipulation"
+                >
+                  {uploading ? 'Processing...' : 'Cancel'}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </DialogContent>
