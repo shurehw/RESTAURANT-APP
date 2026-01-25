@@ -74,8 +74,8 @@ export function normalizeVendorName(name: string): string {
     .replace(/\b(dfa|dfr)\s+dairy\s+brands\b/gi, 'dfa dairy brands') // Standardize dairy brands
     .replace(/\b(oak|gaf)\s+farms-dallas\b/gi, 'oak farms dallas'); // Standardize farms
 
-  // Remove punctuation (but keep hyphens and spaces for now)
-  normalized = normalized.replace(/[,\.'"()]/g, '');
+  // Remove ALL punctuation including apostrophes, periods, commas
+  normalized = normalized.replace(/[,\.'"()&]/g, '');
 
   // Remove legal suffixes and extra words
   normalized = normalized
