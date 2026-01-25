@@ -40,7 +40,7 @@ export interface NormalizedInvoice {
   totalAmount: number;
   ocrConfidence: number;
   lines: Array<{
-    itemCode?: string; // vendor's item code
+    itemCode?: string; // vendor's item code (vendor SKU)
     description: string;
     qty: number;
     unitCost: number;
@@ -49,6 +49,7 @@ export interface NormalizedInvoice {
     itemId?: string; // if matched
     vendorItemId?: string; // vendor_items.id if matched
     matchType?: 'exact' | 'fuzzy' | 'none'; // how it was matched
+    vendorItemCode?: string; // alias for itemCode (for clarity)
   }>;
   warnings: string[];
 }
@@ -166,6 +167,7 @@ async function matchLineItem(
 }> {
   // 1. Try exact match by vendor item code (best match)
   if (itemCode && vendorId) {
+    // First try vendor_items (old schema)
     const { data: exactMatch } = await supabase
       .from('vendor_items')
       .select('id, item_id')
@@ -178,6 +180,23 @@ async function matchLineItem(
       return {
         itemId: exactMatch.item_id,
         vendorItemId: exactMatch.id,
+        matchType: 'exact',
+      };
+    }
+
+    // Also try vendor_item_aliases (new schema)
+    const { data: aliasMatch } = await supabase
+      .from('vendor_item_aliases')
+      .select('id, item_id')
+      .eq('vendor_id', vendorId)
+      .eq('vendor_item_code', itemCode)
+      .eq('is_active', true)
+      .single();
+
+    if (aliasMatch) {
+      return {
+        itemId: aliasMatch.item_id,
+        vendorItemId: aliasMatch.id,
         matchType: 'exact',
       };
     }
@@ -272,6 +291,7 @@ export async function normalizeOCR(
 
       return {
         itemCode: line.itemCode,
+        vendorItemCode: line.itemCode, // Pass through for invoice_lines.vendor_item_code
         description: line.description.trim(),
         qty: line.qty,
         unitCost: line.unitPrice,

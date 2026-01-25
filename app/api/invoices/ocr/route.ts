@@ -244,6 +244,7 @@ export async function POST(request: NextRequest) {
     // Map all lines (including qty: 0 for vendor tracking)
     const linesPayload = normalized.lines.map((line) => ({
       item_id: line.itemId || null, // Explicitly set to null if undefined
+      vendor_item_code: line.vendorItemCode || null, // Vendor SKU from OCR
       description: line.description,
       quantity: line.qty,
       unit_cost: line.unitCost,
