@@ -154,11 +154,23 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       // Clear progress interval on error
       clearInterval(progressInterval);
 
+      // Extract detailed error message
+      let errorMsg = 'Upload failed';
+      if (error instanceof Error) {
+        errorMsg = error.message;
+      } else if (typeof error === 'string') {
+        errorMsg = error;
+      } else if (error && typeof error === 'object') {
+        errorMsg = JSON.stringify(error);
+      }
+
+      console.error('[Bulk Upload Error]', fileStatus.file.name, errorMsg);
+
       setFiles(prev => prev.map((f, i) =>
         i === index ? {
           ...f,
           status: 'error' as const,
-          error: error instanceof Error ? error.message : 'Upload failed'
+          error: errorMsg
         } : f
       ));
       setCompleted(prev => prev + 1);
