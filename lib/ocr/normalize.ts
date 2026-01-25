@@ -54,12 +54,13 @@ export interface NormalizedInvoice {
 }
 
 /**
- * Normalizes vendor name to lowercase, removes extra whitespace and punctuation.
+ * Normalizes vendor name to lowercase, removes extra whitespace, punctuation, and legal suffixes.
  */
 export function normalizeVendorName(name: string): string {
   return name
     .toLowerCase()
     .replace(/[,\.']/g, '') // Remove commas, periods, and apostrophes
+    .replace(/\b(llc|inc|corp|ltd|company|co)\b/gi, '') // Remove legal suffixes
     .replace(/\s+/g, ' ')
     .trim();
 }
