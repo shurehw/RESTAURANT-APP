@@ -70,9 +70,16 @@ export async function POST(request: NextRequest) {
         const contentType = attachment.contentType?.toLowerCase() || '';
         const isPDF = contentType.includes('pdf');
 
-        const { invoice: rawInvoice } = isPDF
+        const ocrResult = isPDF
           ? await extractInvoiceFromPDF(fileBuffer)
           : await extractInvoiceWithClaude(fileBuffer, attachment.contentType || 'image/jpeg');
+
+        // For email sync, we only process single invoices (use first if multi-invoice PDF)
+        const rawInvoice = ocrResult.invoice || (ocrResult.invoices ? ocrResult.invoices[0] : undefined);
+
+        if (!rawInvoice) {
+          throw { status: 422, code: 'OCR_FAILED', message: 'Failed to extract invoice data from attachment' };
+        }
 
         // Normalize and match to vendors/items
         const normalized = await normalizeOCR(rawInvoice, supabase);
