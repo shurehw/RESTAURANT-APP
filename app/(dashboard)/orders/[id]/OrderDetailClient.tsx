@@ -603,7 +603,7 @@ function StatusBadge({ status }: { status: string }) {
     pending: { variant: "brass", icon: Clock },
     ordered: { variant: "brass", icon: Truck },
     received: { variant: "sage", icon: CheckCircle2 },
-    cancelled: { variant: "error" as const, icon: XCircle },
+    cancelled: { variant: "default", icon: XCircle },
   };
 
   const { variant, icon: Icon } = config[status] || config.draft;
