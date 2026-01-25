@@ -1,0 +1,670 @@
+[dotenv@17.2.3] injecting env (18) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+🔄 RETRYING FAILED INVOICES (with rate limiting)
+══════════════════════════════════════════════════════════════════════
+Venue: Delilah Dallas (79c33e6a-eb21-419f-9606-7494d1a9584c)
+
+Retrying 99 files (starting from New3_page2.pdf)
+
+[1/99] New3_page2.pdf... ⏭️  Duplicate
+[2/99] New3_page3.pdf... ✅ Chefswarehouse #70761327 (8 lines)
+[3/99] New3_page4.pdf... ✅ Chefs' Warehouse #70761327 (8 lines)
+[4/99] New3_page5.pdf... ✅ Chefswarehouse #70761327 (8 lines)
+[5/99] New3_page6.pdf... ✅ chefswarehouse #70761327 (3 lines)
+[6/99] New3_page7.pdf... ✅ Dairyland Produce, LLC (dba Hardie's Fresh Foods) #06786764 (1 lines)
+[7/99] New3_page8.pdf... ⏭️  Duplicate
+[8/99] New3_page9.pdf... ⏭️  Duplicate
+[9/99] New4_page1.pdf... ✅ Sysco North Texas, Inc. #722077-347 (11 lines)
+[10/99] New4_page10.pdf... ⏭️  Duplicate
+[11/99] New4_page11.pdf... ✅ Regalis TX #153325 (1 lines)
+[12/99] New4_page12.pdf... ✅ Chefs' Produce #01534401 (1 lines)
+[13/99] New4_page13.pdf... ✅ Chefs' Produce #01534315 (2 lines)
+[14/99] New4_page14.pdf... ⏭️  Duplicate
+[15/99] New4_page15.pdf... ⏭️  Duplicate
+[16/99] New4_page16.pdf... ✅ Chef's Produce Company #01533965 (8 lines)
+[17/99] New4_page17.pdf... ✅ Mr Greens #980215 (1 lines)
+[18/99] New4_page18.pdf... ⏭️  Duplicate
+[19/99] New4_page19.pdf... ✅ Chefs' Produce Company #01533336 (18 lines)
+[20/99] New4_page2.pdf...[OCR Error] Failed to parse Claude PDF response as JSON
+JSON text: {
+  "vendor": "SYSCO",
+  "invoiceNumber": "993-9999-9999",
+  "invoiceDate": "2023-07-31",
+  "dueDate": null,
+  "paymentTerms": null,
+  "totalAmount": 2190.47,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "DELILAH DALLAS LLC",
+    "address": "9999-9999-9999 TX 75207-3407",
+    "confidence": 0.8
+  },
+  "lineItems": [
+    {
+      "itemCode": "1",
+      "description": "CS 2 KETCHUP",
+      "qty": 2,
+      "unitPrice": 42.56,
+      "lineTotal": 85.12,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": "1",
+      "description": "CS 3 KETCHUP PORTION",
+      "qty": 1,
+      "unitPrice": 32.02,
+      "lineTotal": 32.02,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": "2",
+      "description": "CS 1 CS SALAD DRESSING",
+      "qty": 1,
+      "unitPrice": 42.56,
+      "lineTotal": 42.56,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": "1",
+      "description": "CS 1 KETCHUP PORTION CLASSIC",
+      "qty": 2,
+      "unitPrice": 8.28,
+      "lineTotal": 16.56,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": null,
+      "description": "KETCHUP CLASSIC HEINZ",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.7
+    },
+    {
+      "itemCode": null,
+      "description": "KETCHUP PORTION CLASSIC",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.7
+    },
+    {
+      "itemCode": null,
+      "description": "KETCHUP/SANDWICH/ANWICH BLUE BLU IN * 30513.1302",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": 203359.211.45,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "PAPER & DISP",
+      "qty": null,
+      "unitPrice": 446.00,
+      "lineTotal": 446.00,
+      "confidence": 0.7
+    },
+    {
+      "itemCode": null,
+      "description": "REVISION CERTIFIED NON WOOD * 6100.67",
+      "qty": null,
+      "unitPrice": 718.79,
+      "lineTotal": 718.79,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": null,
+      "description": "REVISION CERTIFIED CROSS STIR NON * 6100.67",
+      "qty": null,
+      "unitPrice": 32.42,
+      "lineTotal": 32.42,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": null,
+      "description": "REVISION CERTIFIED * KRAFT",
+      "qty": null,
+      "unitPrice": 16.99,
+      "lineTotal": 16.99,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": null,
+      "description": "REVISION CLASSIC CHEESE MAID TILE",
+      "qty": null,
+      "unitPrice": 12.65,
+      "lineTotal": 12.65,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": null,
+      "description": "CLASSIC WITH SOLN.LU2T INNER & 61.11.90",
+      "qty": null,
+      "unitPrice": 60.00,
+      "lineTotal": 60.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": null,
+      "description": "ENVIROFOIL & PORTIONING TONAL TOWER & 61001.63",
+      "qty": null,
+      "unitPrice": 825.88,
+      "lineTotal": 825.88,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": null,
+      "description": "CERTIFIED MAID BLUE 2.0/R & 10001.63",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "ENVIROSL & PORTIONING TONAL TOWER",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "CHARGES WALL PERIOD COLUMN LOG TO DATE",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": "6097515",
+      "description": "6097515",
+      "qty": null,
+      "unitPrice": 6090011.27,
+      "lineTotal": null,
+      "confidence": 0.4
+    }
+  ]
+}
+Raw response: ```json
+{
+  "vendor": "SYSCO",
+  "invoiceNumber": "993-9999-9999",
+  "invoiceDate": "2023-07-31",
+  "dueDate": null,
+  "paymentTerms": null,
+  "totalAmount": 2190.47,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "DELILAH DALLAS LLC",
+    "address": "9999-9999-9999 TX 75207-3407",
+    "confidence": 0.8
+  },
+  "lineItems": [
+    {
+      "itemCode": "1",
+      "description": "CS 2 KETCHUP",
+      "qty": 2,
+      "unitPrice": 42.56,
+      "lineTotal": 85.12,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": "1",
+      "description": "CS 3 KETCHUP PORTION",
+      "qty": 1,
+      "unitPrice": 32.02,
+      "lineTotal": 32.02,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": "2",
+      "description": "CS 1 CS SALAD DRESSING",
+      "qty": 1,
+      "unitPrice": 42.56,
+      "lineTotal": 42.56,
+      "confidence": 0.9
+    },
+    {
+      "itemCode": "1",
+      "description": "CS 1 KETCHUP PORTION CLASSIC",
+      "qty": 2,
+      "unitPrice": 8.28,
+      "lineTotal": 16.56,
+
+Parse error: SyntaxError: Expected ',' or '}' after property value in JSON at position 1547 (line 68 column 30)
+    at JSON.parse (<anonymous>)
+    at extractInvoiceFromPDF (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:242:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async importInvoice (c:\Users\JacobShure\RESTAURANT APP\scripts\retry-failed-split-invoices.ts:48:37)
+    at async main (c:\Users\JacobShure\RESTAURANT APP\scripts\retry-failed-split-invoices.ts:192:20)
+ ❌ error
+[21/99] New4_page20.pdf... ✅ Chef's Produce #01535052 (7 lines)
+[22/99] New4_page21.pdf... ❌ lines_create_failed
+[23/99] New4_page22.pdf... ❌ invoice_create_failed
+[24/99] New4_page23.pdf... ✅ Chefs' Produce #01534559 (10 lines)
+[25/99] New4_page24.pdf... ⏭️  Duplicate
+[26/99] New4_page3.pdf... ✅ Mr. Greens #981490 (1 lines)
+[27/99] New4_page4.pdf... ✅ UNKNOWN #379450 (2 lines)
+[28/99] New4_page5.pdf... ⏭️  Duplicate
+[29/99] New4_page6.pdf... ✅ SEAFOOD SUPPLY #23950 (4 lines)
+[30/99] New4_page7.pdf...[OCR Error] Failed to parse Claude PDF response as JSON
+JSON text: {
+  "vendor": "MARION",
+  "invoiceNumber": "58080943",
+  "invoiceDate": "2017-01-17",
+  "dueDate": null,
+  "paymentTerms": "Net 17",
+  "totalAmount": 1005256.00,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "Bill To Customer",
+    "address": "Special Instruction: West Hollywood, LA 90069",
+    "confidence": 0.75
+  },
+  "lineItems": [
+    {
+      "itemCode": "CO2616",
+      "description": "CYPRESS",
+      "qty": 1,
+      "unitPrice": 36493.00,
+      "lineTotal": 16539.00,
+      "confidence": 0.85
+    },
+    {
+      "itemCode": "CR30732",
+      "description": "BELGOSO",
+      "qty": 1,
+      "unitPrice": 36493.00,
+      "lineTotal": null,
+      "confidence": 0.80
+    },
+    {
+      "itemCode": "Acct#4104",
+      "description": "LOCAVES",
+      "qty": 2,
+      "unitPrice": null,
+      "lineTotal": 223476.28,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "DF60333",
+      "description": "MEGAMEX",
+      "qty": 1,
+      "unitPrice": 116431.00,
+      "lineTotal": null,
+      "confidence": 0.80
+    },
+    {
+      "itemCode": "DT67221",
+      "description": "NESTLE",
+      "qty": 2,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "DM69672",
+      "description": "CROSSMARK",
+      "qty": 3,
+      "unitPrice": 68673.00,
+      "lineTotal": 206019.00,
+      "confidence": 0.85
+    },
+    {
+      "itemCode": "17250",
+      "description": "CRUSOE",
+      "qty": null,
+      "unitPrice": 142963.02,
+      "lineTotal": null,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "86305",
+      "description": "ACME",
+      "qty": null,
+      "unitPrice": 1042519.18,
+      "lineTotal": null,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "81984",
+      "description": "KRUSTEAZ",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.70
+    },
+    {
+      "itemCode": "87428",
+      "description": "CRUSIE",
+      "qty": 2,
+      "unitPrice": 40051.00,
+      "lineTotal": 80102.00,
+      "confidence": 0.85
+    },
+    {
+      "itemCode": "DW8022",
+      "description": "DIVISION",
+      "qty": 10,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "DK0953",
+      "description": "CRUSIE",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.70
+    },
+    {
+      "itemCode": "F229522",
+      "description": "MONTHS",
+      "qty": null,
+      "unitPrice": 0050900.00,
+      "lineTotal": null,
+      "confidence": 0.75
+    }
+  ]
+}
+Raw response: ```json
+{
+  "vendor": "MARION",
+  "invoiceNumber": "58080943",
+  "invoiceDate": "2017-01-17",
+  "dueDate": null,
+  "paymentTerms": "Net 17",
+  "totalAmount": 1005256.00,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "Bill To Customer",
+    "address": "Special Instruction: West Hollywood, LA 90069",
+    "confidence": 0.75
+  },
+  "lineItems": [
+    {
+      "itemCode": "CO2616",
+      "description": "CYPRESS",
+      "qty": 1,
+      "unitPrice": 36493.00,
+      "lineTotal": 16539.00,
+      "confidence": 0.85
+    },
+    {
+      "itemCode": "CR30732",
+      "description": "BELGOSO",
+      "qty": 1,
+      "unitPrice": 36493.00,
+      "lineTotal": null,
+      "confidence": 0.80
+    },
+    {
+      "itemCode": "Acct#4104",
+      "description": "LOCAVES",
+      "qty": 2,
+      "unitPrice": null,
+      "lineTotal": 223476.28,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "DF60333",
+      "description": "MEGAMEX",
+      "qty": 1,
+      "unitPrice": 116431.00,
+      "lineTotal"
+Parse error: SyntaxError: Unexpected number in JSON at position 2485 (line 115 column 21)
+    at JSON.parse (<anonymous>)
+    at extractInvoiceFromPDF (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:242:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async importInvoice (c:\Users\JacobShure\RESTAURANT APP\scripts\retry-failed-split-invoices.ts:48:37)
+    at async main (c:\Users\JacobShure\RESTAURANT APP\scripts\retry-failed-split-invoices.ts:192:20)
+ ❌ error
+[31/99] New4_page8.pdf... ❌ no_valid_lines
+[32/99] New4_page9.pdf... ❌ no_valid_lines
+[33/99] New5_page1.pdf... ✅ Chefs Warehouse #70998415 (1 lines)
+[34/99] New5_page10.pdf... ✅ Chef's Warehouse #70939675 (8 lines)
+[35/99] New5_page11.pdf... ✅ The Chefswarehouse #70939675 (4 lines)
+[36/99] New5_page12.pdf... ✅ Regalis TX #153207 (2 lines)
+[37/99] New5_page2.pdf... ⏭️  Duplicate
+[38/99] New5_page3.pdf... ✅ The Chefswarehouse Midwest LLC #70960274 (1 lines)
+[39/99] New5_page4.pdf... ✅ Chefs Warehouse #70967410 (1 lines)
+[40/99] New5_page5.pdf... ✅ RARE FOODS #05919 (1 lines)
+[41/99] New5_page6.pdf... ✅ GAF FARMS-DALLAS DFA Dairy Brands #50252069 (4 lines)
+[42/99] New5_page7.pdf... ⏭️  Duplicate
+[43/99] New5_page8.pdf... ✅ Mr Greens #979569 (11 lines)
+[44/99] New5_page9.pdf... ✅ Texas Steakhouse Steaks #187926 (3 lines)
+[45/99] New6_page1.pdf... ✅ ALLEN BROTHERS TEXAS #188357 (5 lines)
+[46/99] New6_page10.pdf... ✅ Sysco San Diego, Inc. #164414 (21 lines)
+[47/99] New6_page11.pdf... ✅ Sysco #909-999-9999 (12 lines)
+[48/99] New6_page12.pdf... ✅ Mr. Greens #975714 (1 lines)
+[49/99] New6_page13.pdf... ✅ Mr Greens #975586 (1 lines)
+[50/99] New6_page14.pdf... ✅ Mr Greens #975584 (12 lines)
+[51/99] New6_page15.pdf... ✅ ALLEN BROTHERS TEXAS #186469 (1 lines)
+[52/99] New6_page16.pdf... ✅ Chefs Warehouse #70875013 (5 lines)
+[53/99] New6_page17.pdf... ✅ Chefswarehouse #70875013 (8 lines)
+[54/99] New6_page18.pdf... ✅ Mr Greens #976610 (1 lines)
+[55/99] New6_page19.pdf... ✅ Mr Greens #976449 (14 lines)
+[56/99] New6_page2.pdf... ✅ Empire Baking Company #379168 (4 lines)
+[57/99] New6_page20.pdf... ✅ Marvin #G260914 (11 lines)
+[58/99] New6_page21.pdf... ✅ Maroon #JA-00000163 (6 lines)
+[59/99] New6_page22.pdf... ✅ SEAFOOD SUPPLY COMPANY #26-78971 (1 lines)
+[60/99] New6_page23.pdf... ✅ Oak Farms-Dallas DFR Dairy Brands #68252842 (3 lines)
+[61/99] New6_page24.pdf... ❌ invoice_create_failed
+[62/99] New6_page3.pdf... ✅ SEAFOOD SUPPLY COMPANY #25262 (17 lines)
+[63/99] New6_page4.pdf... ❌ no_valid_lines
+[64/99] New6_page5.pdf... ❌ no_valid_lines
+[65/99] New6_page6.pdf... ❌ no_valid_lines
+[66/99] New6_page7.pdf... ✅ MARION #LC#10000013G (1 lines)
+[67/99] New6_page8.pdf... ✅ RARE FOODS #05899 (4 lines)
+[68/99] New6_page9.pdf... ⏭️  Duplicate
+[69/99] New7_page1.pdf... ✅ BTI To Customer #4698981771 (3 lines)
+[70/99] New7_page10.pdf... ✅ Alsco Uniforms #LDFW1927872 (14 lines)
+[71/99] New7_page11.pdf... ✅ Regalis TX #153117 (2 lines)
+[72/99] New7_page12.pdf... ❌ no_valid_lines
+[73/99] New7_page13.pdf... ❌ no_valid_lines
+[74/99] New7_page14.pdf... ❌ error
+[75/99] New7_page15.pdf... ✅ Chefs' Produce #01532086 (26 lines)
+[76/99] New7_page16.pdf... ✅ Chefs' Produce #01532086 (8 lines)
+[77/99] New7_page17.pdf... ✅ Mr. Greens #978975 (4 lines)
+[78/99] New7_page18.pdf...[OCR Error] Failed to parse Claude PDF response as JSON
+JSON text: {
+  "vendor": "Seafood Supply Company",
+  "invoiceNumber": "26-75950",
+  "invoiceDate": "2016-01-16",
+  "dueDate": null,
+  "paymentTerms": null,
+  "totalAmount": 387.48,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "DELILAH DALLAS",
+    "address": "1616 HI LINE DRIVE IX 75207",
+    "confidence": 0.9
+  },
+  "lineItems": [
+    {
+      "itemCode": "2952",
+      "description": "LB UNIT TOTAL UNIT/PRICE LB TOTAL UNIT/PRICE",
+      "qty": 15,
+      "unitPrice": 15.70,
+      "lineTotal": null,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "2950",
+      "description": "MKR SHRIMP BRE/CRISPR MRK/TC ORD DATE DEL DATE 01/16/26 01/19/26",
+      "qty": 15,
+      "unitPrice": 15.70,
+      "lineTotal": 214.75,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": null,
+      "description": "EXENSION",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": 214.75,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "US/R CAN/M",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.4
+    },
+    {
+      "itemCode": null,
+      "description": "DESCRIPTION",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": 112.73,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "POI# DOWNTOWN H1 CODE PRODUCT#",
+      "qty": 1.54,
+      "unitPrice": 4/9#,
+      "lineTotal": null,
+      "confidence": 0.4
+    },
+    {
+      "itemCode": null,
+      "description": "LI/L LOBSTERS 1 3/4 PRES. RED. DOM. WHOLE",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "SLICES",
+      "qty": 242,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": "G309",
+      "description": "CUSTOMER #EL",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.4
+    },
+    {
+      "itemCode": null,
+      "description": "PRODUCT# ANDREW",
+      "qty": 270,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "G/ OTHER SHIP",
+      "qty": 1,
+      "unitPrice": 70.1,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "PACK SPLIT",
+      "qty": 1,
+      "unitPrice": 70.1,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "SALMON PORTIONS (4/8oz) 10# CS US VR NOR MORE",
+      "qty": 1.6,
+      "unitPrice": null,
+      "lineTotal": null,
+      "confidence": 0.5
+    }
+  ]
+}
+Raw response: ```json
+{
+  "vendor": "Seafood Supply Company",
+  "invoiceNumber": "26-75950",
+  "invoiceDate": "2016-01-16",
+  "dueDate": null,
+  "paymentTerms": null,
+  "totalAmount": 387.48,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "DELILAH DALLAS",
+    "address": "1616 HI LINE DRIVE IX 75207",
+    "confidence": 0.9
+  },
+  "lineItems": [
+    {
+      "itemCode": "2952",
+      "description": "LB UNIT TOTAL UNIT/PRICE LB TOTAL UNIT/PRICE",
+      "qty": 15,
+      "unitPrice": 15.70,
+      "lineTotal": null,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "2950",
+      "description": "MKR SHRIMP BRE/CRISPR MRK/TC ORD DATE DEL DATE 01/16/26 01/19/26",
+      "qty": 15,
+      "unitPrice": 15.70,
+      "lineTotal": 214.75,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": null,
+      "description": "EXENSION",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": 214.75,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": null,
+      "description": "US/R CAN/M",
+   
+Parse error: SyntaxError: Expected ',' or '}' after property value in JSON at position 1381 (line 59 column 21)
+    at JSON.parse (<anonymous>)
+    at extractInvoiceFromPDF (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:242:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async importInvoice (c:\Users\JacobShure\RESTAURANT APP\scripts\retry-failed-split-invoices.ts:48:37)
+    at async main (c:\Users\JacobShure\RESTAURANT APP\scripts\retry-failed-split-invoices.ts:192:20)
+ ❌ error
+[79/99] New7_page19.pdf... ✅ Chefs' Produce Company #01532697 (5 lines)
+[80/99] New7_page2.pdf... ❌ no_valid_lines
+[81/99] New7_page20.pdf... ✅ Chefs' Produce #01532763 (1 lines)
+[82/99] New7_page21.pdf... ✅ Chef's Warehouse #70923428 (7 lines)
+[83/99] New7_page3.pdf... ❌ no_valid_lines
+[84/99] New7_page4.pdf... ✅ MARQAL #00025506 (22 lines)
+[85/99] New7_page5.pdf... ❌ no_valid_lines
+[86/99] New7_page6.pdf... ✅ Mr Greens #977479 (5 lines)
+[87/99] New7_page7.pdf... ✅ CHEF'S WAREHOUSE #70923428 (8 lines)
+[88/99] New7_page8.pdf... ✅ Texas Roadhouse Steaks #187374 (6 lines)
+[89/99] New7_page9.pdf... ✅ Chefs' Produce #01532630 (1 lines)
+[90/99] New8_page1.pdf... ✅ TEXAS THE GREAT STEAKHOUSE STEAKS #186269 (5 lines)
+[91/99] New8_page10.pdf... ⏭️  Duplicate
+[92/99] New8_page2.pdf... ⏭️  Duplicate
+[93/99] New8_page3.pdf... ⏭️  Duplicate
+[94/99] New8_page4.pdf... ✅ Chefs' Produce #01529490 (15 lines)
+[95/99] New8_page5.pdf... ✅ SYSCO #999-4199-999 (20 lines)
+[96/99] New8_page6.pdf... ✅ SYSCO #990608797 (5 lines)
+[97/99] New8_page7.pdf... ✅ Chefs Warehouse Midwest LLC #70859984 (2 lines)
+[98/99] New8_page8.pdf... ⏭️  Duplicate
+[99/99] New8_page9.pdf... ⏭️  Duplicate
+
+📊 RETRY SUMMARY
+══════════════════════════════════════════════════════════════════════
+✅ Imported: 65
+⏭️  Duplicates: 17
+❌ Failed: 17
+
+Line items: 417 (0 matched, 417 new)

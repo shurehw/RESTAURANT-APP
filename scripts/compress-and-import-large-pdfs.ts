@@ -84,13 +84,12 @@ async function importCompressedPDF(filePath: string, fileName: string, venueId: 
       .insert({
         venue_id: venueId,
         vendor_id: vendor.id,
-        vendor_name: normalized.vendorName,
         invoice_number: normalized.invoiceNumber,
         invoice_date: normalized.invoiceDate,
         due_date: normalized.dueDate,
         total_amount: normalized.totalAmount,
-        file_path: storagePath,
-        ocr_extracted: true
+        storage_path: storagePath,
+        ocr_confidence: 0.85
       })
       .select()
       .single();
