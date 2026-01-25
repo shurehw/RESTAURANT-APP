@@ -90,7 +90,18 @@ export async function POST(request: NextRequest) {
 
     // Check venue access
     if (!venueIds.includes(venueId)) {
-      throw { status: 403, code: 'FORBIDDEN', message: 'You do not have access to this venue' };
+      console.error('Venue access denied:', {
+        requestedVenueId: venueId,
+        userVenueIds: venueIds,
+        orgId,
+        authMethod: authUser ? 'supabase' : 'cookie',
+        userId: authUser?.id || customUserId
+      });
+      throw {
+        status: 403,
+        code: 'FORBIDDEN',
+        message: `You do not have access to this venue. Requested: ${venueId}, Available: ${venueIds.join(', ') || 'none'}`
+      };
     }
 
     // File size validation: 10MB limit
