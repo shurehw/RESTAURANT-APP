@@ -401,49 +401,90 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
         let parsedPackConfig = null;
 
-        // Pattern 1: "6/750mL" = 6 bottles per case, 750mL each
-        const casePackMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g|cs)/i);
-        if (casePackMatch) {
-          const unitsPerPack = parseInt(casePackMatch[1]);
-          const unitSize = parseFloat(casePackMatch[2]);
-          const unitSizeUom = casePackMatch[3].toLowerCase();
-
-          console.log('Pattern 1 matched (case pack):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
+        // Pattern 1: "12 PC/CS" or "12/CS" = 12 pieces per case
+        const foodCaseMatch = line.description.match(/(\d+)\s*(?:pc|piece|ea|each)?\s*\/\s*(?:cs|case|box)\b/i);
+        if (foodCaseMatch) {
+          const unitsPerPack = parseInt(foodCaseMatch[1]);
+          console.log('Food case pattern matched:', foodCaseMatch[0], '→', unitsPerPack, 'pieces per case');
           parsedPackConfig = {
-            pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
+            pack_type: 'case',
             units_per_pack: unitsPerPack,
-            unit_size: unitSize,
-            unit_size_uom: unitSizeUom === 'cs' ? 'ml' : unitSizeUom
+            unit_size: 1,
+            unit_size_uom: 'each'
           };
           setPackConfigSource('parsed');
-        } else {
-          // Pattern 2: "750ML" (single bottle size, no case pack)
-          const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
-          if (bottleMatch) {
-            const unitSize = parseFloat(bottleMatch[1]);
-            const unitSizeUom = bottleMatch[2].toLowerCase();
+        }
+        // Pattern 2: "6/750mL" = 6 bottles per case, 750mL each
+        else {
+          const casePackMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g|cs)/i);
+          if (casePackMatch) {
+            const unitsPerPack = parseInt(casePackMatch[1]);
+            const unitSize = parseFloat(casePackMatch[2]);
+            const unitSizeUom = casePackMatch[3].toLowerCase();
 
-            console.log('Pattern 2 matched (bottle):', bottleMatch[0], '→ 1 bottle @', unitSize, unitSizeUom);
+            console.log('Pattern 2 matched (beverage case):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
             parsedPackConfig = {
-              pack_type: 'bottle',
-              units_per_pack: 1,
+              pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
+              units_per_pack: unitsPerPack,
               unit_size: unitSize,
-              unit_size_uom: unitSizeUom
+              unit_size_uom: unitSizeUom === 'cs' ? 'ml' : unitSizeUom
             };
             setPackConfigSource('parsed');
-          } else {
-            // Pattern 3: Common beverage defaults (no size found)
-            const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
-            console.log('No size pattern matched. Is beverage?', isBeverage);
-            if (isBeverage) {
-              console.log('Defaulting to 750mL bottle');
+          }
+          // Pattern 3: "1 LB", "5 lb", "10 LB" = sold by pound
+          else if (/(\d+)\s*lb\b/i.test(line.description)) {
+            const lbMatch = line.description.match(/(\d+)\s*lb/i);
+            const lbs = lbMatch ? parseFloat(lbMatch[1]) : 1;
+            console.log('Pound pattern matched:', lbs, 'lb');
+            parsedPackConfig = {
+              pack_type: 'pound',
+              units_per_pack: 1,
+              unit_size: lbs,
+              unit_size_uom: 'lb'
+            };
+            setPackConfigSource('parsed');
+          }
+          // Pattern 4: "EA" or "EACH" = sold as individual pieces
+          else if (/\b(ea|each)\b/i.test(line.description)) {
+            console.log('Each pattern matched');
+            parsedPackConfig = {
+              pack_type: 'each',
+              units_per_pack: 1,
+              unit_size: 1,
+              unit_size_uom: 'each'
+            };
+            setPackConfigSource('parsed');
+          }
+          // Pattern 5: "750ML" (single bottle size, no case pack)
+          else {
+            const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
+            if (bottleMatch) {
+              const unitSize = parseFloat(bottleMatch[1]);
+              const unitSizeUom = bottleMatch[2].toLowerCase();
+
+              console.log('Pattern 5 matched (single unit):', bottleMatch[0], '→ 1 unit @', unitSize, unitSizeUom);
               parsedPackConfig = {
                 pack_type: 'bottle',
                 units_per_pack: 1,
-                unit_size: 750,
-                unit_size_uom: 'ml'
+                unit_size: unitSize,
+                unit_size_uom: unitSizeUom
               };
               setPackConfigSource('parsed');
+            }
+            // Pattern 6: Common beverage defaults (no size found)
+            else {
+              const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
+              console.log('No size pattern matched. Is beverage?', isBeverage);
+              if (isBeverage) {
+                console.log('Defaulting to 750mL bottle');
+                parsedPackConfig = {
+                  pack_type: 'bottle',
+                  units_per_pack: 1,
+                  unit_size: 750,
+                  unit_size_uom: 'ml'
+                };
+                setPackConfigSource('parsed');
+              }
             }
           }
         }
@@ -1008,20 +1049,37 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
                     <div>
                       <label className="text-xs font-medium text-muted-foreground block mb-1">
-                        Subcategory
+                        Subcategory {newItemSubcategory && <span className="text-sage">✓ Auto-detected</span>}
                       </label>
-                      <input
-                        type="text"
-                        value={newItemSubcategory}
-                        onChange={(e) => setNewItemSubcategory(e.target.value)}
-                        placeholder={
-                          newItemCategory === 'liquor' ? 'e.g. Tequila, Vodka, Whiskey' :
-                          newItemCategory === 'wine' ? 'e.g. Red, White, Sparkling' :
-                          newItemCategory === 'beer' ? 'e.g. Lager, IPA, Stout' :
-                          'e.g. Specific type'
-                        }
-                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
-                      />
+                      {newItemCategory === 'food' ? (
+                        <select
+                          value={newItemSubcategory}
+                          onChange={(e) => setNewItemSubcategory(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                        >
+                          <option value="">Select subcategory...</option>
+                          <option value="meat_protein">Meat & Protein</option>
+                          <option value="seafood">Seafood</option>
+                          <option value="produce">Produce</option>
+                          <option value="dairy">Dairy & Eggs</option>
+                          <option value="dry_goods">Dry Goods & Pantry</option>
+                          <option value="bakery">Bakery</option>
+                          <option value="specialty">Specialty & Gourmet</option>
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={newItemSubcategory}
+                          onChange={(e) => setNewItemSubcategory(e.target.value)}
+                          placeholder={
+                            newItemCategory === 'liquor' ? 'e.g. Tequila, Vodka, Whiskey' :
+                            newItemCategory === 'wine' ? 'e.g. Red, White, Sparkling' :
+                            newItemCategory === 'beer' ? 'e.g. Lager, IPA, Stout' :
+                            'e.g. Specific type'
+                          }
+                          className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                        />
+                      )}
                     </div>
                   </div>
 
