@@ -55,6 +55,68 @@ export interface NormalizedInvoice {
 }
 
 /**
+ * Detects junk OCR lines (headers, footers, garbled text) that shouldn't be imported.
+ */
+function isJunkOCRLine(description: string, unitPrice: number, lineTotal: number): boolean {
+  const desc = description.trim();
+
+  // Empty or very short descriptions
+  if (desc.length < 3) return true;
+
+  // Zero cost items (likely headers/footers)
+  if (unitPrice === 0 && lineTotal === 0) return true;
+
+  // Suspiciously high line totals (likely OCR error)
+  if (lineTotal > 100000) return true;
+
+  // Header/footer patterns
+  const junkPatterns = [
+    /SEND\s+(TO\s+)?IMPORTED/i,
+    /ROUTE\s+PRODUCT\s+DESCRIPTION/i,
+    /PRODUCT\s+DESCRIPTION/i,
+    /PAGE\s+\d+\s+OF\s+\d+/i,
+    /TOTAL\s+AMOUNT\s+DUE/i,
+    /REMIT\s+TO/i,
+    /INVOICE\s+NUMBER/i,
+    /BILL\s+TO/i,
+    /SHIP\s+TO/i,
+    /GROUP\s+TOTAL/i,
+    /ORDER\s+SUMMARY/i,
+    /UNIT\s+TOTAL\s+UNITS/i,
+    /QTY\s+ORDER\s+SPLIT/i,
+    /^CUSTOMER\s*#/i,
+    /^SALES\s+REPRESENTATIVE/i,
+    /^ROUTING\s+STOP/i,
+    /^DRIVER\s+NO/i,
+    /^TARGET\s+DELIVERY/i,
+    /^PRINT\s+JOB/i,
+    /^SERVICE\s+CHARGE$/i,
+    /^SPECIAL\s+INSTRUCTION/i,
+    /^EA\s+CASE\s+(DELIVERED|RETURNED)$/i,
+    /^EFFECTIVE\s+\d+/i,
+    /^FROZEN$/i,
+    /^CANNED\s+&\s+DRY$/i,
+  ];
+
+  for (const pattern of junk patterns) {
+    if (pattern.test(desc)) return true;
+  }
+
+  // Garbled text patterns
+  if (/-\d+L-\d+/.test(desc)) return true;  // Pattern like -31L-2
+  if (/^\d{3,}\s+[A-Z]{8,}/.test(desc)) return true;  // Pattern like "800 INITIATIVE"
+  if (/^[A-Z]{15,}$/.test(desc)) return true;  // 15+ consecutive caps, no spaces
+
+  // Very long all-caps strings (likely garbled)
+  if (/^[A-Z\d\s-]{40,}$/.test(desc)) return true;
+
+  // Contains massive numbers (OCR errors like 380000191)
+  if (/\d{8,}/.test(desc)) return true;
+
+  return false;
+}
+
+/**
  * Normalizes vendor name to lowercase, removes extra whitespace, punctuation, and legal suffixes.
  * Improved to handle common OCR variations and reduce duplicates.
  */
@@ -302,9 +364,19 @@ export async function normalizeOCR(
     warnings.push(`Could not parse invoice date: "${raw.invoiceDate}"`);
   }
 
-  // 3. Match line items
+  // 3. Filter and match line items (skip junk OCR)
+  const validLines = raw.lineItems.filter((line) => {
+    return !isJunkOCRLine(line.description, line.unitPrice, line.lineTotal);
+  });
+
+  // Track how many lines were filtered
+  const filteredCount = raw.lineItems.length - validLines.length;
+  if (filteredCount > 0) {
+    warnings.push(`Filtered ${filteredCount} junk OCR line(s) (headers/footers).`);
+  }
+
   const lines = await Promise.all(
-    raw.lineItems.map(async (line) => {
+    validLines.map(async (line) => {
       const match = await matchLineItem(
         line.itemCode,
         line.description,
