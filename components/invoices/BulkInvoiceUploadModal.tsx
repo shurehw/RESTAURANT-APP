@@ -252,18 +252,29 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                 </span>
               </div>
               {uploading && (
-                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div
-                    className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out relative"
-                    style={{ width: `${(completed / files.length) * 100}%` }}
+                    className="bg-primary h-3 rounded-full transition-all duration-500 ease-out relative"
+                    style={{
+                      width: `${Math.max(5, (completed / files.length) * 100)}%`,
+                      minWidth: completed === 0 ? '5%' : 'auto'
+                    }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
                          style={{
                            backgroundSize: '200% 100%',
                            animation: 'shimmer 2s infinite'
                          }}
                     />
                   </div>
+                </div>
+              )}
+              {!uploading && files.length > 0 && completed > 0 && (
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                  <div
+                    className="bg-green-500 h-3 rounded-full"
+                    style={{ width: `${(successCount / files.length) * 100}%` }}
+                  />
                 </div>
               )}
               <style jsx>{`
