@@ -1,1 +1,36 @@
-Access is denied.
+
+> opsos@0.1.0 dev
+> next dev
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+▲ Next.js 16.1.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.6.48.154:3000
+- Environments: .env.local
+- Experiments (use with caution):
+  · serverActions
+
+✓ Starting...
+Creating turbopack project { dir: 'c:\\Users\\JacobShure\\RESTAURANT APP', testMode: true }
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+⚠ Failed to reload dynamic routes: Error: You cannot use different slug names for the same dynamic path ('orgId' !== 'id').
+    at ignore-listed frames
+✓ Ready in 2.8s
+Error: You cannot use different slug names for the same dynamic path ('id' !== 'orgId').
+    at ignore-listed frames
+⨯ unhandledRejection: Error: You cannot use different slug names for the same dynamic path ('id' !== 'orgId').
+    at ignore-listed frames
+⨯ unhandledRejection:  Error: You cannot use different slug names for the same dynamic path ('id' !== 'orgId').
+    at ignore-listed frames
+⚠ Failed to reload dynamic routes: Error: You cannot use different slug names for the same dynamic path ('orgId' !== 'id').
+    at ignore-listed frames
+⚠ Failed to reload dynamic routes: Error: You cannot use different slug names for the same dynamic path ('orgId' !== 'id').
+    at ignore-listed frames
+Error: You cannot use different slug names for the same dynamic path ('id' !== 'orgId').
+    at ignore-listed frames
+⨯ unhandledRejection: Error: You cannot use different slug names for the same dynamic path ('id' !== 'orgId').
+    at ignore-listed frames
+⨯ unhandledRejection:  Error: You cannot use different slug names for the same dynamic path ('id' !== 'orgId').
+    at ignore-listed frames
+⚠ Failed to reload dynamic routes: Error: You cannot use different slug names for the same dynamic path ('orgId' !== 'id').
+    at ignore-listed frames

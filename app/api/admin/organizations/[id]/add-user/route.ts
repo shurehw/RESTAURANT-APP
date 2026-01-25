@@ -4,10 +4,10 @@ import { guard } from '@/lib/api/guard';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ orgId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return guard(async () => {
-    const { orgId } = await params;
+    const { id: orgId } = await params;
     const supabase = await createClient();
     const body = await request.json();
     const { user_id, role = 'user' } = body;
