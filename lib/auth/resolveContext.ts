@@ -50,7 +50,8 @@ export async function resolveContext(): Promise<TenantContext | null> {
     
     const isPlatformAdmin = !!platformAdmin;
 
-    const { data: orgMembership } = await supabase
+    // Use adminClient to bypass RLS - we've already verified identity via getUser()
+    const { data: orgMembership } = await adminClient
       .from('organization_users')
       .select('organization_id, role')
       .eq('user_id', authUser.id)
