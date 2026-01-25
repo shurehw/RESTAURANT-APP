@@ -64,7 +64,7 @@ export default async function VendorDetailPage({ params }: Props) {
   // Fetch ALL invoices (not just 5)
   const { data: allInvoices } = await adminClient
     .from("invoices")
-    .select("id, invoice_number, invoice_date, total_amount, status, venue_id, storage_path, venues(name)")
+    .select("id, invoice_number, invoice_date, total_amount, status, venue_id, storage_path, venue:venues(name)")
     .eq("vendor_id", id)
     .order("invoice_date", { ascending: false })
     .limit(100); // Show up to 100 invoices
