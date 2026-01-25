@@ -3,6 +3,9 @@ import { readdir, readFile } from 'fs/promises';
 import { join, extname } from 'path';
 import { extractInvoiceFromPDF, extractInvoiceWithClaude } from '../lib/ocr/claude';
 import { normalizeOCR } from '../lib/ocr/normalize';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: '.env.local' });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

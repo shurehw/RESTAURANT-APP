@@ -5,6 +5,12 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { RawOCRInvoice } from './normalize';
+import dotenv from 'dotenv';
+
+// Load environment variables for scripts
+if (typeof window === 'undefined') {
+  dotenv.config({ path: '.env.local' });
+}
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',

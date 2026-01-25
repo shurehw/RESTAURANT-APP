@@ -113,7 +113,10 @@
       "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
       "Bash(where:*)",
       "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food\" OUTPUT_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food Split\" npx tsx scripts/split-large-pdfs.ts)",
-      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food Split\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")"
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food Split\" bash scripts/run-bulk-import.sh \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR='C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food' node_modules/.bin/tsx scripts/bulk-import-invoices.ts \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food\" npx dotenv -e .env.local -- npx tsx scripts/bulk-import-invoices.ts \"Delilah Dallas\")",
+      "Bash(INVOICE_DIR=\"C:\\Users\\JacobShure\\OneDrive - Hwood Group\\Finance - Delilah Dallas Finance - Temp Invoice Scans\\Multiple Food\" node_modules/.bin/tsx scripts/bulk-import-invoices.ts \"Delilah Dallas\")"
     ],
     "deny": [],
     "ask": []
