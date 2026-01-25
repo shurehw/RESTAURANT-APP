@@ -57,6 +57,9 @@ export async function GET() {
     // Use first organization if user belongs to multiple
     const orgUser = orgUsers[0];
 
+    console.log('[GL Accounts] User ID:', userId);
+    console.log('[GL Accounts] Org ID:', orgUser.organization_id);
+
     // Fetch only COGS and Opex GL accounts (relevant for items/inventory)
     // Exclude Revenue, Assets, Liabilities, Equity, and other non-operational accounts
     const { data: accounts, error } = await supabase
@@ -68,6 +71,8 @@ export async function GET() {
       .in('section', ['COGS', 'Opex'])
       .order('section')
       .order('display_order');
+
+    console.log('[GL Accounts] Query completed. Found:', accounts?.length || 0);
 
     if (error) {
       console.error('Error fetching GL accounts:', error);
