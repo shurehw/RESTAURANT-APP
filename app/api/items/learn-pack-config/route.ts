@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
 import { extractBrand } from '@/lib/brand-extraction';
+import { cookies } from 'next/headers';
 
 /**
  * POST /api/items/learn-pack-config
@@ -27,19 +28,32 @@ export async function POST(request: NextRequest) {
     let learnedConfig = null;
     let webSearchConfig = null;
 
-    // Get user's organization
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) {
+    // Get user ID from cookie (our custom auth) or Supabase session
+    const cookieStore = await cookies();
+    let userId: string | null = null;
+
+    // Try Supabase session first
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+    } else {
+      // Fallback to custom user_id cookie
+      const userIdCookie = cookieStore.get('user_id');
+      userId = userIdCookie?.value || null;
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    // Get user's organization
     const { data: orgUsers } = await supabase
       .from('organization_users')
       .select('organization_id')
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .eq('is_active', true);
 
     if (!orgUsers || orgUsers.length === 0) {
