@@ -10,20 +10,30 @@ export async function GET() {
   return guard(async () => {
     const supabase = await createClient();
 
-    // Get user's organization
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) {
+    // Get user from Supabase session
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - No active session' },
         { status: 401 }
       );
     }
 
-    const { data: orgUsers } = await supabase
+    // Get user's organization
+    const { data: orgUsers, error: orgError } = await supabase
       .from('organization_users')
       .select('organization_id')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .eq('is_active', true);
+
+    if (orgError) {
+      console.error('Error fetching org users:', orgError);
+      return NextResponse.json(
+        { error: 'Failed to fetch user organization', details: orgError.message },
+        { status: 500 }
+      );
+    }
 
     if (!orgUsers || orgUsers.length === 0) {
       return NextResponse.json(
