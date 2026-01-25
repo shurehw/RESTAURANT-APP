@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
-const publicRoutes = ['/login', '/signup'];
+const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -17,17 +17,28 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for session cookie
-  const userId = request.cookies.get('user_id');
+  // ========================================================================
+  // Check for authentication: Supabase session OR legacy user_id cookie
+  // This supports both the new auth flow and existing users during migration
+  // ========================================================================
+  
+  // Check for legacy user_id cookie
+  const legacyUserId = request.cookies.get('user_id');
+  
+  // Check for Supabase auth cookies (sb-*-auth-token pattern)
+  const hasSupabaseSession = Array.from(request.cookies.getAll()).some(
+    cookie => cookie.name.includes('-auth-token')
+  );
 
-  // If no session and trying to access protected route, redirect to login
-  if (!userId) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+  // Allow access if either auth method is present
+  if (legacyUserId || hasSupabaseSession) {
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // No authentication found - redirect to login
+  const loginUrl = new URL('/login', request.url);
+  loginUrl.searchParams.set('redirect', pathname);
+  return NextResponse.redirect(loginUrl);
 }
 
 export const config = {
