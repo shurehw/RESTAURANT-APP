@@ -27,6 +27,7 @@ interface BulkInvoiceUploadModalProps {
 interface FileStatus {
   file: File;
   status: 'pending' | 'uploading' | 'success' | 'error';
+  progress?: string; // Progress message like "Scanning document...", "Processing invoice 2 of 5..."
   error?: string;
   invoiceId?: string;
 }
@@ -61,11 +62,31 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
     formData.append('venue_id', venueId);
     formData.append('is_preopening', isPreopening.toString());
 
+    // Set initial uploading state
     setFiles(prev => prev.map((f, i) =>
-      i === index ? { ...f, status: 'uploading' as const } : f
+      i === index ? { ...f, status: 'uploading' as const, progress: 'Uploading file...' } : f
     ));
 
     try {
+      // Simulate progress updates
+      setTimeout(() => {
+        setFiles(prev => prev.map((f, i) =>
+          i === index && f.status === 'uploading' ? { ...f, progress: 'Scanning document...' } : f
+        ));
+      }, 500);
+
+      setTimeout(() => {
+        setFiles(prev => prev.map((f, i) =>
+          i === index && f.status === 'uploading' ? { ...f, progress: 'Extracting invoice data...' } : f
+        ));
+      }, 1500);
+
+      setTimeout(() => {
+        setFiles(prev => prev.map((f, i) =>
+          i === index && f.status === 'uploading' ? { ...f, progress: 'Matching vendors and items...' } : f
+        ));
+      }, 3000);
+
       const response = await fetch('/api/invoices/ocr', {
         method: 'POST',
         body: formData,
@@ -240,13 +261,26 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                 </span>
               </div>
               {uploading && (
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    className="bg-primary h-2.5 rounded-full transition-all duration-500 ease-out relative"
                     style={{ width: `${(completed / files.length) * 100}%` }}
-                  />
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"
+                         style={{
+                           backgroundSize: '200% 100%',
+                           animation: 'shimmer 2s infinite'
+                         }}
+                    />
+                  </div>
                 </div>
               )}
+              <style jsx>{`
+                @keyframes shimmer {
+                  0% { background-position: -200% 0; }
+                  100% { background-position: 200% 0; }
+                }
+              `}</style>
               {completed === files.length && files.length > 0 && (
                 <div className="flex gap-4 mt-2 text-sm">
                   <span className="text-green-600 flex items-center gap-1">
@@ -291,8 +325,11 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                     <p className="text-xs text-muted-foreground">
                       {(fileStatus.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
+                    {fileStatus.status === 'uploading' && fileStatus.progress && (
+                      <p className="text-xs text-primary mt-1 animate-pulse">{fileStatus.progress}</p>
+                    )}
                     {fileStatus.error && (
-                      <p className="text-xs text-red-600 mt-1">{fileStatus.error}</p>
+                      <p className="text-xs text-red-600 mt-1 whitespace-pre-line">{fileStatus.error}</p>
                     )}
                   </div>
 
