@@ -35,13 +35,15 @@ export async function GET() {
     // Use first organization if user belongs to multiple
     const orgUser = orgUsers[0];
 
-    // Fetch all active, non-summary GL accounts
+    // Fetch only COGS and Opex GL accounts (relevant for items/inventory)
+    // Exclude Revenue, Assets, Liabilities, Equity, and other non-operational accounts
     const { data: accounts, error } = await supabase
       .from('gl_accounts')
       .select('id, external_code, name, section, display_order')
       .eq('org_id', orgUser.organization_id)
       .eq('is_active', true)
       .eq('is_summary', false)
+      .in('section', ['COGS', 'Opex'])
       .order('section')
       .order('display_order');
 
