@@ -43,3 +43,1227 @@ Priority breakdown:
   Overall: 0/144 complete (0.0%)
 
   ⏳ Waiting 5s before next batch...
+
+📦 Batch 2/29 (invoices 6-10):
+
+  Processing: MARDOM | FR10005156
+    Missing: $28156.00
+  Processing: MARMON | 10000005.36
+    Missing: $18332.00
+  Processing: Spec's Wine | 1841471
+    Missing: $16947.53
+  Processing: Johnson Brothers Maverick of Texas | INV1876569
+    Missing: $10361.66
+  Processing: MARQAL | 00025506
+    Missing: $8804.82
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 3/29 (invoices 11-15):
+
+  Processing: Johnson Brothers of Texas | INV1876688
+    Missing: $8572.72
+  Processing: Spec's Wine | 16880351
+    Missing: $8142.52
+  Processing: Republic National Distributing Company | 179079
+    Missing: $6942.00
+  Processing: Republic National Distributing Company | 7179054
+    Missing: $4264.00
+  Processing: SYSCO | 996090620
+    Missing: $2917.63
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 4/29 (invoices 16-20):
+
+  Processing: Chefs Warehouse Midwest LLC | 70859984
+    Missing: $2908.20
+  Processing: The Chefs Warehouse | 70939675
+    Missing: $2851.04
+  Processing: Chefs Warehouse Midwest LLC | 70923428
+    Missing: $2684.64
+  Processing: SEAFOOD SUPPLY COMPANY | 7507-347
+    Missing: $2659.27
+  Processing: SEAFOOD SUPPLY COMPANY | 23950
+    Missing: $2622.88
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 5/29 (invoices 21-25):
+
+  Processing: Spec's Wine | 16900368
+    Missing: $2611.66
+  Processing: SYSCO North Texas | 7507-3471
+    Missing: $2560.50
+  Processing: The Chefs Warehouse | 70859984
+    Missing: $2543.20
+  Processing: The Chefs Warehouse | 70761327
+    Missing: $2533.42
+  Processing: SYSCO NORTH TEXAS FOODSERVICE | 999-9999
+    Missing: $2489.93
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 6/29 (invoices 26-30):
+
+  Processing: Delilah Data LLC | 85798587
+    Missing: $2333.88
+  Processing: Sysco San Diego | 164414
+    Missing: $2332.79
+  Processing: TEXAS THE GREAT STEAKHOUSE STEAKS | 186269
+    Missing: $2320.15
+  Processing: Allen Brothers Texas | 136259
+    Missing: $2320.15
+  Processing: The Chefs Warehouse | 70923428
+    Missing: $2189.21
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 7/29 (invoices 31-35):
+
+  Processing: Chefs Warehouse Midwest LLC | 70761327
+    Missing: $2136.53
+  Processing: Texas Steakhouse Steaks | 187926
+    Missing: $1963.63
+  Processing: Allen Brothers Texas | 187926
+    Missing: $1963.63
+  Processing: MFW - Maekor Fine Wine | M-3404601
+    Missing: $1943.47
+  Processing: SYSCO North Texas | 998-4909
+    Missing: $1844.19
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 8/29 (invoices 36-40):
+
+  Processing: Delilah Dallas LLC | 55703540
+    Missing: $1808.06
+  Processing: SYSCO North Texas | 996105050
+    Missing: $1532.57
+  Processing: SYSCO North Texas | 998-9999 9999
+    Missing: $1416.77
+  Processing: The Chefs Warehouse | 70777359
+    Missing: $1347.32
+  Processing: Chefs Warehouse Midwest LLC | 70777359
+    Missing: $1347.32
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 9/29 (invoices 41-45):
+
+  Processing: Allen Brothers Texas | 1B8357
+    Missing: $1345.60
+  Processing: Texas Steakhouse | 188357
+    Missing: $1345.60
+  Processing: Texas Roadhouse Steaks | 187374
+    Missing: $1249.67
+  Processing: Chef's Produce | 01532086
+    Missing: $1174.39
+  Processing: SYSCO | 996008797
+    Missing: $1159.94
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 10/29 (invoices 46-50):
+
+  Processing: Allen Brothers Texas | 187374
+    Missing: $1153.64
+  Processing: The Chefs Warehouse | 70805899
+    Missing: $1119.95
+  Processing: SEAFOOD SUPPLY COMPANY | 26-7537773
+    Missing: $1011.76
+  Processing: SEAFOOD SUPPLY COMPANY | 26-179827
+    Missing: $1009.02
+  Processing: Allen Brothers Texas | 185306
+    Missing: $972.97
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 11/29 (invoices 51-55):
+
+  Processing: SYSCO | 996115744
+    Missing: $917.45
+  Processing: Allen Brothers Texas | 195459
+    Missing: $914.36
+  Processing: SYSCO North Texas | 9999-9999-9999
+    Missing: $880.01
+  Processing: Chefs Warehouse Midwest LLC | 70805899
+    Missing: $875.49
+  Processing: SYSCO North Texas | 996071673
+    Missing: $857.83
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 12/29 (invoices 56-60):
+
+  Processing: Allen Brothers Texas | 186469
+    Missing: $854.05
+  Processing: The Chefs Warehouse | 70789722
+    Missing: $846.90
+  Processing: SYSCO | 999-4199-999
+    Missing: $843.11
+  Processing: Spec's Wine | 16852177
+    Missing: $840.61
+  Processing: Chefs Warehouse Midwest LLC | 70990569
+    Missing: $831.20
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 13/29 (invoices 61-65):
+
+  Processing: The Chefs Warehouse | 70990569
+    Missing: $831.20
+  Processing: Allen Brothers Texas | 195469
+    Missing: $738.70
+  Processing: BTI To Customer | 4698981771
+    Missing: $689.65
+  Processing: SYSCO North Texas | 990071673
+    Missing: $632.51
+  Processing: MARION | 44806C31
+    Missing: $624.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 14/29 (invoices 66-70):
+
+  Processing: Chefs Warehouse Midwest LLC | 70789722
+    Missing: $623.10
+  Processing: Chefs Warehouse Midwest LLC | 70960274
+    Missing: $616.93
+  Processing: SEAFOOD SUPPLY COMPANY | 2952
+    Missing: $608.96
+  Processing: The Chefs Warehouse | 70846878
+    Missing: $552.45
+  Processing: The Chefs Warehouse | 70823755
+    Missing: $537.08
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 15/29 (invoices 71-75):
+
+  Processing: SEAFOOD SUPPLY COMPANY | 26-7/60073
+    Missing: $512.23
+  Processing: Keith Foods | 55755329
+    Missing: $506.70
+  Processing: SEAFOOD SUPPLY COMPANY | 26-79627
+    Missing: $470.56
+  Processing: Chefs Warehouse Midwest LLC | 70846878
+    Missing: $458.37
+  Processing: Mariani | 4659491771
+    Missing: $435.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 16/29 (invoices 76-80):
+
+  Processing: SYSCO North Texas | 722077-347
+    Missing: $432.45
+  Processing: The Chefs Warehouse | 70875013
+    Missing: $429.69
+  Processing: SEAFOOD SUPPLY COMPANY | 26-76007B
+    Missing: $422.40
+  Processing: Chef's Produce | 01527696
+    Missing: $392.28
+  Processing: SEAFOOD SUPPLY COMPANY | 26-759590
+    Missing: $387.45
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 17/29 (invoices 81-85):
+
+  Processing: Mr. Greens | 970660
+    Missing: $383.08
+  Processing: Mr. Greens | 972424
+    Missing: $328.05
+  Processing: MARONI | 469949.1171
+    Missing: $300.25
+  Processing: Chef's Produce | 01529490
+    Missing: $285.89
+  Processing: Chef's Produce | 01533336
+    Missing: $279.75
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 18/29 (invoices 86-90):
+
+  Processing: Chef's Produce | 01534315
+    Missing: $279.00
+  Processing: OAK FARMS-DALLAS DFA DAIRY BRANDS | 60252296
+    Missing: $274.67
+  Processing: Delilah Dallas LLC | 5679687
+    Missing: $257.34
+  Processing: Southern Glazer's of TX | 9130139318
+    Missing: $240.00
+  Processing: Mr. Greens | 980565
+    Missing: $214.86
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 19/29 (invoices 91-95):
+
+  Processing: RARE FOODS | 05957
+    Missing: $210.92
+  Processing: FARM to TABLE | INV607063
+    Missing: $208.00
+  Processing: Chef's Produce | 01534559
+    Missing: $206.50
+  Processing: Chef's Produce | 01535052
+    Missing: $181.95
+  Processing: Chef's Produce | 01534401
+    Missing: $175.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 20/29 (invoices 96-100):
+
+  Processing: SEAFOOD SUPPLY COMPANY | 25262
+    Missing: $172.20
+  Processing: RARE FOODS | 05899
+    Missing: $156.00
+  Processing: Dairyland Produce | 06785216
+    Missing: $154.00
+  Processing: Dairyland Produce | 06785216
+    Missing: $154.00
+  Processing: OAK FARMS-DALLAS DFA DAIRY BRANDS | 68251026
+    Missing: $138.28
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 21/29 (invoices 101-105):
+
+  Processing: Mr. Greens | 974296
+    Missing: $128.45
+  Processing: Chef's Produce | 0153965
+    Missing: $119.83
+  Processing: RARE FOODS | 05919
+    Missing: $114.45
+  Processing: Mr. Greens | 977479
+    Missing: $100.95
+  Processing: The Chefs Warehouse | 70998415
+    Missing: $97.51
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 22/29 (invoices 106-110):
+
+  Processing: Chefs Warehouse Midwest LLC | 70998415
+    Missing: $97.51
+  Processing: Mr. Greens | 978975
+    Missing: $97.30
+  Processing: SEAFOOD SUPPLY COMPANY | 26-78971
+    Missing: $92.40
+  Processing: Chef's Produce | 01527112
+    Missing: $86.50
+  Processing: RARE FOODS | 05742
+    Missing: $82.72
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 23/29 (invoices 111-115):
+
+  Processing: OAK FARMS-DALLAS DFA DAIRY BRANDS | 50252069
+    Missing: $72.73
+  Processing: OAK FARMS-DALLAS DFA DAIRY BRANDS | G0252069
+    Missing: $72.65
+  Processing: MARION | 5677184
+    Missing: $68.20
+  Processing: Mr. Greens | 979569
+    Missing: $67.70
+  Processing: Chefs Warehouse Midwest LLC | 70833430
+    Missing: $62.79
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 24/29 (invoices 116-120):
+
+  Processing: The Chefs Warehouse | 70833430
+    Missing: $62.79
+  Processing: The Chefs Warehouse | 70967410
+    Missing: $60.00
+  Processing: Chefs Warehouse Midwest LLC | 70967410
+    Missing: $60.00
+  Processing: Mr. Greens | 980215
+    Missing: $56.62
+  Processing: Chef's Produce | 01533965
+    Missing: $49.41
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 25/29 (invoices 121-125):
+
+  Processing: Mr. Greens | 980869
+    Missing: $38.80
+  Processing: Mr. Greens | 973102
+    Missing: $38.00
+  Processing: Mr. Greens | 971154
+    Missing: $35.67
+  Processing: Dairyland Produce | 06786764
+    Missing: $30.00
+  Processing: Maroon | M0000005436
+    Missing: $26.38
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 26/29 (invoices 126-130):
+
+  Processing: SEAFOOD SUPPLY COMPANY | M4853
+    Missing: $21.60
+  Processing: SEAFOOD SUPPLY COMPANY | M453
+    Missing: $21.60
+  Processing: Mr. Greens | 971156
+    Missing: $18.47
+  Processing: Alsco Uniforms | LDFW1927872
+    Missing: $14.81
+  Processing: SYSCO | 990608797
+    Missing: $11.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 27/29 (invoices 131-135):
+
+  Processing: Maroon | JA-00000163
+    Missing: $2.47
+  Processing: UNKNOWN | NE 07
+    Missing: $0.00
+  Processing: MARION | LC#10000013G
+    Missing: $0.00
+  Processing: OAK FARMS-DALLAS DFA DAIRY BRANDS | 402454834
+    Missing: $0.00
+  Processing: Chef's Produce | 00257464
+    Missing: $0.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 28/29 (invoices 136-140):
+
+  Processing: The Chefs Warehouse | 70823749
+    Missing: $0.00
+  Processing: MARKOL | 55050540
+    Missing: $0.00
+  Processing: UNKNOWN | 10000005136
+    Missing: $0.00
+  Processing: Chef's Produce | 01324051
+    Missing: $0.00
+  Processing: Delilah Dallas LLC | 5670540
+    Missing: $0.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...
+
+📦 Batch 29/29 (invoices 141-144):
+
+  Processing: BILL TO Customer | LCF-1000000368
+    Missing: $0.00
+  Processing: Delilah Dallas LLC | 5580251
+    Missing: $0.00
+  Processing: Bill Troishner | LIC# 10-000005135
+    Missing: $0.00
+  Processing: Delilah Dallas LLC | 55753543
+    Missing: $0.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/4 successful
+  Overall: 0/144 complete (0.0%)
+
+
+════════════════════════════════════════════════════════════
+
+📊 FINAL RESULTS:
+
+Total processed: 144
+✅ Successful: 0 (0.0%)
+❌ Failed: 144 (100.0%)
+
+⚠️  FAILED INVOICES:
+
+1. Marvin | G260914
+   Error: Download error: {}
+
+2. MARKOL | 5603540
+   Error: Download error: {}
+
+3. Republic National Distributing Company | 7173361
+   Error: Download error: {}
+
+4. Republic National Distributing Company | 7173861
+   Error: Download error: {}
+
+5. MARKON | C26601
+   Error: Download error: {}
+
+6. MARDOM | FR10005156
+   Error: Download error: {}
+
+7. MARMON | 10000005.36
+   Error: Download error: {}
+
+8. Spec's Wine | 1841471
+   Error: Download error: {}
+
+9. Johnson Brothers Maverick of Texas | INV1876569
+   Error: Download error: {}
+
+10. MARQAL | 00025506
+   Error: Download error: {}
+
+11. Johnson Brothers of Texas | INV1876688
+   Error: Download error: {}
+
+12. Spec's Wine | 16880351
+   Error: Download error: {}
+
+13. Republic National Distributing Company | 179079
+   Error: Download error: {}
+
+14. Republic National Distributing Company | 7179054
+   Error: Download error: {}
+
+15. SYSCO | 996090620
+   Error: Download error: {}
+
+16. Chefs Warehouse Midwest LLC | 70859984
+   Error: Download error: {}
+
+17. The Chefs Warehouse | 70939675
+   Error: Download error: {}
+
+18. Chefs Warehouse Midwest LLC | 70923428
+   Error: Download error: {}
+
+19. SEAFOOD SUPPLY COMPANY | 7507-347
+   Error: Download error: {}
+
+20. SEAFOOD SUPPLY COMPANY | 23950
+   Error: Download error: {}
+
+21. Spec's Wine | 16900368
+   Error: Download error: {}
+
+22. SYSCO North Texas | 7507-3471
+   Error: Download error: {}
+
+23. The Chefs Warehouse | 70859984
+   Error: Download error: {}
+
+24. The Chefs Warehouse | 70761327
+   Error: Download error: {}
+
+25. SYSCO NORTH TEXAS FOODSERVICE | 999-9999
+   Error: Download error: {}
+
+26. Delilah Data LLC | 85798587
+   Error: Download error: {}
+
+27. Sysco San Diego | 164414
+   Error: Download error: {}
+
+28. TEXAS THE GREAT STEAKHOUSE STEAKS | 186269
+   Error: Download error: {}
+
+29. Allen Brothers Texas | 136259
+   Error: Download error: {}
+
+30. The Chefs Warehouse | 70923428
+   Error: Download error: {}
+
+31. Chefs Warehouse Midwest LLC | 70761327
+   Error: Download error: {}
+
+32. Texas Steakhouse Steaks | 187926
+   Error: Download error: {}
+
+33. Allen Brothers Texas | 187926
+   Error: Download error: {}
+
+34. MFW - Maekor Fine Wine | M-3404601
+   Error: Download error: {}
+
+35. SYSCO North Texas | 998-4909
+   Error: Download error: {}
+
+36. Delilah Dallas LLC | 55703540
+   Error: Download error: {}
+
+37. SYSCO North Texas | 996105050
+   Error: Download error: {}
+
+38. SYSCO North Texas | 998-9999 9999
+   Error: Download error: {}
+
+39. The Chefs Warehouse | 70777359
+   Error: Download error: {}
+
+40. Chefs Warehouse Midwest LLC | 70777359
+   Error: Download error: {}
+
+41. Allen Brothers Texas | 1B8357
+   Error: Download error: {}
+
+42. Texas Steakhouse | 188357
+   Error: Download error: {}
+
+43. Texas Roadhouse Steaks | 187374
+   Error: Download error: {}
+
+44. Chef's Produce | 01532086
+   Error: Download error: {}
+
+45. SYSCO | 996008797
+   Error: Download error: {}
+
+46. Allen Brothers Texas | 187374
+   Error: Download error: {}
+
+47. The Chefs Warehouse | 70805899
+   Error: Download error: {}
+
+48. SEAFOOD SUPPLY COMPANY | 26-7537773
+   Error: Download error: {}
+
+49. SEAFOOD SUPPLY COMPANY | 26-179827
+   Error: Download error: {}
+
+50. Allen Brothers Texas | 185306
+   Error: Download error: {}
+
+51. SYSCO | 996115744
+   Error: Download error: {}
+
+52. Allen Brothers Texas | 195459
+   Error: Download error: {}
+
+53. SYSCO North Texas | 9999-9999-9999
+   Error: Download error: {}
+
+54. Chefs Warehouse Midwest LLC | 70805899
+   Error: Download error: {}
+
+55. SYSCO North Texas | 996071673
+   Error: Download error: {}
+
+56. Allen Brothers Texas | 186469
+   Error: Download error: {}
+
+57. The Chefs Warehouse | 70789722
+   Error: Download error: {}
+
+58. SYSCO | 999-4199-999
+   Error: Download error: {}
+
+59. Spec's Wine | 16852177
+   Error: Download error: {}
+
+60. Chefs Warehouse Midwest LLC | 70990569
+   Error: Download error: {}
+
+61. The Chefs Warehouse | 70990569
+   Error: Download error: {}
+
+62. Allen Brothers Texas | 195469
+   Error: Download error: {}
+
+63. BTI To Customer | 4698981771
+   Error: Download error: {}
+
+64. SYSCO North Texas | 990071673
+   Error: Download error: {}
+
+65. MARION | 44806C31
+   Error: Download error: {}
+
+66. Chefs Warehouse Midwest LLC | 70789722
+   Error: Download error: {}
+
+67. Chefs Warehouse Midwest LLC | 70960274
+   Error: Download error: {}
+
+68. SEAFOOD SUPPLY COMPANY | 2952
+   Error: Download error: {}
+
+69. The Chefs Warehouse | 70846878
+   Error: Download error: {}
+
+70. The Chefs Warehouse | 70823755
+   Error: Download error: {}
+
+71. SEAFOOD SUPPLY COMPANY | 26-7/60073
+   Error: Download error: {}
+
+72. Keith Foods | 55755329
+   Error: Download error: {}
+
+73. SEAFOOD SUPPLY COMPANY | 26-79627
+   Error: Download error: {}
+
+74. Chefs Warehouse Midwest LLC | 70846878
+   Error: Download error: {}
+
+75. Mariani | 4659491771
+   Error: Download error: {}
+
+76. SYSCO North Texas | 722077-347
+   Error: Download error: {}
+
+77. The Chefs Warehouse | 70875013
+   Error: Download error: {}
+
+78. SEAFOOD SUPPLY COMPANY | 26-76007B
+   Error: Download error: {}
+
+79. Chef's Produce | 01527696
+   Error: Download error: {}
+
+80. SEAFOOD SUPPLY COMPANY | 26-759590
+   Error: Download error: {}
+
+81. Mr. Greens | 970660
+   Error: Download error: {}
+
+82. Mr. Greens | 972424
+   Error: Download error: {}
+
+83. MARONI | 469949.1171
+   Error: Download error: {}
+
+84. Chef's Produce | 01529490
+   Error: Download error: {}
+
+85. Chef's Produce | 01533336
+   Error: Download error: {}
+
+86. Chef's Produce | 01534315
+   Error: Download error: {}
+
+87. OAK FARMS-DALLAS DFA DAIRY BRANDS | 60252296
+   Error: Download error: {}
+
+88. Delilah Dallas LLC | 5679687
+   Error: Download error: {}
+
+89. Southern Glazer's of TX | 9130139318
+   Error: Download error: {}
+
+90. Mr. Greens | 980565
+   Error: Download error: {}
+
+91. RARE FOODS | 05957
+   Error: Download error: {}
+
+92. FARM to TABLE | INV607063
+   Error: Download error: {}
+
+93. Chef's Produce | 01534559
+   Error: Download error: {}
+
+94. Chef's Produce | 01535052
+   Error: Download error: {}
+
+95. Chef's Produce | 01534401
+   Error: Download error: {}
+
+96. SEAFOOD SUPPLY COMPANY | 25262
+   Error: Download error: {}
+
+97. RARE FOODS | 05899
+   Error: Download error: {}
+
+98. Dairyland Produce | 06785216
+   Error: Download error: {}
+
+99. Dairyland Produce | 06785216
+   Error: Download error: {}
+
+100. OAK FARMS-DALLAS DFA DAIRY BRANDS | 68251026
+   Error: Download error: {}
+
+101. Mr. Greens | 974296
+   Error: Download error: {}
+
+102. Chef's Produce | 0153965
+   Error: Download error: {}
+
+103. RARE FOODS | 05919
+   Error: Download error: {}
+
+104. Mr. Greens | 977479
+   Error: Download error: {}
+
+105. The Chefs Warehouse | 70998415
+   Error: Download error: {}
+
+106. Chefs Warehouse Midwest LLC | 70998415
+   Error: Download error: {}
+
+107. Mr. Greens | 978975
+   Error: Download error: {}
+
+108. SEAFOOD SUPPLY COMPANY | 26-78971
+   Error: Download error: {}
+
+109. Chef's Produce | 01527112
+   Error: Download error: {}
+
+110. RARE FOODS | 05742
+   Error: Download error: {}
+
+111. OAK FARMS-DALLAS DFA DAIRY BRANDS | 50252069
+   Error: Download error: {}
+
+112. OAK FARMS-DALLAS DFA DAIRY BRANDS | G0252069
+   Error: Download error: {}
+
+113. MARION | 5677184
+   Error: Download error: {}
+
+114. Mr. Greens | 979569
+   Error: Download error: {}
+
+115. Chefs Warehouse Midwest LLC | 70833430
+   Error: Download error: {}
+
+116. The Chefs Warehouse | 70833430
+   Error: Download error: {}
+
+117. The Chefs Warehouse | 70967410
+   Error: Download error: {}
+
+118. Chefs Warehouse Midwest LLC | 70967410
+   Error: Download error: {}
+
+119. Mr. Greens | 980215
+   Error: Download error: {}
+
+120. Chef's Produce | 01533965
+   Error: Download error: {}
+
+121. Mr. Greens | 980869
+   Error: Download error: {}
+
+122. Mr. Greens | 973102
+   Error: Download error: {}
+
+123. Mr. Greens | 971154
+   Error: Download error: {}
+
+124. Dairyland Produce | 06786764
+   Error: Download error: {}
+
+125. Maroon | M0000005436
+   Error: Download error: {}
+
+126. SEAFOOD SUPPLY COMPANY | M4853
+   Error: Download error: {}
+
+127. SEAFOOD SUPPLY COMPANY | M453
+   Error: Download error: {}
+
+128. Mr. Greens | 971156
+   Error: Download error: {}
+
+129. Alsco Uniforms | LDFW1927872
+   Error: Download error: {}
+
+130. SYSCO | 990608797
+   Error: Download error: {}
+
+131. Maroon | JA-00000163
+   Error: Download error: {}
+
+132. UNKNOWN | NE 07
+   Error: Download error: {}
+
+133. MARION | LC#10000013G
+   Error: Download error: {}
+
+134. OAK FARMS-DALLAS DFA DAIRY BRANDS | 402454834
+   Error: Download error: {}
+
+135. Chef's Produce | 00257464
+   Error: Download error: {}
+
+136. The Chefs Warehouse | 70823749
+   Error: Download error: {}
+
+137. MARKOL | 55050540
+   Error: Download error: {}
+
+138. UNKNOWN | 10000005136
+   Error: Download error: {}
+
+139. Chef's Produce | 01324051
+   Error: Download error: {}
+
+140. Delilah Dallas LLC | 5670540
+   Error: Download error: {}
+
+141. BILL TO Customer | LCF-1000000368
+   Error: Download error: {}
+
+142. Delilah Dallas LLC | 5580251
+   Error: Download error: {}
+
+143. Bill Troishner | LIC# 10-000005135
+   Error: Download error: {}
+
+144. Delilah Dallas LLC | 55753543
+   Error: Download error: {}
+
+✅ Results saved to: reprocess-results.json
+
