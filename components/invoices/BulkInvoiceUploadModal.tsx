@@ -74,12 +74,40 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+        // Provide helpful error messages
+        let errorMsg = data.error || 'Upload failed';
+
+        if (data.code === 'DUPLICATE_INVOICE' || response.status === 409) {
+          errorMsg = data.message || `Duplicate: ${data.details?.invoiceNumber || 'Invoice already exists'}`;
+        } else if (data.error?.includes('23505')) {
+          errorMsg = 'Duplicate invoice already in system';
+        }
+
+        throw new Error(errorMsg);
       }
 
-      setFiles(prev => prev.map((f, i) =>
-        i === index ? { ...f, status: 'success' as const, invoiceId: data.invoiceId } : f
-      ));
+      // Handle multi-invoice response
+      if (data.multiInvoice) {
+        const summary = `Processed ${data.total} invoices: ${data.succeeded} succeeded, ${data.failed} failed`;
+        const details = [
+          ...data.results.map((r: any) => `✓ ${r.invoiceNumber || 'Invoice'} from ${r.vendor || 'Unknown'}`),
+          ...data.errors.map((e: any) => `✗ ${e.invoiceNumber} from ${e.vendor}: ${e.error.message || e.error}`)
+        ].join('\n');
+
+        setFiles(prev => prev.map((f, i) =>
+          i === index ? {
+            ...f,
+            status: data.succeeded > 0 ? 'success' as const : 'error' as const,
+            error: data.failed > 0 ? `${summary}\n\n${details}` : undefined,
+            invoiceId: data.results[0]?.invoiceId
+          } : f
+        ));
+      } else {
+        // Single invoice response
+        setFiles(prev => prev.map((f, i) =>
+          i === index ? { ...f, status: 'success' as const, invoiceId: data.invoiceId } : f
+        ));
+      }
       setCompleted(prev => prev + 1);
     } catch (error) {
       setFiles(prev => prev.map((f, i) =>
@@ -135,9 +163,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
         <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Bulk Upload Invoices</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Upload Invoices</DialogTitle>
           <DialogDescription className="text-sm">
-            Upload multiple invoice images at once. Each will be processed with OCR automatically.
+            Upload single or multiple invoice files. Multi-invoice PDFs are automatically detected and split. Each invoice will be processed with OCR.
           </DialogDescription>
         </DialogHeader>
 

@@ -3,7 +3,8 @@
  * View and manage vendor information, ACH forms, and documents
  */
 
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { resolveContext } from "@/lib/auth/resolveContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,6 @@ import { redirect } from "next/navigation";
 import { VendorProfileForm } from "@/components/vendors/VendorProfileForm";
 import { GenerateOnboardingLink } from "@/components/vendors/GenerateOnboardingLink";
 import { VendorInvoiceList } from "@/components/vendors/VendorInvoiceList";
-import { cookies } from "next/headers";
 
 interface Props {
   params: Promise<{
@@ -24,20 +24,27 @@ interface Props {
 
 export default async function VendorDetailPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
-  const cookieStore = await cookies();
+  
+  // ========================================================================
+  // Use centralized context resolver (handles both Supabase auth and legacy)
+  // ========================================================================
+  const ctx = await resolveContext();
 
-  // Get user ID for auth (custom or Supabase)
-  let userId: string | null = null;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) {
-    userId = user.id;
-  } else {
-    const userIdCookie = cookieStore.get('user_id');
-    userId = userIdCookie?.value || null;
+  if (!ctx || !ctx.isAuthenticated) {
+    redirect("/login");
   }
 
-  // Use admin client to bypass RLS
+  console.log('Vendor detail page context:', { 
+    authUserId: ctx.authUserId, 
+    email: ctx.email, 
+    orgId: ctx.orgId, 
+    role: ctx.role 
+  });
+
+  // ========================================================================
+  // Data queries use admin client with explicit org filter
+  // (Safe: org is derived from authenticated user's membership)
+  // ========================================================================
   const adminClient = createAdminClient();
 
   // Fetch vendor with profile
