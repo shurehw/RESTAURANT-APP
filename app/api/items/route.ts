@@ -35,26 +35,29 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization if not provided
     let orgId = organization_id;
+
+    // Get user ID from cookie (custom auth) or Supabase session
+    let userId: string | null = null;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      userId = user.id;
+    } else {
+      const userIdCookie = cookieStore.get('user_id');
+      userId = userIdCookie?.value || null;
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized - No active session' },
+        { status: 401 }
+      );
+    }
+
+    // Use admin client to bypass RLS
+    const adminClient = createAdminClient();
+
     if (!orgId) {
-      // Get user ID from cookie (custom auth) or Supabase session
-      let userId: string | null = null;
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        userId = user.id;
-      } else {
-        const userIdCookie = cookieStore.get('user_id');
-        userId = userIdCookie?.value || null;
-      }
-
-      if (!userId) {
-        return NextResponse.json(
-          { error: 'Unauthorized - No active session' },
-          { status: 401 }
-        );
-      }
-
-      // Use admin client to bypass RLS for organization query
-      const adminClient = createAdminClient();
+      // Get user's organization
       const { data: orgUsers } = await adminClient
         .from('organization_users')
         .select('organization_id')
@@ -72,8 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use admin client to create item (bypasses RLS)
-    const adminClient = createAdminClient();
+    // Create item using admin client (bypasses RLS)
     const { data: item, error } = await adminClient
       .from('items')
       .insert({
