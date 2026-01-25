@@ -1,0 +1,45 @@
+[dotenv@17.2.3] injecting env (18) from .env.local -- tip: ⚙️  enable debug logging with { debug: true }
+🔄 Bulk Re-processing Failed Invoices
+
+════════════════════════════════════════════════════════════
+
+📋 Loading 144 invoices for re-processing
+
+Total missing value: $1846145.09
+Priority breakdown:
+  🚨 Critical: 49
+  ⚠️  High: 55
+  ⚡ Medium: 40
+
+════════════════════════════════════════════════════════════
+
+🚀 Starting bulk re-process (5 at a time, 5s delay)
+
+
+📦 Batch 1/29 (invoices 1-5):
+
+  Processing: Marvin | G260914
+    Missing: $659123.98
+  Processing: MARKOL | 5603540
+    Missing: $469949.17
+  Processing: Republic National Distributing Company | 7173361
+    Missing: $238806.34
+  Processing: Republic National Distributing Company | 7173861
+    Missing: $238000.00
+  Processing: MARKON | C26601
+    Missing: $33946.00
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ✓ Deleted old line items
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+    ❌ Error downloading PDF: {}
+
+  Batch complete: 0/5 successful
+  Overall: 0/144 complete (0.0%)
+
+  ⏳ Waiting 5s before next batch...

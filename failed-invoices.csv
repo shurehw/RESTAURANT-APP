@@ -1,0 +1,152 @@
+invoice_id,invoice_number,vendor,date,invoice_total,line_items_total,difference,line_items_count,issue_type,storage_path
+c679f502-a83e-433d-9d5c-61fc030eb17a,NE 07,UNKNOWN,2028-07-01,0,0,0,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310682887-New6_page6.pdf
+952cc8f9-bb95-41fa-9cc5-f975a8ef0ae3,25262,SEAFOOD SUPPLY COMPANY,2026-10-19,1155.9,1328.1,172.19999999999982,9,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310646588-New6_page3.pdf
+191090af-b700-491c-9f00-03862bd30832,469949.1171,MARONI,2026-07-22,300.25,0,300.25,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310235041-New4_page9.pdf
+57ee43ce-b9a0-415b-9693-8ee794f2151c,26-7/60073,SEAFOOD SUPPLY COMPANY,2026-07-21,543.13,30.9,512.23,1,critical_mismatch,uploads/1769304380103-Kitchen Invoices 8_pg9-9.pdf
+2d47733d-38cb-4eb1-b812-dcbd23459095,LC#10000013G,MARION,2026-07-20,0,0,0,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310690486-New6_page7.pdf
+247afc61-0fd3-463f-a4a6-8e6910511f59,402454834,OAK FARMS-DALLAS DFA DAIRY BRANDS,2026-01-29,0,0,0,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307482664-New1_page4.pdf
+7a18f86b-3119-4015-87d4-d34d0fe49b08,G0252069,OAK FARMS-DALLAS DFA DAIRY BRANDS,2026-01-28,168.24,95.59,72.65,3,critical_mismatch,uploads/1769306405356-Kitchen Invoices 6_pg1-1.pdf
+a977ebef-338d-4248-84a7-a65510dd8252,05957,RARE FOODS,2026-01-23,210.92,0,210.92,0,no_items,uploads/1769306996525-Kitchen Invoices 9_pg8-8.pdf
+27d19d93-78ae-4830-bac2-4cb1a6ae422b,1B8357,Allen Brothers Texas,2026-01-23,1354.87,9.27,1345.6,1,critical_mismatch,uploads/1769304454275-Kitchen Invoices 9_pg3-3.pdf
+6ba042ed-0d57-4981-b51a-94cdf34f7b3b,188357,Texas Steakhouse,2026-01-23,1354.87,9.27,1345.6,1,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307257852-New6.pdf
+d79b6ce9-7f22-4a36-b1e1-5ac4e4ac93e2,70998415,The Chefs Warehouse,2026-01-23,97.51,0,97.51,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310244595-New5_page1.pdf
+498d6181-7300-4b38-9ef0-246d8d7ff1e1,70990569,Chefs Warehouse Midwest LLC,2026-01-23,831.2,0,831.2,0,no_items,uploads/1769304506777-Kitchen Invoices 9_pg6-6.pdf
+462d7ad9-8676-4d14-b2a0-9d10b0cf671a,16928603,Spec's Wine, Spirits & Finer Foods,2026-01-23,74.04,68.4,5.640000000000001,1,mismatch,uploads/1769297297183-Jan_23__Doc_3.pdf
+4eb250e6-12d0-4be3-9efe-c95ac593715d,70990569,The Chefs Warehouse,2026-01-23,831.2,0,831.2,0,no_items,uploads/1769306947441-Kitchen Invoices 9_pg5-5.pdf
+aaf4e8e1-fa5a-4594-bdff-b0b478f783ca,01534559,Chef's Produce,2026-01-23,387.84,181.33999999999997,206.5,6,critical_mismatch,uploads/1769304551104-Kitchen Invoices 9_pg9-9.pdf
+9374dda9-b6f5-4901-bbad-0244a23d6564,60252296,OAK FARMS-DALLAS DFA DAIRY BRANDS,2026-01-23,379.95,105.28,274.66999999999996,3,critical_mismatch,uploads/1769306863745-Kitchen Invoices 9_pg1-1.pdf
+5998002a-682e-491b-b05a-4874c3e60bb0,01535052,Chef's Produce,2026-01-23,344.11,162.16,181.95000000000002,4,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310085240-New4_page20.pdf
+8d60cba5-a6f9-4115-baaf-da83049598b8,70998415,Chefs Warehouse Midwest LLC,2026-01-23,97.51,0,97.51,0,no_items,uploads/1769306974369-Kitchen Invoices 9_pg7-7.pdf
+ae46d496-797d-45b2-b52a-0b5692daae4b,0153965,Chef's Produce,2026-01-22,363.84,244.01,119.82999999999998,4,critical_mismatch,uploads/1769304263253-Kitchen Invoices 8_pg1-1.pdf
+c2816199-ef93-47fe-a7c2-16f565e23828,05934,RARE FOODS,2026-01-22,602.38,582.38,20,2,mismatch,uploads/1769306770882-Kitchen Invoices 8_pg3-3.pdf
+e2eb8607-9f09-46e9-989a-4a819ef18da9,980869,Mr. Greens,2026-01-22,319.81,281.01,38.80000000000001,13,critical_mismatch,uploads/1769306811045-Kitchen Invoices 8_pg7-7.pdf
+bcce3c6d-87b5-4e3c-8b4d-ed38a24f2953,01533965,Chef's Produce,2026-01-22,363.84,413.25,49.410000000000025,5,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769309824022-New4_page16.pdf
+d5f8f3c6-3c1a-47f7-884b-84fd2a56b37c,M-3404601,MFW - Maekor Fine Wine,2026-01-22,2169.94,226.47,1943.47,7,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+cdf04277-f372-4295-b45f-a3bb2a3676c6,01534401,Chef's Produce,2026-01-22,175,0,175,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769309773710-New4_page12.pdf
+83a41872-5f75-4260-a74f-284508ab47b8,01534315,Chef's Produce,2026-01-22,279,0,279,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306209016-Kitchen Invoices 8_pg4-4.pdf
+b61c2cd8-3f48-40a2-9ce0-b969b381d845,01533336,Chef's Produce,2026-01-21,593.5,313.75,279.75,11,critical_mismatch,uploads/1769304193203-Kitchen Invoices 7_pg5-5.pdf
+0b98b121-8ead-4073-888b-0e2d455f24dc,980215,Mr. Greens,2026-01-21,122.78,66.16,56.620000000000005,1,critical_mismatch,uploads/1769304248032-Kitchen Invoices 7_pg8-8.pdf
+92a60f34-3f04-489b-b1c9-d59d12315094,05919,RARE FOODS,2026-01-21,114.45,0,114.45,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306198354-Kitchen Invoices 7_pg1-1.pdf
+745b9e0b-b8be-41b5-b003-498f25846c27,70967410,The Chefs Warehouse,2026-01-21,60,0,60,0,no_items,uploads/1769306613973-Kitchen Invoices 7_pg2-2.pdf
+efebad81-7325-4a45-b729-4028ccb1b3b9,70967410,Chefs Warehouse Midwest LLC,2026-01-21,60,0,60,0,no_items,uploads/1769304142809-Kitchen Invoices 7_pg2-2.pdf
+dda42f0e-694d-4aa8-812c-6ced58f9019a,980565,Mr. Greens,2026-01-21,236.6,21.74,214.85999999999999,2,critical_mismatch,uploads/1769304237216-Kitchen Invoices 7_pg7-7.pdf
+3a086fec-eab3-4e27-869b-ce31174acaf6,70960274,Chefs Warehouse Midwest LLC,2026-01-21,675.19,58.26,616.9300000000001,1,critical_mismatch,uploads/1769304168212-Kitchen Invoices 7_pg4-4.pdf
+415cadd5-5f9f-4cd0-ab8c-a551a9e12c0a,187926,Texas Steakhouse Steaks,2026-01-20,1963.63,0,1963.63,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310388085-New5_page9.pdf
+7d75b4ea-01b5-4858-9458-a0ef194a2506,50252069,OAK FARMS-DALLAS DFA DAIRY BRANDS,2026-01-20,168.24,95.50999999999999,72.73000000000002,3,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310340287-New5_page6.pdf
+c018af9f-4739-4ff0-814c-7fea78a82616,70939675,The Chefs Warehouse,2026-01-20,2851.04,0,2851.04,0,no_items,uploads/1769303969752-Kitchen Invoices 6_pg13-13.pdf
+4a851a11-f083-454d-9bf4-f07ea503d2f6,179079,Republic National Distributing Company,2026-01-20,18713,11771,6942,6,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+f8f4ea79-8d1f-4c5c-bbb0-a60cc42fe45a,05899,RARE FOODS,2026-01-20,738.76,582.76,156,1,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306178824-Kitchen Invoices 6_pg5-5.pdf
+6bf7a075-63b3-4c42-89f7-24a266f5b4ad,187926,Allen Brothers Texas,2026-01-20,1963.63,0,1963.63,0,no_items,uploads/1769303998314-Kitchen Invoices 6_pg14-14.pdf
+e4197b93-9db3-470b-824c-aba6d16e68d1,979569,Mr. Greens,2026-01-20,177.86,245.56,67.69999999999999,10,critical_mismatch,uploads/1769304015536-Kitchen Invoices 6_pg15-15.pdf
+645f335a-50cb-43d1-a7a6-a78eade1c53e,70923428,The Chefs Warehouse,2026-01-19,2700.14,510.93,2189.21,8,critical_mismatch,uploads/1769302089306-invoices 5_pg11-11.pdf
+00724d4f-7dac-40ee-878b-b860f490cb9d,5677184,MARION,2026-01-19,596.49,664.6899999999999,68.19999999999993,7,critical_mismatch,uploads/1769305153747-invoices 5_pg7-7.pdf
+cbdc110f-14f7-4c40-bd42-796c26ae5599,978975,Mr. Greens,2026-01-19,210.33,113.03,97.30000000000001,3,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306010337-invoices 5_pg4-4.pdf
+e1e2e78d-486b-4cec-84af-03c2dede5c56,70923428,Chefs Warehouse Midwest LLC,2026-01-19,2700.14,15.5,2684.64,1,critical_mismatch,uploads/1769305053117-invoices 5_pg12-12.pdf
+d6ad8d7a-e7e1-4d20-955c-6f889804f686,187374,Allen Brothers Texas,2026-01-19,1259.17,105.53,1153.64,6,critical_mismatch,uploads/1769302071872-invoices 5_pg10-10.pdf
+f3619f88-779b-4740-a6f5-b45975c3b5d1,26-79627,SEAFOOD SUPPLY COMPANY,2026-01-19,1156.9,686.3399999999999,470.5600000000002,3,critical_mismatch,uploads/1769304134690-Kitchen Invoices 6_pg9-9.pdf
+fc2fb081-5a6e-45b7-ba0a-15f050f37dc6,01532086,Chef's Produce,2026-01-19,0,1174.39,1174.39,26,critical_mismatch,uploads/1769302162554-invoices 5_pg5-5.pdf
+d8c9ddf1-19af-4c8b-a3c7-1ba32a5e9cfc,LDFW1927872,Alsco Uniforms,2026-01-19,129.54,114.72999999999999,14.810000000000002,10,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310754164-New7_page10.pdf
+0356a424-7171-4c1c-bb14-962fd4106d05,187374,Texas Roadhouse Steaks,2026-01-19,1259.17,9.5,1249.67,1,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311056501-New7_page8.pdf
+bcd6ebf3-bc54-4b55-87c7-23a1c747485b,16900368,Spec's Wine, Spirits & Finer Foods,2026-01-17,2611.66,4787.020000000001,2175.3600000000015,26,critical_mismatch,
+ca520482-9be5-4027-ac32-af265bd69fc8,26-759590,SEAFOOD SUPPLY COMPANY,2026-01-16,387.45,0,387.45,0,no_items,uploads/1769302134542-invoices 5_pg3-3.pdf
+06709d2a-2c7d-4b9d-abb2-6287f8072e3c,977479,Mr. Greens,2026-01-16,677.1,778.0500000000001,100.95000000000005,4,critical_mismatch,uploads/1769302115810-invoices 5_pg13-13.pdf
+0d50d9c2-5625-4aa5-b30b-8ede4c6d5912,INV1876569,Johnson Brothers Maverick of Texas,2026-01-16,18235.16,7873.5,10361.66,34,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+c3371fb6-4ef7-4cd0-81a0-1d6331b0591b,85798587,Delilah Data LLC,2026-01-15,257.34,2591.22,2333.8799999999997,12,critical_mismatch,uploads/1769304942598-INVOICE 4_pg7-7.pdf
+81648e3d-2f65-43c3-b5ed-96b55590c20f,5679687,Delilah Dallas LLC,2026-01-15,257.34,0,257.34,0,no_items,uploads/1769302005574-INVOICE 4_pg7-7.pdf
+4ddc1798-7336-433d-8c08-da3fe8470244,7173361,Republic National Distributing Company,2026-01-14,264702.51,25896.170000000002,238806.34,19,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+18b144d7-a751-445d-b906-efc180cf1f74,195459,Allen Brothers Texas,2026-01-14,1045.94,131.57999999999998,914.3600000000001,8,critical_mismatch,uploads/1769304843600-INVOICE 4_pg12-12.pdf
+ad96aaae-042d-47c7-b7cf-573cd21898bb,186469,Allen Brothers Texas,2026-01-14,854.05,0,854.05,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310497728-New6_page15.pdf
+121556d9-93e1-4e5a-a844-744ae3213085,195469,Allen Brothers Texas,2026-01-14,854.05,115.35,738.6999999999999,1,critical_mismatch,uploads/1769301901372-INVOICE 4_pg12-12.pdf
+c4a3773e-aa14-4e9a-973d-ee121e75d0b2,70875013,The Chefs Warehouse,2026-01-14,754.69,325,429.69000000000005,5,critical_mismatch,uploads/1769301880347-INVOICE 4_pg11-11.pdf
+4c409b22-27c2-47e5-a783-344cac9a2dca,16880351,Spec's Wine, Spirits & Finer Foods,2026-01-13,8142.52,8419.230000000001,276.71000000000095,22,critical_mismatch,uploads/1769292169615-Jan_23__Doc_3.pdf
+7c871208-880d-4576-ab32-a051964735d6,00257464,Chef's Produce,2026-01-13,,0,0,0,no_items,uploads/1769303818052-Kitchen Invoices 3_pg2-2.pdf
+a121878a-f954-44d9-b1a3-2fbed8a5dc79,01529490,Chef's Produce,2026-01-13,487.45,201.56,285.89,7,critical_mismatch,uploads/1769303810028-Kitchen Invoices 3_pg13-13.pdf
+650caa6e-bdc7-4693-8c05-e2bf04dc3780,INV1876688,Johnson Brothers of Texas,2026-01-13,18236.16,9663.439999999999,8572.720000000001,34,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+22a113b7-c556-46c1-86ef-820463d8542b,70859984,Chefs Warehouse Midwest LLC,2026-01-13,2928.2,20,2908.2,1,critical_mismatch,uploads/1769306219148-Kitchen Invoices 3_pg10-10.pdf
+71249697-9d7c-4cc3-ad5d-99a2e77a38e7,186269,TEXAS THE GREAT STEAKHOUSE STEAKS,2026-01-13,2320.15,0,2320.15,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311080509-New8_page1.pdf
+fc8dc37b-cbf0-4ea9-8f13-74e4d7ca754a,70859984,The Chefs Warehouse,2026-01-13,2928.2,385,2543.2,2,critical_mismatch,uploads/1769303893208-Kitchen Invoices 3_pg8-8.pdf
+b81728f3-4633-47e6-a6c3-a3e44dd2e7c7,INV607063,FARM to TABLE,2026-01-13,208,0,208,0,no_items,uploads/1769306315779-Kitchen Invoices 3_pg4-4.pdf
+90b6ee20-339a-476a-af53-7b3eb677d0eb,26-7537773,SEAFOOD SUPPLY COMPANY,2026-01-13,1032.96,21.2,1011.76,1,critical_mismatch,uploads/1769306326663-Kitchen Invoices 3_pg5-5.pdf
+f6a36f03-2bb8-4c19-869a-af79d4335155,136259,Allen Brothers Texas,2026-01-13,2320.15,0,2320.15,0,no_items,uploads/1769303860339-Kitchen Invoices 3_pg6-6.pdf
+d7fb6c38-fc28-4d40-8e72-a588ac1d9bd0,70846878,Chefs Warehouse Midwest LLC,2026-01-12,1422.32,1880.6899999999998,458.3699999999999,16,critical_mismatch,uploads/1769302265587-Invoices Kitchen_pg2-2.pdf
+7bd15598-7e8a-460e-9e55-d3bc31b41f43,70846878,The Chefs Warehouse,2026-01-12,1422.32,1974.7699999999998,552.4499999999998,16,critical_mismatch,uploads/1769302841446-Invoices Kitchen_pg2-2.pdf
+4b8874be-cf6b-408e-bd4e-a28e513021c8,974296,Mr. Greens,2026-01-12,441.8,313.34999999999997,128.45000000000005,18,critical_mismatch,uploads/1769303275737-Invoices Kitchen (2)_pg6-6.pdf
+6d99440e-4274-483c-bda0-7f5915441d9e,55703540,Delilah Dallas LLC,2026-01-11,62.64,1870.7,1808.06,15,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306290105-INVOICE 4_pg2-2.pdf
+8e33de98-3b81-4110-a2ca-c318dbd5dd2d,973102,Mr. Greens,2026-01-10,181.57,143.57,38,10,critical_mismatch,uploads/1769303247737-Invoices Kitchen (2)_pg5-5.pdf
+446ed704-8ced-4f68-9cb4-46f49c4f405a,70833430,Chefs Warehouse Midwest LLC,2026-01-09,62.79,0,62.79,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306449548-Invoics Kitchen_pg21-21.pdf
+111e8ea2-cff1-49de-bee7-5ab38de23041,05742,RARE FOODS,2026-01-09,82.72,0,82.72,0,no_items,uploads/1769305395290-Invoices Kitchen (1)_pg3-3.pdf
+f35f6df0-f1ee-4641-9282-261eecb1a6ca,01527696,Chef's Produce,2026-01-09,531.96,139.68,392.28000000000003,4,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769308068635-New2_page10.pdf
+12655edf-809b-4b2a-bb09-907273c08ef5,972424,Mr. Greens,2026-01-09,647.04,318.99,328.04999999999995,14,critical_mismatch,uploads/1769303107243-Invoices Kitchen (2)_pg10-10.pdf
+2213d9f9-0995-47e9-9656-9ec053dc05e5,70823749,The Chefs Warehouse,2026-01-09,0,0,0,0,no_items,uploads/1769302792603-Invoices Kitchen_pg1-1.pdf
+815616ac-8103-4199-a3e9-617b327e7d33,70823755,The Chefs Warehouse,2026-01-09,676.39,139.31,537.0799999999999,2,critical_mismatch,uploads/1769303583739-Invoics Kitchen_pg23-23.pdf
+c348d152-0850-4fd8-bb6f-24147bdb07d2,70833430,The Chefs Warehouse,2026-01-09,62.79,0,62.79,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306146011-Invoics Kitchen_pg21-21.pdf
+eaa3a2a7-ae3d-4166-bd7c-c637a281a7aa,185306,Allen Brothers Texas,2026-01-08,972.97,0,972.97,0,no_items,uploads/1769303469360-Invoics Kitchen_pg17-17.pdf
+6daa7339-3376-4d66-ba89-c1394dc232ea,70805899,Chefs Warehouse Midwest LLC,2026-01-08,1184.04,308.55,875.49,5,critical_mismatch,uploads/1769303505636-Invoics Kitchen_pg19-19.pdf
+49829cf6-f99c-41b3-92b6-98194aff33a8,70805899,The Chefs Warehouse,2026-01-08,1184.04,64.09,1119.95,1,critical_mismatch,uploads/1769303539206-Invoics Kitchen_pg20-20.pdf
+3ef09cac-e7a9-43fe-9839-81d82ae5ca5f,01527112,Chef's Produce,2026-01-08,174.86,88.36,86.50000000000001,4,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306047279-Invoices Kitchen_pg6-6.pdf
+5e735b0d-dab1-447e-ba95-a572d41b5f77,70789722,The Chefs Warehouse,2026-01-07,887.1,40.2,846.9,1,critical_mismatch,uploads/1769303212902-Invoices Kitchen (2)_pg2-2.pdf
+e2cfb94e-ccf9-456c-9a3c-e130777f9b01,971154,Mr. Greens,2026-01-07,208.48,172.81,35.66999999999999,13,critical_mismatch,uploads/1769303186880-Invoices Kitchen (2)_pg13-13.pdf
+dd60047d-6632-42da-a88e-ea213de1db38,971156,Mr. Greens,2026-01-07,18.47,0,18.47,0,no_items,uploads/1769303194146-Invoices Kitchen (2)_pg14-14.pdf
+85a35c65-27e9-433c-b783-984f312c3650,70789722,Chefs Warehouse Midwest LLC,2026-01-07,887.1,264,623.1,3,critical_mismatch,uploads/1769305655114-Invoices Kitchen (2)_pg4-4.pdf
+6ead57bb-abab-4453-bfeb-1b42ba84d4c7,01526477,Chef's Produce,2026-01-07,535.31,529.53,5.779999999999973,25,mismatch,uploads/1769302320185-Invoices Kitchen_pg5-5.pdf
+29ec9571-c100-4a50-a873-058bdd49f785,06786764,Dairyland Produce, LLC (dba Hardie's Fresh Foods),2026-01-07,30,0,30,0,no_items,uploads/1769300426520-Image (4).jpeg
+3c704acf-6669-4dc4-b676-e4a2a3cdf0e8,16852177,Spec's Wine, Spirits & Finer Foods,2026-01-07,840.61,2226.84,1386.23,6,critical_mismatch,uploads/1769290791274-Jan_19__Doc_3.pdf
+0565c9aa-87e0-4285-995d-1898dd265a39,70777359,The Chefs Warehouse,2026-01-06,1523.32,176,1347.32,2,critical_mismatch,uploads/1769303419135-Invoics Kitchen_pg13-13.pdf
+09a0c70a-9218-4f9a-ad1c-1a2b3647dc64,55050540,MARKOL,2026-01-06,0,0,0,0,no_items,uploads/1769303745585-INVOICE 4_pg3-3.pdf
+e1b6e468-fed5-4a41-9c6d-74db8bd97296,970660,Mr. Greens,2026-01-06,647.04,263.96,383.08,12,critical_mismatch,uploads/1769303128892-Invoices Kitchen (2)_pg11-11.pdf
+88727532-454f-4854-bec3-bfd83b2a8180,06785216,Dairyland Produce, LLC,2026-01-06,154,0,154,0,no_items,uploads/1769300432672-Invoice dairyland.pdf
+15bbfb2d-23de-4e7b-962d-f3391491dbfc,70777359,Chefs Warehouse Midwest LLC,2026-01-06,1523.32,176,1347.32,2,critical_mismatch,uploads/1769305850222-Invoics Kitchen_pg13-13.pdf
+032a8ff3-2acb-4bfa-9ba9-aa4c397f3cc1,F48612638,Minamoto Wholesale,2026-01-06,318.64,313.64,5,4,mismatch,uploads/1769302230895-Invoices Kitchen_pg10-10.pdf
+24d0e40a-8c89-4d9d-842b-300513fcf13b,70761327,Chefs Warehouse Midwest LLC,2026-01-05,2533.42,396.89,2136.53,2,critical_mismatch,uploads/1769303379965-Invoics Kitchen_pg11-11.pdf
+d94e9c63-259e-410a-8bf1-3c51bf1cec62,06785216,Dairyland Produce, LLC (dba Hardie's Fresh Foods),2026-01-05,154,111,43,3,critical_mismatch,uploads/1769303480199-Invoics Kitchen_pg18-18.pdf
+708030cc-32cd-4a80-a5d8-3281107cd2c7,70761327,The Chefs Warehouse,2026-01-05,2533.42,0,2533.42,0,no_items,uploads/1769303678226-Invoics Kitchen_pg7-7.pdf
+a816fa22-82fe-461d-9a24-10c5bd1c9da3,1841471,Spec's Wine, Spirits & Finer Foods,2026-01-04,16947.53,25549.739999999998,8602.21,177,critical_mismatch,uploads/1769297243237-Jan_13__Doc_1.pdf
+1435ad26-685a-4fcf-bdbe-7d35b762a4ae,9130139318,Southern Glazer's of TX,2026-01-02,768,1008,240,1,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+8771ae9b-68f7-440f-afea-3026b3d1db88,66343,Beaune Imports,2025-11-19,716.4,795.6,79.20000000000005,2,critical_mismatch,
+1f1e5747-dbb3-4b1e-b4fd-9717f32726ec,70238322,The Chefs' Warehouse of Florida, LLC,2025-11-18,574.95,548.03,26.920000000000073,3,mismatch,
+235818ae-4f62-4494-aa16-bdf6bb15ed73,10000005136,UNKNOWN,2025-05-26,0,0,0,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310657179-New6_page4.pdf
+90fc5410-ab17-4fe7-a3a2-44b8967ae68e,M0000005436,Maroon,2025-02-18,26.38,0,26.38,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310667656-New6_page5.pdf
+5cfa5d03-2271-4243-b35b-bf6f184707e5,26-179827,SEAFOOD SUPPLY COMPANY,2025-01-19,1156.9,147.88,1009.0200000000001,3,critical_mismatch,uploads/1769306605632-Kitchen Invoices 6_pg9-9.pdf
+b9735d0b-2584-4f38-90a8-b5ed98126ee0,68251026,OAK FARMS-DALLAS DFA DAIRY BRANDS,2025-01-12,268.91,130.63,138.28000000000003,4,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307497429-New1_page5.pdf
+04166a17-219a-49af-98c2-3e35c8fa28f5,01324051,Chef's Produce,2024-12-26,0,0,0,0,no_items,uploads/1769306778184-Kitchen Invoices 8_pg5-5.pdf
+82a6cc73-58f9-4d20-abfb-4db13f6f9531,4659491771,Mariani,2024-11-22,435,0,435,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311007781-New7_page5.pdf
+e9f4b106-f6a4-4be2-bd10-a1690f2f77d7,44806C31,MARION,2024-07-09,624,0,624,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310958524-New7_page3.pdf
+db82eee8-1643-45f6-b6a0-9bc89f712a1c,7179054,Republic National Distributing Company,2024-01-22,10576,14840,4264,6,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+942b59f6-2feb-4a84-af73-78cbd03f289b,5670540,Delilah Dallas LLC,2024-01-15,0,0,0,0,no_items,uploads/1769304902589-INVOICE 4_pg3-3.pdf
+590f6355-79a5-4631-8e5e-6fff0775efd5,7173861,Republic National Distributing Company,2024-01-14,264702.51,26702.510000000002,238000,19,critical_mismatch,uploads/1769292489606-Jan_23__Doc_3.pdf
+0e01fe08-c6c9-4f1a-af36-f939b39b89fd,996071673,SYSCO North Texas,2024-01-09,1016.77,158.94,857.8299999999999,1,critical_mismatch,uploads/1769305482667-Invoices Kitchen (1)_pg5-5.pdf
+deb85ac1-a2ff-4683-bd36-3fb4ba70784f,909-999-9999,SYSCO,2023-07-20,3039.26,2996.79,42.470000000000255,7,mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310451489-New6_page11.pdf
+91f32c83-4c45-4280-b818-9f4533a687f5,998-9999 9999,SYSCO North Texas,2023-07-05,1416.77,0,1416.77,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307533673-New1_page7.pdf
+67d7bad5-9aa8-4036-87d0-c47666a5cbea,LCF-1000000368,BILL TO Customer,2022-07-26,0,0,0,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310224345-New4_page8.pdf
+56cd298b-21be-4e12-830b-50798894b6ec,5580251,Delilah Dallas LLC,2022-01-22,0,0,0,0,no_items,uploads/1769304364850-Kitchen Invoices 8_pg8-8.pdf
+8efbf3d5-94f8-4557-9488-65dcb16c0a31,C26601,MARKON,2020-11-19,33946,0,33946,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310808614-New7_page13.pdf
+356c8aeb-e865-42d2-b82e-0919e10478e3,9999-9999-9999,SYSCO North Texas,2020-04-07,1989.58,1109.5700000000004,880.0099999999995,15,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307561932-New1_page8.pdf
+0d68b986-ad84-478f-b9c7-c1f866b97702,999-4199-999,SYSCO,2020-03-07,1162.13,319.02,843.1100000000001,3,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311184551-New8_page5.pdf
+5c485f5d-4efb-4a2e-8b05-ecd9f25a885c,164414,Sysco San Diego, Inc.,2018-07-03,2332.79,1241.28,1091.51,6,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310428330-New6_page10.pdf
+fb37a9cc-87b5-47c2-b3c4-7925da39718b,4698981771,BTI To Customer,2018-01-10,1258.16,568.51,689.6500000000001,3,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310734394-New7_page1.pdf
+1ddcbd77-da75-4a18-856f-abdf52692a40,00025506,MARQAL,2017-09-01,287.01,9091.83,8804.82,21,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310985248-New7_page4.pdf
+46a12e9d-73a1-4063-b8d1-2c0c7a3da006,M4853,SEAFOOD SUPPLY COMPANY,2017-07-20,21.6,0,21.6,0,no_items,uploads/1769303063797-Invoices Kitchen (1)_pg7-7.pdf
+a3c8827b-afdb-466a-bbf9-6ea980bf859d,996090620,SYSCO,2017-07-01,3039.25,121.62,2917.63,5,critical_mismatch,uploads/1769306546776-Kitchen Invoices 6_pg3-3.pdf
+4f1f8ab9-8be8-4d2b-8ce8-2e14c5cc9053,5603540,MARKOL,2017-06-26,469949.17,0,469949.17,0,no_items,uploads/1769302533977-INVOICE 4_pg3-3.pdf
+b409134f-df8d-48f8-b6e9-5b8874b7b36c,999-9999,SYSCO NORTH TEXAS FOODSERVICE,2017-03-07,2705.61,215.68,2489.9300000000003,4,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769307584480-New1_page9.pdf
+4de3b656-f916-46f8-89a5-165bfe55bca9,LIC# 10-000005135,Bill Troishner,2017-02-28,0,0,0,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310920400-New7_page2.pdf
+8b940e4b-0158-45f3-b8a8-79d928911c69,55755329,Keith Foods,2017-01-26,506.7,0,506.7,0,no_items,uploads/1769304917987-INVOICE 4_pg4-4.pdf
+3bde5ecc-0504-4e28-8678-c4123df0b42d,26-76007B,SEAFOOD SUPPLY COMPANY,2017-01-22,519.13,96.73,422.4,1,critical_mismatch,uploads/1769306843570-Kitchen Invoices 8_pg9-9.pdf
+f97e0f36-0a49-4245-99d3-b71b360681d2,FR10005156,MARDOM,2017-01-12,28156,0,28156,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310105796-New4_page21.pdf
+1ed0157c-ce17-4445-bc95-987d834b15fb,998-4909,SYSCO North Texas,2016-11-26,1844.19,0,1844.19,0,no_items,uploads/1769306267396-Kitchen Invoices 3_pg12-12.pdf
+7cf2edc9-32d7-445b-9acf-720cc17d6a31,996105050,SYSCO North Texas,2016-11-07,2317.72,785.15,1532.5699999999997,2,critical_mismatch,uploads/1769306521256-Kitchen Invoices 6_pg2-2.pdf
+e1a04701-c355-4715-a8ef-356bc3e75944,55753543,Delilah Dallas LLC,2016-02-01,0,0,0,0,no_items,uploads/1769301867630-INVOICE 4_pg1-1.pdf
+78066c36-6560-406b-8adf-a92e2d416362,26-78971,SEAFOOD SUPPLY COMPANY,2014-11-26,92.4,0,92.4,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310606867-New6_page22.pdf
+6b20ff60-2355-4f5a-bee5-5f51174d9474,G260914,Marvin,2007-11-30,660241,1117.02,659123.98,4,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310586352-New6_page20.pdf
+9afa4f00-e1bd-4097-b1e1-693ab8dfd237,722077-347,SYSCO North Texas,2007-11-20,432.45,0,432.45,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769309735096-New4_page1.pdf
+72679edb-7e23-42d7-aca9-835489d657e4,7507-3471,SYSCO North Texas,2007-11-12,2705.61,145.11,2560.5,1,critical_mismatch,uploads/1769305416550-Invoices Kitchen (1)_pg4-4.pdf
+b8fc6864-9b95-4332-93ed-36a061da39a7,JA-00000163,Maroon,2007-10-16,2.47,0,2.47,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310598762-New6_page21.pdf
+00813ccb-887f-4675-9491-1d0fe8efbd42,23950,SEAFOOD SUPPLY COMPANY,2007-07-21,2852.88,230,2622.88,3,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310199593-New4_page6.pdf
+be1c7658-d321-4bc9-b043-ee46398346e6,M453,SEAFOOD SUPPLY COMPANY,2007-07-20,21.6,0,21.6,0,no_items,uploads/1769305492262-Invoices Kitchen (1)_pg7-7.pdf
+87faf05b-570c-4ffb-b53b-79b45710e473,7507-347,SEAFOOD SUPPLY COMPANY,2007-07-20,5671.5,3012.229999999999,2659.270000000001,13,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306089668-Invoices Kitchen (1)_pg6-6.pdf
+cba01f71-99ee-45ae-aece-1261a5bd5c58,990071673,SYSCO North Texas,2007-07-20,1016.77,384.26,632.51,5,critical_mismatch,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769306390967-Invoices Kitchen (1)_pg6-6.pdf
+46ced304-81f3-40cf-9c61-593829032dd7,2952,SEAFOOD SUPPLY COMPANY,2007-01-12,1032.96,424,608.96,1,critical_mismatch,uploads/1769303845096-Kitchen Invoices 3_pg5-5.pdf
+67371754-a3b1-440d-85e8-95cfd6f9b86a,10000005.36,MARMON,2007-01-08,18332,0,18332,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769310780151-New7_page12.pdf
+be79a4c6-a23c-4d87-99ee-8965a9f958cc,996008797,SYSCO,2002-07-01,1159.94,0,1159.94,0,no_items,uploads/1769306251795-Kitchen Invoices 3_pg11-11.pdf
+a0487c49-7eb4-4501-b2e5-099bafaf5120,990608797,SYSCO,2002-07-01,11,0,11,0,no_items,invoices/79c33e6a-eb21-419f-9606-7494d1a9584c/1769311198000-New8_page6.pdf
+a6e61d52-0ea2-47f5-ad08-6bd3c3a2c890,996115744,SYSCO,1996-01-23,917.45,0,917.45,0,no_items,uploads/1769306935415-Kitchen Invoices 9_pg4-4.pdf
