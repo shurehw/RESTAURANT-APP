@@ -21,12 +21,14 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setSelectedFile(file);
       setError(null);
+      setWarning(null);
       setResult(null);
 
       // Create preview
@@ -48,6 +50,7 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
 
     setUploading(true);
     setError(null);
+    setWarning(null);
 
     try {
       const formData = new FormData();
@@ -62,6 +65,13 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle duplicate invoice gracefully with a warning instead of error
+        if (response.status === 409 || data.code === 'DUPLICATE_INVOICE') {
+          const message = data.message || `This invoice already exists in the system.`;
+          setWarning(message);
+          setUploading(false);
+          return;
+        }
         throw new Error(data.error || 'Upload failed');
       }
 
@@ -132,6 +142,15 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
               alt="Invoice preview"
               className="max-w-full h-auto max-h-96 rounded border"
             />
+          </div>
+        )}
+
+        {/* Warning (e.g., duplicate invoice) */}
+        {warning && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-4">
+            <p className="font-semibold">⚠️ Already Exists</p>
+            <p className="text-sm">{warning}</p>
+            <p className="text-xs mt-2 text-yellow-700">This invoice has already been uploaded and is in your system.</p>
           </div>
         )}
 

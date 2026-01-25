@@ -138,9 +138,15 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
           } : f
         ));
       } else {
-        // Single invoice response
+        // Single invoice response - show success details
+        const successMsg = `✓ ${data.invoiceNumber || 'Invoice'} from ${data.vendor || 'Unknown vendor'}`;
         setFiles(prev => prev.map((f, i) =>
-          i === index ? { ...f, status: 'success' as const, invoiceId: data.invoiceId } : f
+          i === index ? {
+            ...f,
+            status: 'success' as const,
+            invoiceId: data.invoiceId,
+            progress: successMsg
+          } : f
         ));
       }
       setCompleted(prev => prev + 1);

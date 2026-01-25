@@ -7,6 +7,10 @@ import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claud
 import { normalizeOCR } from '@/lib/ocr/normalize';
 import { cookies } from 'next/headers';
 
+// Configure route to accept large file uploads (up to 150MB)
+export const maxDuration = 300; // 5 minutes for large PDFs
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   return guard(async () => {
     await rateLimit(request, ':invoice-ocr');
@@ -129,13 +133,13 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // File size validation: 10MB limit
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    // File size validation: 150MB limit for large multi-invoice PDFs
+    const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150MB in bytes
     if (file.size > MAX_FILE_SIZE) {
       throw {
         status: 400,
         code: 'FILE_TOO_LARGE',
-        message: `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
+        message: `File size exceeds 150MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`,
       };
     }
 
