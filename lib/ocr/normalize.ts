@@ -225,9 +225,9 @@ async function resolveVendor(
 
     // If all words from shorter name are in longer name, it's a match
     if (vendorWords.length <= searchWords.length) {
-      return vendorWords.every(word => searchWords.includes(word));
+      return vendorWords.every((word: string) => searchWords.includes(word));
     } else {
-      return searchWords.every(word => vendorWords.includes(word));
+      return searchWords.every((word: string) => vendorWords.includes(word));
     }
   });
 
