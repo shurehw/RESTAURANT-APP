@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useVenue } from '@/components/providers/VenueProvider';
-import { X, Upload, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Upload, CheckCircle, AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 interface Venue {
   id: string;
@@ -26,9 +26,10 @@ interface BulkInvoiceUploadModalProps {
 
 interface FileStatus {
   file: File;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'uploading' | 'success' | 'error' | 'warning';
   progress?: string; // Progress message like "Scanning document...", "Processing invoice 2 of 5..."
   error?: string;
+  warning?: string;
   invoiceId?: string;
 }
 
@@ -112,19 +113,24 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
 
       // Handle multi-invoice response
       if (data.multiInvoice) {
-        const summary = `Processed ${data.total} invoices: ${data.succeeded} succeeded, ${data.failed} failed`;
+        const summary = `Processed ${data.total} invoices`;
 
         const successDetails = data.results.length > 0
           ? data.results.map((r: any) => `✓ ${r.invoiceNumber || 'Invoice'} from ${r.vendor || 'Unknown'}`).join('\n')
           : '';
 
         const failDetails = data.errors.length > 0
-          ? data.errors.map((e: any) => `✗ ${e.invoiceNumber} from ${e.vendor}: ${e.error.message || e.error}`).join('\n')
+          ? data.errors.map((e: any) => {
+              const errorMsg = e.error?.message || e.error || '';
+              const isDuplicate = errorMsg.includes('Duplicate') || errorMsg.includes('already exists') || errorMsg.includes('23505');
+              const prefix = isDuplicate ? '⚠ Duplicate:' : '✗';
+              return `${prefix} ${e.invoiceNumber} from ${e.vendor}: ${errorMsg}`;
+            }).join('\n')
           : '';
 
         const allDetails = [
           successDetails && `Succeeded:\n${successDetails}`,
-          failDetails && `Failed:\n${failDetails}`
+          failDetails && `Warnings/Errors:\n${failDetails}`
         ].filter(Boolean).join('\n\n');
 
         const progressText = allDetails ? `${summary}\n\n${allDetails}` : summary;
@@ -164,13 +170,17 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
         errorMsg = JSON.stringify(error);
       }
 
+      // Check if this is a duplicate invoice (treat as warning, not error)
+      const isDuplicate = errorMsg.includes('Duplicate invoice') || errorMsg.includes('already exists');
+
       console.error('[Bulk Upload Error]', fileStatus.file.name, errorMsg);
 
       setFiles(prev => prev.map((f, i) =>
         i === index ? {
           ...f,
-          status: 'error' as const,
-          error: errorMsg
+          status: isDuplicate ? 'warning' as const : 'error' as const,
+          warning: isDuplicate ? errorMsg : undefined,
+          error: isDuplicate ? undefined : errorMsg
         } : f
       ));
       setCompleted(prev => prev + 1);
@@ -331,6 +341,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                     {fileStatus.status === 'success' && (
                       <CheckCircle className="w-5 h-5 text-green-600" />
                     )}
+                    {fileStatus.status === 'warning' && (
+                      <AlertTriangle className="w-5 h-5 text-amber-500" />
+                    )}
                     {fileStatus.status === 'error' && (
                       <AlertCircle className="w-5 h-5 text-red-600" />
                     )}
@@ -347,6 +360,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
                     )}
                     {fileStatus.status === 'success' && fileStatus.progress && fileStatus.progress.trim() && (
                       <p className="text-xs text-gray-700 mt-1 whitespace-pre-line">{fileStatus.progress}</p>
+                    )}
+                    {fileStatus.warning && fileStatus.warning.trim() && (
+                      <p className="text-xs text-amber-600 mt-1 whitespace-pre-line">{fileStatus.warning}</p>
                     )}
                     {fileStatus.error && fileStatus.error.trim() && (
                       <p className="text-xs text-red-600 mt-1 whitespace-pre-line">{fileStatus.error}</p>
