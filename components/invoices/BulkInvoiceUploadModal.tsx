@@ -96,16 +96,29 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       // Clear progress interval
       clearInterval(progressInterval);
 
-      const data = await response.json();
+      // Parse response - handle both JSON and non-JSON errors
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Non-JSON response (HTML error, plain text, etc.)
+        const text = await response.text();
+        throw new Error(text || 'Server returned non-JSON response');
+      }
 
       if (!response.ok) {
         // Provide helpful error messages
-        let errorMsg = data.error || 'Upload failed';
+        let errorMsg = data?.error || data?.message || 'Upload failed';
 
-        if (data.code === 'DUPLICATE_INVOICE' || response.status === 409) {
+        if (data?.code === 'DUPLICATE_INVOICE' || response.status === 409) {
           errorMsg = data.message || `Duplicate: ${data.details?.invoiceNumber || 'Invoice already exists'}`;
-        } else if (data.error?.includes('23505')) {
+        } else if (data?.error?.includes('23505')) {
           errorMsg = 'Duplicate invoice already in system';
+        } else if (response.status === 413 || data?.code === 'FILE_TOO_LARGE') {
+          errorMsg = `File too large (${(fileStatus.file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 150MB. Please split this PDF into smaller files.`;
+        } else if (response.status === 500) {
+          errorMsg = 'Server error processing invoice. The file may be corrupted or contain multiple invoices that failed to parse.';
         }
 
         throw new Error(errorMsg);

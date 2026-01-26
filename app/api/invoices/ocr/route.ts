@@ -260,10 +260,14 @@ async function processInvoice(
 
     // If vendor not found, create it using service role (bypasses RLS)
     if (!vendorId && vendorName) {
+      // Robust normalization to prevent duplicates
       const normalizedName = vendorName
         .toLowerCase()
-        .replace(/[,\.]/g, '')
-        .replace(/\s+/g, ' ')
+        .replace(/[''`´]/g, "'")      // Normalize all apostrophe variants
+        .replace(/[""„]/g, '"')       // Normalize quote variants
+        .replace(/[–—−]/g, '-')       // Normalize dash variants
+        .replace(/[,\.()]/g, '')      // Remove punctuation
+        .replace(/\s+/g, ' ')         // Collapse whitespace
         .trim();
 
       // Use service role client to bypass RLS for vendor operations
