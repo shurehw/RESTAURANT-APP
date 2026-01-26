@@ -1,7 +1,6 @@
-#!/usr/bin/env node
 /**
- * Merge duplicate vendors
- * Consolidates similar vendor names and updates all references
+ * Merge Duplicate Vendors
+ * Keeps vendor with most invoices, reassigns invoices from duplicates
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -12,197 +11,172 @@ dotenv.config({ path: '.env.local' });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Levenshtein distance for similarity
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = [];
-  for (let i = 0; i <= str2.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= str1.length; j++) matrix[0][j] = j;
+// Aggressive normalize for grouping
+function aggressiveNormalize(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/\b(inc|llc|corp|co|ltd|foods|food|company|enterprises|enterprise|distribution|dist|supply|supplies)\b/g, '')
+    .trim();
+}
 
-  for (let i = 1; i <= str2.length; i++) {
-    for (let j = 1; j <= str1.length; j++) {
-      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
+// Better normalization for the canonical name
+function betterNormalize(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[''`]/g, "'") // Normalize apostrophes
+    .replace(/[""]/g, '"')  // Normalize quotes
+    .replace(/\s+/g, ' ')   // Normalize whitespace
+    .replace(/[^\w\s'-]/g, '') // Remove most punctuation except apostrophe and hyphen
+    .trim();
+}
+
+interface VendorWithCount {
+  id: string;
+  name: string;
+  normalized_name: string;
+  is_active: boolean;
+  created_at: string;
+  invoiceCount: number;
+}
+
+async function getVendorInvoiceCount(vendorId: string): Promise<number> {
+  const { count } = await supabase
+    .from('invoices')
+    .select('id', { count: 'exact', head: true })
+    .eq('vendor_id', vendorId);
+  return count || 0;
+}
+
+async function mergeVendors(keep: VendorWithCount, duplicates: VendorWithCount[]): Promise<void> {
+  console.log(`\n  Keeping: "${keep.name}" (${keep.invoiceCount} invoices)`);
+  
+  for (const dup of duplicates) {
+    console.log(`  Merging: "${dup.name}" (${dup.invoiceCount} invoices)`);
+    
+    // Reassign invoices
+    if (dup.invoiceCount > 0) {
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({ vendor_id: keep.id })
+        .eq('vendor_id', dup.id);
+
+      if (updateError) {
+        console.error(`    ❌ Failed to reassign invoices: ${updateError.message}`);
+        continue;
       }
+      console.log(`    ✅ Reassigned ${dup.invoiceCount} invoices`);
+    }
+
+    // Also update vendor_item_aliases
+    const { error: aliasError } = await supabase
+      .from('vendor_item_aliases')
+      .update({ vendor_id: keep.id })
+      .eq('vendor_id', dup.id);
+
+    if (aliasError && aliasError.code !== 'PGRST116') {
+      console.log(`    ⚠️  Alias update: ${aliasError.message}`);
+    }
+
+    // Deactivate duplicate vendor
+    const { error: deactivateError } = await supabase
+      .from('vendors')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', dup.id);
+
+    if (deactivateError) {
+      console.error(`    ❌ Failed to deactivate: ${deactivateError.message}`);
+    } else {
+      console.log(`    ✅ Deactivated duplicate vendor`);
     }
   }
-  return matrix[str2.length][str1.length];
-}
 
-function similarity(str1: string, str2: string): number {
-  const longer = str1.length > str2.length ? str1 : str2;
-  const shorter = str1.length > str2.length ? str2 : str1;
-  if (longer.length === 0) return 1.0;
-  const distance = levenshteinDistance(longer, shorter);
-  return (longer.length - distance) / longer.length;
-}
-
-async function mergeVendors(keepId: string, mergeIds: string[]) {
-  console.log(`\n  Merging ${mergeIds.length} vendor(s) into ${keepId}...`);
-
-  // Update all invoices to point to the kept vendor
-  const { error: invoiceError } = await supabase
-    .from('invoices')
-    .update({ vendor_id: keepId })
-    .in('vendor_id', mergeIds);
-
-  if (invoiceError) {
-    console.error('    ❌ Error updating invoices:', invoiceError);
-    return false;
-  }
-
-  // Update purchase orders
-  const { error: poError } = await supabase
-    .from('purchase_orders')
-    .update({ vendor_id: keepId })
-    .in('vendor_id', mergeIds);
-
-  if (poError && poError.code !== '42P01') { // Ignore if table doesn't exist
-    console.error('    ❌ Error updating purchase orders:', poError);
-    return false;
-  }
-
-  // Update vendor item aliases
-  const { error: aliasError } = await supabase
-    .from('vendor_item_aliases')
-    .update({ vendor_id: keepId })
-    .in('vendor_id', mergeIds);
-
-  if (aliasError && aliasError.code !== '42P01') {
-    console.error('    ❌ Error updating vendor aliases:', aliasError);
-    return false;
-  }
-
-  // Delete the duplicate vendors
-  const { error: deleteError } = await supabase
+  // Update the keeper's normalized_name to use better normalization
+  const newNormalized = betterNormalize(keep.name);
+  await supabase
     .from('vendors')
-    .delete()
-    .in('id', mergeIds);
-
-  if (deleteError) {
-    console.error('    ❌ Error deleting duplicate vendors:', deleteError);
-    return false;
-  }
-
-  console.log(`    ✓ Merged successfully`);
-  return true;
+    .update({ normalized_name: newNormalized })
+    .eq('id', keep.id);
 }
 
-// Predefined merge rules for exact matches
-const MERGE_RULES = [
-  // Exact duplicates
-  { keep: "Spec's Wine, Spirits & Finer Foods", normalize: "spec's wine, spirits & finer foods" },
-  { keep: "Dairyland Produce, LLC (dba Hardie's Fresh Foods)", normalize: "dairyland produce, llc (dba hardie's fresh foods)" },
+async function main() {
+  console.log('🔄 Merging Duplicate Vendors\n');
+  console.log('='.repeat(80));
 
-  // Chef's Warehouse variations -> standardize on "The Chefs' Warehouse"
-  { keep: "The Chefs' Warehouse", normalize: "the chefs' warehouse" },
-  { keep: "The Chefs' Warehouse", normalize: "the chefs warehouse" },
-  { keep: "The Chefs' Warehouse", normalize: "chefs' warehouse" },
-  { keep: "The Chefs' Warehouse", normalize: "chefs warehouse" },
-  { keep: "The Chefs' Warehouse", normalize: "chefswarehouse" },
-  { keep: "The Chefs' Warehouse", normalize: "the chefswarehouse" },
-
-  // Chef's Warehouse Midwest variations
-  { keep: "The Chefs' Warehouse Midwest LLC", normalize: "the chefs' warehouse midwest llc" },
-  { keep: "The Chefs' Warehouse Midwest LLC", normalize: "chefs warehouse midwest llc" },
-  { keep: "The Chefs' Warehouse Midwest LLC", normalize: "the chefswarehouse midwest llc" },
-
-  // RNDC variations -> standardize on full name
-  { keep: "Republic National Distributing Company", normalize: "republic national distributing company" },
-  { keep: "Republic National Distributing Company", normalize: "republic national distributing company (rndc)" },
-  { keep: "Republic National Distributing Company", normalize: "rndc - republic national distributing company" },
-  { keep: "Republic National Distributing Company", normalize: "rndc (republic national distributing company)" },
-
-  // Oak Farms variations
-  { keep: "OAK FARMS-DALLAS DFA DAIRY BRANDS", normalize: "oak farms-dallas dfa dairy brands" },
-  { keep: "OAK FARMS-DALLAS DFA DAIRY BRANDS", normalize: "oak farms-dallas dfr dairy brands" },
-  { keep: "OAK FARMS-DALLAS DFA DAIRY BRANDS", normalize: "gaf farms-dallas dfa dairy brands" },
-
-  // MFW variations
-  { keep: "MFW - Maekor Fine Wine", normalize: "mfw - maekor fine wine" },
-  { keep: "MFW - Maekor Fine Wine", normalize: "mfw - maesor fine wine" },
-  { keep: "MFW - Maekor Fine Wine", normalize: "mfw - maxxor fine wine" },
-];
-
-async function mergeDuplicateVendors() {
-  console.log('\n=== Merging Duplicate Vendors ===\n');
-
+  // Get all active vendors
   const { data: vendors, error } = await supabase
     .from('vendors')
-    .select('id, name, normalized_name, is_active')
+    .select('id, name, normalized_name, is_active, created_at')
     .eq('is_active', true)
     .order('name');
 
-  if (error) {
+  if (error || !vendors) {
     console.error('Error fetching vendors:', error);
     return;
   }
 
-  console.log(`Found ${vendors?.length || 0} active vendors\n`);
-
-  // Group vendors by merge rules
-  const mergeGroups = new Map<string, string[]>();
-
-  for (const rule of MERGE_RULES) {
-    const keepVendor = vendors?.find(v => v.normalized_name === rule.normalize);
-    if (keepVendor && !mergeGroups.has(rule.keep)) {
-      mergeGroups.set(rule.keep, []);
-    }
-
-    const matchingVendors = vendors?.filter(v => v.normalized_name === rule.normalize) || [];
-    for (const vendor of matchingVendors) {
-      if (mergeGroups.has(rule.keep)) {
-        mergeGroups.get(rule.keep)!.push(vendor.id);
-      }
-    }
+  // Get invoice counts
+  const vendorsWithCounts: VendorWithCount[] = [];
+  for (const v of vendors) {
+    const count = await getVendorInvoiceCount(v.id);
+    vendorsWithCounts.push({ ...v, invoiceCount: count });
   }
 
-  // Execute merges
-  let merged = 0;
-  for (const [keepName, vendorIds] of mergeGroups) {
-    if (vendorIds.length <= 1) continue; // Skip if only one vendor
-
-    const keepVendor = vendors?.find(v => vendorIds.includes(v.id) && v.name === keepName);
-    if (!keepVendor) {
-      // Use first vendor as the one to keep
-      const firstVendor = vendors?.find(v => v.id === vendorIds[0]);
-      if (!firstVendor) continue;
-
-      console.log(`\nMerging into: "${firstVendor.name}"`);
-      console.log(`  Merging ${vendorIds.length - 1} duplicate(s)`);
-
-      const mergeIds = vendorIds.filter(id => id !== firstVendor.id);
-      if (await mergeVendors(firstVendor.id, mergeIds)) {
-        merged += mergeIds.length;
-      }
-    } else {
-      console.log(`\nMerging into: "${keepName}"`);
-      console.log(`  Merging ${vendorIds.length - 1} duplicate(s)`);
-
-      const mergeIds = vendorIds.filter(id => id !== keepVendor.id);
-      if (await mergeVendors(keepVendor.id, mergeIds)) {
-        merged += mergeIds.length;
-      }
+  // Group by aggressive normalized name
+  const groups = new Map<string, VendorWithCount[]>();
+  for (const vendor of vendorsWithCounts) {
+    const key = aggressiveNormalize(vendor.name);
+    if (!groups.has(key)) {
+      groups.set(key, []);
     }
+    groups.get(key)!.push(vendor);
   }
 
-  console.log(`\n=== Summary ===`);
-  console.log(`Merged ${merged} duplicate vendors`);
-  console.log(`\nRun the find-similar-vendors script again to check for remaining duplicates.`);
+  // Find duplicate groups
+  const duplicateGroups = Array.from(groups.entries())
+    .filter(([_, vendors]) => vendors.length > 1);
+
+  if (duplicateGroups.length === 0) {
+    console.log('\n✅ No duplicates found!');
+    return;
+  }
+
+  console.log(`\n📦 Found ${duplicateGroups.length} duplicate groups to merge\n`);
+
+  let totalMerged = 0;
+  let totalInvoicesReassigned = 0;
+
+  for (const [normalized, vendorGroup] of duplicateGroups) {
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`Group: "${normalized}"`);
+    
+    // Sort by invoice count (descending) to keep the one with most invoices
+    vendorGroup.sort((a, b) => b.invoiceCount - a.invoiceCount);
+    
+    const keep = vendorGroup[0];
+    const duplicates = vendorGroup.slice(1);
+    
+    const invoicesToReassign = duplicates.reduce((sum, d) => sum + d.invoiceCount, 0);
+    
+    await mergeVendors(keep, duplicates);
+    
+    totalMerged += duplicates.length;
+    totalInvoicesReassigned += invoicesToReassign;
+  }
+
+  console.log('\n' + '='.repeat(80));
+  console.log('\n📊 MERGE COMPLETE\n');
+  console.log(`  Vendors merged: ${totalMerged}`);
+  console.log(`  Invoices reassigned: ${totalInvoicesReassigned}`);
+  console.log(`  Remaining active vendors: ${vendors.length - totalMerged}`);
 }
 
-mergeDuplicateVendors().catch(console.error);
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });

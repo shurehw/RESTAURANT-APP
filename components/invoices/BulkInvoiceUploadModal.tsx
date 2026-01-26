@@ -58,14 +58,9 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
   };
 
   const uploadFile = async (fileStatus: FileStatus, index: number): Promise<void> => {
-    const formData = new FormData();
-    formData.append('file', fileStatus.file);
-    formData.append('venue_id', venueId);
-    formData.append('is_preopening', isPreopening.toString());
-
     // Progress messages to cycle through
     const progressSteps = [
-      'Uploading file...',
+      'Uploading to storage...',
       'Scanning document...',
       'Extracting invoice data...',
       'Matching vendors and items...',
@@ -88,9 +83,35 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
     }, 1500);
 
     try {
-      const response = await fetch('/api/invoices/ocr', {
+      // Step 1: Upload file directly to Supabase Storage (bypasses Vercel payload limits)
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
+      const fileName = `${Date.now()}-${fileStatus.file.name}`;
+      const storagePath = `raw/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('opsos-invoices')
+        .upload(storagePath, fileStatus.file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw new Error('Failed to upload file to storage: ' + uploadError.message);
+      }
+
+      // Step 2: Call API to process the file from storage
+      const response = await fetch('/api/invoices/process-from-storage', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storagePath,
+          venueId,
+          isPreopening,
+        }),
       });
 
       // Clear progress interval
@@ -115,8 +136,6 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
           errorMsg = data.message || `Duplicate: ${data.details?.invoiceNumber || 'Invoice already exists'}`;
         } else if (data?.error?.includes('23505')) {
           errorMsg = 'Duplicate invoice already in system';
-        } else if (response.status === 413 || data?.code === 'FILE_TOO_LARGE') {
-          errorMsg = `File too large (${(fileStatus.file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 4MB. Please use lower resolution scans or compress images.`;
         } else if (response.status === 500) {
           errorMsg = 'Server error processing invoice. The file may be corrupted or contain multiple invoices that failed to parse.';
         }
@@ -238,7 +257,7 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl">Upload Invoices</DialogTitle>
           <DialogDescription className="text-sm">
-            Upload single or multiple invoice files. Multi-invoice PDFs are automatically detected and split. Each invoice will be processed with OCR.
+            Upload single or multiple invoice files (up to 50MB each). Multi-invoice PDFs are automatically detected and split. Each invoice will be processed with OCR.
           </DialogDescription>
         </DialogHeader>
 

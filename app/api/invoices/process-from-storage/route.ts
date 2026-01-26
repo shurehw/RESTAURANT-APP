@@ -7,13 +7,13 @@ import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claud
 import { normalizeOCR } from '@/lib/ocr/normalize';
 import { cookies } from 'next/headers';
 
-// Configure route to accept large file uploads (up to 150MB)
+// Configure route for processing uploaded files from storage
 export const maxDuration = 300; // 5 minutes for large PDFs
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   return guard(async () => {
-    await rateLimit(request, ':invoice-ocr');
+    await rateLimit(request, ':invoice-process-storage');
     const supabase = await createClient();
 
     // Try Supabase auth first
@@ -106,26 +106,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const venueId = formData.get('venue_id') as string;
-    const isPreopening = formData.get('is_preopening') === 'true';
+    const body = await request.json();
+    const { storagePath, venueId, isPreopening } = body;
 
-    if (!file) throw { status: 400, code: 'NO_FILE', message: 'No file provided' };
+    if (!storagePath) throw { status: 400, code: 'NO_STORAGE_PATH', message: 'storagePath is required' };
     if (!venueId) throw { status: 400, code: 'NO_VENUE', message: 'venue_id is required' };
 
     // Check venue access
-    // Platform admins bypass org membership checks and can upload to any venue
     if (!isPlatformAdmin && !venueIds.includes(venueId)) {
       const availableVenues = venueIds.length > 0 ? venueIds.join(', ') : 'none';
-      console.error('Venue access denied:', {
-        requestedVenueId: venueId,
-        userVenueIds: venueIds,
-        orgId,
-        isPlatformAdmin,
-        authMethod: authUser ? 'supabase' : 'cookie',
-        userId: authUser?.id || customUserId
-      });
       throw {
         status: 403,
         code: 'FORBIDDEN',
@@ -133,35 +122,25 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Note: This endpoint is deprecated in favor of process-from-storage for large files
-    // File size validation: 4MB limit (Vercel edge function payload limit)
-    // For files larger than 4MB, use the direct storage upload flow instead
-    const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB in bytes
-    if (file.size > MAX_FILE_SIZE) {
+    // Download file from storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('opsos-invoices')
+      .download(storagePath);
+
+    if (downloadError || !fileData) {
       throw {
         status: 400,
-        code: 'FILE_TOO_LARGE',
-        message: `File size exceeds 4MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB). The upload system should automatically handle larger files. Please try again or contact support if this issue persists.`,
+        code: 'DOWNLOAD_FAILED',
+        message: 'Failed to download file from storage: ' + downloadError?.message
       };
     }
 
-    // MIME type validation
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-      throw {
-        status: 400,
-        code: 'INVALID_TYPE',
-        message: `Invalid file type: ${file.type}. Allowed: ${validTypes.join(', ')}`,
-      };
-    }
-
-    const arrayBuffer = await file.arrayBuffer();
+    // Convert Blob to Buffer
+    const arrayBuffer = await fileData.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Additional validation: Check magic bytes to prevent MIME spoofing
+    // Detect file type from magic bytes
     const magicBytes = buffer.slice(0, 4).toString('hex');
-
-    // Detect actual file type from magic bytes
     let actualMimeType: string;
     if (magicBytes.startsWith('ffd8ff')) {
       actualMimeType = 'image/jpeg';
@@ -179,7 +158,7 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Handle PDF or image (use detected MIME type, not declared)
+    // Handle PDF or image
     const isPDF = actualMimeType === 'application/pdf';
     const ocrResult = isPDF
       ? await extractInvoiceFromPDF(buffer)
@@ -201,7 +180,15 @@ export async function POST(request: NextRequest) {
 
       try {
         console.log(`[OCR] Processing invoice ${invoiceIndex}/${rawInvoices.length}...`);
-        const result = await processInvoice(rawInvoice, venueId, isPreopening, file, buffer, supabase, invoiceIndex, rawInvoices.length);
+        const result = await processInvoice(
+          rawInvoice,
+          venueId,
+          isPreopening || false,
+          storagePath,
+          supabase,
+          invoiceIndex,
+          rawInvoices.length
+        );
         results.push(result);
       } catch (error: any) {
         console.error(`[OCR] Failed to process invoice ${invoiceIndex}:`, error);
@@ -241,8 +228,7 @@ async function processInvoice(
   rawInvoice: any,
   venueId: string,
   isPreopening: boolean,
-  file: File,
-  buffer: Buffer,
+  storagePath: string,
   supabase: any,
   invoiceIndex: number,
   totalInvoices: number
@@ -344,18 +330,6 @@ async function processInvoice(
       };
     }
 
-    // For multi-invoice PDFs, append index to filename
-    const baseFileName = file.name.replace(/\.pdf$/i, '');
-    const fileName = totalInvoices > 1
-      ? `${Date.now()}-${baseFileName}-invoice-${invoiceIndex}.pdf`
-      : `${Date.now()}-${file.name}`;
-
-    const { data: uploadData } = await supabase.storage
-      .from('opsos-invoices')
-      .upload(`raw/${fileName}`, buffer, { contentType: 'application/pdf' });
-
-    const storagePath = uploadData?.path || null;
-
     // Prepare data for RPC
     const invoicePayload = {
       venue_id: venueId,
@@ -373,12 +347,11 @@ async function processInvoice(
 
     // Map all lines (including qty: 0 for vendor tracking)
     const linesPayload = normalized.lines.map((line) => ({
-      item_id: line.itemId || null, // Explicitly set to null if undefined
-      vendor_item_code: line.vendorItemCode || null, // Vendor SKU from OCR
+      item_id: line.itemId || null,
+      vendor_item_code: line.vendorItemCode || null,
       description: line.description,
       quantity: line.qty,
       unit_cost: line.unitCost,
-      // line_total is a generated column, don't send it
       ocr_confidence: line.ocrConfidence,
     }));
 
