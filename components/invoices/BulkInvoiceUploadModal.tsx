@@ -116,7 +116,7 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
         } else if (data?.error?.includes('23505')) {
           errorMsg = 'Duplicate invoice already in system';
         } else if (response.status === 413 || data?.code === 'FILE_TOO_LARGE') {
-          errorMsg = `File too large (${(fileStatus.file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 150MB. Please split this PDF into smaller files.`;
+          errorMsg = `File too large (${(fileStatus.file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB. Please split this PDF into smaller files.`;
         } else if (response.status === 500) {
           errorMsg = 'Server error processing invoice. The file may be corrupted or contain multiple invoices that failed to parse.';
         }
