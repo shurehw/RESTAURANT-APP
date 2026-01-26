@@ -133,13 +133,13 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // File size validation: 10MB limit (Vercel function payload limit)
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    // File size validation: 4MB limit (Vercel edge function payload limit)
+    const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB in bytes
     if (file.size > MAX_FILE_SIZE) {
       throw {
         status: 400,
         code: 'FILE_TOO_LARGE',
-        message: `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB). Please split large PDFs into smaller files.`,
+        message: `File size exceeds 4MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB). Please use lower resolution scans or compress images.`,
       };
     }
 
