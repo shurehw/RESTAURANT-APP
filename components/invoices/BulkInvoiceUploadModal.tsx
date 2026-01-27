@@ -43,12 +43,25 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
 
   const venueId = selectedVenue?.id || venues[0]?.id || '';
 
+  const MAX_FILE_SIZE_MB = 50;
+  const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    const fileStatuses: FileStatus[] = selectedFiles.map(file => ({
-      file,
-      status: 'pending',
-    }));
+    const fileStatuses: FileStatus[] = selectedFiles.map(file => {
+      // Check file size
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        return {
+          file,
+          status: 'error' as const,
+          error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${MAX_FILE_SIZE_MB}MB. Please split the PDF into smaller parts.`,
+        };
+      }
+      return {
+        file,
+        status: 'pending' as const,
+      };
+    });
     setFiles(fileStatuses);
     setCompleted(0);
   };
