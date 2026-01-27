@@ -345,16 +345,28 @@ async function processInvoice(
     }
 
     // For multi-invoice PDFs, append index to filename
-    const baseFileName = file.name.replace(/\.pdf$/i, '');
-    const fileName = totalInvoices > 1
-      ? `${Date.now()}-${baseFileName}-invoice-${invoiceIndex}.pdf`
-      : `${Date.now()}-${file.name}`;
+    // Upload file to storage (optional - invoice can be created without file)
+    let storagePath: string | null = null;
+    try {
+      const baseFileName = file.name.replace(/\.pdf$/i, '');
+      const fileName = totalInvoices > 1
+        ? `${Date.now()}-${baseFileName}-invoice-${invoiceIndex}.pdf`
+        : `${Date.now()}-${file.name}`;
 
-    const { data: uploadData } = await supabase.storage
-      .from('opsos-invoices')
-      .upload(`raw/${fileName}`, buffer, { contentType: 'application/pdf' });
+      const { data: uploadData, error: storageError } = await supabase.storage
+        .from('opsos-invoices')
+        .upload(`raw/${fileName}`, buffer, { contentType: 'application/pdf' });
 
-    const storagePath = uploadData?.path || null;
+      if (storageError) {
+        console.error('[Storage Error]', JSON.stringify(storageError));
+        normalized.warnings.push(`File storage skipped: ${storageError.message}`);
+      } else {
+        storagePath = uploadData?.path || null;
+      }
+    } catch (storageErr: any) {
+      console.error('[Storage Exception]', storageErr);
+      normalized.warnings.push('File storage unavailable');
+    }
 
     // Prepare data for RPC
     const invoicePayload = {
