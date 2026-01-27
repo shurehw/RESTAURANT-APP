@@ -36,8 +36,9 @@ x-api-key: /xBMnwoWA3hXZMgTun+z+FUlMxWxD1I8Tm4Z67wEi2w=
 ### File Requirements
 
 - **Supported formats:** PDF, JPEG, PNG, WebP
-- **Max file size:** 150MB per file
+- **Max file size:** 50MB per file (larger files will timeout during processing)
 - **Multiple files:** Yes, send as many as needed in one request
+- **Tip:** Split large PDFs into smaller chunks for best results
 
 ---
 
