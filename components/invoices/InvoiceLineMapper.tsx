@@ -437,7 +437,9 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             const lbs = lbMatch ? parseFloat(lbMatch[1]) : 1;
             console.log('Pound pattern matched:', lbs, 'lb');
             parsedPackConfig = {
-              pack_type: 'pound',
+              // DB only allows: case, bottle, bag, box, each, keg, pail, drum
+              // Represent "sold by the pound" as a bag pack type with lb unit size.
+              pack_type: 'bag',
               units_per_pack: 1,
               unit_size: lbs,
               unit_size_uom: 'lb'
@@ -743,13 +745,25 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                         });
 
                         if (!response.ok) {
-                          console.error('Failed to update pack configurations');
-                          alert('Failed to save pack configurations');
+                          let details = '';
+                          try {
+                            const contentType = response.headers.get('content-type') || '';
+                            if (contentType.includes('application/json')) {
+                              const err = await response.json();
+                              details = err?.details || err?.error || err?.message || JSON.stringify(err);
+                            } else {
+                              details = await response.text();
+                            }
+                          } catch {
+                            // ignore
+                          }
+                          console.error('Failed to update pack configurations', response.status, details);
+                          alert(`Failed to save pack configurations: ${details || `HTTP ${response.status}`}`);
                           return;
                         }
                       } catch (error) {
                         console.error('Error updating pack configurations:', error);
-                        alert('Error saving pack configurations');
+                        alert(`Error saving pack configurations: ${error instanceof Error ? error.message : 'Unknown error'}`);
                         return;
                       }
                     }

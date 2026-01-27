@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
+import { cookies } from 'next/headers';
 
 type RouteParams = {
   params: Promise<{ id: string }>;
@@ -14,6 +15,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   return guard(async () => {
     const { id } = await params;
     const supabase = await createClient();
+    const adminClient = createAdminClient();
     const body = await request.json();
 
     const {
@@ -26,19 +28,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       item_pack_configurations,
     } = body;
 
-    // Get user's organization
-    const { data: user } = await supabase.auth.getUser();
-    if (!user?.user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Get user id (Supabase session preferred, cookie fallback)
+    const cookieStore = await cookies();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userId = user?.id || cookieStore.get('user_id')?.value || null;
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: orgUsers } = await supabase
+    const { data: orgUsers } = await adminClient
       .from('organization_users')
       .select('organization_id')
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .eq('is_active', true);
 
     if (!orgUsers || orgUsers.length === 0) {
@@ -51,7 +55,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const orgId = orgUsers[0].organization_id;
 
     // Verify item belongs to user's organization
-    const { data: existingItem } = await supabase
+    const { data: existingItem } = await adminClient
       .from('items')
       .select('id, organization_id')
       .eq('id', id)
@@ -66,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     // Update the item
-    const { data: updatedItem, error: updateError } = await supabase
+    const { data: updatedItem, error: updateError } = await adminClient
       .from('items')
       .update({
         name,
@@ -91,8 +95,19 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Update pack configurations if provided
     if (item_pack_configurations && Array.isArray(item_pack_configurations)) {
+      const allowedPackTypes = new Set(['case', 'bottle', 'bag', 'box', 'each', 'keg', 'pail', 'drum']);
+
+      for (const cfg of item_pack_configurations) {
+        if (cfg?.pack_type && !allowedPackTypes.has(String(cfg.pack_type))) {
+          return NextResponse.json(
+            { error: 'Invalid pack_type', details: `Unsupported pack_type: ${cfg.pack_type}` },
+            { status: 400 }
+          );
+        }
+      }
+
       // Delete existing pack configs
-      await supabase
+      await adminClient
         .from('item_pack_configurations')
         .delete()
         .eq('item_id', id);
@@ -108,13 +123,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           vendor_item_code: config.vendor_item_code || null,
         }));
 
-        const { error: packError } = await supabase
+        const { error: packError } = await adminClient
           .from('item_pack_configurations')
           .insert(newConfigs);
 
         if (packError) {
           console.error('Failed to update pack configs:', packError);
-          // Don't fail the whole request, just log the error
+          return NextResponse.json(
+            { error: 'Failed to update pack configurations', details: packError.message },
+            { status: 500 }
+          );
         }
       }
     }

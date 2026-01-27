@@ -119,18 +119,10 @@ export function PackConfigurationManager({
                     <optgroup label="Beverages">
                       <option value="bottle">Bottle</option>
                       <option value="keg">Keg</option>
-                      <option value="can">Can</option>
-                    </optgroup>
-                    <optgroup label="Food">
-                      <option value="pound">Pound (lb)</option>
-                      <option value="piece">Piece (PC)</option>
-                      <option value="dozen">Dozen</option>
-                      <option value="gallon">Gallon</option>
                     </optgroup>
                     <optgroup label="Bulk">
                       <option value="pail">Pail</option>
                       <option value="drum">Drum</option>
-                      <option value="tote">Tote</option>
                     </optgroup>
                   </select>
                 </div>
