@@ -25,19 +25,20 @@ type SearchParams = {
 export default async function BulkReviewPage({
   searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   const supabase = createAdminClient();
 
   // Parse params
-  const page = Math.max(1, Number(searchParams?.page || "1") || 1);
-  const limitRaw = Number(searchParams?.limit || "100") || 100;
+  const params = (await searchParams) || {};
+  const page = Math.max(1, Number(params.page || "1") || 1);
+  const limitRaw = Number(params.limit || "100") || 100;
   const limit = Math.min(500, Math.max(25, limitRaw));
-  const vendorFilter = searchParams?.vendor || "";
-  const sortBy = searchParams?.sort || "date_desc";
-  const searchTerm = searchParams?.search || "";
-  const hasCodeFilter = searchParams?.hasCode;
-  const typeFilter = searchParams?.type || ""; // "food", "beverage", or ""
+  const vendorFilter = params.vendor || "";
+  const sortBy = params.sort || "date_desc";
+  const searchTerm = params.search || "";
+  const hasCodeFilter = params.hasCode;
+  const typeFilter = params.type || ""; // "food", "beverage", or ""
 
   // Get all vendors with unmapped items for the filter dropdown
   const { data: vendorsWithUnmapped } = await supabase
