@@ -106,7 +106,7 @@ export default async function BulkReviewPage({
     .from("invoice_lines")
     .select(`
       *,
-      invoice:invoices!inner(
+      invoices!inner(
         id,
         invoice_number,
         invoice_date,
@@ -155,7 +155,9 @@ export default async function BulkReviewPage({
 
   const { data: unmappedLines } = await query.range(safeFrom, safeTo);
 
-  let lines = unmappedLines || [];
+  // We select `invoices!inner(...)` (no alias) so we can reliably filter on
+  // `invoices.vendor_id`. Normalize shape back to `line.invoice` for the UI.
+  let lines = (unmappedLines || []).map((l: any) => ({ ...l, invoice: l.invoices }));
 
   // Client-side sort by vendor if needed
   if (sortBy === "vendor_asc") {
@@ -177,7 +179,7 @@ export default async function BulkReviewPage({
 
   // Group by vendor for easier mapping
   const linesByVendor = lines.reduce((acc, line) => {
-    const vendorId = line.invoice.vendor_id;
+    const vendorId = line.invoice?.vendor_id;
     const vendorName = line.invoice.vendor?.name || "Unknown";
     if (!acc[vendorId]) {
       acc[vendorId] = {
