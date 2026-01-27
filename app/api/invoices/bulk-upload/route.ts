@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       throw { status: 400, code: 'NO_VENUES', message: 'No active venues found for organization' };
     }
 
-    const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max per file (larger files timeout during OCR)
+    const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150MB max per file
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
 
     const results = [];

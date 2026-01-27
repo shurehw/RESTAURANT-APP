@@ -43,7 +43,7 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
 
   const venueId = selectedVenue?.id || venues[0]?.id || '';
 
-  const MAX_FILE_SIZE_MB = 50;
+  const MAX_FILE_SIZE_MB = 150;
   const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +54,7 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
         return {
           file,
           status: 'error' as const,
-          error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${MAX_FILE_SIZE_MB}MB. Please split the PDF into smaller parts.`,
+          error: `File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max ${MAX_FILE_SIZE_MB}MB.`,
         };
       }
       return {
