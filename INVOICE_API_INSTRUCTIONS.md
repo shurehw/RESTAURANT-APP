@@ -6,8 +6,6 @@ This document provides the API key and instructions for external parties to uplo
 
 **Production URL:** `https://opsos.vercel.app/api/invoices/bulk-upload`
 
-**Local Development:** `http://localhost:3000/api/invoices/bulk-upload`
-
 ## Authentication
 
 **API Key:** `/xBMnwoWA3hXZMgTun+z+FUlMxWxD1I8Tm4Z67wEi2w=`
@@ -30,15 +28,22 @@ x-api-key: /xBMnwoWA3hXZMgTun+z+FUlMxWxD1I8Tm4Z67wEi2w=
 
 ### Required Parameters
 
-1. **files** (one or more file uploads)
-   - Supported formats: JPEG, PNG, WebP, PDF
-   - Max file size: 10MB per file
-   - Field name: `files` (can send multiple files)
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `files` | File(s) | One or more invoice files (PDF, JPEG, PNG, WebP) |
+| `organization_id` | String | `13dacb8a-d2b5-42b8-bcc3-50bc372c0a41` |
 
-2. **organization_id** (form field)
-   - Value: `13dacb8a-d2b5-42b8-bcc3-50bc372c0a41`
+### File Requirements
 
-### Example with cURL
+- **Supported formats:** PDF, JPEG, PNG, WebP
+- **Max file size:** 150MB per file
+- **Multiple files:** Yes, send as many as needed in one request
+
+---
+
+## Examples
+
+### cURL
 
 ```bash
 curl -X POST https://opsos.vercel.app/api/invoices/bulk-upload \
@@ -48,7 +53,7 @@ curl -X POST https://opsos.vercel.app/api/invoices/bulk-upload \
   -F "organization_id=13dacb8a-d2b5-42b8-bcc3-50bc372c0a41"
 ```
 
-### Example with Python
+### Python
 
 ```python
 import requests
@@ -71,7 +76,7 @@ response = requests.post(url, headers=headers, files=files, data=data)
 print(response.json())
 ```
 
-### Example with JavaScript/Node.js
+### JavaScript/Node.js
 
 ```javascript
 const FormData = require('form-data');
@@ -103,6 +108,8 @@ async function uploadInvoices() {
 uploadInvoices();
 ```
 
+---
+
 ## Response Format
 
 ### Success Response
@@ -125,79 +132,65 @@ uploadInvoices();
       "totalAmount": 1234.56,
       "warnings": [],
       "storagePath": "raw/1234567890-invoice1.pdf"
-    },
-    {
-      "fileName": "invoice2.pdf",
-      "index": 1,
-      "success": true,
-      "invoiceId": "uuid-here-2",
-      "invoiceNumber": "INV-12346",
-      "vendorName": "US Foods",
-      "venueName": "Nice Guy",
-      "totalAmount": 2345.67,
-      "warnings": ["Could not determine venue from invoice. Using default venue."],
-      "storagePath": "raw/1234567890-invoice2.pdf"
     }
   ],
   "message": "Processed 2 files: 2 succeeded, 0 failed"
 }
 ```
 
-### Error Response
+### Partial Success Response
 
 ```json
 {
-  "success": false,
+  "success": true,
   "processed": 2,
   "successCount": 1,
   "failureCount": 1,
   "results": [
     {
       "fileName": "invoice1.pdf",
-      "index": 0,
       "success": true,
       "invoiceId": "uuid-here",
-      "invoiceNumber": "INV-12345",
-      "vendorName": "Sysco",
-      "venueName": "Delilah West Hollywood",
-      "totalAmount": 1234.56,
-      "warnings": [],
-      "storagePath": "raw/1234567890-invoice1.pdf"
+      "invoiceNumber": "INV-12345"
     },
     {
       "fileName": "invoice2.pdf",
-      "index": 1,
       "success": false,
-      "error": "File size exceeds 10MB limit (12.3MB)"
+      "error": "OCR failed to extract invoice data"
     }
   ],
   "message": "Processed 2 files: 1 succeeded, 1 failed"
 }
 ```
 
+---
+
 ## Features
 
-1. **Automatic OCR Processing**: The system uses Claude AI to extract invoice data from images and PDFs
-2. **Venue Resolution**: The system automatically determines which venue the invoice belongs to based on delivery location
-3. **Vendor Management**: Vendors are automatically created if they don't exist
-4. **Item Matching**: The system attempts to match invoice line items to existing inventory items
-5. **Multi-file Upload**: You can upload multiple invoices in a single request
+| Feature | Description |
+|---------|-------------|
+| **OCR Processing** | Claude AI extracts invoice data from images and PDFs |
+| **Venue Detection** | Automatically determines venue from delivery location |
+| **Vendor Management** | Creates new vendors if they don't exist |
+| **Item Matching** | Matches line items to existing inventory catalog |
+| **Multi-file Upload** | Process multiple invoices in a single request |
+| **Large File Support** | Files up to 150MB supported |
+
+---
 
 ## Important Notes
 
 1. **Rate Limiting**: The endpoint is rate-limited to prevent abuse
-2. **File Validation**: Files are validated for type and size before processing
-3. **Venue Assignment**: If the venue cannot be determined from the invoice and multiple venues exist, the invoice will fail and require manual venue assignment
-4. **Vendor Creation**: Unknown vendors will be automatically created with a placeholder name that can be updated later
-5. **Review Required**: Invoices with unmatched items will be flagged for review
+2. **Processing Time**: Large files may take up to 5 minutes to process
+3. **Venue Assignment**: If venue cannot be determined and multiple venues exist, the invoice will fail
+4. **Vendor Creation**: Unknown vendors are automatically created
+5. **Review Required**: Invoices with unmatched items are flagged for review
 
-## Support
-
-For questions or issues, contact the development team.
+---
 
 ## Security
 
-- **Keep the API key secure** - do not commit it to version control
-- **Use HTTPS** in production
-- The API key should only be shared with trusted external parties
-- Consider rotating the API key periodically for security
+- Keep the API key secure - do not commit to version control
+- Use HTTPS only
+- Share only with trusted external parties
+- Consider rotating the API key periodically

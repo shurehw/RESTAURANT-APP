@@ -5,10 +5,15 @@ import { rateLimit } from '@/lib/rate-limit';
 import { extractInvoiceWithClaude, extractInvoiceFromPDF } from '@/lib/ocr/claude';
 import { normalizeOCR } from '@/lib/ocr/normalize';
 
+// Configure route for large file uploads (up to 150MB)
+export const maxDuration = 300; // 5 minutes for large PDFs
+export const dynamic = 'force-dynamic';
+
 /**
  * Bulk invoice upload endpoint for external vendors (e.g., Michael Green)
  * Accepts multiple invoice files and creates individual invoices
  * Automatically resolves venues from delivery locations in OCR data
+ * Supports files up to 150MB via direct Supabase storage upload
  */
 export async function POST(request: NextRequest) {
   return guard(async () => {
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
       throw { status: 400, code: 'NO_VENUES', message: 'No active venues found for organization' };
     }
 
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150MB max per file
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
 
     const results = [];
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
       try {
         // File size validation
         if (file.size > MAX_FILE_SIZE) {
-          result.error = `File size exceeds 10MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
+          result.error = `File size exceeds 150MB limit (${(file.size / 1024 / 1024).toFixed(1)}MB)`;
           results.push(result);
           continue;
         }
