@@ -222,11 +222,18 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       // Extract detailed error message
       let errorMsg = 'Upload failed';
       if (error instanceof Error) {
-        errorMsg = error.message;
+        // Check for timeout/network errors
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+          errorMsg = 'Network error or request timeout. Large files may take longer to process.';
+        } else if (error.message === 'Error' || error.message === '') {
+          errorMsg = 'Server timeout processing large file. Try a smaller file or split the PDF.';
+        } else {
+          errorMsg = error.message;
+        }
       } else if (typeof error === 'string') {
-        errorMsg = error;
+        errorMsg = error || 'Unknown error occurred';
       } else if (error && typeof error === 'object') {
-        errorMsg = JSON.stringify(error);
+        errorMsg = JSON.stringify(error) || 'Unknown error occurred';
       }
 
       // Check if this is a duplicate invoice (treat as warning, not error)
