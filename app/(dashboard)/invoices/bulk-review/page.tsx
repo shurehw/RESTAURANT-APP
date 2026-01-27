@@ -19,6 +19,7 @@ type SearchParams = {
   sort?: string;
   search?: string;
   hasCode?: string;
+  type?: string; // "food" or "beverage"
 };
 
 export default async function BulkReviewPage({
@@ -35,7 +36,18 @@ export default async function BulkReviewPage({
   const vendorFilter = searchParams?.vendor || "";
   const sortBy = searchParams?.sort || "date_desc";
   const searchTerm = searchParams?.search || "";
-  const hasCodeFilter = searchParams?.hasCode; // "true", "false", or undefined
+  const hasCodeFilter = searchParams?.hasCode;
+  const typeFilter = searchParams?.type || ""; // "food", "beverage", or ""
+
+  // Get vendor invoice IDs if filtering by vendor (needed for both count and main query)
+  let vendorInvoiceIds: string[] | null = null;
+  if (vendorFilter) {
+    const { data: vendorInvoices } = await supabase
+      .from("invoices")
+      .select("id")
+      .eq("vendor_id", vendorFilter);
+    vendorInvoiceIds = vendorInvoices?.map((i) => i.id) || [];
+  }
 
   // Get all vendors with unmapped items for the filter dropdown
   const { data: vendorsWithUnmapped } = await supabase
@@ -61,23 +73,25 @@ export default async function BulkReviewPage({
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // Detect vendor types (food vs beverage) based on vendor name patterns
+  const beverageVendorKeywords = ['wine', 'liquor', 'spirits', 'beer', 'glazer', 'rndc', 'republic', 'johnson brothers', 'spec'];
+  const getVendorType = (vendorName: string): 'food' | 'beverage' | 'unknown' => {
+    const lower = vendorName.toLowerCase();
+    if (beverageVendorKeywords.some(kw => lower.includes(kw))) return 'beverage';
+    return 'food'; // Default to food
+  };
+
   // Build query for counting
   let countQuery = supabase
     .from("invoice_lines")
     .select("id", { count: "exact", head: true })
     .is("item_id", null);
 
-  if (vendorFilter) {
-    // Need to filter by vendor through the invoice relation
-    const { data: vendorInvoices } = await supabase
-      .from("invoices")
-      .select("id")
-      .eq("vendor_id", vendorFilter);
-    const invoiceIds = vendorInvoices?.map((i) => i.id) || [];
-    if (invoiceIds.length > 0) {
-      countQuery = countQuery.in("invoice_id", invoiceIds);
+  if (vendorFilter && vendorInvoiceIds) {
+    if (vendorInvoiceIds.length > 0) {
+      countQuery = countQuery.in("invoice_id", vendorInvoiceIds);
     } else {
-      countQuery = countQuery.eq("invoice_id", "00000000-0000-0000-0000-000000000000"); // No results
+      countQuery = countQuery.eq("invoice_id", "00000000-0000-0000-0000-000000000000");
     }
   }
 
@@ -115,8 +129,13 @@ export default async function BulkReviewPage({
     `)
     .is("item_id", null);
 
-  if (vendorFilter) {
-    query = query.eq("invoice.vendor_id", vendorFilter);
+  // Apply vendor filter using invoice_id
+  if (vendorFilter && vendorInvoiceIds) {
+    if (vendorInvoiceIds.length > 0) {
+      query = query.in("invoice_id", vendorInvoiceIds);
+    } else {
+      query = query.eq("invoice_id", "00000000-0000-0000-0000-000000000000");
+    }
   }
 
   if (hasCodeFilter === "true") {
@@ -144,7 +163,6 @@ export default async function BulkReviewPage({
       query = query.order("description", { ascending: false });
       break;
     case "vendor_asc":
-      // Will sort in JS after fetch since nested sort isn't straightforward
       query = query.order("created_at", { ascending: false });
       break;
     default:
@@ -164,6 +182,15 @@ export default async function BulkReviewPage({
     });
   }
 
+  // Client-side filter by type (food/beverage) based on vendor name
+  if (typeFilter) {
+    lines = lines.filter((line) => {
+      const vendorName = line.invoice?.vendor?.name || "";
+      const vendorType = getVendorType(vendorName);
+      return vendorType === typeFilter;
+    });
+  }
+
   // Group by vendor for easier mapping
   const linesByVendor = lines.reduce((acc, line) => {
     const vendorId = line.invoice.vendor_id;
@@ -172,14 +199,15 @@ export default async function BulkReviewPage({
       acc[vendorId] = {
         vendorId,
         vendorName,
+        vendorType: getVendorType(vendorName),
         lines: [],
       };
     }
     acc[vendorId].lines.push(line);
     return acc;
-  }, {} as Record<string, { vendorId: string; vendorName: string; lines: any[] }>);
+  }, {} as Record<string, { vendorId: string; vendorName: string; vendorType: string; lines: any[] }>);
 
-  const vendorGroups: { vendorId: string; vendorName: string; lines: any[] }[] = Object.values(linesByVendor);
+  const vendorGroups: { vendorId: string; vendorName: string; vendorType: string; lines: any[] }[] = Object.values(linesByVendor);
 
   // Sort vendor groups alphabetically
   vendorGroups.sort((a, b) => a.vendorName.localeCompare(b.vendorName));
@@ -190,6 +218,7 @@ export default async function BulkReviewPage({
   if (sortBy !== "date_desc") baseParams.set("sort", sortBy);
   if (searchTerm) baseParams.set("search", searchTerm);
   if (hasCodeFilter) baseParams.set("hasCode", hasCodeFilter);
+  if (typeFilter) baseParams.set("type", typeFilter);
   baseParams.set("limit", String(limit));
 
   const buildUrl = (p: number) => {
@@ -197,6 +226,8 @@ export default async function BulkReviewPage({
     params.set("page", String(p));
     return `/invoices/bulk-review?${params.toString()}`;
   };
+
+  const hasFilters = vendorFilter || searchTerm || hasCodeFilter || typeFilter;
 
   return (
     <div>
@@ -227,6 +258,7 @@ export default async function BulkReviewPage({
         currentSort={sortBy}
         currentSearch={searchTerm}
         currentHasCode={hasCodeFilter}
+        currentType={typeFilter}
         limit={limit}
       />
 
@@ -241,7 +273,7 @@ export default async function BulkReviewPage({
             <div className="text-sm text-muted-foreground">
               Showing {lines.length} of {total.toLocaleString()} unmapped line item{total !== 1 ? "s" : ""} • Page{" "}
               {safePage} of {totalPages} • {vendorGroups.length} vendor{vendorGroups.length !== 1 ? "s" : ""}
-              {vendorFilter && " (filtered)"}
+              {hasFilters && " (filtered)"}
             </div>
           </div>
         </div>
@@ -295,12 +327,12 @@ export default async function BulkReviewPage({
           <div className="text-muted-foreground">
             <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p className="text-lg font-medium mb-2">
-              {total === 0 && !vendorFilter && !searchTerm
+              {total === 0 && !hasFilters
                 ? "All items are mapped!"
                 : "No items match your filters"}
             </p>
             <p className="text-sm">
-              {total === 0 && !vendorFilter && !searchTerm
+              {total === 0 && !hasFilters
                 ? "There are no unmapped items across your invoices."
                 : "Try adjusting your filters to see more items."}
             </p>
@@ -315,6 +347,9 @@ export default async function BulkReviewPage({
             <h2 className="text-xl font-semibold">{group.vendorName}</h2>
             <Badge variant="outline">
               {group.lines.length} item{group.lines.length !== 1 ? 's' : ''}
+            </Badge>
+            <Badge variant={group.vendorType === 'beverage' ? 'secondary' : 'default'} className="text-xs">
+              {group.vendorType === 'beverage' ? '🍷 Beverage' : '🍴 Food'}
             </Badge>
           </div>
 
