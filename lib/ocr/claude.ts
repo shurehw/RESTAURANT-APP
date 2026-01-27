@@ -4,6 +4,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { PDFDocument } from 'pdf-lib';
 import { RawOCRInvoice } from './normalize';
 import dotenv from 'dotenv';
 
@@ -114,6 +115,116 @@ export interface OCRResult {
   rawResponse: string;
 }
 
+function isRequestTooLargeError(e: any): boolean {
+  const msg = typeof e?.message === 'string' ? e.message : '';
+  return (
+    e?.status === 413 ||
+    msg.includes('request_too_large') ||
+    msg.includes('Request exceeds the maximum size')
+  );
+}
+
+function stripJsonFromClaudeResponse(rawResponse: string): string {
+  let jsonText = rawResponse.trim();
+
+  // Handle multiple JSON code blocks - take the first one
+  const jsonMatch = jsonText.match(/```json\s*\n([\s\S]*?)\n```/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[1];
+  } else if (jsonText.startsWith('```json')) {
+    jsonText = jsonText.replace(/^```json\n/, '').replace(/\n```$/, '');
+  } else if (jsonText.startsWith('```')) {
+    jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
+  }
+
+  return jsonText.trim();
+}
+
+function parseClaudeInvoiceJson(jsonText: string, rawResponseForLogs: string): {
+  invoice?: RawOCRInvoice;
+  invoices?: RawOCRInvoice[];
+} {
+  if (!jsonText || jsonText.length === 0) {
+    console.error('[OCR Error] Claude returned empty response');
+    console.error('Raw response:', rawResponseForLogs);
+    throw new Error('Claude returned empty response. Please try uploading the invoice again.');
+  }
+
+  let parsedData: any;
+  try {
+    parsedData = JSON.parse(jsonText);
+  } catch (parseError) {
+    console.error('[OCR Error] Failed to parse Claude response as JSON');
+    console.error('JSON text:', jsonText);
+    console.error('Raw response:', rawResponseForLogs.substring(0, 2000));
+    console.error('Parse error:', parseError);
+    throw new Error('Failed to parse invoice data from Claude. The response may be malformed. Please try again.');
+  }
+
+  if (parsedData?.invoices && Array.isArray(parsedData.invoices)) {
+    return { invoices: parsedData.invoices as RawOCRInvoice[] };
+  }
+  return { invoice: parsedData as RawOCRInvoice };
+}
+
+function mergeInvoicesAcrossChunks(invoices: RawOCRInvoice[]): RawOCRInvoice[] {
+  const byKey = new Map<string, RawOCRInvoice>();
+
+  const norm = (s: any) => String(s ?? '').trim().toLowerCase();
+  const invoiceKey = (inv: RawOCRInvoice, fallbackIndex: number) => {
+    const vendor = norm((inv as any).vendor);
+    const invoiceNumber = norm((inv as any).invoiceNumber);
+    if (!vendor || !invoiceNumber) return `unknown:${fallbackIndex}`;
+    return `${vendor}::${invoiceNumber}`;
+  };
+
+  invoices.forEach((inv, idx) => {
+    const key = invoiceKey(inv, idx);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, {
+        ...(inv as any),
+        lineItems: Array.isArray((inv as any).lineItems) ? (inv as any).lineItems : [],
+      } as any);
+      return;
+    }
+
+    // Merge header fields (prefer existing unless missing)
+    const merged: any = existing;
+    const src: any = inv;
+
+    merged.vendor = merged.vendor || src.vendor;
+    merged.invoiceNumber = merged.invoiceNumber || src.invoiceNumber;
+    merged.invoiceDate = merged.invoiceDate || src.invoiceDate;
+    merged.dueDate = merged.dueDate || src.dueDate;
+    merged.paymentTerms = merged.paymentTerms || src.paymentTerms;
+    merged.totalAmount = merged.totalAmount ?? src.totalAmount;
+
+    // Prefer higher confidence if present
+    if (typeof src.confidence === 'number') {
+      merged.confidence = Math.max(Number(merged.confidence || 0), src.confidence);
+    }
+
+    // Delivery location: prefer higher confidence if both exist
+    if (src.deliveryLocation && !merged.deliveryLocation) {
+      merged.deliveryLocation = src.deliveryLocation;
+    } else if (src.deliveryLocation && merged.deliveryLocation) {
+      const a = Number(merged.deliveryLocation.confidence || 0);
+      const b = Number(src.deliveryLocation.confidence || 0);
+      if (b > a) merged.deliveryLocation = src.deliveryLocation;
+    }
+
+    // Merge line items
+    const aItems = Array.isArray(merged.lineItems) ? merged.lineItems : [];
+    const bItems = Array.isArray(src.lineItems) ? src.lineItems : [];
+    merged.lineItems = [...aItems, ...bItems];
+
+    byKey.set(key, merged as any);
+  });
+
+  return Array.from(byKey.values());
+}
+
 /**
  * Extracts invoice data from an image using Claude Sonnet vision API
  */
@@ -195,6 +306,18 @@ export async function extractInvoiceWithClaude(
 export async function extractInvoiceFromPDF(
   pdfData: Buffer
 ): Promise<OCRResult> {
+  try {
+    return await extractInvoiceFromPDFSingle(pdfData, '');
+  } catch (e: any) {
+    if (!isRequestTooLargeError(e)) throw e;
+    console.warn('[OCR] Claude request too large for PDF; chunking by pages', {
+      bytes: pdfData.length,
+    });
+    return await extractInvoiceFromPDFChunked(pdfData);
+  }
+}
+
+async function extractInvoiceFromPDFSingle(pdfData: Buffer, contextNote: string): Promise<OCRResult> {
   const base64PDF = pdfData.toString('base64');
 
   const message = await anthropic.messages.create({
@@ -214,7 +337,9 @@ export async function extractInvoiceFromPDF(
           },
           {
             type: 'text',
-            text: OCR_PROMPT,
+            text: contextNote
+              ? `${contextNote}\n\n${OCR_PROMPT}`
+              : OCR_PROMPT,
           },
         ],
       },
@@ -227,50 +352,75 @@ export async function extractInvoiceFromPDF(
   }
 
   const rawResponse = textContent.text;
+  const jsonText = stripJsonFromClaudeResponse(rawResponse);
+  const parsed = parseClaudeInvoiceJson(jsonText, rawResponse);
 
-  // Extract JSON from response (handle markdown code blocks and multiple JSON objects)
-  let jsonText = rawResponse.trim();
+  return {
+    ...parsed,
+    rawResponse,
+  };
+}
 
-  // Handle multiple JSON code blocks - take the first one
-  const jsonMatch = jsonText.match(/```json\s*\n([\s\S]*?)\n```/);
-  if (jsonMatch) {
-    jsonText = jsonMatch[1];
-  } else if (jsonText.startsWith('```json')) {
-    jsonText = jsonText.replace(/^```json\n/, '').replace(/\n```$/, '');
-  } else if (jsonText.startsWith('```')) {
-    jsonText = jsonText.replace(/^```\n/, '').replace(/\n```$/, '');
+async function extractInvoiceFromPDFChunked(pdfData: Buffer): Promise<OCRResult> {
+  const src = await PDFDocument.load(pdfData);
+  const totalPages = src.getPageCount();
+
+  // Start optimistic; reduce if Claude rejects with 413.
+  let pagesPerChunk = 10;
+  const allInvoices: RawOCRInvoice[] = [];
+  const responses: string[] = [];
+
+  let start = 0;
+  while (start < totalPages) {
+    let end = Math.min(start + pagesPerChunk, totalPages);
+
+    while (true) {
+      const chunkBytes = await buildPdfChunk(src, start, end);
+      const context = `NOTE: This is pages ${start + 1}-${end} of ${totalPages} of the same PDF. Extract invoices from ONLY these pages. If an invoice continues across pages, keep the SAME invoiceNumber and include any additional line items you see on these pages. Return JSON only.`;
+
+      try {
+        const chunkRes = await extractInvoiceFromPDFSingle(Buffer.from(chunkBytes), context);
+        responses.push(chunkRes.rawResponse);
+
+        const chunkInvoices = chunkRes.invoices
+          ? chunkRes.invoices
+          : chunkRes.invoice
+            ? [chunkRes.invoice]
+            : [];
+
+        allInvoices.push(...chunkInvoices);
+        break;
+      } catch (e: any) {
+        if (!isRequestTooLargeError(e)) throw e;
+
+        const span = end - start;
+        if (span <= 1) throw e;
+
+        // Reduce chunk size and retry from same start.
+        const newSpan = Math.max(1, Math.floor(span / 2));
+        end = start + newSpan;
+        console.warn('[OCR] Reducing PDF chunk size after 413', {
+          startPage: start + 1,
+          attemptedEndPage: start + span,
+          newEndPage: end,
+        });
+      }
+    }
+
+    start = end;
   }
 
-  // Validate JSON is not empty
-  if (!jsonText || jsonText.length === 0) {
-    console.error('[OCR Error] Claude returned empty response for PDF');
-    console.error('Raw response:', rawResponse);
-    throw new Error('Claude returned empty response. Please try uploading the invoice again.');
-  }
+  const merged = mergeInvoicesAcrossChunks(allInvoices);
+  const rawResponse = responses.slice(0, 3).join('\n\n---\n\n') + (responses.length > 3 ? `\n\n---\n\n[${responses.length - 3} more chunk responses truncated]` : '');
 
-  let parsedData: any;
-  try {
-    parsedData = JSON.parse(jsonText);
-  } catch (parseError) {
-    console.error('[OCR Error] Failed to parse Claude PDF response as JSON');
-    console.error('JSON text:', jsonText);
-    console.error('Raw response:', rawResponse.substring(0, 1000));
-    console.error('Parse error:', parseError);
-    throw new Error('Failed to parse invoice data from Claude. The response may be malformed. Please try again.');
-  }
+  if (merged.length > 1) return { invoices: merged, rawResponse };
+  return { invoice: merged[0], rawResponse };
+}
 
-  // Handle both single invoice and multiple invoices format
-  if (parsedData.invoices && Array.isArray(parsedData.invoices)) {
-    // Multiple invoices detected
-    return {
-      invoices: parsedData.invoices as RawOCRInvoice[],
-      rawResponse,
-    };
-  } else {
-    // Single invoice
-    return {
-      invoice: parsedData as RawOCRInvoice,
-      rawResponse,
-    };
-  }
+async function buildPdfChunk(src: PDFDocument, start: number, endExclusive: number): Promise<Uint8Array> {
+  const out = await PDFDocument.create();
+  const pageIndices = Array.from({ length: endExclusive - start }, (_, i) => start + i);
+  const pages = await out.copyPages(src, pageIndices);
+  pages.forEach((p) => out.addPage(p));
+  return await out.save();
 }
