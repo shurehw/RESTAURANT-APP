@@ -62,8 +62,8 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
         status: 'pending' as const,
       };
     });
-    setFiles(fileStatuses);
-    setCompleted(0);
+    // Append new files to existing ones instead of replacing
+    setFiles(prev => [...prev, ...fileStatuses]);
   };
 
   const removeFile = (index: number) => {
