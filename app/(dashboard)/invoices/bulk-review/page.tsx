@@ -71,6 +71,29 @@ export default async function BulkReviewPage({
     return 'food'; // Default to food
   };
 
+  // Determine allowed vendor IDs based on filters (vendor + type)
+  const vendorTypeById = new Map<string, 'food' | 'beverage' | 'unknown'>(
+    vendors.map(v => [v.id, getVendorType(v.name)])
+  );
+
+  let forceEmpty = false;
+  let allowedVendorIds: string[] | null = null;
+
+  if (typeFilter) {
+    allowedVendorIds = vendors
+      .filter(v => vendorTypeById.get(v.id) === typeFilter)
+      .map(v => v.id);
+  }
+
+  if (vendorFilter) {
+    if (allowedVendorIds && !allowedVendorIds.includes(vendorFilter)) {
+      // vendor selected but doesn't match type filter
+      forceEmpty = true;
+    } else {
+      allowedVendorIds = [vendorFilter];
+    }
+  }
+
   // Build query for counting
   let countQuery = supabase
     .from("invoice_lines")
@@ -78,9 +101,17 @@ export default async function BulkReviewPage({
     .select("id, invoices!inner(vendor_id)", { count: "exact", head: true })
     .is("item_id", null);
 
-  if (vendorFilter) {
-    // PostgREST filter on joined table (works reliably)
-    countQuery = countQuery.eq("invoices.vendor_id", vendorFilter);
+  if (forceEmpty) {
+    // impossible UUID to force empty result set
+    countQuery = countQuery.eq("invoices.vendor_id", "00000000-0000-0000-0000-000000000000");
+  } else if (allowedVendorIds) {
+    if (allowedVendorIds.length === 1) {
+      countQuery = countQuery.eq("invoices.vendor_id", allowedVendorIds[0]);
+    } else if (allowedVendorIds.length > 1) {
+      countQuery = countQuery.in("invoices.vendor_id", allowedVendorIds);
+    } else {
+      countQuery = countQuery.eq("invoices.vendor_id", "00000000-0000-0000-0000-000000000000");
+    }
   }
 
   if (hasCodeFilter === "true") {
@@ -118,8 +149,16 @@ export default async function BulkReviewPage({
     .is("item_id", null);
 
   // Apply vendor filter (joined table filter)
-  if (vendorFilter) {
-    query = query.eq("invoices.vendor_id", vendorFilter);
+  if (forceEmpty) {
+    query = query.eq("invoices.vendor_id", "00000000-0000-0000-0000-000000000000");
+  } else if (allowedVendorIds) {
+    if (allowedVendorIds.length === 1) {
+      query = query.eq("invoices.vendor_id", allowedVendorIds[0]);
+    } else if (allowedVendorIds.length > 1) {
+      query = query.in("invoices.vendor_id", allowedVendorIds);
+    } else {
+      query = query.eq("invoices.vendor_id", "00000000-0000-0000-0000-000000000000");
+    }
   }
 
   if (hasCodeFilter === "true") {
@@ -165,15 +204,6 @@ export default async function BulkReviewPage({
       const va = a.invoice?.vendor?.name || "";
       const vb = b.invoice?.vendor?.name || "";
       return va.localeCompare(vb);
-    });
-  }
-
-  // Client-side filter by type (food/beverage) based on vendor name
-  if (typeFilter) {
-    lines = lines.filter((line) => {
-      const vendorName = line.invoice?.vendor?.name || "";
-      const vendorType = getVendorType(vendorName);
-      return vendorType === typeFilter;
     });
   }
 
