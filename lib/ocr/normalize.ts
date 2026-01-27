@@ -352,14 +352,38 @@ async function matchLineItem(
   vendorItemId: string | null;
   matchType: 'exact' | 'fuzzy' | 'none';
 }> {
+  const rawCode = (itemCode || '').trim();
+  const normalizedCodes: string[] = [];
+  if (rawCode) {
+    const noSpaces = rawCode.replace(/\s+/g, '');
+    const noDelims = rawCode.replace(/[\s-_/\\.]/g, '');
+    const upper = rawCode.toUpperCase();
+    const stripLeadingZeros = (s: string) => s.replace(/^0+/, '') || s;
+
+    const candidates = [
+      rawCode,
+      upper,
+      noSpaces,
+      noDelims,
+      stripLeadingZeros(rawCode),
+      stripLeadingZeros(noSpaces),
+      stripLeadingZeros(noDelims),
+    ];
+
+    for (const c of candidates) {
+      const v = c.trim();
+      if (v && !normalizedCodes.includes(v)) normalizedCodes.push(v);
+    }
+  }
+
   // 1. Try exact match by vendor item code (best match)
-  if (itemCode && vendorId) {
+  if (rawCode && vendorId) {
     // First try vendor_items (old schema)
     const { data: exactMatch } = await supabase
       .from('vendor_items')
       .select('id, item_id')
       .eq('vendor_id', vendorId)
-      .eq('vendor_item_code', itemCode)
+      .eq('vendor_item_code', rawCode)
       .eq('is_active', true)
       .single();
 
@@ -376,7 +400,7 @@ async function matchLineItem(
       .from('vendor_item_aliases')
       .select('id, item_id')
       .eq('vendor_id', vendorId)
-      .eq('vendor_item_code', itemCode)
+      .eq('vendor_item_code', rawCode)
       .eq('is_active', true)
       .single();
 
@@ -387,9 +411,83 @@ async function matchLineItem(
         matchType: 'exact',
       };
     }
+
+    // If we have code variants, attempt vendor-specific lookup via IN and only accept if unambiguous
+    if (normalizedCodes.length > 1) {
+      const { data: aliasMatches } = await supabase
+        .from('vendor_item_aliases')
+        .select('id, item_id, vendor_item_code')
+        .eq('vendor_id', vendorId)
+        .in('vendor_item_code', normalizedCodes)
+        .eq('is_active', true);
+
+      const uniqueItemIds = new Set((aliasMatches || []).map((m) => m.item_id));
+      if (aliasMatches && aliasMatches.length > 0 && uniqueItemIds.size === 1) {
+        // Prefer the exact code match if present
+        const exact = aliasMatches.find((m) => m.vendor_item_code === rawCode) || aliasMatches[0];
+        return {
+          itemId: exact.item_id,
+          vendorItemId: exact.id,
+          matchType: 'exact',
+        };
+      }
+
+      const { data: viMatches } = await supabase
+        .from('vendor_items')
+        .select('id, item_id, vendor_item_code')
+        .eq('vendor_id', vendorId)
+        .in('vendor_item_code', normalizedCodes)
+        .eq('is_active', true);
+
+      const uniqueViItemIds = new Set((viMatches || []).map((m) => m.item_id));
+      if (viMatches && viMatches.length > 0 && uniqueViItemIds.size === 1) {
+        const exact = viMatches.find((m) => m.vendor_item_code === rawCode) || viMatches[0];
+        return {
+          itemId: exact.item_id,
+          vendorItemId: exact.id,
+          matchType: 'exact',
+        };
+      }
+    }
   }
 
-  // 2. Try exact match by description in vendor_items (full match only)
+  // 2. Try matching directly to canonical item SKU (global unique)
+  if (rawCode) {
+    const { data: skuMatches } = await supabase
+      .from('items')
+      .select('id, sku')
+      .in('sku', normalizedCodes.length > 0 ? normalizedCodes : [rawCode])
+      .eq('is_active', true);
+
+    if (skuMatches && skuMatches.length === 1) {
+      return {
+        itemId: skuMatches[0].id,
+        vendorItemId: null,
+        matchType: 'exact',
+      };
+    }
+  }
+
+  // 3. Try matching to item_pack_configurations.vendor_item_code (often populated from imports)
+  if (rawCode) {
+    const { data: packMatches } = await supabase
+      .from('item_pack_configurations')
+      .select('item_id, vendor_item_code')
+      .in('vendor_item_code', normalizedCodes.length > 0 ? normalizedCodes : [rawCode]);
+
+    if (packMatches && packMatches.length > 0) {
+      const uniqueItemIds = Array.from(new Set(packMatches.map((m) => m.item_id)));
+      if (uniqueItemIds.length === 1) {
+        return {
+          itemId: uniqueItemIds[0],
+          vendorItemId: null,
+          matchType: 'exact',
+        };
+      }
+    }
+  }
+
+  // 4. Try exact match by description in vendor_items (full match only)
   if (vendorId && description) {
     const normalizedDesc = description.toLowerCase().trim();
 
@@ -413,7 +511,7 @@ async function matchLineItem(
     }
   }
 
-  // 3. DO NOT auto-map on fuzzy description matches
+  // 5. DO NOT auto-map on fuzzy description matches
   // Fuzzy matching is too unreliable and causes incorrect mappings
   // Instead, return 'none' and let the user review suggestions in the UI
 

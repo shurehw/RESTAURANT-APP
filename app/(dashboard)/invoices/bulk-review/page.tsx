@@ -11,8 +11,35 @@ import { AlertCircle, ArrowLeft } from "lucide-react";
 import { InvoiceLineMapper } from "@/components/invoices/InvoiceLineMapper";
 import Link from "next/link";
 
-export default async function BulkReviewPage() {
+type SearchParams = {
+  page?: string;
+  limit?: string;
+};
+
+export default async function BulkReviewPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
   const supabase = await createClient();
+
+  const page = Math.max(1, Number(searchParams?.page || "1") || 1);
+  const limitRaw = Number(searchParams?.limit || "200") || 200;
+  const limit = Math.min(500, Math.max(25, limitRaw)); // safety bounds
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  // Count total unmapped for pagination
+  const { count: totalUnmapped } = await supabase
+    .from("invoice_lines")
+    .select("id", { count: "exact", head: true })
+    .is("item_id", null);
+
+  const total = totalUnmapped || 0;
+  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const safePage = Math.min(page, totalPages);
+  const safeFrom = (safePage - 1) * limit;
+  const safeTo = safeFrom + limit - 1;
 
   // Fetch all unmapped invoice lines across all invoices
   const { data: unmappedLines } = await supabase
@@ -30,7 +57,7 @@ export default async function BulkReviewPage() {
     `)
     .is("item_id", null)
     .order("created_at", { ascending: false })
-    .limit(100);
+    .range(safeFrom, safeTo);
 
   const lines = unmappedLines || [];
 
@@ -82,9 +109,28 @@ export default async function BulkReviewPage() {
           <div>
             <div className="text-2xl font-bold">{lines.length}</div>
             <div className="text-sm text-muted-foreground">
-              Unmapped items from {vendorGroups.length} vendor{vendorGroups.length !== 1 ? 's' : ''}
+              Showing {lines.length} of {total} unmapped line item{total !== 1 ? "s" : ""} • Page{" "}
+              {safePage} of {totalPages} • {vendorGroups.length} vendor{vendorGroups.length !== 1 ? "s" : ""}
             </div>
           </div>
+        </div>
+        {/* Pagination Controls */}
+        <div className="mt-4 flex items-center justify-between gap-2">
+          <Button variant="outline" size="sm" asChild disabled={safePage <= 1}>
+            <Link href={`/invoices/bulk-review?page=${Math.max(1, safePage - 1)}&limit=${limit}`}>
+              Prev
+            </Link>
+          </Button>
+
+          <div className="text-xs text-muted-foreground">
+            Tip: adjust page size with <span className="font-mono">?limit=200</span> (max 500)
+          </div>
+
+          <Button variant="outline" size="sm" asChild disabled={safePage >= totalPages}>
+            <Link href={`/invoices/bulk-review?page=${Math.min(totalPages, safePage + 1)}&limit=${limit}`}>
+              Next
+            </Link>
+          </Button>
         </div>
       </Card>
 
