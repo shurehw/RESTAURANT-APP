@@ -39,16 +39,6 @@ export default async function BulkReviewPage({
   const hasCodeFilter = searchParams?.hasCode;
   const typeFilter = searchParams?.type || ""; // "food", "beverage", or ""
 
-  // Get vendor invoice IDs if filtering by vendor (needed for both count and main query)
-  let vendorInvoiceIds: string[] | null = null;
-  if (vendorFilter) {
-    const { data: vendorInvoices } = await supabase
-      .from("invoices")
-      .select("id")
-      .eq("vendor_id", vendorFilter);
-    vendorInvoiceIds = vendorInvoices?.map((i) => i.id) || [];
-  }
-
   // Get all vendors with unmapped items for the filter dropdown
   const { data: vendorsWithUnmapped } = await supabase
     .from("invoice_lines")
@@ -84,15 +74,13 @@ export default async function BulkReviewPage({
   // Build query for counting
   let countQuery = supabase
     .from("invoice_lines")
-    .select("id", { count: "exact", head: true })
+    // include join so we can filter by vendor_id via invoices
+    .select("id, invoices!inner(vendor_id)", { count: "exact", head: true })
     .is("item_id", null);
 
-  if (vendorFilter && vendorInvoiceIds) {
-    if (vendorInvoiceIds.length > 0) {
-      countQuery = countQuery.in("invoice_id", vendorInvoiceIds);
-    } else {
-      countQuery = countQuery.eq("invoice_id", "00000000-0000-0000-0000-000000000000");
-    }
+  if (vendorFilter) {
+    // PostgREST filter on joined table (works reliably)
+    countQuery = countQuery.eq("invoices.vendor_id", vendorFilter);
   }
 
   if (hasCodeFilter === "true") {
@@ -129,13 +117,9 @@ export default async function BulkReviewPage({
     `)
     .is("item_id", null);
 
-  // Apply vendor filter using invoice_id
-  if (vendorFilter && vendorInvoiceIds) {
-    if (vendorInvoiceIds.length > 0) {
-      query = query.in("invoice_id", vendorInvoiceIds);
-    } else {
-      query = query.eq("invoice_id", "00000000-0000-0000-0000-000000000000");
-    }
+  // Apply vendor filter (joined table filter)
+  if (vendorFilter) {
+    query = query.eq("invoices.vendor_id", vendorFilter);
   }
 
   if (hasCodeFilter === "true") {
@@ -224,6 +208,13 @@ export default async function BulkReviewPage({
   const buildUrl = (p: number) => {
     const params = new URLSearchParams(baseParams);
     params.set("page", String(p));
+    return `/invoices/bulk-review?${params.toString()}`;
+  };
+
+  const buildVendorUrl = (vendorId: string) => {
+    const params = new URLSearchParams(baseParams);
+    params.set("vendor", vendorId);
+    params.set("page", "1");
     return `/invoices/bulk-review?${params.toString()}`;
   };
 
@@ -344,12 +335,16 @@ export default async function BulkReviewPage({
       {vendorGroups.map((group) => (
         <div key={group.vendorId} className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-xl font-semibold">{group.vendorName}</h2>
+            <h2 className="text-xl font-semibold">
+              <Link href={buildVendorUrl(group.vendorId)} className="hover:underline">
+                {group.vendorName}
+              </Link>
+            </h2>
             <Badge variant="outline">
               {group.lines.length} item{group.lines.length !== 1 ? 's' : ''}
             </Badge>
             <Badge variant={group.vendorType === 'beverage' ? 'brass' : 'sage'} className="text-xs">
-              {group.vendorType === 'beverage' ? '🍷 Beverage' : '🍴 Food'}
+              {group.vendorType === 'beverage' ? 'Beverage' : 'Food'}
             </Badge>
           </div>
 

@@ -79,8 +79,8 @@ export function BulkReviewFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="food">🍴 Food</SelectItem>
-              <SelectItem value="beverage">🍷 Beverage</SelectItem>
+              <SelectItem value="food">Food</SelectItem>
+              <SelectItem value="beverage">Beverage</SelectItem>
             </SelectContent>
           </Select>
         </div>
