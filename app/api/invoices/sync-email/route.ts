@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           item_id: line.itemId || null, // Explicitly set to null if undefined
           description: line.description,
           qty: line.qty, // Use 'qty' not 'quantity' to match schema
-          unit_cost: line.unitCost,
+          unit_cost: line.unitCost ?? 0,
           // line_total is a generated column, don't send it
           ocr_confidence: line.ocrConfidence,
         }));
