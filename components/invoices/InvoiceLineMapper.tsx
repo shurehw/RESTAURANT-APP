@@ -83,6 +83,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
     try {
       const fullItemName = newItemName;
+      const categoryForCreate = (newItemCategory || inferItemCategory(line.description) || 'food').toLowerCase();
+      const itemTypeForCreate =
+        ['beverage', 'liquor', 'wine', 'beer', 'spirits', 'non_alcoholic_beverage', 'bar_consumable'].includes(categoryForCreate)
+          ? 'beverage'
+          : ['packaging', 'supplies', 'disposables', 'chemicals', 'smallwares'].includes(categoryForCreate)
+          ? 'other'
+          : 'food';
 
       // Create the new item
       const createResponse = await fetch('/api/items', {
@@ -91,11 +98,11 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         body: JSON.stringify({
           name: fullItemName,
           sku: newItemSKU || `AUTO-${Date.now()}`,
-          category: newItemCategory || 'food',
+          category: categoryForCreate,
           subcategory: newItemSubcategory || null,
           base_uom: newItemUOM || 'unit',
           gl_account_id: glAccountId || null,
-          item_type: 'beverage', // Set to beverage since we're processing beverage invoices
+          item_type: itemTypeForCreate,
         }),
       });
 
@@ -232,6 +239,19 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
    */
   const inferItemCategory = (desc: string): string => {
     const n = (desc || '').toLowerCase();
+    const v = (vendorName || '').toLowerCase();
+
+    // Strong vendor signals
+    const beverageVendors = /(r?ndc|republic national|glazer|southern glazer|spec'?s|johnson brothers)/i;
+    const produceVendors = /(produce|farms|fresh)/i;
+    const meatVendors = /(meat|brothers|provision|seafood)/i;
+
+    // Packaging / supplies
+    if (/(napkin|straw|lid|cup|container|foil|wrap|to-go|glove|detergent|soap|sanitizer|bleach|chemical|trash bag|garbage bag)/i.test(n)) {
+      if (/(detergent|soap|sanitizer|bleach|chemical)/i.test(n)) return 'chemicals';
+      if (/(napkin|straw|lid|cup|container|foil|wrap|to-go)/i.test(n)) return 'disposables';
+      return 'packaging';
+    }
 
     // Bar consumables / mixers
     if (/(mixer|tonic|soda water|simple syrup|bitters)\b/.test(n)) return 'bar_consumable';
@@ -245,12 +265,23 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     if (/(beer|ipa|lager|stout|pilsner|ale)\b/.test(n)) return 'beer';
 
     // Liquor / spirits
-    if (/(vodka|gin|rum|whiskey|whisky|tequila|bourbon|scotch|cognac|brandy|liqueur|liqueur|vermouth|aperitif|amaro|mezcal|spirit)\b/.test(n)) {
+    if (/(vodka|gin|rum|whiskey|whisky|tequila|bourbon|scotch|cognac|brandy|liqueur|vermouth|aperitif|amaro|mezcal|spirit)\b/.test(n)) {
       return 'liquor';
     }
 
     // Non-alcoholic beverage
     if (/(soda|water|tea|coffee|energy drink|kombucha)\b/.test(n)) return 'non_alcoholic_beverage';
+
+    // Vendor-based beverage fallback
+    if (beverageVendors.test(v)) return 'liquor';
+
+    // Food subcategories
+    if (/(shrimp|salmon|tuna|fish|oyster|seafood|crab|lobster|scallop)/i.test(n) || /seafood/i.test(v)) return 'seafood';
+    if (/(beef|pork|chicken|lamb|steak|meat|sausage|bacon|turkey)/i.test(n) || meatVendors.test(v)) return 'meat';
+    if (/(milk|cream|butter|cheese|yogurt|egg|eggs|dairy)/i.test(n)) return 'dairy';
+    if (/(lettuce|tomato|onion|pepper|cucumber|avocado|apple|banana|orange|lemon|lime|grapefruit|produce|fruit|vegetable|berries|strawberry|blueberry|raspberry)/i.test(n) || produceVendors.test(v)) return 'produce';
+    if (/(rice|pasta|flour|sugar|beans|grain|spice|salt|peppercorn|oil|vinegar|sauce|canned|dry goods|pantry)/i.test(n)) return 'dry_goods';
+    if (/(frozen|ice cream|fries|frozen)/i.test(n)) return 'frozen';
 
     return 'food';
   };
