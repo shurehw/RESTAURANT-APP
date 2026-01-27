@@ -219,21 +219,27 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Upload file to storage
-        const fileName = `${Date.now()}-${file.name}`;
-        const { data: uploadData, error: storageError } = await supabase.storage
-          .from('opsos-invoices')
-          .upload(`raw/${fileName}`, buffer, {
-            contentType: actualMimeType
-          });
+        // Upload file to storage (optional - invoice can be created without file)
+        let storagePath: string | null = null;
+        try {
+          const fileName = `${Date.now()}-${file.name}`;
+          const { data: uploadData, error: storageError } = await supabase.storage
+            .from('opsos-invoices')
+            .upload(`raw/${fileName}`, buffer, {
+              contentType: actualMimeType,
+              upsert: false
+            });
 
-        if (storageError) {
-          console.error('[Storage Error]', storageError);
-          // Continue without storage - invoice can still be created
-          normalized.warnings.push(`File storage failed: ${storageError.message}. Invoice created without file attachment.`);
+          if (storageError) {
+            console.error('[Storage Error]', JSON.stringify(storageError));
+            normalized.warnings.push(`File storage skipped: ${storageError.message}`);
+          } else {
+            storagePath = uploadData?.path || null;
+          }
+        } catch (storageErr: any) {
+          console.error('[Storage Exception]', storageErr);
+          normalized.warnings.push('File storage unavailable');
         }
-
-        const storagePath = uploadData?.path || null;
 
         // Prepare invoice data
         const invoicePayload = {
