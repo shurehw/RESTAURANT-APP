@@ -181,12 +181,9 @@ export async function POST(request: NextRequest) {
             .replace(/\s+/g, ' ')
             .trim();
 
-          // Check if vendor exists
-          const { data: existingVendor } = await supabase
-            .from('vendors')
-            .select('id')
-            .eq('normalized_name', normalizedName)
-            .maybeSingle();
+          // Check if vendor exists - use fuzzy matching
+          const { resolveVendor } = await import('@/lib/ocr/normalize');
+          const existingVendor = await resolveVendor(vendorName, supabase);
 
           if (existingVendor) {
             vendorId = existingVendor.id;

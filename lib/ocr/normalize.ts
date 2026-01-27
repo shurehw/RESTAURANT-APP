@@ -236,7 +236,7 @@ export function normalizeDate(dateStr: string): string {
  * Resolves vendor by normalized name with fuzzy matching.
  * Returns vendor with properly capitalized name.
  */
-async function resolveVendor(
+export async function resolveVendor(
   vendorName: string,
   supabase: SupabaseClient
 ): Promise<{ id: string; name: string } | null> {
