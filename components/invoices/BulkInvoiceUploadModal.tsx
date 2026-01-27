@@ -83,36 +83,63 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
     }, 1500);
 
     try {
-      // Step 1: Upload file directly to Supabase Storage (bypasses Vercel payload limits)
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
+      let response: Response;
+      
+      // Try storage upload first for large files, fall back to direct API if it fails
+      const useStorageUpload = fileStatus.file.size > 4 * 1024 * 1024; // >4MB try storage first
+      let storageUploadSucceeded = false;
+      
+      if (useStorageUpload) {
+        try {
+          const { createClient } = await import('@/lib/supabase/client');
+          const supabase = createClient();
 
-      const fileName = `${Date.now()}-${fileStatus.file.name}`;
-      const storagePath = `raw/${fileName}`;
+          const fileName = `${Date.now()}-${fileStatus.file.name}`;
+          const storagePath = `raw/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('opsos-invoices')
-        .upload(storagePath, fileStatus.file, {
-          cacheControl: '3600',
-          upsert: false
-        });
+          const { error: uploadError } = await supabase.storage
+            .from('opsos-invoices')
+            .upload(storagePath, fileStatus.file, {
+              cacheControl: '3600',
+              upsert: false
+            });
 
-      if (uploadError) {
-        throw new Error('Failed to upload file to storage: ' + uploadError.message);
+          if (!uploadError) {
+            storageUploadSucceeded = true;
+            // Process from storage
+            response = await fetch('/api/invoices/process-from-storage', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                storagePath,
+                venueId,
+                isPreopening,
+              }),
+            });
+          } else {
+            console.warn('Storage upload failed, falling back to direct API:', uploadError.message);
+          }
+        } catch (storageErr) {
+          console.warn('Storage upload error, falling back to direct API:', storageErr);
+        }
       }
+      
+      // Fall back to direct API upload (for small files or if storage failed)
+      if (!storageUploadSucceeded) {
+        const formData = new FormData();
+        formData.append('file', fileStatus.file);
+        formData.append('venue_id', venueId);
+        if (isPreopening) {
+          formData.append('is_preopening', 'true');
+        }
 
-      // Step 2: Call API to process the file from storage
-      const response = await fetch('/api/invoices/process-from-storage', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storagePath,
-          venueId,
-          isPreopening,
-        }),
-      });
+        response = await fetch('/api/invoices/ocr', {
+          method: 'POST',
+          body: formData,
+        });
+      }
 
       // Clear progress interval
       clearInterval(progressInterval);
