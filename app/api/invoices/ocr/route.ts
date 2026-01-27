@@ -278,12 +278,9 @@ async function processInvoice(
         process.env.SUPABASE_SERVICE_ROLE_KEY!
       );
 
-      // Check if vendor already exists first
-      const { data: existingVendor } = await serviceClient
-        .from('vendors')
-        .select('id')
-        .eq('normalized_name', normalizedName)
-        .maybeSingle();
+      // Check if vendor already exists first - use fuzzy matching
+      const { resolveVendor } = await import('@/lib/ocr/normalize');
+      const existingVendor = await resolveVendor(vendorName, serviceClient);
 
       if (existingVendor) {
         // Use existing vendor
