@@ -221,11 +221,17 @@ export async function POST(request: NextRequest) {
 
         // Upload file to storage
         const fileName = `${Date.now()}-${file.name}`;
-        const { data: uploadData } = await supabase.storage
+        const { data: uploadData, error: storageError } = await supabase.storage
           .from('opsos-invoices')
           .upload(`raw/${fileName}`, buffer, {
             contentType: actualMimeType
           });
+
+        if (storageError) {
+          console.error('[Storage Error]', storageError);
+          // Continue without storage - invoice can still be created
+          normalized.warnings.push(`File storage failed: ${storageError.message}. Invoice created without file attachment.`);
+        }
 
         const storagePath = uploadData?.path || null;
 
