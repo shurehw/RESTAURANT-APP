@@ -389,7 +389,7 @@ async function processInvoice(
       vendor_item_code: line.vendorItemCode || null, // Vendor SKU from OCR
       description: line.description,
       quantity: line.qty ?? 0,
-      unit_cost: line.unitCost,
+      unit_cost: line.unitCost ?? 0,
       // line_total is a generated column, don't send it
       ocr_confidence: line.ocrConfidence,
     }));
