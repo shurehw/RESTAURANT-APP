@@ -3,7 +3,7 @@
  * Map unmapped items from all invoices in one place
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ export default async function BulkReviewPage({
 }: {
   searchParams?: SearchParams;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const page = Math.max(1, Number(searchParams?.page || "1") || 1);
   const limitRaw = Number(searchParams?.limit || "200") || 200;
