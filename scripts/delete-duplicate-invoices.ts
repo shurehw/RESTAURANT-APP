@@ -1,5 +1,10 @@
+/**
+ * Delete Duplicate Invoices on Deactivated Vendors
+ * Removes invoices that exist on inactive vendors when the same invoice already exists on active vendors
+ */
+
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local' });
 
@@ -8,60 +13,67 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function deleteDuplicates() {
-  // IDs to delete (duplicates without storage_path)
-  const duplicateIds = [
-    'ac1df9ff-de11-4062-89b9-c76cc44a880e', // 16928603
-    '033395ea-8c42-4618-ac11-861d18560fa1', // 9130139318
-    'd893e482-7b89-4a69-aa58-58933afa3e9a', // 16862910
-    'b681ae66-cd82-443a-9ed6-98015f518f74', // 16862910
-    '07e37f29-0bff-4f8b-843c-71424ad1ee89', // 1841471
-    '65409530-aa9d-4138-b1ef-de0cd86f99cf', // 1841471
-  ];
+async function main() {
+  console.log('🔄 Finding Duplicate Invoices on Deactivated Vendors\n');
+  console.log('='.repeat(80));
 
-  console.log(`🗑️  Deleting ${duplicateIds.length} duplicate invoices without images...\n`);
+  // Get all invoices on deactivated vendors
+  const { data: inactiveInvoices, error } = await supabase
+    .from('invoices')
+    .select(`
+      id,
+      invoice_number,
+      invoice_date,
+      total_amount,
+      vendor:vendors!inner(id, name, is_active)
+    `)
+    .eq('vendors.is_active', false)
+    .order('created_at', { ascending: false });
 
-  for (const id of duplicateIds) {
-    // First delete invoice lines
-    const { error: linesError } = await supabase
-      .from('invoice_lines')
-      .delete()
-      .eq('invoice_id', id);
+  if (error || !inactiveInvoices) {
+    console.error('Error fetching invoices:', error);
+    return;
+  }
 
-    if (linesError) {
-      console.error(`❌ Error deleting lines for ${id}:`, linesError.message);
-      continue;
-    }
+  console.log(`\n📋 Found ${inactiveInvoices.length} invoices on deactivated vendors\n`);
 
-    // Then delete the invoice
-    const { error: invoiceError } = await supabase
+  if (inactiveInvoices.length === 0) {
+    console.log('✅ No duplicate invoices to delete!');
+    return;
+  }
+
+  let deletedCount = 0;
+
+  for (const invoice of inactiveInvoices) {
+    const vendor = invoice.vendor as any;
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`Invoice: ${invoice.invoice_number || 'N/A'}`);
+    console.log(`  Vendor: ${vendor.name} (INACTIVE)`);
+    console.log(`  Date: ${invoice.invoice_date}`);
+    console.log(`  Amount: $${invoice.total_amount}`);
+
+    // Delete the invoice
+    const { error: deleteError } = await supabase
       .from('invoices')
       .delete()
-      .eq('id', id);
+      .eq('id', invoice.id);
 
-    if (invoiceError) {
-      console.error(`❌ Error deleting invoice ${id}:`, invoiceError.message);
+    if (deleteError) {
+      console.error(`  ❌ Failed to delete: ${deleteError.message}`);
     } else {
-      console.log(`✅ Deleted duplicate invoice ${id}`);
+      console.log(`  ✅ Deleted`);
+      deletedCount++;
     }
   }
 
-  console.log('\n✅ Done! Verifying results...\n');
-
-  // Verify
-  const { data: remaining } = await supabase
-    .from('invoices')
-    .select('id, invoice_number, storage_path')
-    .is('storage_path', null);
-
-  console.log(`📊 Remaining invoices without storage: ${remaining?.length || 0}`);
-
-  if (remaining && remaining.length > 0) {
-    console.log('\nRemaining invoices:');
-    remaining.forEach(inv => {
-      console.log(`  - ${inv.invoice_number} (${inv.id})`);
-    });
-  }
+  console.log('\n' + '='.repeat(80));
+  console.log('\n📊 DELETION COMPLETE\n');
+  console.log(`  Invoices deleted: ${deletedCount}`);
 }
 
-deleteDuplicates();
+main()
+  .then(() => process.exit(0))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
