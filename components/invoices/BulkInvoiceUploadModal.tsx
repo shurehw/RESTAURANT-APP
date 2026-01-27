@@ -83,11 +83,10 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
     }, 1500);
 
     try {
-      let response: Response;
+      let response: Response | null = null;
       
       // Try storage upload first for large files, fall back to direct API if it fails
       const useStorageUpload = fileStatus.file.size > 4 * 1024 * 1024; // >4MB try storage first
-      let storageUploadSucceeded = false;
       
       if (useStorageUpload) {
         try {
@@ -105,7 +104,6 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
             });
 
           if (!uploadError) {
-            storageUploadSucceeded = true;
             // Process from storage
             response = await fetch('/api/invoices/process-from-storage', {
               method: 'POST',
@@ -127,7 +125,7 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
       }
       
       // Fall back to direct API upload (for small files or if storage failed)
-      if (!storageUploadSucceeded) {
+      if (!response) {
         const formData = new FormData();
         formData.append('file', fileStatus.file);
         formData.append('venue_id', venueId);
