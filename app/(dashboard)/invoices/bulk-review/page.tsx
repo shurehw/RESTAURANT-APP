@@ -348,7 +348,7 @@ export default async function BulkReviewPage({
             <Badge variant="outline">
               {group.lines.length} item{group.lines.length !== 1 ? 's' : ''}
             </Badge>
-            <Badge variant={group.vendorType === 'beverage' ? 'secondary' : 'default'} className="text-xs">
+            <Badge variant={group.vendorType === 'beverage' ? 'brass' : 'sage'} className="text-xs">
               {group.vendorType === 'beverage' ? '🍷 Beverage' : '🍴 Food'}
             </Badge>
           </div>
