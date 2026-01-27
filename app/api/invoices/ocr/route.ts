@@ -388,7 +388,7 @@ async function processInvoice(
       item_id: line.itemId || null, // Explicitly set to null if undefined
       vendor_item_code: line.vendorItemCode || null, // Vendor SKU from OCR
       description: line.description,
-      quantity: line.qty,
+      quantity: line.qty ?? 0,
       unit_cost: line.unitCost,
       // line_total is a generated column, don't send it
       ocr_confidence: line.ocrConfidence,
