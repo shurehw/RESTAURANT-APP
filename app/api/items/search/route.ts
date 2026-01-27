@@ -9,16 +9,24 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const cookieStore = await cookies();
-    const userIdCookie = cookieStore.get('user_id');
+    // Prefer Supabase session user; fallback to legacy `user_id` cookie
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const userIdCookie = cookieStore.get('user_id')?.value || null;
+    const userId = user?.id || userIdCookie;
 
-    if (!userIdCookie?.value) {
+    if (!userId) {
       return NextResponse.json({ items: [], recipes: [] });
     }
 
-    const { data: orgUsers } = await supabase
+    // Use admin client to bypass RLS and filter by organization
+    const adminClient = createAdminClient();
+
+    const { data: orgUsers } = await adminClient
       .from('organization_users')
       .select('organization_id')
-      .eq('user_id', userIdCookie.value)
+      .eq('user_id', userId)
       .eq('is_active', true);
 
     const orgId = orgUsers?.[0]?.organization_id;
@@ -110,9 +118,6 @@ export async function GET(request: NextRequest) {
         break;
       }
     }
-
-    // Use admin client to bypass RLS and filter by organization
-    const adminClient = createAdminClient();
 
     // Use trigram similarity search for fuzzy matching (from migration 058)
     // This leverages the GIN indexes we created on name and SKU

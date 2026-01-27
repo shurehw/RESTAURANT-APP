@@ -42,6 +42,69 @@ export async function POST(
     // Use admin client to bypass RLS
     const adminClient = createAdminClient();
 
+    const parsePackConfigFromDescription = (desc: string): null | {
+      pack_type: 'case' | 'bottle' | 'bag' | 'box' | 'each' | 'keg' | 'pail' | 'drum';
+      units_per_pack: number;
+      unit_size: number;
+      unit_size_uom: string; // 'mL', 'L', 'oz', 'lb', 'gal', etc.
+    } => {
+      const raw = desc || '';
+      const lower = raw.toLowerCase();
+
+      const normalizeUom = (uom: string) => {
+        const u = uom.toLowerCase();
+        if (u === 'ml') return 'mL';
+        if (u === 'l' || u === 'lt' || u === 'ltr') return 'L';
+        if (u === 'gal') return 'gal';
+        if (u === 'qt') return 'qt';
+        if (u === 'pt') return 'pt';
+        if (u === 'oz') return 'oz';
+        if (u === 'lb') return 'lb';
+        if (u === 'kg') return 'kg';
+        if (u === 'g') return 'g';
+        return uom;
+      };
+
+      // Pattern A: "CS/12" + size elsewhere like "750ML"
+      const csCount = lower.match(/\bcs\s*\/\s*(\d+)\b/i);
+      const size = lower.match(/\b(\d+(\.\d+)?)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt|kg|g)\b/i);
+      if (csCount && size) {
+        const units = Number(csCount[1]);
+        const unitSize = Number(size[1]);
+        const uom = normalizeUom(size[3]);
+        if (Number.isFinite(units) && units > 0 && Number.isFinite(unitSize) && unitSize > 0) {
+          return { pack_type: 'case', units_per_pack: units, unit_size: unitSize, unit_size_uom: uom };
+        }
+      }
+
+      // Pattern B: "12 750ML" or "12/750ML"
+      const casePattern = lower.match(/\b(\d+)\s*\/\s*(\d+(\.\d+)?)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt|kg|g)\b/i);
+      if (casePattern) {
+        const units = Number(casePattern[1]);
+        const unitSize = Number(casePattern[2]);
+        const uom = normalizeUom(casePattern[4]);
+        if (Number.isFinite(units) && units > 0 && Number.isFinite(unitSize) && unitSize > 0) {
+          return { pack_type: 'case', units_per_pack: units, unit_size: unitSize, unit_size_uom: uom };
+        }
+      }
+
+      // Pattern C: single size like "750ML" => bottle
+      if (size) {
+        const unitSize = Number(size[1]);
+        const uom = normalizeUom(size[3]);
+        if (Number.isFinite(unitSize) && unitSize > 0) {
+          // Choose pack type by UOM
+          const pack_type =
+            uom === 'mL' || uom === 'L' || uom === 'oz' ? 'bottle' :
+            uom === 'lb' || uom === 'kg' || uom === 'g' ? 'bag' :
+            'each';
+          return { pack_type, units_per_pack: 1, unit_size: unitSize, unit_size_uom: uom };
+        }
+      }
+
+      return null;
+    };
+
     // Get the invoice line details to learn vendor SKU
     const { data: invoiceLine } = await adminClient
       .from('invoice_lines')
@@ -93,6 +156,47 @@ export async function POST(
         });
 
       console.log(`✓ Learned vendor alias: ${invoiceLine.vendor_item_code} → item ${item_id}`);
+
+      // If the mapped item has no pack configs yet, try to learn one from this invoice line.
+      // This drives the "PACK CONFIGS" column in Products and helps conversion math.
+      try {
+        const packConfig = parsePackConfigFromDescription(invoiceLine.description);
+        if (packConfig) {
+          const { data: existing } = await adminClient
+            .from('item_pack_configurations')
+            .select('id')
+            .eq('item_id', item_id)
+            .eq('vendor_id', vendorId)
+            .eq('vendor_item_code', invoiceLine.vendor_item_code)
+            .eq('is_active', true)
+            .limit(1);
+
+          if (!existing || existing.length === 0) {
+            const { error: packErr } = await adminClient
+              .from('item_pack_configurations')
+              .insert({
+                item_id,
+                pack_type: packConfig.pack_type,
+                units_per_pack: packConfig.units_per_pack,
+                unit_size: packConfig.unit_size,
+                unit_size_uom: packConfig.unit_size_uom,
+                vendor_id: vendorId,
+                vendor_item_code: invoiceLine.vendor_item_code,
+                is_active: true,
+              });
+
+            if (packErr) {
+              console.warn('⚠️ Failed to create pack config:', packErr.message);
+            } else {
+              console.log(
+                `✓ Learned pack config for item ${item_id}: ${packConfig.units_per_pack}/${packConfig.unit_size}${packConfig.unit_size_uom} (${packConfig.pack_type})`
+              );
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Pack config learn failed:', e);
+      }
     }
 
     return NextResponse.json({ success: true });
