@@ -19,7 +19,7 @@ function aggressiveNormalize(name: string): string {
   return name
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '')
-    .replace(/\b(inc|llc|corp|co|ltd|foods|food|company|enterprises|enterprise|distribution|dist|supply|supplies)\b/g, '')
+    .replace(/\b(the|inc|llc|corp|co|ltd|foods|food|company|enterprises|enterprise|distribution|dist|supply|supplies|produce)\b/g, '')
     .trim();
 }
 
@@ -57,7 +57,7 @@ async function mergeVendors(keep: VendorWithCount, duplicates: VendorWithCount[]
   for (const dup of duplicates) {
     console.log(`  Merging: "${dup.name}" (${dup.invoiceCount} invoices)`);
     
-    // Reassign invoices
+    // Reassign invoices (best effort - some may fail due to duplicate constraint)
     if (dup.invoiceCount > 0) {
       const { error: updateError } = await supabase
         .from('invoices')
@@ -66,9 +66,10 @@ async function mergeVendors(keep: VendorWithCount, duplicates: VendorWithCount[]
 
       if (updateError) {
         console.error(`    ❌ Failed to reassign invoices: ${updateError.message}`);
-        continue;
+        // Don't continue - still want to deactivate the duplicate vendor
+      } else {
+        console.log(`    ✅ Reassigned ${dup.invoiceCount} invoices`);
       }
-      console.log(`    ✅ Reassigned ${dup.invoiceCount} invoices`);
     }
 
     // Also update vendor_item_aliases
@@ -81,7 +82,7 @@ async function mergeVendors(keep: VendorWithCount, duplicates: VendorWithCount[]
       console.log(`    ⚠️  Alias update: ${aliasError.message}`);
     }
 
-    // Deactivate duplicate vendor
+    // Always deactivate duplicate vendor (even if invoice reassignment failed)
     const { error: deactivateError } = await supabase
       .from('vendors')
       .update({ is_active: false, updated_at: new Date().toISOString() })
