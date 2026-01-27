@@ -225,6 +225,64 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     return 'Uncategorized';
   };
 
+  /**
+   * Infer OpsOS item category enum from description.
+   * IMPORTANT: items.category is an enum (food/liquor/wine/beer/etc). If we default to "food"
+   * for wine/spirits, the UI will look wrong and GL mapping gets messier.
+   */
+  const inferItemCategory = (desc: string): string => {
+    const n = (desc || '').toLowerCase();
+
+    // Bar consumables / mixers
+    if (/(mixer|tonic|soda water|simple syrup|bitters)\b/.test(n)) return 'bar_consumable';
+    if (/(orange|lemon|lime|grapefruit|pineapple|cranberry|apple).*juice\b/.test(n)) return 'bar_consumable';
+
+    // Wine (incl champagne/sparkling)
+    if (/(champagne|prosecco|cava|sparkling|brut)\b/.test(n)) return 'wine';
+    if (/\bwine\b/.test(n)) return 'wine';
+
+    // Beer
+    if (/(beer|ipa|lager|stout|pilsner|ale)\b/.test(n)) return 'beer';
+
+    // Liquor / spirits
+    if (/(vodka|gin|rum|whiskey|whisky|tequila|bourbon|scotch|cognac|brandy|liqueur|liqueur|vermouth|aperitif|amaro|mezcal|spirit)\b/.test(n)) {
+      return 'liquor';
+    }
+
+    // Non-alcoholic beverage
+    if (/(soda|water|tea|coffee|energy drink|kombucha)\b/.test(n)) return 'non_alcoholic_beverage';
+
+    return 'food';
+  };
+
+  const inferItemSubcategory = (desc: string, category: string): string => {
+    const n = (desc || '').toLowerCase();
+    if (category === 'wine') {
+      if (/(champagne|sparkling|prosecco|cava|brut)\b/.test(n)) return 'sparkling';
+      if (/\bred\b/.test(n)) return 'red';
+      if (/\bwhite\b/.test(n)) return 'white';
+      if (/\brose\b|\br osé\b/.test(n)) return 'rose';
+      return '';
+    }
+    if (category === 'liquor') {
+      if (/\bvodka\b/.test(n)) return 'vodka';
+      if (/\bg in\b|\bgin\b/.test(n)) return 'gin';
+      if (/\brum\b/.test(n)) return 'rum';
+      if (/\btequila\b|\bmezcal\b/.test(n)) return 'tequila';
+      if (/\bwhiskey\b|\bwhisky\b|\bbourbon\b|\bscotch\b/.test(n)) return 'whiskey';
+      if (/\bvermouth\b/.test(n)) return 'vermouth';
+      if (/\baperitif\b|\baperitif\b|\baperitivo\b/.test(n)) return 'aperitif';
+      return '';
+    }
+    if (category === 'beer') {
+      if (/\bipa\b/.test(n)) return 'ipa';
+      if (/\blager\b/.test(n)) return 'lager';
+      if (/\bstout\b/.test(n)) return 'stout';
+      return '';
+    }
+    return '';
+  };
+
   // Parse pack size from description (e.g., "10L bib" → "10L Bag-in-Box")
   const parsePackSizeFromDescription = (desc: string): string => {
     const normalized = desc.toLowerCase();
@@ -338,8 +396,16 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         } else {
           console.warn('No GL suggestions found');
         }
-        setNewItemCategory(glData.suggestedCategory || 'food');
-        setNewItemSubcategory(glData.suggestedSubcategory || '');
+        // Prefer deterministic category inference for alcohol/bev items to avoid bad defaults (e.g. champagne => food)
+        const inferredCategory = inferItemCategory(line.description);
+        const categoryFromApi = glData.suggestedCategory || 'food';
+        const finalCategory =
+          inferredCategory !== 'food' ? inferredCategory : categoryFromApi;
+
+        setNewItemCategory(finalCategory);
+
+        const inferredSub = inferItemSubcategory(line.description, finalCategory);
+        setNewItemSubcategory(inferredSub || glData.suggestedSubcategory || '');
         console.log('Suggested category:', glData.suggestedCategory, 'subcategory:', glData.suggestedSubcategory);
       } else {
         console.error('GL suggestion API failed:', await glResponse.text());
