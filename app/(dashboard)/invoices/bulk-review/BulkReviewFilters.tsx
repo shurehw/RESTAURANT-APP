@@ -21,6 +21,7 @@ interface BulkReviewFiltersProps {
   currentSort: string;
   currentSearch: string;
   currentHasCode?: string;
+  currentType?: string;
   limit: number;
 }
 
@@ -30,6 +31,7 @@ export function BulkReviewFilters({
   currentSort,
   currentSearch,
   currentHasCode,
+  currentType,
   limit,
 }: BulkReviewFiltersProps) {
   const router = useRouter();
@@ -60,11 +62,29 @@ export function BulkReviewFilters({
     router.push(`/invoices/bulk-review?limit=${limit}`);
   };
 
-  const hasActiveFilters = currentVendor || currentSearch || currentHasCode || currentSort !== "date_desc";
+  const hasActiveFilters = currentVendor || currentSearch || currentHasCode || currentType || currentSort !== "date_desc";
 
   return (
     <Card className="p-4 mb-6">
       <div className="flex flex-wrap items-end gap-4">
+        {/* Type Filter (Food/Beverage) */}
+        <div className="min-w-[140px]">
+          <Label className="text-xs text-muted-foreground mb-1 block">Type</Label>
+          <Select
+            value={currentType || "all"}
+            onValueChange={(value) => updateFilters({ type: value === "all" ? undefined : value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              <SelectItem value="food">🍴 Food</SelectItem>
+              <SelectItem value="beverage">🍷 Beverage</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Vendor Filter */}
         <div className="flex-1 min-w-[200px]">
           <Label className="text-xs text-muted-foreground mb-1 block">Vendor</Label>
@@ -87,7 +107,7 @@ export function BulkReviewFilters({
         </div>
 
         {/* Has Vendor Code Filter */}
-        <div className="min-w-[180px]">
+        <div className="min-w-[160px]">
           <Label className="text-xs text-muted-foreground mb-1 block">Vendor Code</Label>
           <Select
             value={currentHasCode || "all"}
@@ -98,14 +118,14 @@ export function BulkReviewFilters({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Any</SelectItem>
-              <SelectItem value="true">Has vendor code</SelectItem>
-              <SelectItem value="false">No vendor code</SelectItem>
+              <SelectItem value="true">Has code</SelectItem>
+              <SelectItem value="false">No code</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Sort */}
-        <div className="min-w-[180px]">
+        <div className="min-w-[160px]">
           <Label className="text-xs text-muted-foreground mb-1 block">Sort by</Label>
           <Select
             value={currentSort}
@@ -125,7 +145,7 @@ export function BulkReviewFilters({
         </div>
 
         {/* Search */}
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[180px]">
           <Label className="text-xs text-muted-foreground mb-1 block">Search description</Label>
           <form
             onSubmit={(e) => {
