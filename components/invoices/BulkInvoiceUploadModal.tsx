@@ -247,6 +247,11 @@ export function BulkInvoiceUploadModal({ venues, open, onOpenChange }: BulkInvoi
         errorMsg = JSON.stringify(error) || 'Unknown error occurred';
       }
 
+      // Ensure errorMsg is never empty
+      if (!errorMsg || errorMsg.trim() === '') {
+        errorMsg = 'Unknown error occurred';
+      }
+
       // Check if this is a duplicate invoice (treat as warning, not error)
       const isDuplicate = errorMsg.includes('Duplicate invoice') || errorMsg.includes('already exists');
 
