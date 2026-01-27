@@ -91,7 +91,12 @@ CRITICAL EXTRACTION REQUIREMENTS:
      * "Grey Goose Vodka 6/Cs" ✗ (missing bottle size - add 750mL if wine/spirits)
 
 6. LINE ITEMS:
-   - Extract ALL line items from the invoice (food, beverage, construction materials, equipment, services, etc.)
+   - Extract ALL actual product/item line items from the invoice (food, beverage, construction materials, equipment, services, etc.)
+   - SKIP section totals, subtotals, and summary rows - these are NOT real line items:
+     * Skip rows like "Section Total", "Category Total", "Subtotal", "Total Cooler", "Total Dry", "Total Frozen"
+     * Skip rows that only show a total amount without a real product description
+     * Skip rows that aggregate multiple items (e.g., "Dairy Products Total: $150.00")
+   - Only extract rows that represent actual purchased items with a real product name
    - Look for "Ship To:", "Deliver To:", "Location:", "Job Site:", "Project:", or similar fields to identify the delivery location
    - For each line item, extract the vendor's item code/SKU if visible (could be numeric "12345", alphanumeric "SYS-BEEF-001", or construction codes like "8104-CONCRETE")
    - Include the COMPLETE item description exactly as it appears on the invoice - don't truncate or summarize
