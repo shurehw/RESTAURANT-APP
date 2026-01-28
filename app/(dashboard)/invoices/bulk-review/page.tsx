@@ -49,11 +49,13 @@ export default async function BulkReviewPage({
         vendor:vendors(id, name)
       )
     `)
-    .is("item_id", null);
+    .is("item_id", null)
+    .eq("is_ignored", false)
+    .gt("qty", 0);
 
   // Extract unique vendors
   const vendorMap = new Map<string, string>();
-  vendorsWithUnmapped?.forEach((line: any) => {
+  (vendorsWithUnmapped || []).forEach((line: any) => {
     const vid = line.invoice?.vendor_id;
     const vname = line.invoice?.vendor?.name;
     if (vid && vname && !vendorMap.has(vid)) {
@@ -100,7 +102,9 @@ export default async function BulkReviewPage({
     .from("invoice_lines")
     // include join so we can filter by vendor_id via invoices
     .select("id, invoices!inner(vendor_id)", { count: "exact", head: true })
-    .is("item_id", null);
+    .is("item_id", null)
+    .eq("is_ignored", false)
+    .gt("qty", 0);
 
   if (forceEmpty) {
     // impossible UUID to force empty result set
@@ -147,7 +151,9 @@ export default async function BulkReviewPage({
         venue:venues(id, name)
       )
     `)
-    .is("item_id", null);
+    .is("item_id", null)
+    .eq("is_ignored", false)
+    .gt("qty", 0);
 
   // Apply vendor filter (joined table filter)
   if (forceEmpty) {
