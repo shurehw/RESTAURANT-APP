@@ -38,6 +38,18 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [isCreating, setIsCreating] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('[InvoiceLineMapper] Line data:', {
+      lineId: line.id,
+      description: line.description?.substring(0, 40),
+      hasInvoice: !!line.invoice,
+      invoiceId: line.invoice?.id,
+      invoiceNumber: line.invoice?.invoice_number,
+      storagePath: line.invoice?.storage_path,
+    });
+  }, []);
+
   // Auto-search on mount
   useEffect(() => {
     handleSearch();
@@ -806,7 +818,12 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
       {/* Invoice Context - Always Visible */}
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
         <div className="flex items-center justify-between mb-2">
-          <div className="text-xs font-semibold text-blue-900">📄 Invoice Line (OCR Extracted):</div>
+          <div className="text-xs font-semibold text-blue-900">
+            📄 Invoice Line (OCR Extracted):
+            <span className="ml-2 text-red-600 font-mono text-[10px]">
+              [DEBUG: invoice={String(!!line.invoice)}, path={String(!!line.invoice?.storage_path)}]
+            </span>
+          </div>
           <Button
             size="sm"
             variant="outline"
