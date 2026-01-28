@@ -807,17 +807,16 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs font-semibold text-blue-900">📄 Invoice Line (OCR Extracted):</div>
-          {line.invoice?.storage_path && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowPDFViewer(true)}
-              className="text-xs h-7"
-            >
-              <FileText className="w-3 h-3 mr-1" />
-              View Invoice
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowPDFViewer(true)}
+            className="text-xs h-7"
+            disabled={!line.invoice?.storage_path}
+          >
+            <FileText className="w-3 h-3 mr-1" />
+            {line.invoice?.storage_path ? 'View Invoice' : 'No PDF'}
+          </Button>
         </div>
         <div className="space-y-1 text-xs">
           <div><span className="font-medium text-blue-800">Description:</span> <span className="font-mono text-blue-900">{line.description}</span></div>

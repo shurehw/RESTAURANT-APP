@@ -128,7 +128,8 @@
       "Bash(tail:*)",
       "Bash(Select-String -Pattern \"invoice|upload|fetch|error|Error|POST\" -Context 2)",
       "Bash(powershell:*)",
-      "Bash(INVOICE_DIR=\"/c/Users/JacobShure/OneDrive - Hwood Group/Finance - Delilah Dallas Finance - Temp Invoice Scans/Multiple Food Split\" OUTPUT_DIR=\"/c/Users/JacobShure/OneDrive - Hwood Group/Finance - Delilah Dallas Finance - Temp Invoice Scans/Multiple Food Pages\" node_modules/.bin/tsx scripts/split-large-pdfs.ts)"
+      "Bash(INVOICE_DIR=\"/c/Users/JacobShure/OneDrive - Hwood Group/Finance - Delilah Dallas Finance - Temp Invoice Scans/Multiple Food Split\" OUTPUT_DIR=\"/c/Users/JacobShure/OneDrive - Hwood Group/Finance - Delilah Dallas Finance - Temp Invoice Scans/Multiple Food Pages\" node_modules/.bin/tsx scripts/split-large-pdfs.ts)",
+      "Bash(Select-String -Pattern \"InvoiceLineMapper|InvoicePDFViewer|error|Error\" -Context 2)"
     ],
     "deny": [],
     "ask": []
