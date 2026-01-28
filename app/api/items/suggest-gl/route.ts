@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
       const glSection = gl.section;
 
       // === BEVERAGE GL MATCHING ===
-      // Wine
-      if (desc.includes('wine') || desc.includes('cabernet') || desc.includes('chardonnay') || desc.includes('pinot') || desc.includes('merlot') || desc.includes('sauvignon') || desc.includes('champagne') || desc.includes('prosecco')) {
+      // Wine - expanded patterns for Spanish/Italian wines
+      if (desc.includes('wine') || desc.includes('cabernet') || desc.includes('chardonnay') || desc.includes('pinot') || desc.includes('merlot') || desc.includes('sauvignon') || desc.includes('champagne') || desc.includes('prosecco') || desc.includes('ribera') || desc.includes('rioja') || desc.includes('chianti') || desc.includes('barolo') || desc.includes('brunello') || desc.includes('bordeaux') || desc.includes('burgundy') || desc.includes('cava') || desc.includes('tempranillo') || desc.includes('sangiovese') || desc.includes('nebbiolo')) {
         if (glName.includes('wine')) score += 15;
         else if (glName.includes('bev') || glName.includes('liquor')) score += 8;
         if (glSection === 'COGS') score += 5;
@@ -252,10 +252,10 @@ export async function POST(request: NextRequest) {
     }
 
     // === WINE DETECTION ===
-    else if (desc.includes('wine') || desc.includes('champagne') || desc.includes('cabernet') || desc.includes('chardonnay') || desc.includes('pinot') || desc.includes('merlot') || desc.includes('sauvignon') || desc.includes('zinfandel') || desc.includes('syrah') || desc.includes('shiraz') || desc.includes('malbec') || desc.includes('riesling') || desc.includes('chianti') || desc.includes('rioja') || desc.includes('bordeaux') || desc.includes('burgundy') || desc.includes('prosecco')) {
+    else if (desc.includes('wine') || desc.includes('champagne') || desc.includes('cabernet') || desc.includes('chardonnay') || desc.includes('pinot') || desc.includes('merlot') || desc.includes('sauvignon') || desc.includes('zinfandel') || desc.includes('syrah') || desc.includes('shiraz') || desc.includes('malbec') || desc.includes('riesling') || desc.includes('chianti') || desc.includes('rioja') || desc.includes('bordeaux') || desc.includes('burgundy') || desc.includes('prosecco') || desc.includes('ribera') || desc.includes('barolo') || desc.includes('brunello') || desc.includes('cava') || desc.includes('tempranillo') || desc.includes('sangiovese') || desc.includes('nebbiolo') || desc.includes('grenache') || desc.includes('petite sirah')) {
       suggestedCategory = 'wine';
       // Red wine
-      if (desc.includes('red') || desc.includes('cabernet') || desc.includes('merlot') || desc.includes('pinot noir') || desc.includes('zinfandel') || desc.includes('syrah') || desc.includes('shiraz') || desc.includes('malbec') || desc.includes('chianti') || desc.includes('rioja')) {
+      if (desc.includes('red') || desc.includes('cabernet') || desc.includes('merlot') || desc.includes('pinot noir') || desc.includes('zinfandel') || desc.includes('syrah') || desc.includes('shiraz') || desc.includes('malbec') || desc.includes('chianti') || desc.includes('rioja') || desc.includes('ribera') || desc.includes('tempranillo') || desc.includes('sangiovese') || desc.includes('nebbiolo') || desc.includes('grenache') || desc.includes('petite sirah')) {
         suggestedSubcategory = 'Red Wine';
       }
       // White wine

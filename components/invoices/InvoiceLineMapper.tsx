@@ -29,6 +29,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [isSearching, setIsSearching] = useState(false);
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [isIgnoring, setIsIgnoring] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Auto-search on mount
   useEffect(() => {
@@ -97,8 +98,9 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
   // Create new item and map to it
   const handleCreateAndMap = async () => {
-    if (!newItemName.trim()) return;
+    if (!newItemName.trim() || isCreating) return;
 
+    setIsCreating(true);
     try {
       const fullItemName = newItemName;
       const categoryForCreate = (newItemCategory || inferItemCategory(line.description) || 'food').toLowerCase();
@@ -121,6 +123,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           base_uom: newItemUOM || 'unit',
           gl_account_id: glAccountId || null,
           item_type: itemTypeForCreate,
+          pack_configurations: packConfigs.length > 0 ? packConfigs : null,
         }),
       });
 
@@ -138,6 +141,8 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     } catch (error) {
       console.error('Create error:', error);
       alert('Error creating item');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -275,9 +280,10 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     if (/(mixer|tonic|soda water|simple syrup|bitters)\b/.test(n)) return 'bar_consumable';
     if (/(orange|lemon|lime|grapefruit|pineapple|cranberry|apple).*juice\b/.test(n)) return 'bar_consumable';
 
-    // Wine (incl champagne/sparkling)
+    // Wine (incl champagne/sparkling + Spanish/Italian regions and varietals)
     if (/(champagne|prosecco|cava|sparkling|brut)\b/.test(n)) return 'wine';
     if (/\bwine\b/.test(n)) return 'wine';
+    if (/(ribera|rioja|chianti|barolo|brunello|bordeaux|burgundy|cabernet|chardonnay|pinot|merlot|sauvignon|tempranillo|sangiovese|nebbiolo|grenache)\b/.test(n)) return 'wine';
 
     // Beer
     if (/(beer|ipa|lager|stout|pilsner|ale)\b/.test(n)) return 'beer';
@@ -533,87 +539,62 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const normalizeWithAI = async () => {
     setIsNormalizing(true);
     try {
-      // Fetch ALL GL accounts first (fallback)
-      console.log('Fetching GL accounts...');
-      const allGlResponse = await fetch('/api/gl-accounts');
-      console.log('GL accounts response status:', allGlResponse.status);
+      // Run all API calls in parallel for speed
+      const [allGlResponse, glResponse, learnResponse, response] = await Promise.all([
+        fetch('/api/gl-accounts'),
+        fetch('/api/items/suggest-gl', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: line.description }),
+        }),
+        fetch('/api/items/learn-pack-config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: line.description, vendor_name: vendorName }),
+        }),
+        fetch('/api/items/normalize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ description: line.description }),
+        }),
+      ]);
 
+      // Process GL accounts
       if (allGlResponse.ok) {
         const allGlData = await allGlResponse.json();
-        console.log('GL accounts loaded:', allGlData.accounts?.length || 0);
         setAllGlAccounts(allGlData.accounts || []);
-      } else {
-        const errorText = await allGlResponse.text();
-        console.error('Failed to load GL accounts:', allGlResponse.status, errorText);
       }
 
-      // Fetch GL account suggestions
-      const glResponse = await fetch('/api/items/suggest-gl', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: line.description }),
-      });
-
+      // Process GL suggestions
       if (glResponse.ok) {
         const glData = await glResponse.json();
-        console.log('GL suggestions:', glData);
         setGlSuggestions(glData.suggestions || []);
         if (glData.suggestions?.length > 0) {
-          setGlAccountId(glData.suggestions[0].id); // Auto-select best match
-          console.log('Auto-selected GL account:', glData.suggestions[0]);
-        } else {
-          console.warn('No GL suggestions found');
+          setGlAccountId(glData.suggestions[0].id);
         }
-        // Prefer deterministic category inference for alcohol/bev items to avoid bad defaults (e.g. champagne => food)
         const inferredCategory = inferItemCategory(line.description);
         const categoryFromApi = glData.suggestedCategory || 'food';
-        const finalCategory =
-          inferredCategory !== 'food' ? inferredCategory : categoryFromApi;
-
+        const finalCategory = inferredCategory !== 'food' ? inferredCategory : categoryFromApi;
         setNewItemCategory(finalCategory);
-
         const inferredSub = inferItemSubcategory(line.description, finalCategory);
         setNewItemSubcategory(inferredSub || glData.suggestedSubcategory || '');
-        console.log('Suggested category:', glData.suggestedCategory, 'subcategory:', glData.suggestedSubcategory);
-      } else {
-        console.error('GL suggestion API failed:', await glResponse.text());
       }
 
-      // Learn pack configuration from existing items (brand-based learning + web search)
-      const learnResponse = await fetch('/api/items/learn-pack-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: line.description, vendor_name: vendorName }),
-      });
-
+      // Process pack config learning
       let learnedPackConfig = null;
       if (learnResponse.ok) {
         const learnData = await learnResponse.json();
-        console.log('Pack config learning response:', learnData);
-
-        // Prioritize learned config over web search
         if (learnData.learned) {
           learnedPackConfig = learnData.learned;
           setPackConfigSource('learned');
           setPackConfigBrand(learnData.brand);
           setPackConfigSampleCount(learnData.learned.sample_count);
-          console.log(`✓ Learned pack config from ${learnData.learned.sample_count} existing ${learnData.brand} items`);
         } else if (learnData.web_search) {
           learnedPackConfig = learnData.web_search;
           setPackConfigSource('web_search');
           setPackConfigBrand(learnData.brand);
-          console.log('✓ Found pack config via web search');
         }
-      } else {
-        console.error('Pack config learning API failed:', await learnResponse.text());
       }
-
-      // Fetch item normalization
-      const response = await fetch('/api/items/normalize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: line.description }),
-      });
 
       if (response.ok) {
         const data = await response.json();
@@ -1379,10 +1360,10 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     className="w-full"
                     variant="brass"
                     onClick={handleCreateAndMap}
-                    disabled={!newItemName.trim() || !glAccountId}
+                    disabled={!newItemName.trim() || !glAccountId || isCreating}
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Create & Map Item
+                    {isCreating ? 'Creating...' : 'Create & Map Item'}
                   </Button>
                   {!glAccountId && newItemName.trim() && (
                     <p className="text-xs text-red-600 mt-1">⚠️ GL Account is required</p>
