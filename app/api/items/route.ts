@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
 
     const body = await request.json();
-    const { name, sku, category, subcategory, base_uom, gl_account_id, organization_id, item_type } = body;
+    const { name, sku, category, subcategory, base_uom, gl_account_id, organization_id, item_type, pack_configurations } = body;
 
     if (!name || !sku) {
       return NextResponse.json(
@@ -98,6 +98,26 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create item', details: error.message },
         { status: 500 }
       );
+    }
+
+    // Add pack configurations if provided
+    if (pack_configurations && Array.isArray(pack_configurations) && pack_configurations.length > 0) {
+      const packConfigsToInsert = pack_configurations.map(config => ({
+        item_id: item.id,
+        pack_type: config.pack_type,
+        units_per_pack: config.units_per_pack,
+        unit_size: config.unit_size,
+        unit_size_uom: config.unit_size_uom,
+      }));
+
+      const { error: packError } = await adminClient
+        .from('item_pack_configurations')
+        .insert(packConfigsToInsert);
+
+      if (packError) {
+        console.error('Error adding pack configurations:', packError);
+        // Don't fail the whole request, just log the error
+      }
     }
 
     return NextResponse.json({ item });
