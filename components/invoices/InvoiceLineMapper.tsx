@@ -117,7 +117,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: fullItemName,
-          sku: newItemSKU || `AUTO-${Date.now()}`,
+          sku: newItemSKU || `AUTO-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           category: categoryForCreate,
           subcategory: newItemSubcategory || null,
           base_uom: newItemUOM || 'unit',
