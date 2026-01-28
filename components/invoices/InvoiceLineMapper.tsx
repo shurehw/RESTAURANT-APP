@@ -616,11 +616,26 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
         let parsedPackConfig = null;
 
-        // Pattern 1: "12 PC/CS" or "12/CS" = 12 pieces per case
-        const foodCaseMatch = line.description.match(/(\d+)\s*(?:pc|piece|ea|each)?\s*\/\s*(?:cs|case|box)\b/i);
-        if (foodCaseMatch) {
-          const unitsPerPack = parseInt(foodCaseMatch[1]);
-          console.log('Food case pattern matched:', foodCaseMatch[0], '→', unitsPerPack, 'pieces per case');
+        // Pattern 1: "12x750ml" or "12 × 750 ml" = 12 bottles per case, 750ml each
+        const caseXSizeMatch = line.description.match(/(\d+)\s*(x|×)\s*(\d+\.?\d*)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt|kg|g)\b/i);
+        if (caseXSizeMatch) {
+          const unitsPerPack = parseInt(caseXSizeMatch[1]);
+          const unitSize = parseFloat(caseXSizeMatch[3]);
+          const unitSizeUom = caseXSizeMatch[4].toLowerCase();
+          console.log('Pattern 1 matched (case × size):', caseXSizeMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
+          parsedPackConfig = {
+            pack_type: 'case',
+            units_per_pack: unitsPerPack,
+            unit_size: unitSize,
+            unit_size_uom: unitSizeUom
+          };
+          setPackConfigSource('parsed');
+        }
+        // Pattern 2: "12 PC/CS" or "12/CS" = 12 pieces per case
+        else if (line.description.match(/(\d+)\s*(?:pc|piece|ea|each)?\s*\/\s*(?:cs|case|box)\b/i)) {
+          const foodCaseMatch = line.description.match(/(\d+)\s*(?:pc|piece|ea|each)?\s*\/\s*(?:cs|case|box)\b/i);
+          const unitsPerPack = parseInt(foodCaseMatch![1]);
+          console.log('Pattern 2 matched (food case):', foodCaseMatch![0], '→', unitsPerPack, 'pieces per case');
           parsedPackConfig = {
             pack_type: 'case',
             units_per_pack: unitsPerPack,
@@ -629,7 +644,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           };
           setPackConfigSource('parsed');
         }
-        // Pattern 2: "6/750mL" = 6 bottles per case, 750mL each
+        // Pattern 3: "6/750mL" = 6 bottles per case, 750mL each
         else {
           const casePackMatch = line.description.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g|cs)/i);
           if (casePackMatch) {
@@ -637,7 +652,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             const unitSize = parseFloat(casePackMatch[2]);
             const unitSizeUom = casePackMatch[3].toLowerCase();
 
-            console.log('Pattern 2 matched (beverage case):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
+            console.log('Pattern 3 matched (slash beverage case):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
             parsedPackConfig = {
               pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
               units_per_pack: unitsPerPack,
