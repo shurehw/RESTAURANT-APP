@@ -119,16 +119,28 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Build search patterns: try both normalized query and individual words
+    const searchTerms = normalizedQuery.split(' ').filter(word => word.length >= 2);
+    const searchPatterns = [
+      normalizedQuery, // Full normalized query
+      ...searchTerms.slice(0, 3), // First 3 significant words
+    ].filter(Boolean);
+
     // Use trigram similarity search for fuzzy matching (from migration 058)
-    // This leverages the GIN indexes we created on name and SKU
+    // Search for ANY of the patterns in name or SKU
+    const orConditions = searchPatterns.flatMap(pattern => [
+      `name.ilike.%${pattern}%`,
+      `sku.ilike.%${pattern}%`
+    ]).join(',');
+
     const { data: items, error: itemsError } = await adminClient
       .from('items')
       .select('id, sku, name, category, base_uom')
       .eq('organization_id', orgId)
       .eq('is_active', true)
-      .or(`name.ilike.%${normalizedQuery}%,sku.ilike.%${normalizedQuery}%`)
+      .or(orConditions)
       .order('name')
-      .limit(limit);
+      .limit(limit * 3); // Get more results for scoring
 
     if (itemsError) {
       throw itemsError;
@@ -155,10 +167,40 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const itemsWithCosts = items.map((item) => ({
-      ...item,
-      unit_cost: costMap.get(item.id) || 0,
-    }));
+    // Score items by relevance
+    const scoredItems = items.map((item) => {
+      let score = 0;
+      const nameLower = item.name.toLowerCase();
+      const queryLower = query.toLowerCase();
+
+      // Exact match = highest score
+      if (nameLower === queryLower) score += 100;
+
+      // Starts with query
+      if (nameLower.startsWith(queryLower)) score += 50;
+
+      // Contains full query
+      if (nameLower.includes(queryLower)) score += 30;
+
+      // Contains all search terms
+      const allTermsMatch = searchTerms.every(term => nameLower.includes(term.toLowerCase()));
+      if (allTermsMatch) score += 20;
+
+      // Bonus for shorter names (more specific match)
+      score += Math.max(0, 10 - item.name.length / 10);
+
+      return {
+        ...item,
+        unit_cost: costMap.get(item.id) || 0,
+        _score: score
+      };
+    });
+
+    // Sort by score descending, then by name
+    const itemsWithCosts = scoredItems
+      .sort((a, b) => b._score - a._score || a.name.localeCompare(b.name))
+      .slice(0, limit)
+      .map(({ _score, ...item }) => item); // Remove score from output
 
     // Optional: Vendor-specific search (includes pack size matching)
     let finalItems = itemsWithCosts;
