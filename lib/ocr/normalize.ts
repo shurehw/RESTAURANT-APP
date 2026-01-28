@@ -55,6 +55,25 @@ export interface NormalizedInvoice {
 }
 
 /**
+ * Detects garbled OCR text patterns that indicate OCR misread the text.
+ */
+function isGarbledOCR(text: string): boolean {
+  if (!text) return false;
+  const t = text.trim();
+
+  // Multiple consecutive uppercase I's (common OCR error for lowercase l or 1)
+  if (/[I]{2,}/.test(t)) return true;
+
+  // Single I surrounded by spaces between words (e.g., "BINGKAI I ST")
+  if (/\b[A-Z]+ I [A-Z]+/.test(t)) return true;
+
+  // Excessive all-caps words (4+ consecutive all-caps words of 3+ letters)
+  if (/\b[A-Z]{3,}\b.*\b[A-Z]{3,}\b.*\b[A-Z]{3,}\b.*\b[A-Z]{3,}\b/.test(t)) return true;
+
+  return false;
+}
+
+/**
  * Detects junk OCR lines (headers, footers, garbled text) that shouldn't be imported.
  */
 function isJunkOCRLine(description: string, unitPrice: number, lineTotal: number): boolean {
@@ -68,6 +87,9 @@ function isJunkOCRLine(description: string, unitPrice: number, lineTotal: number
 
   // Suspiciously high line totals (likely OCR error)
   if (lineTotal > 100000) return true;
+
+  // Garbled OCR text (prevent garbled text from being ingested)
+  if (isGarbledOCR(desc)) return true;
 
   // Header/footer patterns
   const junkPatterns = [
@@ -558,15 +580,26 @@ export async function normalizeOCR(
     warnings.push(`Could not parse invoice date: "${raw.invoiceDate}"`);
   }
 
-  // 3. Filter and match line items (skip junk OCR)
+  // 3. Filter and match line items (skip junk OCR and garbled text)
+  const garbledLines: string[] = [];
   const validLines = raw.lineItems.filter((line) => {
-    return !isJunkOCRLine(line.description, line.unitPrice, line.lineTotal);
+    const isJunk = isJunkOCRLine(line.description, line.unitPrice, line.lineTotal);
+    if (isJunk && isGarbledOCR(line.description)) {
+      garbledLines.push(line.description);
+    }
+    return !isJunk;
   });
 
   // Track how many lines were filtered
   const filteredCount = raw.lineItems.length - validLines.length;
   if (filteredCount > 0) {
-    warnings.push(`Filtered ${filteredCount} junk OCR line(s) (headers/footers).`);
+    if (garbledLines.length > 0) {
+      warnings.push(`Filtered ${garbledLines.length} garbled OCR line(s): ${garbledLines.slice(0, 3).join(', ')}${garbledLines.length > 3 ? '...' : ''}`);
+    }
+    const otherFiltered = filteredCount - garbledLines.length;
+    if (otherFiltered > 0) {
+      warnings.push(`Filtered ${otherFiltered} junk OCR line(s) (headers/footers).`);
+    }
   }
 
   const lines = await Promise.all(

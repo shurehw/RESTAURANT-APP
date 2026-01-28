@@ -39,16 +39,17 @@ Examples:
 Corrected text:`;
 
   try {
+    // Try haiku model first (cheapest and works for simple text fixes)
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+      model: 'claude-3-5-haiku-20241022',
       max_tokens: 200,
       messages: [{ role: 'user', content: prompt }]
     });
 
     const textBlock = message.content.find(block => block.type === 'text');
     return textBlock ? (textBlock as any).text.trim() : garbledText;
-  } catch (error) {
-    console.error(`Error fixing OCR for "${garbledText}":`, error);
+  } catch (error: any) {
+    console.error(`Error fixing OCR for "${garbledText}":`, error?.message || error);
     return garbledText; // Return original if error
   }
 }
