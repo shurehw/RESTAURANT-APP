@@ -392,7 +392,14 @@ export default async function BulkReviewPage({
             {group.lines.map((line) => (
               <InvoiceLineMapper
                 key={line.id}
-                line={line}
+                line={{
+                  ...line,
+                  invoice: line.invoice ? {
+                    id: line.invoice.id,
+                    invoice_number: line.invoice.invoice_number,
+                    storage_path: line.invoice.storage_path,
+                  } : undefined
+                }}
                 vendorId={group.vendorId}
               />
             ))}
