@@ -146,6 +146,7 @@ export default async function BulkReviewPage({
         id,
         invoice_number,
         invoice_date,
+        storage_path,
         vendor_id,
         vendor:vendors(id, name),
         venue:venues(id, name)

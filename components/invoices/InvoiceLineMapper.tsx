@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Check, Sparkles } from 'lucide-react';
+import { Search, Plus, Check, Sparkles, FileText } from 'lucide-react';
 import { PackConfigurationManager, PackConfig } from './PackConfigurationManager';
+import { InvoicePDFViewer } from './InvoicePDFViewer';
 
 interface InvoiceLineMapperProps {
   line: {
@@ -14,6 +15,11 @@ interface InvoiceLineMapperProps {
     qty: number;
     unit_cost: number;
     line_total: number;
+    invoice?: {
+      id: string;
+      invoice_number?: string;
+      storage_path?: string;
+    };
   };
   vendorId: string;
   vendorName?: string;
@@ -30,6 +36,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [showCreateNew, setShowCreateNew] = useState(false);
   const [isIgnoring, setIsIgnoring] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
 
   // Auto-search on mount
   useEffect(() => {
@@ -798,7 +805,20 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     <Card className="p-4 border-l-4 border-brass">
       {/* Invoice Context - Always Visible */}
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-        <div className="text-xs font-semibold text-blue-900 mb-2">📄 Invoice Line (OCR Extracted):</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-semibold text-blue-900">📄 Invoice Line (OCR Extracted):</div>
+          {line.invoice?.storage_path && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowPDFViewer(true)}
+              className="text-xs h-7"
+            >
+              <FileText className="w-3 h-3 mr-1" />
+              View Invoice
+            </Button>
+          )}
+        </div>
         <div className="space-y-1 text-xs">
           <div><span className="font-medium text-blue-800">Description:</span> <span className="font-mono text-blue-900">{line.description}</span></div>
           {detectedPackLabel && (
@@ -1388,6 +1408,17 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
               </div>
             )}
       </div>
+
+      {/* PDF Viewer Modal */}
+      {showPDFViewer && line.invoice?.storage_path && (
+        <InvoicePDFViewer
+          invoiceId={line.invoice.id}
+          invoiceNumber={line.invoice.invoice_number}
+          storagePath={line.invoice.storage_path}
+          searchText={line.description}
+          onClose={() => setShowPDFViewer(false)}
+        />
+      )}
     </Card>
   );
 }
