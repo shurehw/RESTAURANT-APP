@@ -28,6 +28,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showCreateNew, setShowCreateNew] = useState(false);
+  const [isIgnoring, setIsIgnoring] = useState(false);
 
   // Auto-search on mount
   useEffect(() => {
@@ -74,6 +75,23 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     } catch (error) {
       console.error('Map error:', error);
       alert(`Error mapping item: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  const handleIgnoreLine = async () => {
+    setIsIgnoring(true);
+    try {
+      const response = await fetch(`/api/invoice-lines/${line.id}/ignore`, { method: 'POST' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        alert(`Failed to ignore line: ${data?.error || data?.message || `HTTP ${response.status}`}`);
+        return;
+      }
+      window.location.reload();
+    } catch (e) {
+      alert(`Failed to ignore line: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    } finally {
+      setIsIgnoring(false);
     }
   };
 
@@ -393,6 +411,125 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [packConfigBrand, setPackConfigBrand] = useState<string | null>(null);
   const [packConfigSampleCount, setPackConfigSampleCount] = useState<number>(0);
 
+  const getDetectedPackLabel = (desc: string): string | null => {
+    const d = (desc || '').toLowerCase();
+
+    const normalizeUomForLabel = (uom: string) => {
+      const u = uom.toLowerCase();
+      if (u === 'ml') return 'mL';
+      if (u === 'l' || u === 'lt' || u === 'ltr') return 'L';
+      if (u === 'oz') return 'oz';
+      if (u === 'lb') return 'lb';
+      if (u === 'gal') return 'gal';
+      if (u === 'qt') return 'qt';
+      if (u === 'pt') return 'pt';
+      if (u === 'kg') return 'kg';
+      if (u === 'g') return 'g';
+      return uom;
+    };
+
+    // Common wine/spirits format: "12x750ml" / "12 × 750 ml"
+    const caseXSize = d.match(/\b(\d+)\s*(x|×)\s*(\d+(\.\d+)?)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt|kg|g)\b/i);
+    if (caseXSize) {
+      const units = Number(caseXSize[1]);
+      const size = Number(caseXSize[3]);
+      const uom = normalizeUomForLabel(caseXSize[5]);
+      if (Number.isFinite(units) && units > 0 && Number.isFinite(size) && size > 0) {
+        return `${units} × ${size} ${uom}`;
+      }
+    }
+
+    // Case notation variants: "CS/12 750ml", "12/CS 750ml", "12 CS 750ml"
+    const size = d.match(/\b(\d+(\.\d+)?)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt|kg|g)\b/i);
+    const csCount =
+      d.match(/\bcs\s*\/\s*(\d+)\b/i) ||
+      d.match(/\b(\d+)\s*\/\s*cs\b/i) ||
+      d.match(/\b(\d+)\s*cs\b/i);
+
+    if (csCount && size) {
+      const units = Number(csCount[1]);
+      const unitSize = Number(size[1]);
+      const uom = normalizeUomForLabel(size[3]);
+      if (Number.isFinite(units) && units > 0 && Number.isFinite(unitSize) && unitSize > 0) {
+        return `${units} × ${unitSize} ${uom}`;
+      }
+    }
+
+    // Single-unit size: "750ml"
+    if (size) {
+      const unitSize = Number(size[1]);
+      const uom = normalizeUomForLabel(size[3]);
+      if (Number.isFinite(unitSize) && unitSize > 0) {
+        return `${unitSize} ${uom}`;
+      }
+    }
+
+    return null;
+  };
+
+  const suggestPackConfigFromInvoiceLine = (): PackConfig => {
+    const d = (line.description || '').toLowerCase();
+
+    const normalizeUom = (uom: string) => {
+      const u = uom.toLowerCase();
+      if (u === 'ml') return 'mL';
+      if (u === 'l' || u === 'lt' || u === 'ltr') return 'L';
+      if (u === 'gal') return 'gal';
+      if (u === 'qt') return 'qt';
+      if (u === 'pt') return 'pt';
+      if (u === 'oz') return 'oz';
+      if (u === 'lb') return 'lb';
+      return uom;
+    };
+
+    const caseXSize = d.match(/\b(\d+)\s*(x|×)\s*(\d+(\.\d+)?)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt)\b/i);
+    if (caseXSize) {
+      const units = Number(caseXSize[1]);
+      const unitSize = Number(caseXSize[3]);
+      return {
+        pack_type: 'case',
+        units_per_pack: Number.isFinite(units) && units > 0 ? units : 1,
+        unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
+        unit_size_uom: normalizeUom(caseXSize[5]),
+      };
+    }
+
+    const size = d.match(/\b(\d+(\.\d+)?)\s*(ml|mL|l|lt|ltr|oz|lb|gal|qt|pt)\b/i);
+    const csCount =
+      d.match(/\bcs\s*\/\s*(\d+)\b/i) ||
+      d.match(/\b(\d+)\s*\/\s*cs\b/i) ||
+      d.match(/\b(\d+)\s*cs\b/i);
+
+    if (csCount && size) {
+      const units = Number(csCount[1]);
+      const unitSize = Number(size[1]);
+      return {
+        pack_type: 'case',
+        units_per_pack: Number.isFinite(units) && units > 0 ? units : 1,
+        unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
+        unit_size_uom: normalizeUom(size[3]),
+      };
+    }
+
+    if (size) {
+      const unitSize = Number(size[1]);
+      const uom = normalizeUom(size[3]);
+      return {
+        pack_type: (uom === 'lb' ? 'bag' : 'bottle'),
+        units_per_pack: 1,
+        unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
+        unit_size_uom: uom,
+      };
+    }
+
+    return {
+      pack_type: 'case',
+      units_per_pack: 1,
+      unit_size: 1,
+      unit_size_uom: 'unit',
+    };
+  };
+
   const normalizeWithAI = async () => {
     setIsNormalizing(true);
     try {
@@ -659,6 +796,8 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     }
   };
 
+  const detectedPackLabel = getDetectedPackLabel(line.description);
+
   return (
     <Card className="p-4 border-l-4 border-brass">
       {/* Invoice Context - Always Visible */}
@@ -666,6 +805,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         <div className="text-xs font-semibold text-blue-900 mb-2">📄 Invoice Line (OCR Extracted):</div>
         <div className="space-y-1 text-xs">
           <div><span className="font-medium text-blue-800">Description:</span> <span className="font-mono text-blue-900">{line.description}</span></div>
+          {detectedPackLabel && (
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="bg-white border-blue-300 text-blue-900">
+                Pack: {detectedPackLabel}
+              </Badge>
+            </div>
+          )}
           {vendorName && <div><span className="font-medium text-blue-800">Vendor:</span> {vendorName}</div>}
           <div className="flex gap-4">
             <div><span className="font-medium text-blue-800">Qty:</span> {line.qty}</div>
@@ -676,6 +822,24 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
       </div>
 
       <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs text-muted-foreground">
+                {line.qty === 0 && (
+                  <span className="text-orange-700">
+                    This line has qty 0 (likely a total/header). You can ignore it.
+                  </span>
+                )}
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleIgnoreLine}
+                disabled={isIgnoring}
+                className="text-muted-foreground"
+              >
+                Ignore
+              </Button>
+            </div>
             {/* Search Input */}
             <div className="flex gap-2">
               <input
@@ -805,7 +969,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setShowPackConfigEditor(true)}
+                    onClick={() => {
+                      setShowPackConfigEditor(true);
+                      setSelectedItemPackConfigs((prev) => {
+                        if (prev && prev.length > 0) return prev;
+                        return [suggestPackConfigFromInvoiceLine()];
+                      });
+                    }}
                     className="w-full mb-3"
                   >
                     <Plus className="w-4 h-4 mr-1" />
@@ -964,6 +1134,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                   <div className="text-xs font-semibold text-blue-900 mb-2">📄 Invoice Line Details:</div>
                   <div className="space-y-1 text-xs">
                     <div><span className="font-medium text-blue-800">Description:</span> <span className="font-mono text-blue-900">{line.description}</span></div>
+                    {detectedPackLabel && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="bg-white border-blue-300 text-blue-900">
+                          Pack: {detectedPackLabel}
+                        </Badge>
+                      </div>
+                    )}
                     {vendorName && <div><span className="font-medium text-blue-800">Vendor:</span> {vendorName}</div>}
                     <div className="flex gap-4">
                       <div><span className="font-medium text-blue-800">Qty:</span> {line.qty}</div>
