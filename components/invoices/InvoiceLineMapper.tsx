@@ -773,11 +773,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         // Also try pack config parsing in fallback
         const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
         if (bottleMatch) {
+          const unitSizeUom = bottleMatch[2].toLowerCase();
+          const packType = (unitSizeUom === 'lb' || unitSizeUom === 'kg' || unitSizeUom === 'g') ? 'each' : 'bottle';
           setPackConfigs([{
-            pack_type: 'bottle',
+            pack_type: packType,
             units_per_pack: 1,
             unit_size: parseFloat(bottleMatch[1]),
-            unit_size_uom: bottleMatch[2].toLowerCase()
+            unit_size_uom: unitSizeUom
           }]);
         } else {
           const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
@@ -800,11 +802,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
       // Pack config fallback
       const bottleMatch = line.description.match(/(\d+\.?\d*)\s*(ml|l|oz|lb|gal|qt|pt|kg|g)\b/i);
       if (bottleMatch) {
+        const unitSizeUom = bottleMatch[2].toLowerCase();
+        const packType = (unitSizeUom === 'lb' || unitSizeUom === 'kg' || unitSizeUom === 'g') ? 'each' : 'bottle';
         setPackConfigs([{
-          pack_type: 'bottle',
+          pack_type: packType,
           units_per_pack: 1,
           unit_size: parseFloat(bottleMatch[1]),
-          unit_size_uom: bottleMatch[2].toLowerCase()
+          unit_size_uom: unitSizeUom
         }]);
       } else {
         const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
