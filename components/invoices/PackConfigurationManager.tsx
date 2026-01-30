@@ -116,6 +116,9 @@ export function PackConfigurationManager({
                       <option value="each">Each</option>
                       <option value="bag">Bag</option>
                     </optgroup>
+                    <optgroup label="Variable Weight">
+                      <option value="catch_weight">Catch Weight (variable)</option>
+                    </optgroup>
                     <optgroup label="Beverages">
                       <option value="bottle">Bottle</option>
                       <option value="keg">Keg</option>

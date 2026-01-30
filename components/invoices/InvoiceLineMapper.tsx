@@ -543,15 +543,15 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     if (size) {
       const unitSize = Number(size[1]);
       const uom = normalizeUom(size[3]);
-      // Determine pack type based on UOM - items sold by weight use 'each', liquids use 'bottle'
+      // Determine pack type based on UOM - items sold by weight use 'catch_weight', liquids use 'bottle'
       let packType = 'bottle';
       if (uom === 'lb' || uom === 'kg' || uom === 'g') {
-        packType = 'each';
+        packType = 'catch_weight';
       }
       return {
         pack_type: packType,
         units_per_pack: 1,
-        unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
+        unit_size: 1, // For catch weight, always 1 (actual weight stored separately)
         unit_size_uom: uom,
       };
     }
@@ -690,7 +690,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             setPackConfigSource('parsed');
           }
           // Pattern 3: "1 LB", "5 lb", "10 LB" = sold by pound
-          // For catch-weight items (meat, seafood), use generic 1 lb pack, not the specific weight
+          // For catch-weight items (meat, seafood), use catch_weight pack type
           else if (/(\d+\.?\d*)\s*lb\b/i.test(line.description)) {
             const lbMatch = line.description.match(/(\d+\.?\d*)\s*lb/i);
             const lbs = lbMatch ? parseFloat(lbMatch[1]) : 1;
@@ -700,9 +700,9 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
             console.log('Pound pattern matched:', lbs, 'lb', '(catch-weight:', isCatchWeight, ')');
             parsedPackConfig = {
-              pack_type: 'each',
+              pack_type: isCatchWeight ? 'catch_weight' : 'bag',
               units_per_pack: 1,
-              unit_size: isCatchWeight ? 1 : lbs, // Use generic 1 lb for catch-weight, actual weight for fixed items
+              unit_size: 1, // Always use 1 for the unit size (actual weight in catch_weight field)
               unit_size_uom: 'lb'
             };
             setPackConfigSource('parsed');
@@ -725,13 +725,15 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
               const unitSize = parseFloat(bottleMatch[1]);
               const unitSizeUom = bottleMatch[2].toLowerCase();
 
-              // Determine pack type based on UOM - items sold by weight use 'each', liquids use 'bottle'
+              // Determine pack type based on UOM - items sold by weight use 'catch_weight', liquids use 'bottle'
               let packType = 'bottle';
               if (unitSizeUom === 'lb' || unitSizeUom === 'kg' || unitSizeUom === 'g') {
-                packType = 'each';
+                // Check if this is a catch-weight item
+                const isCatchWeight = /(beef|pork|chicken|turkey|lamb|duck|veal|salmon|tuna|cod|halibut|shrimp|lobster|crab|scallop|seabass|fish|meat|protein)/i.test(line.description);
+                packType = isCatchWeight ? 'catch_weight' : 'bag';
               }
 
-              console.log('Pattern 5 matched (single unit):', bottleMatch[0], '→ 1 each @', unitSize, unitSizeUom, 'pack type:', packType);
+              console.log('Pattern 5 matched (single unit):', bottleMatch[0], '→ 1', packType, '@', unitSize, unitSizeUom);
               parsedPackConfig = {
                 pack_type: packType,
                 units_per_pack: 1,
