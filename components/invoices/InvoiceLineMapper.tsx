@@ -690,16 +690,19 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             setPackConfigSource('parsed');
           }
           // Pattern 3: "1 LB", "5 lb", "10 LB" = sold by pound
-          else if (/(\d+)\s*lb\b/i.test(line.description)) {
-            const lbMatch = line.description.match(/(\d+)\s*lb/i);
+          // For catch-weight items (meat, seafood), use generic 1 lb pack, not the specific weight
+          else if (/(\d+\.?\d*)\s*lb\b/i.test(line.description)) {
+            const lbMatch = line.description.match(/(\d+\.?\d*)\s*lb/i);
             const lbs = lbMatch ? parseFloat(lbMatch[1]) : 1;
-            console.log('Pound pattern matched:', lbs, 'lb');
+
+            // Check if this is a catch-weight item (variable weight protein/seafood)
+            const isCatchWeight = /(beef|pork|chicken|turkey|lamb|duck|veal|salmon|tuna|cod|halibut|shrimp|lobster|crab|scallop|seabass|fish|meat|protein)/i.test(line.description);
+
+            console.log('Pound pattern matched:', lbs, 'lb', '(catch-weight:', isCatchWeight, ')');
             parsedPackConfig = {
-              // DB only allows: case, bottle, bag, box, each, keg, pail, drum
-              // Represent "sold by the pound" as a bag pack type with lb unit size.
-              pack_type: 'bag',
+              pack_type: 'each',
               units_per_pack: 1,
-              unit_size: lbs,
+              unit_size: isCatchWeight ? 1 : lbs, // Use generic 1 lb for catch-weight, actual weight for fixed items
               unit_size_uom: 'lb'
             };
             setPackConfigSource('parsed');
