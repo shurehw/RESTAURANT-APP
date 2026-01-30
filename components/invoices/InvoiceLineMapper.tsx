@@ -539,8 +539,13 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
     if (size) {
       const unitSize = Number(size[1]);
       const uom = normalizeUom(size[3]);
+      // Determine pack type based on UOM - items sold by weight use 'each', liquids use 'bottle'
+      let packType = 'bottle';
+      if (uom === 'lb' || uom === 'kg' || uom === 'g') {
+        packType = 'each';
+      }
       return {
-        pack_type: (uom === 'lb' ? 'bag' : 'bottle'),
+        pack_type: packType,
         units_per_pack: 1,
         unit_size: Number.isFinite(unitSize) && unitSize > 0 ? unitSize : 1,
         unit_size_uom: uom,
@@ -713,9 +718,15 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
               const unitSize = parseFloat(bottleMatch[1]);
               const unitSizeUom = bottleMatch[2].toLowerCase();
 
-              console.log('Pattern 5 matched (single unit):', bottleMatch[0], '→ 1 unit @', unitSize, unitSizeUom);
+              // Determine pack type based on UOM - items sold by weight use 'each', liquids use 'bottle'
+              let packType = 'bottle';
+              if (unitSizeUom === 'lb' || unitSizeUom === 'kg' || unitSizeUom === 'g') {
+                packType = 'each';
+              }
+
+              console.log('Pattern 5 matched (single unit):', bottleMatch[0], '→ 1 each @', unitSize, unitSizeUom, 'pack type:', packType);
               parsedPackConfig = {
-                pack_type: 'bottle',
+                pack_type: packType,
                 units_per_pack: 1,
                 unit_size: unitSize,
                 unit_size_uom: unitSizeUom
