@@ -389,6 +389,11 @@ async function processInvoice(
       unit_cost: line.unitCost ?? 0,
       // line_total is a generated column, don't send it
       ocr_confidence: line.ocrConfidence,
+      // Product specifications
+      catch_weight: line.catch_weight || null,
+      piece_count: line.piece_count || null,
+      nominal_case_weight: line.nominal_case_weight || null,
+      product_specs: line.product_specs || null,
     }));
 
     // Call RPC

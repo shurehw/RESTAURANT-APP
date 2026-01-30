@@ -50,6 +50,10 @@ export interface NormalizedInvoice {
     vendorItemId?: string; // vendor_items.id if matched
     matchType?: 'exact' | 'fuzzy' | 'none'; // how it was matched
     vendorItemCode?: string; // alias for itemCode (for clarity)
+    catch_weight?: number; // actual billed weight
+    piece_count?: number; // number of pieces per case
+    nominal_case_weight?: number; // expected case weight
+    product_specs?: Record<string, any>; // {species, cut, trim, grade, certifications, etc.}
   }>;
   warnings: string[];
 }
@@ -362,6 +366,114 @@ async function resolveVenue(
 }
 
 /**
+ * Parses product specifications from invoice line description.
+ * Example: "USDA BEEF TENDERLOIN PSMO 4 PC 28# CS 29.40 LB"
+ * Returns: { catch_weight: 29.40, piece_count: 4, nominal_case_weight: 28,
+ *            product_specs: { species: "beef", cut: "tenderloin", trim: "PSMO", grade: "USDA" } }
+ */
+function parseProductSpecs(description: string): {
+  catch_weight?: number;
+  piece_count?: number;
+  nominal_case_weight?: number;
+  product_specs?: Record<string, any>;
+} {
+  const desc = description.toUpperCase();
+  const result: any = {};
+  const specs: Record<string, any> = {};
+
+  // Extract catch weight (actual billed weight) - usually at end like "29.40 LB"
+  const catchWeightMatch = desc.match(/(\d+\.?\d*)\s*LB(?:\s|$)/i);
+  if (catchWeightMatch) {
+    result.catch_weight = parseFloat(catchWeightMatch[1]);
+  }
+
+  // Extract piece count - patterns like "4 PC", "4PC", "4 PIECE"
+  const pieceCountMatch = desc.match(/(\d+)\s*(?:PC|PIECE|EA|EACH)(?:\s|$)/i);
+  if (pieceCountMatch) {
+    result.piece_count = parseInt(pieceCountMatch[1]);
+  }
+
+  // Extract nominal case weight - patterns like "28#", "28# CS", "28LB CS"
+  const nominalWeightMatch = desc.match(/(\d+\.?\d*)(?:#|LB)\s*(?:CS|CASE)(?:\s|$)/i);
+  if (nominalWeightMatch) {
+    result.nominal_case_weight = parseFloat(nominalWeightMatch[1]);
+  }
+
+  // Extract species (for proteins/seafood)
+  const speciesPatterns = [
+    'BEEF', 'PORK', 'CHICKEN', 'TURKEY', 'LAMB', 'DUCK', 'VEAL',
+    'SALMON', 'TUNA', 'COD', 'HALIBUT', 'SHRIMP', 'LOBSTER', 'CRAB', 'SCALLOP', 'SEABASS'
+  ];
+  for (const species of speciesPatterns) {
+    if (desc.includes(species)) {
+      specs.species = species.toLowerCase();
+      break;
+    }
+  }
+
+  // Extract cut (for proteins)
+  const cutPatterns = [
+    'TENDERLOIN', 'RIBEYE', 'STRIP', 'SIRLOIN', 'FILET', 'CHUCK', 'BRISKET',
+    'SHOULDER', 'LOIN', 'CHOP', 'BELLY', 'BREAST', 'THIGH', 'WING'
+  ];
+  for (const cut of cutPatterns) {
+    if (desc.includes(cut)) {
+      specs.cut = cut.toLowerCase();
+      break;
+    }
+  }
+
+  // Extract trim/spec (protein processing specs)
+  const trimPatterns = {
+    'PSMO': 'Peeled, Silver Skin Off, Side Muscle On',
+    'PS': 'Peeled, Silver Skin Off',
+    'CHAIN-ON': 'Chain On',
+    'CHAIN ON': 'Chain On',
+    'CENTER-CUT': 'Center Cut',
+    'CENTER CUT': 'Center Cut',
+    'BONELESS': 'Boneless',
+    'BONE-IN': 'Bone-In'
+  };
+  for (const [trim, fullName] of Object.entries(trimPatterns)) {
+    if (desc.includes(trim)) {
+      specs.trim = trim;
+      specs.trim_full = fullName;
+      break;
+    }
+  }
+
+  // Extract grade
+  const gradePatterns = [
+    'PRIME', 'CHOICE', 'SELECT', 'USDA PRIME', 'USDA CHOICE', 'USDA SELECT',
+    'AAA', 'AA', 'WAGYU', 'ANGUS', 'CERTIFIED ANGUS BEEF', 'CAB'
+  ];
+  for (const grade of gradePatterns) {
+    if (desc.includes(grade)) {
+      specs.grade = grade;
+      break;
+    }
+  }
+
+  // Extract certifications
+  const certifications: string[] = [];
+  if (desc.includes('USDA')) certifications.push('USDA');
+  if (desc.includes('ORGANIC')) certifications.push('Organic');
+  if (desc.includes('HALAL')) certifications.push('Halal');
+  if (desc.includes('KOSHER')) certifications.push('Kosher');
+  if (desc.includes('NON-GMO') || desc.includes('NON GMO')) certifications.push('Non-GMO');
+  if (certifications.length > 0) {
+    specs.certifications = certifications;
+  }
+
+  // Only include product_specs if we found any specs
+  if (Object.keys(specs).length > 0) {
+    result.product_specs = specs;
+  }
+
+  return result;
+}
+
+/**
  * Attempts to match a line item to an item using vendor_items mapping.
  */
 async function matchLineItem(
@@ -617,6 +729,9 @@ export async function normalizeOCR(
         );
       }
 
+      // Parse product specifications from description
+      const specs = parseProductSpecs(line.description);
+
       return {
         itemCode: line.itemCode,
         vendorItemCode: line.itemCode, // Pass through for invoice_lines.vendor_item_code
@@ -628,6 +743,8 @@ export async function normalizeOCR(
         itemId: match.itemId || undefined,
         vendorItemId: match.vendorItemId || undefined,
         matchType: match.matchType,
+        // Product specifications (catch weight, piece count, etc.)
+        ...specs,
       };
     })
   );

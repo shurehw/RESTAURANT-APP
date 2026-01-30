@@ -1,0 +1,1655 @@
+[dotenv@17.2.3] injecting env (18) from .env.local -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  suppress all logs with { quiet: true }
+🔍 Backfilling missing invoice PDFs from: C:\Users\JacobShure\OneDrive - Hwood Group\Finance - Delilah Dallas Finance - Temp Invoice Scans
+   Mode: DRY RUN (no changes)
+
+Found 80 invoices without PDFs
+
+Scanning for PDF files...
+Found 348 PDF files (processing 348)
+
+
+[1/348] Processing: Jan 14, Doc 1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16885334 | Vendor: Spec's Wine, Spirits & Finer Foods
+   ✅ Found matching invoice: d46e6da8-e083-4f4f-9917-3efb89a81b88
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[2/348] Processing: Jan 19, Doc 4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16889382 | Vendor: Spec's Wine, Spirits & Finer Foods
+   ✅ Found matching invoice: 6dbbc0f4-dc98-45f1-ab8e-8ec752d391de
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[3/348] Processing: Jan 19, Doc 5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16880351 | Vendor: Spec's Liquors
+   ✅ Found matching invoice: cabe1b61-2ef2-4270-be5d-45a49588c560
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[4/348] Processing: Jan 19, Doc 7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16874260 | Vendor: Spec's Wine, Spirits & Finer Foods
+   ✅ Found matching invoice: e122ec5b-9aef-4253-9a07-d3fdaaf5218d
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[5/348] Processing: Jan 19, Doc 8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16905576 | Vendor: Spec's Wine, Spirits & Finer Foods
+   ✅ Found matching invoice: e7fa4255-d603-4ff8-af6f-e7b49b67ab8b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[6/348] Processing: Jan 19, Doc 2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 2108713 | Vendor: Rare Tea Cellar
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[7/348] Processing: 0007_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV1876569 | Vendor: Johnson Brothers Maverick of Texas
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[8/348] Processing: 0008_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV1871423 | Vendor: Johnson Brothers Maverick of Texas
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[9/348] Processing: 0009_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV1876683 | Vendor: Johnson Brothers Maverick of Texas
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[10/348] Processing: 0010_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 7173961 | Vendor: REPUBLIC NATIONAL DISTRIBUTING COMPANY
+   ✅ Found matching invoice: bc8658c8-78a4-4edf-88ae-98ad9a045198
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[11/348] Processing: 0011_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: M-3404601 | Vendor: MFW - Maesor Fine Wine
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[12/348] Processing: 0012_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 2457A | Vendor: Alex Vieli
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[13/348] Processing: 0013_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 7179051 | Vendor: Republic National Distributing Company
+   ✅ Found matching invoice: f6818dd0-e057-4b4d-8e62-2de786bf1767
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[14/348] Processing: 0014_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 7179094 | Vendor: RNDC
+   ✅ Found matching invoice: b30404f9-a512-4832-b730-c8ad0155e5e1
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[15/348] Processing: 0015_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 179079 | Vendor: REPUBLIC NATIONAL DISTRIBUTING COMPANY
+   ✅ Found matching invoice: d002ee68-84a5-402f-952a-73b8f87991ab
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[16/348] Processing: 0019_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 0009288212 | Vendor: Verge Fine Wine
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[17/348] Processing: 0020_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 7168623 | Vendor: RNDC (Republic National Distributing Company)
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[18/348] Processing: 0021_001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 136882 | Vendor: Rootstock
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[19/348] Processing: Jan 19, Doc 3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV1876869 | Vendor: Johnson Brothers Maverick of Texas
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[20/348] Processing: Jan 23, Doc 1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16925255 | Vendor: Spec's Liquors
+   ✅ Found matching invoice: 9263d5ac-8a14-4918-8310-eeddd96f7a60
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[21/348] Processing: Jan 13, Doc 1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 1841471 | Vendor: Spec's Wine, Spirits & Finer Foods
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[22/348] Processing: Jan 13, Doc 2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16862910 | Vendor: Spec's Liquors
+   ✅ Found matching invoice: a14ad66f-c46a-482f-a859-96e1f9218124
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[23/348] Processing: Jan 19, Doc 1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16900368 | Vendor: Spec's Wine, Spirits & Finer Foods
+   ✅ Found matching invoice: bcd6ebf3-bc54-4b55-87c7-23a1c747485b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[24/348] Processing: Jan 23, Doc 2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 9130139318 | Vendor: Southern Glazer's of TX
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[25/348] Processing: Jan 23, Doc 3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 16928603 | Vendor: SPEC'S LIQUORS
+   ✅ Found matching invoice: 672083b0-1f9b-4604-b0ce-8ee051321815
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[26/348] Processing: INVOICE 4.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 81493403 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 12, newEndPage: 7 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 7, newEndPage: 4 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 14, newEndPage: 9 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 9, newEndPage: 6 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 7, attemptedEndPage: 15, newEndPage: 10 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 11, attemptedEndPage: 15, newEndPage: 12 }
+   📋 Invoice Number: 5075A542 | Vendor: Delilah Dallas LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[27/348] Processing: Invoice dairyland.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 06785216 | Vendor: Dairyland Produce, LLC
+   ✅ Found matching invoice: e688e730-dbf4-4217-9b95-99da4ecf43a9
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[28/348] Processing: invoices 5.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 73669291 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 12, newEndPage: 7 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 7, newEndPage: 4 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 13, newEndPage: 8 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 9, attemptedEndPage: 13, newEndPage: 10 }
+   📋 Invoice Number: 01532763 | Vendor: Chefs' Produce
+   ✅ Found matching invoice: f66340cb-ea3a-42e1-9f97-31c07816a586
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[29/348] Processing: Invoices Kitchen (1).pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 36402086 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 7, newEndPage: 3 }
+   📋 Invoice Number: 378161 | Vendor: Empire Baking Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[30/348] Processing: Invoices Kitchen (2).pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 70702343 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 12, newEndPage: 7 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 7, newEndPage: 4 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 14, newEndPage: 9 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 9, newEndPage: 6 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 7, attemptedEndPage: 14, newEndPage: 10 }
+   📋 Invoice Number: 06792379 | Vendor: Dairyland Produce, LLC (dba Hardie's Fresh Foods)
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[31/348] Processing: Invoices Kitchen.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 56470740 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 11, newEndPage: 6 }
+   📋 Invoice Number: 70823749 | Vendor: The Chefswarehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[32/348] Processing: Invoics Kitchen.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 115967657 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 6, attemptedEndPage: 15, newEndPage: 10 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 11, attemptedEndPage: 20, newEndPage: 15 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 16, attemptedEndPage: 24, newEndPage: 19 }
+   📋 Invoice Number: 60251026 | Vendor: OAK FARMS-DALLAS DFA DAIRY BRANDS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[33/348] Processing: Kitchen Invoices 3.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 85478793 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 12, newEndPage: 7 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 7, newEndPage: 4 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 13, newEndPage: 8 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 8, newEndPage: 6 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 7, attemptedEndPage: 13, newEndPage: 9 }
+   📋 Invoice Number: 1518251 | Vendor: ROCKER BROS. MEAT & PROVISION, INC.
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[34/348] Processing: Kitchen Invoices 6.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 82772075 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 12, newEndPage: 7 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 7, newEndPage: 4 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 14, newEndPage: 9 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 5, attemptedEndPage: 9, newEndPage: 6 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 7, attemptedEndPage: 15, newEndPage: 10 }
+   📋 Invoice Number: G0252069 | Vendor: OAK FARMS-DALLAS DFA DAIRY BRANDS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[35/348] Processing: Kitchen Invoices 7.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 39614433 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 8, newEndPage: 4 }
+   📋 Invoice Number: 05919 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[36/348] Processing: Kitchen Invoices 8.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 54887155 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 3, attemptedEndPage: 10, newEndPage: 6 }
+   📋 Invoice Number: 0153965 | Vendor: Chefs' Produce Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[37/348] Processing: Kitchen Invoices 9.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 48300991 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 10, newEndPage: 5 }
+   📋 Invoice Number: 60252296 | Vendor: Oak Farms-Dallas DFA Dairy Brands
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[38/348] Processing: INVOICE 4_pg1-1.pdf
+   📄 Extracting invoice number...
+[OCR Error] Failed to parse Claude response as JSON
+JSON text: {
+  "vendor": "Dabba Dallas LLC",
+  "invoiceNumber": "5675543",
+  "invoiceDate": "2011-01-26",
+  "dueDate": null,
+  "paymentTerms": "Terms",
+  "totalAmount": 1519.00,
+  "confidence": 0.92,
+  "deliveryLocation": {
+    "name": "Dabba Dallas LLC",
+    "address": "16 N 11th St to 13th, TX 75207",
+    "confidence": 0.85
+  },
+  "lineItems": [
+    {
+      "itemCode": "300415",
+      "description": "HERSHEY",
+      "qty": 1,
+      "unitPrice": 340061.25,
+      "lineTotal": 175.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "153201",
+      "description": "KIKKOMAN",
+      "qty": 1,
+      "unitPrice": 417142.01,
+      "lineTotal": 4710.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "492138",
+      "description": "CAROLINA",
+      "qty": 1,
+      "unitPrice": 225361.201,
+      "lineTotal": 278.91 LB,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "191915",
+      "description": "ASPENGLD",
+      "qty": 5,
+      "unitPrice": 409515.05,
+      "lineTotal": 1035.18,
+      "confidence": 0.80
+    },
+    {
+      "itemCode": "237107",
+      "description": "FONTANIN",
+      "qty": 1,
+      "unitPrice": 303156.00,
+      "lineTotal": 2100.CT,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "129708",
+      "description": "ESSENTYL",
+      "qty": 1,
+      "unitPrice": 304696.35,
+      "lineTotal": 1100.CT,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "187098",
+      "description": "DAKOTA",
+      "qty": 1,
+      "unitPrice": 573879.165,
+      "lineTotal": 1720.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "234095",
+      "description": "AURORA",
+      "qty": 1,
+      "unitPrice": 952782.94,
+      "lineTotal": 1101.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "192092",
+      "description": "EKKBLEND",
+      "qty": 9,
+      "unitPrice": null,
+      "lineTotal": 215.18,
+      "confidence": 0.70
+    },
+    {
+      "itemCode": "335110",
+      "description": "BRILLIANT",
+      "qty": 2,
+      "unitPrice": 10071025.21610,
+      "lineTotal": 8802.OZ,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "394549",
+      "description": "EUROPHUR",
+      "qty": 1,
+      "unitPrice": 400235.90822,
+      "lineTotal": 4912.CT,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "372050",
+      "description": "STOUFFER",
+      "qty": 1,
+      "unitPrice": 1013038.09322,
+      "lineTotal": 4066.OZ,
+      "confidence": 0.75
+    }
+  ]
+}
+Raw response: ```json
+{
+  "vendor": "Dabba Dallas LLC",
+  "invoiceNumber": "5675543",
+  "invoiceDate": "2011-01-26",
+  "dueDate": null,
+  "paymentTerms": "Terms",
+  "totalAmount": 1519.00,
+  "confidence": 0.92,
+  "deliveryLocation": {
+    "name": "Dabba Dallas LLC",
+    "address": "16 N 11th St to 13th, TX 75207",
+    "confidence": 0.85
+  },
+  "lineItems": [
+    {
+      "itemCode": "300415",
+      "description": "HERSHEY",
+      "qty": 1,
+      "unitPrice": 340061.25,
+      "lineTotal": 175.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "153201",
+      "description": "KIKKOMAN",
+      "qty": 1,
+      "unitPrice": 417142.01,
+      "lineTotal": 4710.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "492138",
+      "description": "CAROLINA",
+      "qty": 1,
+      "unitPrice": 225361.201,
+      "lineTotal": 278.91 LB,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "191915",
+      "description": "ASPENGLD",
+      "qty": 5,
+      "unitPrice": 409515.05,
+      "lineTotal": 1035.18,
+      "confidence": 0.80
+    },
+    {
+      "itemCode": "237107",
+      "description": "FONTANIN",
+      "qty": 1,
+      "unitPrice": 303156.00,
+      "lineTotal": 2100.CT,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "129708",
+      "description": "ESSENTYL",
+      "qty": 1,
+      "unitPrice": 304696.35,
+      "lineTotal": 1100.CT,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "187098",
+      "description": "DAKOTA",
+      "qty": 1,
+      "unitPrice": 573879.165,
+      "lineTotal": 1720.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "234095",
+      "description": "AURORA",
+      "qty": 1,
+      "unitPrice": 952782.94,
+      "lineTotal": 1101.18,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "192092",
+      "description": "EKKBLEND",
+      "qty": 9,
+      "unitPrice": null,
+      "lineTotal": 215.18,
+      "confidence": 0.70
+    },
+    {
+      "itemCode": "335110",
+      "description": "BRILLIANT",
+      "qty": 2,
+      "unitPrice": 1
+Parse error: SyntaxError: Expected ',' or '}' after property value in JSON at position 823 (line 36 column 27)
+    at JSON.parse (<anonymous>)
+    at parseClaudeInvoiceJson (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:160:23)
+    at extractInvoiceFromPDFSingle (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:361:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async extractInvoiceFromPDF (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:315:12)
+    at async main (c:\Users\JacobShure\RESTAURANT APP\scripts\backfill-missing-pdfs.ts:72:25)
+   ❌ Error: Failed to parse invoice data from Claude. The response may be malformed. Please try again.
+
+[39/348] Processing: INVOICE 4_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70875013 | Vendor: Chefs Warehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[40/348] Processing: INVOICE 4_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70875013 | Vendor: Chefs Warehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[41/348] Processing: INVOICE 4_pg12-12.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 195469 | Vendor: Allen Brothers Texas
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[42/348] Processing: INVOICE 4_pg13-13.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 975584 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[43/348] Processing: INVOICE 4_pg14-14.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 975586 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[44/348] Processing: INVOICE 4_pg15-15.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 975714 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[45/348] Processing: INVOICE 4_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 55763540 | Vendor: Delilah Dallas LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[46/348] Processing: INVOICE 4_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 55526540 | Vendor: Delihi, Inc. LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[47/348] Processing: INVOICE 4_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 55755329 | Vendor: Dabbs Dallas LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[48/348] Processing: INVOICE 4_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 60252042 | Vendor: OAK FARMS-DALLAS DFA DAIRY BRANDS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[49/348] Processing: INVOICE 4_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 2952 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[50/348] Processing: INVOICE 4_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 5679687 | Vendor: Billi Tri Customer
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[51/348] Processing: INVOICE 4_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 976449 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[52/348] Processing: INVOICE 4_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 976610 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[53/348] Processing: invoices 5_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01532763 | Vendor: Chef's Produce
+   ✅ Found matching invoice: f66340cb-ea3a-42e1-9f97-31c07816a586
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[54/348] Processing: invoices 5_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 187374 | Vendor: ALLEN BROTHERS TEXAS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[55/348] Processing: invoices 5_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70923428 | Vendor: Chefs Warehouse Midwest LLC
+   ✅ Found matching invoice: f3f5baac-68a5-442d-93e1-0108fefd1123
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[56/348] Processing: invoices 5_pg12-12.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70923428 | Vendor: THE CHEFS' WAREHOUSE MIDWEST LLC
+   ✅ Found matching invoice: f3f5baac-68a5-442d-93e1-0108fefd1123
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[57/348] Processing: invoices 5_pg13-13.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 977479 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[58/348] Processing: invoices 5_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01532697 | Vendor: Chefs' Produce
+   ✅ Found matching invoice: 8cc09697-a45f-49ad-8c82-87a1628a60e3
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[59/348] Processing: invoices 5_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 26-759590 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[60/348] Processing: invoices 5_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 978975 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[61/348] Processing: invoices 5_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01532086 | Vendor: Chefs' Produce Company
+   ✅ Found matching invoice: ee29b11a-ddf3-4af1-9504-139dc95f984d
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[62/348] Processing: invoices 5_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01532086 | Vendor: Chefs' Produce
+   ✅ Found matching invoice: ee29b11a-ddf3-4af1-9504-139dc95f984d
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[63/348] Processing: invoices 5_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 5677164 | Vendor: Nabha
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[64/348] Processing: invoices 5_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 153117 | Vendor: Regalis TX
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[65/348] Processing: invoices 5_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01532630 | Vendor: Chefs' Produce
+   ✅ Found matching invoice: 1418e1e6-0ab6-4e2f-87ed-f1775e075e50
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[66/348] Processing: Invoices Kitchen_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70823749 | Vendor: The Chefswarehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[67/348] Processing: Invoices Kitchen_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: F48612638 | Vendor: Minamoto Wholesale
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[68/348] Processing: Invoices Kitchen_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 7045 | Vendor: Zab's Inc
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[69/348] Processing: Invoices Kitchen_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70846878 | Vendor: Chefs Warehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[70/348] Processing: Invoices Kitchen_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70846878 | Vendor: THE CHEFSWAREHOUSE MIDWEST LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[71/348] Processing: Invoices Kitchen_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70846878 | Vendor: The ChefsWarehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[72/348] Processing: Invoices Kitchen_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01526477 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[73/348] Processing: Invoices Kitchen_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01527112 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[74/348] Processing: Invoices Kitchen_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01527445 | Vendor: Chefs' Produce Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[75/348] Processing: Invoices Kitchen_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01527974 | Vendor: Chef's Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[76/348] Processing: Invoices Kitchen_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01528835 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[77/348] Processing: Invoices Kitchen (1)_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 378161 | Vendor: Empire Baking Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[78/348] Processing: Invoices Kitchen (1)_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 05771 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[79/348] Processing: Invoices Kitchen (1)_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 05742 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[80/348] Processing: Invoices Kitchen (1)_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 99907169 | Vendor: SYSCO
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[81/348] Processing: Invoices Kitchen (1)_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 996071673 | Vendor: SYSCO
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[82/348] Processing: Invoices Kitchen (1)_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 136614 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[83/348] Processing: Invoices Kitchen (1)_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: M453 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[84/348] Processing: Invoices Kitchen (2)_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 06792379 | Vendor: Dairyland Produce, LLC (dba Hardie's Fresh Foods)
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[85/348] Processing: Invoices Kitchen (2)_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 972424 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[86/348] Processing: Invoices Kitchen (2)_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 970660 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[87/348] Processing: Invoices Kitchen (2)_pg12-12.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 970660 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[88/348] Processing: Invoices Kitchen (2)_pg13-13.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 971154 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[89/348] Processing: Invoices Kitchen (2)_pg14-14.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 971156 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[90/348] Processing: Invoices Kitchen (2)_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70789722 | Vendor: Chefs Warehouse
+   ✅ Found matching invoice: e8515d18-cd4b-46d1-959c-d899f3534041
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[91/348] Processing: Invoices Kitchen (2)_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70789722 | Vendor: Chef's Warehouse
+   ✅ Found matching invoice: e8515d18-cd4b-46d1-959c-d899f3534041
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[92/348] Processing: Invoices Kitchen (2)_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70789722 | Vendor: Chefs Warehouse
+   ✅ Found matching invoice: e8515d18-cd4b-46d1-959c-d899f3534041
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[93/348] Processing: Invoices Kitchen (2)_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 973102 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[94/348] Processing: Invoices Kitchen (2)_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 974296 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[95/348] Processing: Invoices Kitchen (2)_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 974296 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[96/348] Processing: Invoices Kitchen (2)_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 972870 | Vendor: Mr. Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[97/348] Processing: Invoices Kitchen (2)_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 972424 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[98/348] Processing: Invoics Kitchen_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 60251026 | Vendor: OAK FARMS-DALLAS DFA DAIRY BRANDS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[99/348] Processing: Invoics Kitchen_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: The Chefs' Warehouse Midwest LLC
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[100/348] Processing: Invoics Kitchen_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: The Chefswarehouse Midwest LLC
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[101/348] Processing: Invoics Kitchen_pg12-12.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70767453 | Vendor: The Chefswarehouse Midwest LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[102/348] Processing: Invoics Kitchen_pg13-13.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70777359 | Vendor: THE CHEFSWAREHOUSE MIDWEST LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[103/348] Processing: Invoics Kitchen_pg14-14.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70777359 | Vendor: Chef's Warehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[104/348] Processing: Invoics Kitchen_pg15-15.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70777359 | Vendor: The Chefswarehouse Midwest LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[105/348] Processing: Invoics Kitchen_pg16-16.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 06785216 | Vendor: Dairyland Produce, LLC (dba Hardie's Fresh Foods)
+   ✅ Found matching invoice: e688e730-dbf4-4217-9b95-99da4ecf43a9
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[106/348] Processing: Invoics Kitchen_pg17-17.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 185306 | Vendor: ALLEN BROTHERS TEXAS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[107/348] Processing: Invoics Kitchen_pg18-18.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 06785216 | Vendor: Dairyland Produce, LLC (dba Hardie's Fresh Foods)
+   ✅ Found matching invoice: e688e730-dbf4-4217-9b95-99da4ecf43a9
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[108/348] Processing: Invoics Kitchen_pg19-19.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70805899 | Vendor: The Chefs' Warehouse Midwest LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[109/348] Processing: Invoics Kitchen_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 152730 | Vendor: Regalis TX
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[110/348] Processing: Invoics Kitchen_pg20-20.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70805899 | Vendor: The Chefswarehouse Midwest LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[111/348] Processing: Invoics Kitchen_pg21-21.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70833430 | Vendor: THE CHEFSWAREHOUSE MIDWEST LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[112/348] Processing: Invoics Kitchen_pg22-22.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01527696 | Vendor: Glass Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[113/348] Processing: Invoics Kitchen_pg23-23.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70823755 | Vendor: Chefs Warehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[114/348] Processing: Invoics Kitchen_pg24-24.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70823755 | Vendor: ChefsWarehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[115/348] Processing: Invoics Kitchen_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 06786764 | Vendor: Dairyland Produce, LLC (dba Hardie's Fresh Foods)
+   ✅ Found matching invoice: da29c2c3-4fe3-40a3-8039-903d25ba8009
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[116/348] Processing: Invoics Kitchen_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 06786764 | Vendor: Dairyland Produce, LLC (dba Hardie's Fresh Foods)
+   ✅ Found matching invoice: da29c2c3-4fe3-40a3-8039-903d25ba8009
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[117/348] Processing: Invoics Kitchen_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: The Chefs' Warehouse Midwest LLC
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[118/348] Processing: Invoics Kitchen_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: Chefswarehouse
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[119/348] Processing: Invoics Kitchen_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: The ChefsWarehouse
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[120/348] Processing: Invoics Kitchen_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: Chefs Warehouse
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[121/348] Processing: Invoics Kitchen_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70761327 | Vendor: Chefs Warehouse
+   ✅ Found matching invoice: ba73ecdc-4c15-406c-8384-52cf73e14c5b
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[122/348] Processing: Kitchen Invoices 3_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 1518251 | Vendor: ROCKER BROS. MEAT & PROVISION, INC.
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[123/348] Processing: Kitchen Invoices 3_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70859984 | Vendor: Chefswarehouse
+   ✅ Found matching invoice: 1690f088-7b42-4ea9-ba86-60afeca56423
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[124/348] Processing: Kitchen Invoices 3_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 996008797 | Vendor: SYSCO
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[125/348] Processing: Kitchen Invoices 3_pg12-12.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 993-9899909 | Vendor: SYSCO NORTH TEXAS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[126/348] Processing: Kitchen Invoices 3_pg13-13.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01529490 | Vendor: Chefs' Produce
+   ✅ Found matching invoice: 53f2d4ee-d9b7-42de-976a-5aa8cf5051c0
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[127/348] Processing: Kitchen Invoices 3_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 00257464 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[128/348] Processing: Kitchen Invoices 3_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01529699 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[129/348] Processing: Kitchen Invoices 3_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV607063 | Vendor: Farm to Table
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[130/348] Processing: Kitchen Invoices 3_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 2952 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[131/348] Processing: Kitchen Invoices 3_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 136259 | Vendor: ALLEN BROTHERS TEXAS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[132/348] Processing: Kitchen Invoices 3_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70859984 | Vendor: CHEFSWAREHOUSE
+   ✅ Found matching invoice: 1690f088-7b42-4ea9-ba86-60afeca56423
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[133/348] Processing: Kitchen Invoices 3_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70859984 | Vendor: THE CHEFSWAREHOUSE
+   ✅ Found matching invoice: 1690f088-7b42-4ea9-ba86-60afeca56423
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[134/348] Processing: Kitchen Invoices 3_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70859984 | Vendor: THE CHEFSWAREHOUSE
+   ✅ Found matching invoice: 1690f088-7b42-4ea9-ba86-60afeca56423
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[135/348] Processing: Kitchen Invoices 6_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: G0252069 | Vendor: OAK FARMS-DALLAS DFA DAIRY BRANDS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[136/348] Processing: Kitchen Invoices 6_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 379168 | Vendor: Empire Baking Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[137/348] Processing: Kitchen Invoices 6_pg11-11.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 153207 | Vendor: Regalis TX
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[138/348] Processing: Kitchen Invoices 6_pg12-12.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70939675 | Vendor: The Chef's Warehouse
+   ✅ Found matching invoice: 090b8e8b-90a5-40e0-b10e-c2c0042129f2
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[139/348] Processing: Kitchen Invoices 6_pg13-13.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70939675 | Vendor: Chefswarehouse
+   ✅ Found matching invoice: 090b8e8b-90a5-40e0-b10e-c2c0042129f2
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[140/348] Processing: Kitchen Invoices 6_pg14-14.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 187926 | Vendor: Allen Brothers Texas
+   ✅ Found matching invoice: 35a6f510-bee2-431e-9185-7da598102120
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[141/348] Processing: Kitchen Invoices 6_pg15-15.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 979569 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[142/348] Processing: Kitchen Invoices 6_pg2-2.pdf
+   📄 Extracting invoice number...
+[OCR Error] Failed to parse Claude response as JSON
+JSON text: {
+  "vendor": "SYSCO",
+  "invoiceNumber": "996106050",
+  "invoiceDate": "2017-07-07",
+  "dueDate": null,
+  "paymentTerms": null,
+  "totalAmount": 3333977.00,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "DELILAH",
+    "address": "7950 MELROSE AVE LOS ANGELES, CA 90046-5297",
+    "confidence": 0.95
+  },
+  "lineItems": [
+    {
+      "itemCode": "5.27 OZ",
+      "description": "FOREIGN DORGE BLUFF PARTIE SHER",
+      "qty": 1,
+      "unitPrice": 1491.00,
+      "lineTotal": 7251172.00,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "5.27 OZ",
+      "description": "ORANGE DORGE BLUFF PARTIE SHER 15633",
+      "qty": 1,
+      "unitPrice": 1491.00,
+      "lineTotal": 7251172.00,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "6.5 LB",
+      "description": "LAMB PORCO FRY STRLOT 5/6 LBR",
+      "qty": 6,
+      "unitPrice": 535.00,
+      "lineTotal": 2189321.00,
+      "confidence": 0.8
+    },
+    {
+      "itemCode": "6.5 LB",
+      "description": "LAMB PORCO FRY STRLOT 5/6 LBR",
+      "qty": 6,
+      "unitPrice": 535.00,
+      "lineTotal": 2189321.00,
+      "confidence": 0.8
+    },
+    {
+      "itemCode": "6 CG",
+      "description": "CHAMFR & DIV GROUP TOTAL****",
+      "qty": 6,
+      "unitPrice": null,
+      "lineTotal": 935.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "CHABFER RKNING SODA",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 0.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "CHABFER RKNING SODA",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 224.602,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "CHABFER RKNING SODA",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 424.602,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "8 CG",
+      "description": "COSCOOL SODA TONIC DLET CHOOSE-IT",
+      "qty": 8,
+      "unitPrice": null,
+      "lineTotal": 43244.00,
+      "confidence": 0.7
+    },
+    {
+      "itemCode": "6 CG",
+      "description": "MSP-TE MSPRTE SODA PRRFTR SPMR TOTODT****",
+      "qty": 6,
+      "unitPrice": null,
+      "lineTotal": 44949.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CS",
+      "description": "SYS CUS SUGAR BROWN LIGHT CANE",
+      "qty": 1,
+      "unitPrice": 404.50,
+      "lineTotal": 404.50,
+      "confidence": 0.85
+    },
+    {
+      "itemCode": "7 CG",
+      "description": "CHS SODA GC-GL***-**",
+      "qty": 7,
+      "unitPrice": null,
+      "lineTotal": 432.44,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CS",
+      "description": "SYS CUS SUGAR BROWN LIGHT CANE",
+      "qty": 1,
+      "unitPrice": 700.81,
+      "lineTotal": 700.81,
+      "confidence": 0.85
+    },
+    {
+      "itemCode": "H CG",
+      "description": "COSCOOL FRUIT TUMBRO-DL-SYE",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": 822.06,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "DL-C 6201 TUMBERC/PRE-S01 CHOOSE",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 2339777.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "15 CG",
+      "description": "STIM CUS BROWN NILE MKD FCY RMX",
+      "qty": 15,
+      "unitPrice": 7746.1345.57,
+      "lineTotal": null,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": "10 CS",
+      "description": "CHISAKFR ROMKER EASCNG",
+      "qty": 10,
+      "unitPrice": 7015.91/0330,
+      "lineTotal": 4001.80,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "2 CG",
+      "description": "SYS CUS BROWN OTL OLVE",
+      "qty": 2,
+      "unitPrice": 4.3,
+      "lineTotal": 7004.6,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "15 CG",
+      "description": "STIM OIL OLVE EXTRA VGEIN P***",
+      "qty": 15,
+      "unitPrice": 7024.8,
+      "lineTotal": 167.49,
+      "confidence": 0.65
+    },
+    {
+      "itemCode": "2 CS",
+      "description": "CHABFER BROWN MILE WAD FCY RMX",
+      "qty": 2,
+      "unitPrice": null,
+      "lineTotal": 7004.6,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "11 CG",
+      "description": "CHABFER SOUR TELLE TETAP",
+      "qty": 11,
+      "unitPrice": null,
+      "lineTotal": 7015.91.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "10 CG",
+      "description": "SUNSHARE SOUR TELLE TETAP 365.5/514",
+      "qty": 10,
+      "unitPrice": 309.90,
+      "lineTotal": 309.90,
+      "confidence": 0.7
+    },
+    {
+      "itemCode": "CG",
+      "description": "DL-C 6201 ROMEKER EASCNG-ROMMEL 2.5L",
+      "qty": 2,
+      "unitPrice": null,
+      "lineTotal": 343.92,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "CG",
+      "description": "LSIMRKET SOUR TELLE TETAP 43.99",
+      "qty": null,
+      "unitPrice": 239.70,
+      "lineTotal": 239.70,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "15 CG",
+      "description": "CHABFER ROCKER PRGM TRTNG 70.89",
+      "qty": 15,
+      "unitPrice": 70.89,
+      "lineTotal": 70.89,
+      "confidence": 0.65
+    },
+    {
+      "itemCode": "65",
+      "description": "OPEN 7,000 PM CLOSED: 11.00 PM",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 1143.25,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "SSC CUS SUGAR BROWN",
+      "qty": 1,
+      "unitPrice": 553.900,
+      "lineTotal": 65.78,
+      "confidence": 0.7
+    },
+    {
+      "itemCode": "N CG",
+      "description": "DLT 6201 ROMEKER TUMBRC ***",
+      "qty": null,
+      "unitPrice": null,
+      "lineTotal": 218.90,
+      "confidence": 0.5
+    },
+    {
+      "itemCode": "7 CG",
+      "description": "7.256-9-081 CHABCHURCH/ PRESER TUBGROS OEL",
+      "qty": 7,
+      "unitPrice": null,
+      "lineTotal": 1145.25,
+      "confidence": 0.6
+    }
+  ]
+}
+Raw response: ```json
+{
+  "vendor": "SYSCO",
+  "invoiceNumber": "996106050",
+  "invoiceDate": "2017-07-07",
+  "dueDate": null,
+  "paymentTerms": null,
+  "totalAmount": 3333977.00,
+  "confidence": 0.85,
+  "deliveryLocation": {
+    "name": "DELILAH",
+    "address": "7950 MELROSE AVE LOS ANGELES, CA 90046-5297",
+    "confidence": 0.95
+  },
+  "lineItems": [
+    {
+      "itemCode": "5.27 OZ",
+      "description": "FOREIGN DORGE BLUFF PARTIE SHER",
+      "qty": 1,
+      "unitPrice": 1491.00,
+      "lineTotal": 7251172.00,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "5.27 OZ",
+      "description": "ORANGE DORGE BLUFF PARTIE SHER 15633",
+      "qty": 1,
+      "unitPrice": 1491.00,
+      "lineTotal": 7251172.00,
+      "confidence": 0.75
+    },
+    {
+      "itemCode": "6.5 LB",
+      "description": "LAMB PORCO FRY STRLOT 5/6 LBR",
+      "qty": 6,
+      "unitPrice": 535.00,
+      "lineTotal": 2189321.00,
+      "confidence": 0.8
+    },
+    {
+      "itemCode": "6.5 LB",
+      "description": "LAMB PORCO FRY STRLOT 5/6 LBR",
+      "qty": 6,
+      "unitPrice": 535.00,
+      "lineTotal": 2189321.00,
+      "confidence": 0.8
+    },
+    {
+      "itemCode": "6 CG",
+      "description": "CHAMFR & DIV GROUP TOTAL****",
+      "qty": 6,
+      "unitPrice": null,
+      "lineTotal": 935.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "CHABFER RKNING SODA",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 0.00,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "CHABFER RKNING SODA",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 224.602,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "1 CG",
+      "description": "CHABFER RKNING SODA",
+      "qty": 1,
+      "unitPrice": null,
+      "lineTotal": 424.602,
+      "confidence": 0.6
+    },
+    {
+      "itemCode": "8 CG",
+      "description": "COSCOOL SODA TONIC DLET CHOOSE-IT",
+      "qty": 8,
+      "unitPrice": null,
+      "lineTotal": 43244.00,
+  
+Parse error: SyntaxError: Expected ',' or '}' after property value in JSON at position 3286 (line 139 column 29)
+    at JSON.parse (<anonymous>)
+    at parseClaudeInvoiceJson (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:160:23)
+    at extractInvoiceFromPDFSingle (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:361:18)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async extractInvoiceFromPDF (c:\Users\JacobShure\RESTAURANT APP\lib\ocr\claude.ts:315:12)
+    at async main (c:\Users\JacobShure\RESTAURANT APP\scripts\backfill-missing-pdfs.ts:72:25)
+   ❌ Error: Failed to parse invoice data from Claude. The response may be malformed. Please try again.
+
+[143/348] Processing: Kitchen Invoices 6_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 750734147 | Vendor: SYSCO
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[144/348] Processing: Kitchen Invoices 6_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV607719 | Vendor: Farm to Table
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[145/348] Processing: Kitchen Invoices 6_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 05899 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[146/348] Processing: Kitchen Invoices 6_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 4969493171 | Vendor: MARQAHA
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[147/348] Processing: Kitchen Invoices 6_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 5790475 | Vendor: Keith Foods
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[148/348] Processing: Kitchen Invoices 6_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 40998417 | Vendor: MARIANI
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[149/348] Processing: Kitchen Invoices 6_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 78207 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[150/348] Processing: Kitchen Invoices 7_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 05919 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[151/348] Processing: Kitchen Invoices 7_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70967410 | Vendor: The Chefswarehouse
+   ✅ Found matching invoice: 0f823711-b59e-41ac-83b1-f307703a56fd
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[152/348] Processing: Kitchen Invoices 7_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01533771 | Vendor: Chefs' Produce Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[153/348] Processing: Kitchen Invoices 7_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70960274 | Vendor: The Chefswarehouse
+   ✅ Found matching invoice: a1270905-e67d-4269-b958-b8d162c7b0ba
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[154/348] Processing: Kitchen Invoices 7_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70960274 | Vendor: THE CHEFSWAREHOUSE
+   ✅ Found matching invoice: a1270905-e67d-4269-b958-b8d162c7b0ba
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[155/348] Processing: Kitchen Invoices 7_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01533336 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[156/348] Processing: Kitchen Invoices 7_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 980565 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[157/348] Processing: Kitchen Invoices 7_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 980215 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[158/348] Processing: Kitchen Invoices 8_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 0153965 | Vendor: Chefs' Produce Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[159/348] Processing: Kitchen Invoices 8_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 379450 | Vendor: Empire Baking Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[160/348] Processing: Kitchen Invoices 8_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: INV608338 | Vendor: FARM to TABLE
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[161/348] Processing: Kitchen Invoices 8_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 05934 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[162/348] Processing: Kitchen Invoices 8_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01534315 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[163/348] Processing: Kitchen Invoices 8_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01324451 | Vendor: Chefs' Warehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[164/348] Processing: Kitchen Invoices 8_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 153325 | Vendor: Regalis TX
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[165/348] Processing: Kitchen Invoices 8_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 980869 | Vendor: Mt Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[166/348] Processing: Kitchen Invoices 8_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 5989254 | Vendor: Delilah Dallas LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[167/348] Processing: Kitchen Invoices 8_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 26-760073 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[168/348] Processing: Kitchen Invoices 9_pg1-1.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 60252296 | Vendor: Oak Farms-Dallas DFA Dairy Brands
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[169/348] Processing: Kitchen Invoices 9_pg10-10.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 56642308 | Vendor: MARBOOL
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[170/348] Processing: Kitchen Invoices 9_pg2-2.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 981490 | Vendor: Mr Greens
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[171/348] Processing: Kitchen Invoices 9_pg3-3.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 1BB357 | Vendor: Allen Brothers Texas
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[172/348] Processing: Kitchen Invoices 9_pg4-4.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 996115744 | Vendor: SYSCO
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[173/348] Processing: Kitchen Invoices 9_pg5-5.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 99611974 | Vendor: SYSCO
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[174/348] Processing: Kitchen Invoices 9_pg6-6.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70990569 | Vendor: The Chefswarehouse Midwest LLC
+   ✅ Found matching invoice: f7c16c95-bd46-46b1-a3b8-769c6d16ae81
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[175/348] Processing: Kitchen Invoices 9_pg7-7.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70998415 | Vendor: THE CHEFSWAREHOUSE MIDWEST LLC
+   ✅ Found matching invoice: e7f071e0-00f1-4fac-9dbf-a679d2655a55
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[176/348] Processing: Kitchen Invoices 9_pg8-8.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 05957 | Vendor: RARE FOODS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[177/348] Processing: Kitchen Invoices 9_pg9-9.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 01534559 | Vendor: Chefs' Produce Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[178/348] Processing: INVOICE 4_part001.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 25369754 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: SN03214 | Vendor: Delilah Dallas LLC
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[179/348] Processing: INVOICE 4_part002.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 29991169 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: 26-768971 | Vendor: SEAFOOD SUPPLY COMPANY
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[180/348] Processing: INVOICE 4_part003.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 26167097 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: 70875013 | Vendor: chefswarehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[181/348] Processing: invoices 5_part001.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 30870497 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: 01532763 | Vendor: Chefs' Produce Company
+   ✅ Found matching invoice: f66340cb-ea3a-42e1-9f97-31c07816a586
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[182/348] Processing: invoices 5_part002.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 27206221 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: 01532086 | Vendor: Chefs' Produce
+   ✅ Found matching invoice: ee29b11a-ddf3-4af1-9504-139dc95f984d
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[183/348] Processing: invoices 5_part003.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 70923428 | Vendor: THE CHEFSWAREHOUSE MIDWEST LLC
+   ✅ Found matching invoice: f3f5baac-68a5-442d-93e1-0108fefd1123
+   🔍 DRY RUN - Would upload PDF and update storage_path
+
+[184/348] Processing: Invoices Kitchen_part001.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 27040166 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: 70823749 | Vendor: The Chefswarehouse
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[185/348] Processing: Invoices Kitchen_part002.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 25773987 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   📋 Invoice Number: 01527112 | Vendor: Chefs' Produce
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[186/348] Processing: Invoices Kitchen_part003.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 7045 | Vendor: Zab's Inc
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[187/348] Processing: Invoices Kitchen (1)_part001.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 378161 | Vendor: Empire Baking Company
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[188/348] Processing: Invoices Kitchen (1)_part002.pdf
+   📄 Extracting invoice number...
+   📋 Invoice Number: 136614 | Vendor: SYSCO NORTH TEXAS
+   ⏭️  No matching invoice in DB (or already has PDF)
+
+[189/348] Processing: Invoices Kitchen (2)_part001.pdf
+   📄 Extracting invoice number...
+[OCR] Claude request too large for PDF; chunking by pages { bytes: 27114347 }
+[OCR] Reducing PDF chunk size after 413 { startPage: 1, attemptedEndPage: 5, newEndPage: 2 }
+   ❌ Error: Request timed out.
+
+[190/348] Processing: Invoices Kitchen (2)_part002.pdf
+   📄 Extracting invoice number...
+   ❌ Error: Connection error.
+
+[191/348] Processing: Invoices Kitchen (2)_part003.pdf
+   📄 Extracting invoice number...
+   ❌ Error: Connection error.
+
+[192/348] Processing: Invoics Kitchen_part001.pdf
+   📄 Extracting invoice number...
+   ❌ Error: Connection error.
+
+[193/348] Processing: Invoics Kitchen_part002.pdf
+   📄 Extracting invoice number...
+   ❌ Error: Connection error.
+
+[194/348] Processing: Invoics Kitchen_part003.pdf
+   📄 Extracting invoice number...
+   ❌ Error: Connection error.
+
+[195/348] Processing: Invoics Kitchen_part004.pdf

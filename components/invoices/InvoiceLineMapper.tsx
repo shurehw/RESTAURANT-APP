@@ -15,6 +15,10 @@ interface InvoiceLineMapperProps {
     qty: number;
     unit_cost: number;
     line_total: number;
+    catch_weight?: number;
+    piece_count?: number;
+    nominal_case_weight?: number;
+    product_specs?: Record<string, any>;
     invoice?: {
       id: string;
       invoice_number?: string;
@@ -865,6 +869,49 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             <div><span className="font-medium text-blue-800">Unit Cost:</span> ${line.unit_cost?.toFixed(2)}</div>
             <div><span className="font-medium text-blue-800">Total:</span> <span className="font-semibold">${line.line_total?.toFixed(2)}</span></div>
           </div>
+          {/* Product Specifications */}
+          {(line.catch_weight || line.piece_count || line.nominal_case_weight || line.product_specs) && (
+            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+              <div className="font-semibold text-green-900 mb-1">📦 Product Specs (OCR Extracted):</div>
+              <div className="flex flex-wrap gap-2">
+                {line.catch_weight && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900">
+                    Catch Weight: {line.catch_weight} lb
+                  </Badge>
+                )}
+                {line.piece_count && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900">
+                    {line.piece_count} PC
+                  </Badge>
+                )}
+                {line.nominal_case_weight && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900">
+                    Nominal: {line.nominal_case_weight}#
+                  </Badge>
+                )}
+                {line.product_specs?.species && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900">
+                    {line.product_specs.species}
+                  </Badge>
+                )}
+                {line.product_specs?.cut && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900">
+                    {line.product_specs.cut}
+                  </Badge>
+                )}
+                {line.product_specs?.trim && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900" title={line.product_specs.trim_full}>
+                    {line.product_specs.trim}
+                  </Badge>
+                )}
+                {line.product_specs?.grade && (
+                  <Badge variant="outline" className="bg-white border-green-300 text-green-900">
+                    {line.product_specs.grade}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
