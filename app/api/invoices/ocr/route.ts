@@ -385,10 +385,13 @@ async function processInvoice(
       item_id: line.itemId || null, // Explicitly set to null if undefined
       vendor_item_code: line.vendorItemCode || null, // Vendor SKU from OCR
       description: line.description,
+      normalized_description: line.normalizedDescription || null, // For consistent matching
       quantity: line.qty ?? 0,
       unit_cost: line.unitCost ?? 0,
       // line_total is a generated column, don't send it
       ocr_confidence: line.ocrConfidence,
+      // Parsed pack configuration
+      parsed_pack: line.parsedPack || null,
       // Product specifications
       catch_weight: line.catch_weight || null,
       piece_count: line.piece_count || null,
