@@ -42,6 +42,7 @@ export interface NormalizedInvoice {
   lines: Array<{
     itemCode?: string; // vendor's item code (vendor SKU)
     description: string;
+    normalizedDescription?: string; // description with variable weights stripped for matching
     qty: number;
     unitCost: number;
     lineTotal: number;
@@ -50,6 +51,12 @@ export interface NormalizedInvoice {
     vendorItemId?: string; // vendor_items.id if matched
     matchType?: 'exact' | 'fuzzy' | 'none'; // how it was matched
     vendorItemCode?: string; // alias for itemCode (for clarity)
+    parsedPack?: { // structured pack info from description
+      units_per_pack?: number;
+      unit_size?: number;
+      unit_size_uom?: string;
+      pack_type?: string;
+    };
     catch_weight?: number; // actual billed weight
     piece_count?: number; // number of pieces per case
     nominal_case_weight?: number; // expected case weight
@@ -366,6 +373,135 @@ async function resolveVenue(
 }
 
 /**
+ * Parses pack configuration from invoice line description.
+ * Examples:
+ *   "6/750mL" -> {units_per_pack: 6, unit_size: 750, unit_size_uom: "mL", pack_type: "case"}
+ *   "1/12 CT" -> {units_per_pack: 12, unit_size: 1, unit_size_uom: "each", pack_type: "case"}
+ *   "4/5#"    -> {units_per_pack: 4, unit_size: 5, unit_size_uom: "lb", pack_type: "case"}
+ *   "12x750ml" -> {units_per_pack: 12, unit_size: 750, unit_size_uom: "mL", pack_type: "case"}
+ */
+export function parsePackFromDescription(description: string): {
+  units_per_pack?: number;
+  unit_size?: number;
+  unit_size_uom?: string;
+  pack_type?: string;
+} | null {
+  const desc = description.toUpperCase();
+  
+  // Normalize UOM casing
+  const normalizeUom = (uom: string): string => {
+    const lower = uom.toLowerCase();
+    if (lower === 'ml' || lower === 'mls') return 'mL';
+    if (lower === 'l' || lower === 'lt' || lower === 'ltr' || lower === 'liter') return 'L';
+    if (lower === 'oz' || lower === 'fl.oz' || lower === 'floz') return 'oz';
+    if (lower === 'lb' || lower === 'lbs' || lower === '#') return 'lb';
+    if (lower === 'kg' || lower === 'kgs') return 'kg';
+    if (lower === 'g' || lower === 'gm' || lower === 'gms' || lower === 'gram') return 'g';
+    if (lower === 'gal' || lower === 'gallon') return 'gal';
+    if (lower === 'qt' || lower === 'quart') return 'qt';
+    if (lower === 'pt' || lower === 'pint') return 'pt';
+    if (lower === 'ct' || lower === 'ea' || lower === 'each' || lower === 'pc' || lower === 'pcs') return 'each';
+    return lower;
+  };
+
+  // Pattern 1: "NxSIZE" format (e.g., "12x750ml", "6x1L")
+  const nxMatch = desc.match(/(\d+)\s*X\s*(\d+\.?\d*)\s*(ML|L|LT|OZ|LB|KG|G|GAL)(?:\s|$|B)/i);
+  if (nxMatch) {
+    return {
+      units_per_pack: parseInt(nxMatch[1]),
+      unit_size: parseFloat(nxMatch[2]),
+      unit_size_uom: normalizeUom(nxMatch[3]),
+      pack_type: 'case',
+    };
+  }
+
+  // Pattern 2: "N/SIZE" format (e.g., "6/750mL", "4/5#", "1/12 CT")
+  const slashMatch = desc.match(/(\d+)\s*\/\s*(\d+\.?\d*)\s*(ML|L|LT|OZ|LB|#|KG|G|GAL|CT|EA|PC)(?:\s|$|B)/i);
+  if (slashMatch) {
+    const uom = normalizeUom(slashMatch[3]);
+    // Handle "1/12 CT" -> 12 each per case
+    if (uom === 'each' && parseInt(slashMatch[1]) === 1) {
+      return {
+        units_per_pack: parseInt(slashMatch[2]),
+        unit_size: 1,
+        unit_size_uom: 'each',
+        pack_type: 'case',
+      };
+    }
+    return {
+      units_per_pack: parseInt(slashMatch[1]),
+      unit_size: parseFloat(slashMatch[2]),
+      unit_size_uom: uom,
+      pack_type: 'case',
+    };
+  }
+
+  // Pattern 3: "N/CS" format (e.g., "6/CS 750ML")
+  const csMatch = desc.match(/(\d+)\s*\/\s*CS\s+(\d+\.?\d*)\s*(ML|L|OZ|LB)(?:\s|$)/i);
+  if (csMatch) {
+    return {
+      units_per_pack: parseInt(csMatch[1]),
+      unit_size: parseFloat(csMatch[2]),
+      unit_size_uom: normalizeUom(csMatch[3]),
+      pack_type: 'case',
+    };
+  }
+
+  // Pattern 4: "SIZE CS" format for single-unit cases (e.g., "28# CS", "750ML")
+  const singleMatch = desc.match(/(\d+\.?\d*)\s*(#|LB|OZ|ML|L|KG|G|GAL)\s*(?:CS|CASE)?(?:\s|$)/i);
+  if (singleMatch) {
+    return {
+      units_per_pack: 1,
+      unit_size: parseFloat(singleMatch[1]),
+      unit_size_uom: normalizeUom(singleMatch[2]),
+      pack_type: 'case',
+    };
+  }
+
+  // Pattern 5: Beverage size only (e.g., "750ml", "1L", "1.75L")
+  const beverageMatch = desc.match(/\b(\d+\.?\d*)\s*(ML|L|LT)\b/i);
+  if (beverageMatch) {
+    return {
+      units_per_pack: 1,
+      unit_size: parseFloat(beverageMatch[1]),
+      unit_size_uom: normalizeUom(beverageMatch[2]),
+      pack_type: 'bottle',
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Creates a normalized description by stripping variable weights and noise.
+ * This is used for consistent matching across invoice lines.
+ * 
+ * Strips:
+ * - Trailing variable weights (e.g., "29.40 LB", "17.26 LB")
+ * - Warehouse markers (e.g., "PIH: 2", "Plt#: 10", "Pkg: 50")
+ * - Price-per-unit notation (e.g., "/LB", "12.21/LB")
+ * - Case notation (e.g., "CS", "BC")
+ */
+export function createNormalizedDescription(description: string): string {
+  return description
+    // Remove "Case*" prefix
+    .replace(/^case\*?/i, '')
+    .replace(/\*+/g, ' ')
+    // Remove trailing variable weights like "29.40 LB" or "17.26 LB 16.38 LB"
+    .replace(/(\s+\d+\.?\d*\s*(lb|lbs?|#))+\s*$/gi, '')
+    // Remove warehouse location codes like "PIH: 2" or "Plt#: 10" or "Pkg: 50"
+    .replace(/\s+(pih|plt#?|pkg|plu):?\s*\d+\s*$/gi, '')
+    // Remove trailing price-per-unit like "12.21/LB"
+    .replace(/\s+\d+\.?\d*\s*\/\s*(lb|lbs?)\s*$/gi, '')
+    // Remove trailing "CS" or "BC" (box case)
+    .replace(/\s+(cs|bc)\s*$/gi, '')
+    // Collapse multiple spaces
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+/**
  * Parses product specifications from invoice line description.
  * Example: "USDA BEEF TENDERLOIN PSMO 4 PC 28# CS 29.40 LB"
  * Returns: { catch_weight: 29.40, piece_count: 4, nominal_case_weight: 28,
@@ -474,7 +610,86 @@ function parseProductSpecs(description: string): {
 }
 
 /**
+ * Extracts bottle/pack size from a description for size compatibility checking.
+ * Returns size in mL for volume, or in lb for weight.
+ */
+function extractSizeForMatching(text: string): { value: number; type: 'volume' | 'weight' } | null {
+  const upper = text.toUpperCase();
+  
+  // Volume sizes (convert to mL)
+  const mlMatch = upper.match(/(\d+\.?\d*)\s*ML\b/);
+  if (mlMatch) return { value: parseFloat(mlMatch[1]), type: 'volume' };
+  
+  const lMatch = upper.match(/(\d+\.?\d*)\s*L(?:T|TR)?\b/);
+  if (lMatch) return { value: parseFloat(lMatch[1]) * 1000, type: 'volume' };
+  
+  const ozMatch = upper.match(/(\d+\.?\d*)\s*(?:FL\.?)?OZ\b/);
+  if (ozMatch) return { value: parseFloat(ozMatch[1]) * 29.5735, type: 'volume' };
+  
+  const galMatch = upper.match(/(\d+\.?\d*)\s*GAL\b/);
+  if (galMatch) return { value: parseFloat(galMatch[1]) * 3785.41, type: 'volume' };
+  
+  // Weight sizes (convert to lb)
+  const lbMatch = upper.match(/(\d+\.?\d*)\s*(?:LB|#)\b/);
+  if (lbMatch) return { value: parseFloat(lbMatch[1]), type: 'weight' };
+  
+  const kgMatch = upper.match(/(\d+\.?\d*)\s*KG\b/);
+  if (kgMatch) return { value: parseFloat(kgMatch[1]) * 2.20462, type: 'weight' };
+  
+  return null;
+}
+
+/**
+ * Checks if two sizes are compatible (within 10% tolerance).
+ */
+function sizesCompatible(size1: { value: number; type: string } | null, size2: { value: number; type: string } | null): boolean {
+  // If either size is missing, don't penalize
+  if (!size1 || !size2) return true;
+  // Must be same type (volume vs weight)
+  if (size1.type !== size2.type) return false;
+  // Check within 10% tolerance
+  const ratio = size1.value / size2.value;
+  return ratio >= 0.9 && ratio <= 1.1;
+}
+
+/**
+ * Checks for sweet/dry or similar attribute conflicts.
+ */
+function hasAttributeConflict(desc1: string, desc2: string): boolean {
+  const lower1 = desc1.toLowerCase();
+  const lower2 = desc2.toLowerCase();
+  
+  // Sweet vs Dry
+  const sweet1 = /\b(sweet|dolce)\b/.test(lower1);
+  const dry1 = /\b(dry|sec|brut)\b/.test(lower1);
+  const sweet2 = /\b(sweet|dolce)\b/.test(lower2);
+  const dry2 = /\b(dry|sec|brut)\b/.test(lower2);
+  if ((sweet1 && dry2) || (dry1 && sweet2)) return true;
+  
+  // Red vs White (wine)
+  const red1 = /\b(red|rouge|rosso|tinto)\b/.test(lower1);
+  const white1 = /\b(white|blanc|bianco)\b/.test(lower1);
+  const red2 = /\b(red|rouge|rosso|tinto)\b/.test(lower2);
+  const white2 = /\b(white|blanc|bianco)\b/.test(lower2);
+  if ((red1 && white2) || (white1 && red2)) return true;
+  
+  // Blanco vs Reposado vs Anejo (tequila)
+  const blanco1 = /\b(blanco|silver|plata)\b/.test(lower1);
+  const repo1 = /\b(reposado|repo)\b/.test(lower1);
+  const anejo1 = /\b(anejo|extra anejo)\b/.test(lower1);
+  const blanco2 = /\b(blanco|silver|plata)\b/.test(lower2);
+  const repo2 = /\b(reposado|repo)\b/.test(lower2);
+  const anejo2 = /\b(anejo|extra anejo)\b/.test(lower2);
+  if (blanco1 && (repo2 || anejo2)) return true;
+  if (repo1 && (blanco2 || anejo2)) return true;
+  if (anejo1 && (blanco2 || repo2)) return true;
+  
+  return false;
+}
+
+/**
  * Attempts to match a line item to an item using vendor_items mapping.
+ * Enhanced with size compatibility and attribute conflict checks.
  */
 async function matchLineItem(
   itemCode: string | undefined,
@@ -731,11 +946,18 @@ export async function normalizeOCR(
 
       // Parse product specifications from description
       const specs = parseProductSpecs(line.description);
+      
+      // Parse pack configuration from description
+      const parsedPack = parsePackFromDescription(line.description);
+      
+      // Create normalized description for matching (strips variable weights, etc.)
+      const normalizedDescription = createNormalizedDescription(line.description);
 
       return {
         itemCode: line.itemCode,
         vendorItemCode: line.itemCode, // Pass through for invoice_lines.vendor_item_code
         description: line.description.trim(),
+        normalizedDescription, // For consistent matching
         qty: line.qty,
         unitCost: line.unitPrice,
         lineTotal: line.lineTotal,
@@ -743,6 +965,8 @@ export async function normalizeOCR(
         itemId: match.itemId || undefined,
         vendorItemId: match.vendorItemId || undefined,
         matchType: match.matchType,
+        // Structured pack info
+        parsedPack: parsedPack || undefined,
         // Product specifications (catch weight, piece count, etc.)
         ...specs,
       };

@@ -167,11 +167,69 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Score items by relevance
+    // Helper: Extract size for matching
+    const extractSize = (text: string): { value: number; type: 'volume' | 'weight' } | null => {
+      const upper = text.toUpperCase();
+      const mlMatch = upper.match(/(\d+\.?\d*)\s*ML\b/);
+      if (mlMatch) return { value: parseFloat(mlMatch[1]), type: 'volume' };
+      const lMatch = upper.match(/(\d+\.?\d*)\s*L(?:T|TR)?\b/);
+      if (lMatch) return { value: parseFloat(lMatch[1]) * 1000, type: 'volume' };
+      const ozMatch = upper.match(/(\d+\.?\d*)\s*(?:FL\.?)?OZ\b/);
+      if (ozMatch) return { value: parseFloat(ozMatch[1]) * 29.5735, type: 'volume' };
+      const lbMatch = upper.match(/(\d+\.?\d*)\s*(?:LB|#)\b/);
+      if (lbMatch) return { value: parseFloat(lbMatch[1]), type: 'weight' };
+      return null;
+    };
+
+    // Helper: Check size compatibility
+    const sizesCompatible = (size1: any, size2: any): boolean => {
+      if (!size1 || !size2) return true;
+      if (size1.type !== size2.type) return false;
+      const ratio = size1.value / size2.value;
+      return ratio >= 0.9 && ratio <= 1.1;
+    };
+
+    // Helper: Check for attribute conflicts (sweet/dry, blanco/reposado, etc.)
+    const hasAttributeConflict = (q: string, name: string): boolean => {
+      const ql = q.toLowerCase();
+      const nl = name.toLowerCase();
+      // Sweet vs Dry
+      const qSweet = /\b(sweet|dolce)\b/.test(ql);
+      const qDry = /\b(dry|sec|brut)\b/.test(ql);
+      const nSweet = /\b(sweet|dolce)\b/.test(nl);
+      const nDry = /\b(dry|sec|brut)\b/.test(nl);
+      if ((qSweet && nDry) || (qDry && nSweet)) return true;
+      // Tequila aging: blanco vs reposado vs anejo
+      const qBlanco = /\b(blanco|silver|plata)\b/.test(ql);
+      const qRepo = /\b(reposado|repo)\b/.test(ql);
+      const qAnejo = /\b(anejo)\b/.test(ql);
+      const nBlanco = /\b(blanco|silver|plata)\b/.test(nl);
+      const nRepo = /\b(reposado|repo)\b/.test(nl);
+      const nAnejo = /\b(anejo)\b/.test(nl);
+      if (qBlanco && (nRepo || nAnejo)) return true;
+      if (qRepo && (nBlanco || nAnejo)) return true;
+      if (qAnejo && (nBlanco || nRepo)) return true;
+      return false;
+    };
+
+    const querySize = extractSize(query);
+
+    // Score items by relevance with guards
     const scoredItems = items.map((item) => {
       let score = 0;
       const nameLower = item.name.toLowerCase();
       const queryLower = query.toLowerCase();
+
+      // Check for attribute conflicts - penalize heavily
+      if (hasAttributeConflict(query, item.name)) {
+        return { ...item, unit_cost: costMap.get(item.id) || 0, _score: -100 };
+      }
+
+      // Check size compatibility - penalize if mismatch
+      const itemSize = extractSize(item.name);
+      if (!sizesCompatible(querySize, itemSize)) {
+        score -= 50; // Penalize size mismatch but don't exclude
+      }
 
       // Exact match = highest score
       if (nameLower === queryLower) score += 100;
@@ -185,6 +243,10 @@ export async function GET(request: NextRequest) {
       // Contains all search terms
       const allTermsMatch = searchTerms.every(term => nameLower.includes(term.toLowerCase()));
       if (allTermsMatch) score += 20;
+
+      // Count matching tokens (more = better)
+      const matchingTokens = searchTerms.filter(term => nameLower.includes(term.toLowerCase())).length;
+      score += matchingTokens * 5;
 
       // Bonus for shorter names (more specific match)
       score += Math.max(0, 10 - item.name.length / 10);
