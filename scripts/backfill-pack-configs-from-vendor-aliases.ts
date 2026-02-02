@@ -7,6 +7,8 @@
  * Usage:
  *   npx tsx scripts/backfill-pack-configs-from-vendor-aliases.ts            # dry run
  *   npx tsx scripts/backfill-pack-configs-from-vendor-aliases.ts --apply   # writes inserts
+ *   npx tsx scripts/backfill-pack-configs-from-vendor-aliases.ts --orgName=\"h.wood\" --apply
+ *   npx tsx scripts/backfill-pack-configs-from-vendor-aliases.ts --orgName=\"h.wood\" --apply --force-default
  */
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
@@ -18,6 +20,34 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function parseArg(name: string): string | null {
+  const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
+  if (!hit) return null;
+  return hit.split('=').slice(1).join('=').trim() || null;
+}
+
+async function resolveOrgIdFromName(orgName: string): Promise<{ orgId: string; orgName: string } | null> {
+  const q = orgName.trim();
+  if (!q) return null;
+
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .ilike('name', `%${q}%`)
+    .order('name', { ascending: true })
+    .limit(25);
+  if (error) throw error;
+  const rows = (data || []) as Array<{ id: string; name: string }>;
+  if (rows.length === 0) return null;
+
+  const lowerQ = q.toLowerCase();
+  const exact = rows.find((r) => r.name.toLowerCase() === lowerQ);
+  if (exact) return { orgId: exact.id, orgName: exact.name };
+
+  rows.sort((a, b) => a.name.length - b.name.length || a.name.localeCompare(b.name));
+  return { orgId: rows[0].id, orgName: rows[0].name };
+}
+
 type PackType = 'case' | 'bottle' | 'bag' | 'box' | 'each' | 'keg' | 'pail' | 'drum';
 
 function parsePackConfigFromDescription(desc: string): null | {
@@ -27,7 +57,17 @@ function parsePackConfigFromDescription(desc: string): null | {
   unit_size_uom: string;
 } {
   const raw = desc || '';
-  const lower = raw.toLowerCase();
+  // Normalize common shorthand:
+  // - "20#" -> "20 lb"
+  // - "1.5#" -> "1.5 lb"
+  // - "LBS" -> "lb"
+  // - collapse whitespace
+  const lower = raw
+    .toLowerCase()
+    .replace(/(\d+(\.\d+)?)\s*#/g, '$1 lb')
+    .replace(/\blbs\b/g, 'lb')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   const normalizeUom = (uom: string) => {
     const u = uom.toLowerCase();
@@ -66,6 +106,24 @@ function parsePackConfigFromDescription(desc: string): null | {
     }
   }
 
+  // Pattern B2: "12/1CT" or "12/1 CT" or "12/1ct cs" => count-based case
+  const countCasePattern = lower.match(/\b(\d+)\s*\/\s*(\d+)\s*(ct|count)\b/i);
+  if (countCasePattern) {
+    const units = Number(countCasePattern[1]);
+    if (Number.isFinite(units) && units > 0) {
+      return { pack_type: 'case', units_per_pack: units, unit_size: 1, unit_size_uom: 'each' };
+    }
+  }
+
+  // Pattern D: plain count cases like "100ct", "48ct", "12 ct" (often produce)
+  const countOnly = lower.match(/\b(\d+)\s*(ct|count)\b/i);
+  if (countOnly) {
+    const units = Number(countOnly[1]);
+    if (Number.isFinite(units) && units > 0) {
+      return { pack_type: 'case', units_per_pack: units, unit_size: 1, unit_size_uom: 'each' };
+    }
+  }
+
   // Pattern C: single size like "750ML" => bottle
   if (size) {
     const unitSize = Number(size[1]);
@@ -84,14 +142,36 @@ function parsePackConfigFromDescription(desc: string): null | {
 
 async function main() {
   const apply = process.argv.includes('--apply');
-  console.log(`🔧 Backfill pack configs from vendor aliases (${apply ? 'APPLY' : 'DRY RUN'})`);
+  const forceDefault = process.argv.includes('--force-default');
+  const orgName = parseArg('orgName') || parseArg('org_name') || null;
+  const orgIdArg = parseArg('org') || null;
+  let orgId: string | null = orgIdArg;
 
-  const { data: aliases, error } = await supabase
+  if (!orgId && orgName) {
+    const resolved = await resolveOrgIdFromName(orgName);
+    if (!resolved) {
+      console.error(`❌ No organization matches orgName="${orgName}"`);
+      process.exit(1);
+    }
+    orgId = resolved.orgId;
+    console.log(`🏷️  Org resolved: "${resolved.orgName}" (${resolved.orgId})`);
+  }
+
+  console.log(`🔧 Backfill pack configs from vendor aliases (${apply ? 'APPLY' : 'DRY RUN'})`);
+  if (orgId) console.log(`- Org filter: ${orgId}`);
+  if (forceDefault) console.log(`- Force default packs on unparseable: yes`);
+
+  let q = supabase
     .from('vendor_item_aliases')
-    .select('id, vendor_id, item_id, vendor_item_code, vendor_description, pack_size, is_active')
+    .select('id, vendor_id, item_id, vendor_item_code, vendor_description, pack_size, is_active, vendors!inner(organization_id)')
     .eq('is_active', true)
-    .not('vendor_item_code', 'is', null)
-    .limit(10000);
+    .not('vendor_item_code', 'is', null);
+
+  if (orgId) {
+    q = q.eq('vendors.organization_id', orgId);
+  }
+
+  const { data: aliases, error } = await q.limit(20000);
 
   if (error) {
     console.error('❌ Failed to load vendor_item_aliases:', error);
@@ -104,6 +184,7 @@ async function main() {
   let inserted = 0;
   let skippedExisting = 0;
   let skippedUnparseable = 0;
+  let defaulted = 0;
 
   // De-dupe by (item_id, vendor_id, vendor_item_code) so we don't do redundant checks.
   const seen = new Set<string>();
@@ -114,9 +195,16 @@ async function main() {
     seen.add(key);
 
     const desc = (a.vendor_description || '').toString();
-    const packConfig = parsePackConfigFromDescription(desc) || (a.pack_size ? parsePackConfigFromDescription(String(a.pack_size)) : null);
+    let packConfig =
+      parsePackConfigFromDescription(desc) ||
+      (a.pack_size ? parsePackConfigFromDescription(String(a.pack_size)) : null);
 
-    if (!packConfig) {
+    if (!packConfig && forceDefault) {
+      // Placeholder: ensures vendor-specific pack config exists even when we can't infer size.
+      // This is intentionally conservative and should be reviewed later if conversion math matters.
+      packConfig = { pack_type: 'each', units_per_pack: 1, unit_size: 1, unit_size_uom: 'each' };
+      defaulted++;
+    } else if (!packConfig) {
       skippedUnparseable++;
       continue;
     }
@@ -174,6 +262,7 @@ async function main() {
   console.log(`- ${apply ? 'Inserted' : 'Would insert'}: ${inserted}`);
   console.log(`- Skipped existing: ${skippedExisting}`);
   console.log(`- Skipped unparseable: ${skippedUnparseable}`);
+  if (forceDefault) console.log(`- Defaulted (placeholder): ${defaulted}`);
 }
 
 main().catch((e) => {
