@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
 import { useVenue } from '@/components/providers/VenueProvider';
 import {
   Calendar,
@@ -209,6 +210,9 @@ export default function NightlyReportPage() {
           </div>
         </div>
       </div>
+
+      {/* Quick Venue Switcher */}
+      <VenueQuickSwitcher />
 
       {/* Date Banner */}
       <div className="flex items-center gap-2 text-muted-foreground">
