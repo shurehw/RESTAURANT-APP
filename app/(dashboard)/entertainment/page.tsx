@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { AddPerformerModal } from '@/components/entertainment/AddPerformerModal';
@@ -24,6 +25,7 @@ import {
   Plus,
   UserPlus,
   Calendar,
+  Monitor,
 } from 'lucide-react';
 
 import type {
@@ -69,6 +71,8 @@ function getEntertainmentIcon(type: EntertainmentType) {
       return <Users className="h-4 w-4" />;
     case 'DJ':
       return <Disc className="h-4 w-4" />;
+    case 'AV':
+      return <Monitor className="h-4 w-4" />;
   }
 }
 
@@ -80,6 +84,8 @@ function getEntertainmentColor(type: EntertainmentType) {
       return 'bg-sage/20 text-sage-dark border-sage/30';
     case 'DJ':
       return 'bg-purple-100 text-purple-800 border-purple-200';
+    case 'AV':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
   }
 }
 
@@ -375,18 +381,41 @@ function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
                   {entries.length > 0 ? (
                     <div className="space-y-1">
                       {entries.map((entry, idx) => (
-                        <div
-                          key={idx}
-                          className={`p-2 rounded-md border text-xs ${getEntertainmentColor(type)}`}
-                        >
-                          <div className="font-semibold">{entry.config}</div>
-                          <div className="opacity-75">
-                            {formatTime(entry.time_slot_start)} - {formatTime(entry.time_slot_end)}
-                          </div>
-                          {entry.notes && (
-                            <div className="opacity-60 mt-0.5">{entry.notes}</div>
-                          )}
-                        </div>
+                        <Popover key={idx}>
+                          <PopoverTrigger asChild>
+                            <button
+                              className={`w-full text-left p-2 rounded-md border text-xs cursor-pointer hover:opacity-80 transition-opacity ${getEntertainmentColor(type)}`}
+                            >
+                              <div className="font-semibold">{entry.config}</div>
+                              <div className="opacity-75">
+                                {formatTime(entry.time_slot_start)} - {formatTime(entry.time_slot_end)}
+                              </div>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64" align="start">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 font-semibold">
+                                {getEntertainmentIcon(type)}
+                                <span>{type} - {entry.config}</span>
+                              </div>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
+                                  <span>{formatTime(entry.time_slot_start)} - {formatTime(entry.time_slot_end)}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{day}</span>
+                                </div>
+                                {entry.notes && (
+                                  <div className="pt-2 border-t text-muted-foreground">
+                                    {entry.notes}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       ))}
                     </div>
                   ) : (
