@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
         total_entertainment_cost: total_entertainment_cost || null,
         actual_sales: actual_sales || null,
         entertainment_pct: entertainment_pct || null,
-        submitted_by: ctx.userId,
+        submitted_by: ctx.authUserId,
         submitted_at: new Date().toISOString(),
       }, {
         onConflict: 'venue_id,business_date',
