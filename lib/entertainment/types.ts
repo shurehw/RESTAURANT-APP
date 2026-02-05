@@ -34,7 +34,32 @@ export interface ScheduleEntry {
   config: PerformanceConfig; // e.g., "DUO", "4 PIECE BAND"
   performer_name?: string; // Artist/performer name if assigned
   booked_by?: string; // Who made the booking
+  rate_amount?: number; // Cost for this entertainment entry
   notes?: string;
+}
+
+export type CrowdEnergy = 'low' | 'moderate' | 'high' | 'exceptional';
+
+export interface TypeFeedback {
+  rating?: number;
+  notes?: string;
+  performer?: string;
+}
+
+export interface ShiftLog {
+  id?: string;
+  venue_id: string;
+  business_date: string;
+  overall_rating?: number; // 1-5
+  crowd_energy?: CrowdEnergy;
+  entertainment_feedback?: string;
+  would_rebook?: boolean;
+  type_feedback?: Record<EntertainmentType, TypeFeedback>;
+  total_entertainment_cost?: number;
+  actual_sales?: number;
+  entertainment_pct?: number;
+  submitted_by?: string;
+  submitted_at?: string;
 }
 
 export interface Artist {
