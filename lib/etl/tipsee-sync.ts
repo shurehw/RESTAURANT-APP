@@ -129,8 +129,8 @@ export async function getVenueTipseeMappings(): Promise<Array<{
 }>> {
   const supabase = getServiceClient();
 
-  const { data, error } = await supabase
-    .from('venue_tipsee_mapping' as any)
+  const { data, error } = await (supabase as any)
+    .from('venue_tipsee_mapping')
     .select(`
       venue_id,
       tipsee_location_uuid,
@@ -163,14 +163,14 @@ export async function syncVenueDay(
   const pool = getTipseePool();
 
   // Create ETL run record
-  const { data: etlRun, error: etlError } = await supabase
-    .from('etl_runs' as any)
+  const { data: etlRun, error: etlError } = await (supabase as any)
+    .from('etl_runs')
     .insert({
       source: 'tipsee',
       venue_id: venueId,
       business_date: businessDate,
       status: 'running',
-    } as any)
+    })
     .select()
     .single();
 
@@ -316,8 +316,8 @@ export async function syncVenueDay(
       total_voids: summary.total_voids,
     };
 
-    await supabase
-      .from('source_day_snapshot' as any)
+    await (supabase as any)
+      .from('source_day_snapshot')
       .upsert({
         venue_id: venueId,
         business_date: businessDate,
@@ -332,14 +332,14 @@ export async function syncVenueDay(
         raw_hash: computeHash(snapshotData),
         etl_run_id: etlRunId,
         extracted_at: new Date().toISOString(),
-      } as any, {
+      }, {
         onConflict: 'venue_id,business_date,source_system',
       });
     rowsLoaded++;
 
     // 7. Upsert venue_day_facts
-    await supabase
-      .from('venue_day_facts' as any)
+    await (supabase as any)
+      .from('venue_day_facts')
       .upsert({
         venue_id: venueId,
         business_date: businessDate,
@@ -361,15 +361,15 @@ export async function syncVenueDay(
         is_complete: true,
         last_synced_at: new Date().toISOString(),
         etl_run_id: etlRunId,
-      } as any, {
+      }, {
         onConflict: 'venue_id,business_date',
       });
     rowsLoaded++;
 
     // 8. Upsert category_day_facts
     for (const cat of categoryResult.rows) {
-      await supabase
-        .from('category_day_facts' as any)
+      await (supabase as any)
+        .from('category_day_facts')
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
@@ -381,7 +381,7 @@ export async function syncVenueDay(
           voids_total: parseFloat(cat.voids_total) || 0,
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
-        } as any, {
+        }, {
           onConflict: 'venue_id,business_date,category',
         });
       rowsLoaded++;
@@ -390,8 +390,8 @@ export async function syncVenueDay(
     // 9. Upsert server_day_facts
     for (const server of serverResult.rows) {
       if (!server.employee_name) continue;
-      await supabase
-        .from('server_day_facts' as any)
+      await (supabase as any)
+        .from('server_day_facts')
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
@@ -405,7 +405,7 @@ export async function syncVenueDay(
           tips_total: 0, // Would need per-server tip query
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
-        } as any, {
+        }, {
           onConflict: 'venue_id,business_date,employee_name',
         });
       rowsLoaded++;
@@ -414,8 +414,8 @@ export async function syncVenueDay(
     // 10. Upsert item_day_facts
     for (const item of itemResult.rows) {
       if (!item.menu_item_name) continue;
-      await supabase
-        .from('item_day_facts' as any)
+      await (supabase as any)
+        .from('item_day_facts')
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
@@ -429,21 +429,21 @@ export async function syncVenueDay(
           voids_total: parseFloat(item.voids_total) || 0,
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
-        } as any, {
+        }, {
           onConflict: 'venue_id,business_date,menu_item_name',
         });
       rowsLoaded++;
     }
 
     // Update ETL run as successful
-    await supabase
-      .from('etl_runs' as any)
+    await (supabase as any)
+      .from('etl_runs')
       .update({
         status: 'success',
         finished_at: new Date().toISOString(),
         rows_extracted: rowsExtracted,
         rows_loaded: rowsLoaded,
-      } as any)
+      })
       .eq('id', etlRunId);
 
     return {
@@ -458,15 +458,15 @@ export async function syncVenueDay(
 
   } catch (error: any) {
     // Update ETL run as failed
-    await supabase
-      .from('etl_runs' as any)
+    await (supabase as any)
+      .from('etl_runs')
       .update({
         status: 'failed',
         finished_at: new Date().toISOString(),
         rows_extracted: rowsExtracted,
         rows_loaded: rowsLoaded,
         error_message: error.message,
-      } as any)
+      })
       .eq('id', etlRunId);
 
     return {
