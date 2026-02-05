@@ -310,95 +310,103 @@ export default function EntertainmentPage() {
 }
 
 function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
-  // Group entries by day and type
-  const scheduleByDay = DAYS_OF_WEEK.reduce(
-    (acc, day) => {
-      acc[day] = ENTERTAINMENT_TYPES.reduce(
-        (typeAcc, type) => {
-          typeAcc[type] = schedule.schedule.filter(
-            (entry) => entry.day_of_week === day && entry.entertainment_type === type
+  // Group entries by type and day for calendar view
+  const scheduleByTypeAndDay = ENTERTAINMENT_TYPES.reduce(
+    (acc, type) => {
+      acc[type] = DAYS_OF_WEEK.reduce(
+        (dayAcc, day) => {
+          dayAcc[day] = schedule.schedule.filter(
+            (entry) => entry.entertainment_type === type && entry.day_of_week === day
           );
-          return typeAcc;
+          return dayAcc;
         },
-        {} as Record<EntertainmentType, ScheduleEntry[]>
+        {} as Record<DayOfWeek, ScheduleEntry[]>
       );
       return acc;
     },
-    {} as Record<DayOfWeek, Record<EntertainmentType, ScheduleEntry[]>>
+    {} as Record<EntertainmentType, Record<DayOfWeek, ScheduleEntry[]>>
+  );
+
+  // Only show types that have at least one entry
+  const activeTypes = ENTERTAINMENT_TYPES.filter((type) =>
+    DAYS_OF_WEEK.some((day) => scheduleByTypeAndDay[type][day].length > 0)
   );
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b-2 border-brass bg-muted">
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-20">
-              Day
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground w-24">
-              Type
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Schedule
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {DAYS_OF_WEEK.map((day) => {
-            const daySchedule = scheduleByDay[day];
-            const hasAnyEntries = ENTERTAINMENT_TYPES.some(
-              (type) => daySchedule[type].length > 0
-            );
+      <div className="bg-card border rounded-lg min-w-[700px]">
+        {/* Header Row - Days of Week */}
+        <div className="grid grid-cols-8 border-b-2 border-brass bg-muted">
+          <div className="p-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Type
+          </div>
+          {DAYS_OF_WEEK.map((day) => (
+            <div
+              key={day}
+              className="p-3 text-center border-l border-border text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              {day}
+            </div>
+          ))}
+        </div>
 
-            if (!hasAnyEntries) return null;
+        {/* Type Rows */}
+        {activeTypes.map((type) => (
+          <div
+            key={type}
+            className="grid grid-cols-8 border-b border-border hover:bg-muted/30 transition-colors"
+          >
+            {/* Type Label */}
+            <div className="p-3 border-r border-border bg-muted/50">
+              <div className="flex items-center gap-2">
+                {getEntertainmentIcon(type)}
+                <span className="text-sm font-medium">{type}</span>
+              </div>
+            </div>
 
-            return ENTERTAINMENT_TYPES.map((type, typeIdx) => {
-              const entries = daySchedule[type];
-              if (entries.length === 0) return null;
-
+            {/* Day Cells */}
+            {DAYS_OF_WEEK.map((day) => {
+              const entries = scheduleByTypeAndDay[type][day];
               return (
-                <tr
-                  key={`${day}-${type}`}
-                  className="border-b border-border hover:bg-muted/50 transition-colors"
+                <div
+                  key={day}
+                  className="p-2 border-l border-border min-h-[72px]"
                 >
-                  {typeIdx === 0 ? (
-                    <td
-                      rowSpan={ENTERTAINMENT_TYPES.filter((t) => daySchedule[t].length > 0).length}
-                      className="px-4 py-3 font-semibold text-foreground align-top border-r border-border"
-                    >
-                      {day}
-                    </td>
-                  ) : null}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {getEntertainmentIcon(type)}
-                      <span className="text-sm font-medium">{type}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
+                  {entries.length > 0 ? (
+                    <div className="space-y-1">
                       {entries.map((entry, idx) => (
                         <div
                           key={idx}
-                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm ${getEntertainmentColor(type)}`}
+                          className={`p-2 rounded-md border text-xs ${getEntertainmentColor(type)}`}
                         >
-                          <span className="font-medium">{entry.config}</span>
-                          <span className="text-xs opacity-75">
+                          <div className="font-semibold">{entry.config}</div>
+                          <div className="opacity-75">
                             {formatTime(entry.time_slot_start)} - {formatTime(entry.time_slot_end)}
-                          </span>
+                          </div>
                           {entry.notes && (
-                            <span className="text-xs opacity-60">({entry.notes})</span>
+                            <div className="opacity-60 mt-0.5">{entry.notes}</div>
                           )}
                         </div>
                       ))}
                     </div>
-                  </td>
-                </tr>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground/40">
+                      —
+                    </div>
+                  )}
+                </div>
               );
-            });
-          })}
-        </tbody>
-      </table>
+            })}
+          </div>
+        ))}
+
+        {/* Empty state if no entertainment scheduled */}
+        {activeTypes.length === 0 && (
+          <div className="p-8 text-center text-muted-foreground">
+            No entertainment scheduled for this venue
+          </div>
+        )}
+      </div>
     </div>
   );
 }
