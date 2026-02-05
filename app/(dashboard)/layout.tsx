@@ -20,6 +20,8 @@ import {
   CheckSquare,
   TrendingUp,
   Calculator,
+  Moon,
+  Music2,
 } from "lucide-react";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
@@ -124,6 +126,12 @@ function Sidebar() {
         <NavSection title="Sales">
           <NavLink href="/sales/forecasts" icon={<BarChart3 className="w-5 h-5" />}>
             Forecasts
+          </NavLink>
+          <NavLink href="/reports/nightly" icon={<Moon className="w-5 h-5" />}>
+            Nightly Report
+          </NavLink>
+          <NavLink href="/entertainment" icon={<Music2 className="w-5 h-5" />}>
+            Entertainment
           </NavLink>
         </NavSection>
 
