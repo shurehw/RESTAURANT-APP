@@ -506,7 +506,7 @@ export default function NightlyReportPage() {
           )}
 
           {/* Summary Stats - Single Row */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               label="Avg/Cover"
               value={formatCurrency(
@@ -523,11 +523,6 @@ export default function NightlyReportPage() {
             />
             {factsSummary && (
               <>
-                <StatCard
-                  label="Food"
-                  value={formatCurrency(factsSummary.food_sales || 0)}
-                  icon={<UtensilsCrossed className="h-5 w-5 text-brass" />}
-                />
                 <StatCard
                   label="Beverage"
                   value={formatCurrency(factsSummary.beverage_sales || 0)}
