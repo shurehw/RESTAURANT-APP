@@ -5,11 +5,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
 import { useVenue } from '@/components/providers/VenueProvider';
+import { AddPerformerModal } from '@/components/entertainment/AddPerformerModal';
+import { ScheduleBookingModal } from '@/components/entertainment/ScheduleBookingModal';
 import {
   Music,
   Users,
@@ -81,11 +83,22 @@ function getEntertainmentColor(type: EntertainmentType) {
   }
 }
 
+interface Performer {
+  id?: string;
+  name: string;
+  entertainment_type: string;
+}
+
 export default function EntertainmentPage() {
   const { selectedVenue, isAllVenues } = useVenue();
   const [schedules, setSchedules] = useState<VenueSchedule[]>([]);
+  const [performers, setPerformers] = useState<Performer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal states
+  const [addPerformerOpen, setAddPerformerOpen] = useState(false);
+  const [scheduleBookingOpen, setScheduleBookingOpen] = useState(false);
 
   // Get entertainment venue ID from selected venue
   const venueId = selectedVenue?.name
@@ -93,25 +106,52 @@ export default function EntertainmentPage() {
     : null;
 
   // Fetch schedules
-  useEffect(() => {
-    async function fetchSchedules() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch('/api/entertainment?action=all');
-        if (!res.ok) {
-          throw new Error('Failed to fetch schedules');
-        }
-        const data = await res.json();
-        setSchedules(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchSchedules = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/entertainment?action=all');
+      if (!res.ok) {
+        throw new Error('Failed to fetch schedules');
       }
+      const data = await res.json();
+      setSchedules(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    fetchSchedules();
   }, []);
+
+  // Fetch performers
+  const fetchPerformers = useCallback(async () => {
+    try {
+      const url = selectedVenue?.id
+        ? `/api/entertainment/performers?venue_id=${selectedVenue.id}`
+        : '/api/entertainment/performers';
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setPerformers(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch performers:', err);
+    }
+  }, [selectedVenue?.id]);
+
+  useEffect(() => {
+    fetchSchedules();
+    fetchPerformers();
+  }, [fetchSchedules, fetchPerformers]);
+
+  // Refresh data when modals close successfully
+  const handlePerformerSuccess = () => {
+    fetchPerformers();
+  };
+
+  const handleBookingSuccess = () => {
+    fetchSchedules();
+  };
 
   // Filter schedules based on selected venue
   const filteredSchedules = isAllVenues
@@ -132,11 +172,21 @@ export default function EntertainmentPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setAddPerformerOpen(true)}
+          >
             <UserPlus className="h-4 w-4" />
             Add Performer
           </Button>
-          <Button variant="outline" size="sm" className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setScheduleBookingOpen(true)}
+          >
             <Calendar className="h-4 w-4" />
             Schedule Booking
           </Button>
@@ -206,7 +256,12 @@ export default function EntertainmentPage() {
                       <Phone className="h-5 w-5 text-sage" />
                       Artists & Contacts
                     </CardTitle>
-                    <Button variant="ghost" size="sm" className="gap-1 text-sage">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1 text-sage"
+                      onClick={() => setAddPerformerOpen(true)}
+                    >
                       <Plus className="h-4 w-4" />
                       Add
                     </Button>
@@ -232,6 +287,24 @@ export default function EntertainmentPage() {
           ))}
         </div>
       )}
+
+      {/* Modals */}
+      <AddPerformerModal
+        open={addPerformerOpen}
+        onOpenChange={setAddPerformerOpen}
+        venueId={selectedVenue?.id}
+        venueName={selectedVenue?.name}
+        onSuccess={handlePerformerSuccess}
+      />
+
+      <ScheduleBookingModal
+        open={scheduleBookingOpen}
+        onOpenChange={setScheduleBookingOpen}
+        venueId={selectedVenue?.id}
+        venueName={selectedVenue?.name}
+        artists={performers}
+        onSuccess={handleBookingSuccess}
+      />
     </div>
   );
 }
