@@ -130,7 +130,7 @@ export async function getVenueTipseeMappings(): Promise<Array<{
   const supabase = getServiceClient();
 
   const { data, error } = await supabase
-    .from('venue_tipsee_mapping')
+    .from('venue_tipsee_mapping' as any)
     .select(`
       venue_id,
       tipsee_location_uuid,
@@ -164,7 +164,7 @@ export async function syncVenueDay(
 
   // Create ETL run record
   const { data: etlRun, error: etlError } = await supabase
-    .from('etl_runs')
+    .from('etl_runs' as any)
     .insert({
       source: 'tipsee',
       venue_id: venueId,
@@ -317,7 +317,7 @@ export async function syncVenueDay(
     };
 
     await supabase
-      .from('source_day_snapshot')
+      .from('source_day_snapshot' as any)
       .upsert({
         venue_id: venueId,
         business_date: businessDate,
@@ -339,7 +339,7 @@ export async function syncVenueDay(
 
     // 7. Upsert venue_day_facts
     await supabase
-      .from('venue_day_facts')
+      .from('venue_day_facts' as any)
       .upsert({
         venue_id: venueId,
         business_date: businessDate,
@@ -369,7 +369,7 @@ export async function syncVenueDay(
     // 8. Upsert category_day_facts
     for (const cat of categoryResult.rows) {
       await supabase
-        .from('category_day_facts')
+        .from('category_day_facts' as any)
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
@@ -391,7 +391,7 @@ export async function syncVenueDay(
     for (const server of serverResult.rows) {
       if (!server.employee_name) continue;
       await supabase
-        .from('server_day_facts')
+        .from('server_day_facts' as any)
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
@@ -415,7 +415,7 @@ export async function syncVenueDay(
     for (const item of itemResult.rows) {
       if (!item.menu_item_name) continue;
       await supabase
-        .from('item_day_facts')
+        .from('item_day_facts' as any)
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
@@ -437,7 +437,7 @@ export async function syncVenueDay(
 
     // Update ETL run as successful
     await supabase
-      .from('etl_runs')
+      .from('etl_runs' as any)
       .update({
         status: 'success',
         finished_at: new Date().toISOString(),
@@ -459,7 +459,7 @@ export async function syncVenueDay(
   } catch (error: any) {
     // Update ETL run as failed
     await supabase
-      .from('etl_runs')
+      .from('etl_runs' as any)
       .update({
         status: 'failed',
         finished_at: new Date().toISOString(),
