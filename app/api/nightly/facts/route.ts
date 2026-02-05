@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('venue_id', venueId)
         .eq('business_date', date)
-        .single(),
+        .maybeSingle(),
 
       // Time punches for OT calculation
       (supabase as any)
@@ -152,7 +152,7 @@ export async function GET(request: NextRequest) {
         .select('net_sales, covers_count, beverage_pct')
         .eq('venue_id', venueId)
         .eq('business_date', sdlwDateStr)
-        .single(),
+        .maybeSingle(),
 
       // Same Day Last Year (SDLY) - 1 year ago
       (supabase as any)
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
         .select('net_sales, covers_count, beverage_pct')
         .eq('venue_id', venueId)
         .eq('business_date', sdlyDateStr)
-        .single(),
+        .maybeSingle(),
 
       // PTD This Week (Monday → selected date)
       (supabase as any)
