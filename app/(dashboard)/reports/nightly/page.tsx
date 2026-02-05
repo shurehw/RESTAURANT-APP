@@ -57,6 +57,7 @@ interface NightlyReportData {
     name: string;
     qty: number;
     net_total: number;
+    parent_category: string;
   }>;
   discounts: Array<{
     reason: string;
@@ -445,24 +446,62 @@ export default function NightlyReportPage() {
               </CardHeader>
               <CardContent className="p-0">
                 {report.menuItems.length > 0 ? (
-                  <table className="table-opsos">
-                    <thead>
-                      <tr>
-                        <th>Item</th>
-                        <th className="text-right">Qty</th>
-                        <th className="text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.menuItems.map((item, i) => (
-                        <tr key={i}>
-                          <td className="font-medium">{item.name}</td>
-                          <td className="text-right">{formatNumber(item.qty || 0)}</td>
-                          <td className="text-right">{formatCurrency(item.net_total || 0)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  (() => {
+                    const isBeverage = (cat: string) => {
+                      const lower = cat.toLowerCase();
+                      return lower.includes('bev') || lower.includes('wine') ||
+                             lower.includes('beer') || lower.includes('liquor') ||
+                             lower.includes('cocktail');
+                    };
+                    const foodItems = report.menuItems.filter(item => !isBeverage(item.parent_category || ''));
+                    const bevItems = report.menuItems.filter(item => isBeverage(item.parent_category || ''));
+
+                    return (
+                      <table className="table-opsos">
+                        <thead>
+                          <tr>
+                            <th>Item</th>
+                            <th className="text-right">Qty</th>
+                            <th className="text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {foodItems.length > 0 && (
+                            <>
+                              <tr className="bg-muted/50">
+                                <td colSpan={3} className="text-xs uppercase tracking-wide text-muted-foreground font-semibold py-2">
+                                  Food
+                                </td>
+                              </tr>
+                              {foodItems.map((item, i) => (
+                                <tr key={`food-${i}`}>
+                                  <td className="font-medium">{item.name}</td>
+                                  <td className="text-right">{formatNumber(item.qty || 0)}</td>
+                                  <td className="text-right">{formatCurrency(item.net_total || 0)}</td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                          {bevItems.length > 0 && (
+                            <>
+                              <tr className="bg-muted/50">
+                                <td colSpan={3} className="text-xs uppercase tracking-wide text-muted-foreground font-semibold py-2">
+                                  Beverage
+                                </td>
+                              </tr>
+                              {bevItems.map((item, i) => (
+                                <tr key={`bev-${i}`}>
+                                  <td className="font-medium">{item.name}</td>
+                                  <td className="text-right">{formatNumber(item.qty || 0)}</td>
+                                  <td className="text-right">{formatCurrency(item.net_total || 0)}</td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                        </tbody>
+                      </table>
+                    );
+                  })()
                 ) : (
                   <div className="empty-state py-8">
                     <p className="text-muted-foreground">No menu items</p>

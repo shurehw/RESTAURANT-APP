@@ -90,6 +90,7 @@ export interface NightlyReportData {
     name: string;
     qty: number;
     net_total: number;
+    parent_category: string;
   }>;
   discounts: Array<{
     reason: string;
@@ -210,17 +211,37 @@ export async function fetchNightlyReport(
     [locationUuid, date]
   );
 
-  // 5. Menu Items Sold
+  // 5. Menu Items Sold (top 10 food + top 10 beverage)
   const menuItemsResult = await pool.query(
-    `SELECT
-      ci.name,
-      SUM(ci.quantity) as qty,
-      SUM(ci.price * ci.quantity) as net_total
-    FROM public.tipsee_check_items ci
-    WHERE ci.location_uuid = $1 AND ci.trading_day = $2
-    GROUP BY ci.name
-    ORDER BY net_total DESC
-    LIMIT 15`,
+    `WITH ranked_items AS (
+      SELECT
+        ci.name,
+        COALESCE(ci.parent_category, 'Other') as parent_category,
+        SUM(ci.quantity) as qty,
+        SUM(ci.price * ci.quantity) as net_total,
+        ROW_NUMBER() OVER (
+          PARTITION BY CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
+                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
+                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
+                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
+                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
+                       THEN 'Beverage' ELSE 'Food' END
+          ORDER BY SUM(ci.price * ci.quantity) DESC
+        ) as rn,
+        CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
+                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
+                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
+                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
+                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
+             THEN 'Beverage' ELSE 'Food' END as item_type
+      FROM public.tipsee_check_items ci
+      WHERE ci.location_uuid = $1 AND ci.trading_day = $2
+      GROUP BY ci.name, ci.parent_category
+    )
+    SELECT name, parent_category, qty, net_total
+    FROM ranked_items
+    WHERE rn <= 10
+    ORDER BY item_type, net_total DESC`,
     [locationUuid, date]
   );
 
