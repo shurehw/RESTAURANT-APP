@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
 import { useVenue } from '@/components/providers/VenueProvider';
 import {
   Music,
@@ -81,13 +82,10 @@ function getEntertainmentColor(type: EntertainmentType) {
 }
 
 export default function EntertainmentPage() {
-  const { selectedVenue, setSelectedVenue, venues, isAllVenues } = useVenue();
+  const { selectedVenue, isAllVenues } = useVenue();
   const [schedules, setSchedules] = useState<VenueSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Check if user has multi-venue access
-  const hasMultiVenueAccess = venues.length > 1;
 
   // Get entertainment venue ID from selected venue
   const venueId = selectedVenue?.name
@@ -120,11 +118,6 @@ export default function EntertainmentPage() {
     ? schedules
     : schedules.filter((s) => s.venue_id === venueId);
 
-  // Handle venue quick-switch
-  const handleVenueSwitch = (venue: typeof selectedVenue) => {
-    setSelectedVenue(venue);
-  };
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -151,29 +144,7 @@ export default function EntertainmentPage() {
       </div>
 
       {/* Quick Venue Switcher - Only shows for multi-venue users */}
-      {hasMultiVenueAccess && (
-        <div className="flex flex-wrap gap-2 pb-2 border-b border-border">
-          <Button
-            variant={isAllVenues ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleVenueSwitch({ id: 'all', name: 'All Venues' })}
-            className={isAllVenues ? "bg-brass hover:bg-brass-dark text-white" : ""}
-          >
-            All Venues
-          </Button>
-          {venues.map((venue) => (
-            <Button
-              key={venue.id}
-              variant={selectedVenue?.id === venue.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleVenueSwitch(venue)}
-              className={selectedVenue?.id === venue.id ? "bg-brass hover:bg-brass-dark text-white" : ""}
-            >
-              {venue.name}
-            </Button>
-          ))}
-        </div>
-      )}
+      <VenueQuickSwitcher />
 
       {/* Loading State */}
       {loading && (

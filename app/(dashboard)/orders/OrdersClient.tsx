@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { VenueQuickSwitcher } from "@/components/ui/VenueQuickSwitcher";
 import { useVenue } from "@/components/providers/VenueProvider";
 import {
   Table,
@@ -242,9 +243,9 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start">
         <div>
           <h1 className="page-header">Orders</h1>
           <p className="text-muted-foreground">
@@ -554,6 +555,9 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Quick Venue Switcher */}
+      <VenueQuickSwitcher />
 
       {/* Orders Table */}
       <div className="border border-border rounded-md overflow-hidden">
