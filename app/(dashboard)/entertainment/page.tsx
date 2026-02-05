@@ -8,7 +8,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useVenue } from '@/components/providers/VenueProvider';
 import {
   Music,
@@ -19,6 +18,9 @@ import {
   Clock,
   Loader2,
   Music2,
+  Plus,
+  UserPlus,
+  Calendar,
 } from 'lucide-react';
 
 import type {
@@ -79,11 +81,10 @@ function getEntertainmentColor(type: EntertainmentType) {
 }
 
 export default function EntertainmentPage() {
-  const { selectedVenue } = useVenue();
+  const { selectedVenue, isAllVenues } = useVenue();
   const [schedules, setSchedules] = useState<VenueSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('');
 
   // Get entertainment venue ID from selected venue
   const venueId = selectedVenue?.name
@@ -102,13 +103,6 @@ export default function EntertainmentPage() {
         }
         const data = await res.json();
         setSchedules(data);
-
-        // Set active tab based on selected venue or first available
-        if (venueId) {
-          setActiveTab(venueId);
-        } else if (data.length > 0) {
-          setActiveTab(data[0].venue_id);
-        }
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -118,14 +112,10 @@ export default function EntertainmentPage() {
     fetchSchedules();
   }, []);
 
-  // Update active tab when venue changes
-  useEffect(() => {
-    if (venueId && schedules.length > 0) {
-      setActiveTab(venueId);
-    }
-  }, [venueId, schedules]);
-
-  const activeSchedule = schedules.find((s) => s.venue_id === activeTab);
+  // Filter schedules based on selected venue
+  const filteredSchedules = isAllVenues
+    ? schedules
+    : schedules.filter((s) => s.venue_id === venueId);
 
   return (
     <div className="space-y-6">
@@ -138,7 +128,20 @@ export default function EntertainmentPage() {
           </h1>
           <p className="text-muted-foreground">
             Live music, DJ, and dancer schedules
+            {!isAllVenues && selectedVenue && (
+              <span className="ml-2 text-brass font-medium">• {selectedVenue.name}</span>
+            )}
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            Add Performer
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2">
+            <Calendar className="h-4 w-4" />
+            Schedule Booking
+          </Button>
         </div>
       </div>
 
@@ -158,63 +161,75 @@ export default function EntertainmentPage() {
         </Card>
       )}
 
-      {/* Content */}
-      {!loading && !error && schedules.length > 0 && (
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            {schedules.map((schedule) => (
-              <TabsTrigger key={schedule.venue_id} value={schedule.venue_id}>
-                {schedule.venue_name}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      {/* No Venue Selected */}
+      {!loading && !error && !isAllVenues && filteredSchedules.length === 0 && (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <Music2 className="h-12 w-12 mx-auto mb-4 text-brass/50" />
+            <p>No entertainment schedule found for this venue.</p>
+            <p className="text-sm mt-2">Select a different venue or view all venues from the dropdown above.</p>
+          </CardContent>
+        </Card>
+      )}
 
-          {schedules.map((schedule) => (
-            <TabsContent key={schedule.venue_id} value={schedule.venue_id}>
-              <div className="space-y-6">
-                {/* Weekly Schedule Grid */}
+      {/* Content - Show all filtered schedules */}
+      {!loading && !error && filteredSchedules.length > 0 && (
+        <div className="space-y-8">
+          {filteredSchedules.map((schedule) => (
+            <div key={schedule.venue_id} className="space-y-6">
+              {/* Venue Header (only show when viewing all venues) */}
+              {isAllVenues && (
+                <h2 className="text-xl font-semibold text-foreground border-b border-brass/30 pb-2">
+                  {schedule.venue_name}
+                </h2>
+              )}
+
+              {/* Weekly Schedule Grid */}
+              <Card>
+                <CardHeader className="border-b border-brass/20">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-brass" />
+                    Weekly Schedule
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScheduleGrid schedule={schedule} />
+                </CardContent>
+              </Card>
+
+              {/* Artists & Contacts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
-                  <CardHeader className="border-b border-brass/20">
+                  <CardHeader className="border-b border-brass/20 flex flex-row items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-brass" />
-                      Weekly Schedule
+                      <Phone className="h-5 w-5 text-sage" />
+                      Artists & Contacts
                     </CardTitle>
+                    <Button variant="ghost" size="sm" className="gap-1 text-sage">
+                      <Plus className="h-4 w-4" />
+                      Add
+                    </Button>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <ScheduleGrid schedule={schedule} />
+                    <ArtistList artists={schedule.artists} />
                   </CardContent>
                 </Card>
 
-                {/* Artists & Contacts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader className="border-b border-brass/20">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Phone className="h-5 w-5 text-sage" />
-                        Artists & Contacts
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <ArtistList artists={schedule.artists} />
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="border-b border-brass/20">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <DollarSign className="h-5 w-5 text-brass" />
-                        Rate Card
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <RateList rates={schedule.rates} />
-                    </CardContent>
-                  </Card>
-                </div>
+                <Card>
+                  <CardHeader className="border-b border-brass/20">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-brass" />
+                      Rate Card
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <RateList rates={schedule.rates} />
+                  </CardContent>
+                </Card>
               </div>
-            </TabsContent>
+            </div>
           ))}
-        </Tabs>
+        </div>
       )}
     </div>
   );
