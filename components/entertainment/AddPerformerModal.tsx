@@ -36,7 +36,7 @@ interface AddPerformerModalProps {
   onSuccess?: () => void;
 }
 
-const ENTERTAINMENT_TYPES = ['Band', 'Dancers', 'DJ'] as const;
+const ENTERTAINMENT_TYPES = ['Band', 'Dancers', 'DJ', 'AV'] as const;
 
 export function AddPerformerModal({
   open,
@@ -51,6 +51,7 @@ export function AddPerformerModal({
     entertainment_type: '' as typeof ENTERTAINMENT_TYPES[number] | '',
     phone: '',
     email: '',
+    standard_rate: '',
     is_coordinator: false,
     notes: '',
   });
@@ -70,6 +71,7 @@ export function AddPerformerModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          standard_rate: formData.standard_rate ? parseFloat(formData.standard_rate) : null,
           venue_id: venueId,
         }),
       });
@@ -85,6 +87,7 @@ export function AddPerformerModal({
         entertainment_type: '',
         phone: '',
         email: '',
+        standard_rate: '',
         is_coordinator: false,
         notes: '',
       });
@@ -157,6 +160,19 @@ export function AddPerformerModal({
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="e.g., john@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="standard_rate">Standard Rate</Label>
+            <Input
+              id="standard_rate"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.standard_rate}
+              onChange={(e) => setFormData({ ...formData, standard_rate: e.target.value })}
+              placeholder="e.g., 250.00"
             />
           </div>
 

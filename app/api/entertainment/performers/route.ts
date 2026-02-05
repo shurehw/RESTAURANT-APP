@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, entertainment_type, phone, email, is_coordinator, notes, venue_id } = body;
+    const { name, entertainment_type, phone, email, standard_rate, is_coordinator, notes, venue_id } = body;
 
     if (!name || !entertainment_type) {
       return NextResponse.json(
@@ -85,9 +85,10 @@ export async function POST(request: NextRequest) {
         entertainment_type,
         phone: phone || null,
         email: email || null,
+        standard_rate: standard_rate || null,
         is_coordinator: is_coordinator || false,
         notes: notes || null,
-      })
+      } as any)
       .select()
       .single();
 
