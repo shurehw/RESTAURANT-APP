@@ -523,16 +523,38 @@ export default function NightlyReportPage() {
             />
             {factsSummary && (
               <>
-                <StatCard
-                  label="Beverage"
-                  value={formatCurrency(factsSummary.beverage_sales || 0)}
-                  icon={<DollarSign className="h-5 w-5 text-sage" />}
-                />
-                <StatCard
-                  label="Bev %"
-                  value={`${(factsSummary.beverage_pct || 0).toFixed(1)}%`}
-                  icon={<Percent className="h-5 w-5 text-sage" />}
-                />
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-muted">
+                      <UtensilsCrossed className="h-5 w-5 text-brass" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(factsSummary.food_sales || 0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        FOOD · {report.summary.net_sales > 0
+                          ? ((factsSummary.food_sales || 0) / report.summary.net_sales * 100).toFixed(1)
+                          : '0.0'}%
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-muted">
+                      <DollarSign className="h-5 w-5 text-sage" />
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(factsSummary.beverage_sales || 0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        BEVERAGE · {(factsSummary.beverage_pct || 0).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </Card>
               </>
             )}
           </div>
