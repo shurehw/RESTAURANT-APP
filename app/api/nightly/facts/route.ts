@@ -60,6 +60,21 @@ export async function GET(request: NextRequest) {
     sdlyDate.setFullYear(sdlyDate.getFullYear() - 1);
     const sdlyDateStr = sdlyDate.toISOString().split('T')[0];
 
+    // PTD (Period-to-Date): Monday of current week → selected date
+    const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, ...
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sun=6, Mon=0, Tue=1, etc.
+    const weekStartDate = new Date(currentDate);
+    weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
+    const weekStartStr = weekStartDate.toISOString().split('T')[0];
+
+    // Same period last week
+    const lastWeekStartDate = new Date(weekStartDate);
+    lastWeekStartDate.setDate(lastWeekStartDate.getDate() - 7);
+    const lastWeekStartStr = lastWeekStartDate.toISOString().split('T')[0];
+    const lastWeekEndDate = new Date(currentDate);
+    lastWeekEndDate.setDate(lastWeekEndDate.getDate() - 7);
+    const lastWeekEndStr = lastWeekEndDate.toISOString().split('T')[0];
+
     // Fetch all fact data in parallel
     const [
       venueDayResult,
@@ -71,6 +86,8 @@ export async function GET(request: NextRequest) {
       forecastResult,
       sdlwResult,
       sdlyResult,
+      ptdThisWeekResult,
+      ptdLastWeekResult,
     ] = await Promise.all([
       // Venue day facts (summary)
       (supabase as any)
@@ -144,6 +161,22 @@ export async function GET(request: NextRequest) {
         .eq('venue_id', venueId)
         .eq('business_date', sdlyDateStr)
         .single(),
+
+      // PTD This Week (Monday → selected date)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // PTD Last Week (same period last week)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', lastWeekStartStr)
+        .lte('business_date', lastWeekEndStr),
     ]);
 
     // Check if we have data
@@ -182,6 +215,22 @@ export async function GET(request: NextRequest) {
     // SDLW and SDLY data (may be null if no data exists)
     const sdlw = sdlwResult.data as any;
     const sdly = sdlyResult.data as any;
+
+    // Aggregate PTD totals
+    const ptdThisWeek = (ptdThisWeekResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+    const ptdLastWeek = (ptdLastWeekResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
 
     // Calculate variance percentages
     const calcVariance = (actual: number, comparison: number | null | undefined): number | null => {
@@ -285,6 +334,13 @@ export async function GET(request: NextRequest) {
         sdly_covers: sdly?.covers_count || null,
         vs_sdly_pct: calcVariance(actualNetSales, sdly?.net_sales),
         vs_sdly_covers_pct: calcVariance(actualCovers, sdly?.covers_count),
+        // PTD (Period-to-Date): Monday → selected date vs same period last week
+        ptd_net_sales: ptdThisWeek.net_sales,
+        ptd_covers: ptdThisWeek.covers,
+        ptd_lw_net_sales: ptdLastWeek.net_sales,
+        ptd_lw_covers: ptdLastWeek.covers,
+        vs_ptd_pct: calcVariance(ptdThisWeek.net_sales, ptdLastWeek.net_sales),
+        vs_ptd_covers_pct: calcVariance(ptdThisWeek.covers, ptdLastWeek.covers),
       },
     };
 
