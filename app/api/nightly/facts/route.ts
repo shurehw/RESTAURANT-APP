@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Check if we have data
-    const summary = venueDayResult.data;
+    const summary = venueDayResult.data as any;
     if (!summary) {
       return NextResponse.json({
         date,
