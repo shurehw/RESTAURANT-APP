@@ -145,6 +145,13 @@ interface FactsSummary {
     sdly_covers: number | null;
     vs_sdly_pct: number | null;
     vs_sdly_covers_pct: number | null;
+    // PTD (Period-to-Date)
+    ptd_net_sales: number | null;
+    ptd_covers: number | null;
+    ptd_lw_net_sales: number | null;
+    ptd_lw_covers: number | null;
+    vs_ptd_pct: number | null;
+    vs_ptd_covers_pct: number | null;
   };
 }
 
@@ -450,6 +457,18 @@ export default function NightlyReportPage() {
                       </div>
                     </div>
                   )}
+                  {/* PTD (Period-to-Date) */}
+                  {factsSummary.variance.ptd_net_sales != null && factsSummary.variance.ptd_net_sales > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(factsSummary.variance.ptd_net_sales)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">PTD Sales</div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        <VarianceBadge value={factsSummary.variance.vs_ptd_pct} label="vs LW" />
+                      </div>
+                    </div>
+                  )}
                   {/* Labor efficiency preview */}
                   {factsSummary.labor && (
                     <div className="space-y-1">
@@ -468,17 +487,7 @@ export default function NightlyReportPage() {
           )}
 
           {/* Summary Stats - Single Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <StatCard
-              label="Net Sales"
-              value={formatCurrency(report.summary.net_sales || 0)}
-              icon={<DollarSign className="h-5 w-5 text-brass" />}
-            />
-            <StatCard
-              label="Covers"
-              value={formatNumber(report.summary.total_covers || 0)}
-              icon={<Users className="h-5 w-5 text-sage" />}
-            />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <StatCard
               label="Avg/Cover"
               value={formatCurrency(
