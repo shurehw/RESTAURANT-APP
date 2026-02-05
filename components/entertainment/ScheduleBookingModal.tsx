@@ -65,9 +65,9 @@ export function ScheduleBookingModal({
     status: 'confirmed' as 'confirmed' | 'tentative' | 'cancelled',
   });
 
-  // Filter artists by selected type
+  // Filter artists by selected type and exclude empty names
   const filteredArtists = artists.filter(
-    (a) => !formData.entertainment_type || a.entertainment_type === formData.entertainment_type
+    (a) => a.name && (!formData.entertainment_type || a.entertainment_type === formData.entertainment_type)
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -85,6 +85,7 @@ export function ScheduleBookingModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          artist_name: formData.artist_name === '_tbd' ? '' : formData.artist_name,
           venue_id: venueId,
           rate_amount: formData.rate_amount ? parseFloat(formData.rate_amount) : null,
         }),
@@ -169,10 +170,10 @@ export function ScheduleBookingModal({
                 <SelectValue placeholder="Select performer (optional)..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">TBD / Open</SelectItem>
+                <SelectItem value="_tbd">TBD / Open</SelectItem>
                 {filteredArtists.map((artist) => (
-                  <SelectItem key={artist.name} value={artist.name}>
-                    {artist.name}
+                  <SelectItem key={artist.id || artist.name} value={artist.name || `_artist_${artist.id}`}>
+                    {artist.name || 'Unnamed Artist'}
                   </SelectItem>
                 ))}
               </SelectContent>
