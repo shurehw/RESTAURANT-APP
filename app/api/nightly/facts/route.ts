@@ -50,6 +50,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Calculate comparison dates
+    const currentDate = new Date(date);
+    const sdlwDate = new Date(currentDate);
+    sdlwDate.setDate(sdlwDate.getDate() - 7);
+    const sdlwDateStr = sdlwDate.toISOString().split('T')[0];
+
+    const sdlyDate = new Date(currentDate);
+    sdlyDate.setFullYear(sdlyDate.getFullYear() - 1);
+    const sdlyDateStr = sdlyDate.toISOString().split('T')[0];
+
     // Fetch all fact data in parallel
     const [
       venueDayResult,
@@ -58,6 +68,9 @@ export async function GET(request: NextRequest) {
       itemResult,
       laborResult,
       timePunchesResult,
+      forecastResult,
+      sdlwResult,
+      sdlyResult,
     ] = await Promise.all([
       // Venue day facts (summary)
       (supabase as any)
@@ -108,6 +121,29 @@ export async function GET(request: NextRequest) {
         .gte('clock_in', `${date}T00:00:00`)
         .lte('clock_in', `${date}T23:59:59`)
         .not('clock_out', 'is', null),
+
+      // Prophet forecasts for current date (net_sales and covers)
+      (supabase as any)
+        .from('venue_day_forecast')
+        .select('forecast_type, yhat, yhat_lower, yhat_upper')
+        .eq('venue_id', venueId)
+        .eq('business_date', date),
+
+      // Same Day Last Week (SDLW) - 7 days ago
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count, beverage_pct')
+        .eq('venue_id', venueId)
+        .eq('business_date', sdlwDateStr)
+        .single(),
+
+      // Same Day Last Year (SDLY) - 1 year ago
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count, beverage_pct')
+        .eq('venue_id', venueId)
+        .eq('business_date', sdlyDateStr)
+        .single(),
     ]);
 
     // Check if we have data
@@ -137,6 +173,24 @@ export async function GET(request: NextRequest) {
 
     // Labor data
     const labor = laborResult.data as any;
+
+    // Process Prophet forecasts (grouped by forecast_type)
+    const forecasts = forecastResult.data || [];
+    const salesForecast = forecasts.find((f: any) => f.forecast_type === 'net_sales');
+    const coversForecast = forecasts.find((f: any) => f.forecast_type === 'covers');
+
+    // SDLW and SDLY data (may be null if no data exists)
+    const sdlw = sdlwResult.data as any;
+    const sdly = sdlyResult.data as any;
+
+    // Calculate variance percentages
+    const calcVariance = (actual: number, comparison: number | null | undefined): number | null => {
+      if (!comparison || comparison === 0) return null;
+      return ((actual - comparison) / comparison) * 100;
+    };
+
+    const actualNetSales = summary.net_sales || 0;
+    const actualCovers = summary.covers_count || 0;
 
     // Format response to match existing NightlyReportData structure
     const response = {
@@ -199,8 +253,39 @@ export async function GET(request: NextRequest) {
             labor_pct: labor.labor_cost_pct,
             splh: labor.sales_per_labor_hour,
             ot_hours: otHours,
+            covers_per_labor_hour:
+              labor.total_labor_hours > 0
+                ? summary.covers_count / labor.total_labor_hours
+                : null,
           }
         : null,
+
+      // Prophet forecast data
+      forecast: {
+        net_sales: salesForecast?.yhat || null,
+        net_sales_lower: salesForecast?.yhat_lower || null,
+        net_sales_upper: salesForecast?.yhat_upper || null,
+        covers: coversForecast?.yhat || null,
+        covers_lower: coversForecast?.yhat_lower || null,
+        covers_upper: coversForecast?.yhat_upper || null,
+      },
+
+      // Variance comparisons
+      variance: {
+        // vs Forecast
+        vs_forecast_pct: calcVariance(actualNetSales, salesForecast?.yhat),
+        vs_forecast_covers_pct: calcVariance(actualCovers, coversForecast?.yhat),
+        // vs Same Day Last Week
+        sdlw_net_sales: sdlw?.net_sales || null,
+        sdlw_covers: sdlw?.covers_count || null,
+        vs_sdlw_pct: calcVariance(actualNetSales, sdlw?.net_sales),
+        vs_sdlw_covers_pct: calcVariance(actualCovers, sdlw?.covers_count),
+        // vs Same Day Last Year
+        sdly_net_sales: sdly?.net_sales || null,
+        sdly_covers: sdly?.covers_count || null,
+        vs_sdly_pct: calcVariance(actualNetSales, sdly?.net_sales),
+        vs_sdly_covers_pct: calcVariance(actualCovers, sdly?.covers_count),
+      },
     };
 
     return NextResponse.json(response);

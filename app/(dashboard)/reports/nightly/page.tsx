@@ -18,6 +18,7 @@ import {
   DollarSign,
   Users,
   TrendingUp,
+  TrendingDown,
   Percent,
   Gift,
   Star,
@@ -27,6 +28,7 @@ import {
   UtensilsCrossed,
   Clock,
   AlertTriangle,
+  Target,
 } from 'lucide-react';
 
 interface NightlyReportData {
@@ -120,7 +122,30 @@ interface FactsSummary {
     labor_pct: number;
     splh: number;
     ot_hours: number;
+    covers_per_labor_hour: number | null;
   } | null;
+  // Prophet forecast
+  forecast?: {
+    net_sales: number | null;
+    net_sales_lower: number | null;
+    net_sales_upper: number | null;
+    covers: number | null;
+    covers_lower: number | null;
+    covers_upper: number | null;
+  };
+  // Variance comparisons
+  variance?: {
+    vs_forecast_pct: number | null;
+    vs_forecast_covers_pct: number | null;
+    sdlw_net_sales: number | null;
+    sdlw_covers: number | null;
+    vs_sdlw_pct: number | null;
+    vs_sdlw_covers_pct: number | null;
+    sdly_net_sales: number | null;
+    sdly_covers: number | null;
+    vs_sdly_pct: number | null;
+    vs_sdly_covers_pct: number | null;
+  };
 }
 
 function formatCurrency(value: number): string {
@@ -134,6 +159,24 @@ function formatCurrency(value: number): string {
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-US').format(value);
+}
+
+function VarianceBadge({ value, label }: { value: number | null | undefined; label: string }) {
+  if (value === null || value === undefined) return null;
+  const isPositive = value >= 0;
+  return (
+    <div className="flex items-center gap-1 text-xs">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className={`font-medium ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+        {isPositive ? '+' : ''}{value.toFixed(1)}%
+      </span>
+      {isPositive ? (
+        <TrendingUp className="h-3 w-3 text-emerald-500" />
+      ) : (
+        <TrendingDown className="h-3 w-3 text-red-500" />
+      )}
+    </div>
+  );
 }
 
 export default function NightlyReportPage() {
@@ -192,13 +235,15 @@ export default function NightlyReportPage() {
         const liveData = await liveRes.json();
         setReport(liveData);
 
-        // Get food/bev breakdown and labor from fact tables if available
+        // Get food/bev breakdown, labor, forecast, and variance from fact tables
         if (factsRes.ok) {
           const factsData = await factsRes.json();
           if (factsData.has_data) {
             setFactsSummary({
               ...factsData.summary,
               labor: factsData.labor,
+              forecast: factsData.forecast,
+              variance: factsData.variance,
             });
           } else {
             setFactsSummary(null);
@@ -334,6 +379,94 @@ export default function NightlyReportPage() {
       {/* Report Content */}
       {!loading && !error && report && (
         <>
+          {/* Executive Summary - Variance Block */}
+          {factsSummary?.variance && (
+            <Card className="bg-muted/30 border-brass/20">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Target className="h-4 w-4 text-brass" />
+                  <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    Performance vs Benchmarks
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {/* Net Sales with variance */}
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold tabular-nums">
+                      {formatCurrency(report.summary.net_sales || 0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase">Net Sales</div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      <VarianceBadge value={factsSummary.variance.vs_forecast_pct} label="Fcst" />
+                      <VarianceBadge value={factsSummary.variance.vs_sdlw_pct} label="SDLW" />
+                      <VarianceBadge value={factsSummary.variance.vs_sdly_pct} label="SDLY" />
+                    </div>
+                  </div>
+                  {/* Covers with variance */}
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold tabular-nums">
+                      {formatNumber(report.summary.total_covers || 0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground uppercase">Covers</div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1">
+                      <VarianceBadge value={factsSummary.variance.vs_forecast_covers_pct} label="Fcst" />
+                      <VarianceBadge value={factsSummary.variance.vs_sdlw_covers_pct} label="SDLW" />
+                      <VarianceBadge value={factsSummary.variance.vs_sdly_covers_pct} label="SDLY" />
+                    </div>
+                  </div>
+                  {/* Forecast context */}
+                  {factsSummary.forecast?.net_sales && (
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                        {formatCurrency(factsSummary.forecast.net_sales)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Forecast</div>
+                      <div className="text-xs text-muted-foreground">
+                        Range: {formatCurrency(factsSummary.forecast.net_sales_lower || 0)} - {formatCurrency(factsSummary.forecast.net_sales_upper || 0)}
+                      </div>
+                    </div>
+                  )}
+                  {/* SDLW context */}
+                  {factsSummary.variance.sdlw_net_sales && (
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                        {formatCurrency(factsSummary.variance.sdlw_net_sales)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">SDLW</div>
+                      <div className="text-xs text-muted-foreground">
+                        {factsSummary.variance.sdlw_covers} covers
+                      </div>
+                    </div>
+                  )}
+                  {/* SDLY context */}
+                  {factsSummary.variance.sdly_net_sales && (
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                        {formatCurrency(factsSummary.variance.sdly_net_sales)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">SDLY</div>
+                      <div className="text-xs text-muted-foreground">
+                        {factsSummary.variance.sdly_covers} covers
+                      </div>
+                    </div>
+                  )}
+                  {/* Labor efficiency preview */}
+                  {factsSummary.labor && (
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums">
+                        {(factsSummary.labor.labor_pct || 0).toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Labor %</div>
+                      <div className="text-xs text-muted-foreground">
+                        SPLH: {formatCurrency(factsSummary.labor.splh || 0)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Summary Stats - Single Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <StatCard
@@ -383,11 +516,18 @@ export default function NightlyReportPage() {
 
           {/* Labor Metrics */}
           {factsSummary?.labor && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               <StatCard
                 label="SPLH"
                 value={formatCurrency(factsSummary.labor.splh || 0)}
                 icon={<TrendingUp className="h-5 w-5 text-brass" />}
+              />
+              <StatCard
+                label="Covers/Hr"
+                value={factsSummary.labor.covers_per_labor_hour
+                  ? factsSummary.labor.covers_per_labor_hour.toFixed(1)
+                  : '—'}
+                icon={<Users className="h-5 w-5 text-brass" />}
               />
               <StatCard
                 label="Labor %"
