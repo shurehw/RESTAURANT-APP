@@ -3,11 +3,17 @@
 -- Stores Prophet model predictions for net_sales and covers by venue
 -- ============================================================================
 
+-- Clean up any partial state from previous runs
+DROP VIEW IF EXISTS forecast_vs_actual CASCADE;
+DROP FUNCTION IF EXISTS get_forecast_for_date(UUID, DATE) CASCADE;
+DROP TABLE IF EXISTS forecast_accuracy CASCADE;
+DROP TABLE IF EXISTS venue_day_forecast CASCADE;
+
 -- ============================================================================
 -- 1. FORECAST TABLE
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS venue_day_forecast (
+CREATE TABLE venue_day_forecast (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
   business_date DATE NOT NULL,
@@ -34,15 +40,14 @@ CREATE TABLE IF NOT EXISTS venue_day_forecast (
 );
 
 -- Performance indexes
-CREATE INDEX IF NOT EXISTS idx_forecast_venue_date
+CREATE INDEX idx_forecast_venue_date
   ON venue_day_forecast(venue_id, business_date DESC);
-CREATE INDEX IF NOT EXISTS idx_forecast_type
+CREATE INDEX idx_forecast_type
   ON venue_day_forecast(forecast_type, business_date DESC);
-CREATE INDEX IF NOT EXISTS idx_forecast_generated
+CREATE INDEX idx_forecast_generated
   ON venue_day_forecast(generated_at DESC);
-CREATE INDEX IF NOT EXISTS idx_forecast_future
-  ON venue_day_forecast(business_date)
-  WHERE business_date >= CURRENT_DATE;
+CREATE INDEX idx_forecast_future
+  ON venue_day_forecast(business_date);
 
 COMMENT ON TABLE venue_day_forecast IS
   'Prophet ML model forecasts for net sales and covers by venue';
@@ -51,7 +56,7 @@ COMMENT ON TABLE venue_day_forecast IS
 -- 2. FORECAST ACCURACY TABLE (track model performance)
 -- ============================================================================
 
-CREATE TABLE IF NOT EXISTS forecast_accuracy (
+CREATE TABLE forecast_accuracy (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
 
@@ -81,97 +86,126 @@ CREATE TABLE IF NOT EXISTS forecast_accuracy (
   UNIQUE(venue_id, forecast_type, model_version, period_start, period_end)
 );
 
-CREATE INDEX IF NOT EXISTS idx_accuracy_venue
+CREATE INDEX idx_accuracy_venue
   ON forecast_accuracy(venue_id, forecast_type, computed_at DESC);
 
 COMMENT ON TABLE forecast_accuracy IS
   'Weekly tracking of forecast model accuracy vs actuals';
 
 -- ============================================================================
--- 3. VIEW: FORECAST VS ACTUAL
--- ============================================================================
-
-CREATE OR REPLACE VIEW forecast_vs_actual AS
-SELECT
-  f.venue_id,
-  v.name as venue_name,
-  f.business_date,
-  f.forecast_type,
-  f.yhat as predicted,
-  f.yhat_lower as predicted_lower,
-  f.yhat_upper as predicted_upper,
-
-  -- Actual values from venue_day_facts
-  CASE
-    WHEN f.forecast_type = 'net_sales' THEN vdf.net_sales
-    WHEN f.forecast_type = 'covers' THEN vdf.covers_count::numeric
-  END as actual,
-
-  -- Error calculations
-  CASE
-    WHEN f.forecast_type = 'net_sales' THEN f.yhat - vdf.net_sales
-    WHEN f.forecast_type = 'covers' THEN f.yhat - vdf.covers_count::numeric
-  END as error,
-
-  CASE
-    WHEN f.forecast_type = 'net_sales' AND vdf.net_sales > 0
-      THEN ABS(f.yhat - vdf.net_sales) / vdf.net_sales * 100
-    WHEN f.forecast_type = 'covers' AND vdf.covers_count > 0
-      THEN ABS(f.yhat - vdf.covers_count::numeric) / vdf.covers_count * 100
-  END as abs_pct_error,
-
-  -- Was actual within prediction interval?
-  CASE
-    WHEN f.forecast_type = 'net_sales'
-      THEN vdf.net_sales BETWEEN f.yhat_lower AND f.yhat_upper
-    WHEN f.forecast_type = 'covers'
-      THEN vdf.covers_count::numeric BETWEEN f.yhat_lower AND f.yhat_upper
-  END as within_interval,
-
-  f.model_version,
-  f.generated_at
-
-FROM venue_day_forecast f
-JOIN venues v ON v.id = f.venue_id
-LEFT JOIN venue_day_facts vdf
-  ON vdf.venue_id = f.venue_id
-  AND vdf.business_date = f.business_date
-WHERE f.model_version = (
-  -- Use latest model version
-  SELECT model_version
-  FROM venue_day_forecast
-  WHERE venue_id = f.venue_id
-  ORDER BY generated_at DESC
-  LIMIT 1
-);
-
-COMMENT ON VIEW forecast_vs_actual IS
-  'Compare Prophet forecasts to actual venue performance';
-
--- ============================================================================
--- 4. RLS POLICIES
+-- 3. RLS POLICIES
 -- ============================================================================
 
 ALTER TABLE venue_day_forecast ENABLE ROW LEVEL SECURITY;
 ALTER TABLE forecast_accuracy ENABLE ROW LEVEL SECURITY;
 
--- venue_day_forecast policies
-CREATE POLICY "Users can view forecasts for their venues"
-  ON venue_day_forecast FOR SELECT
-  USING (venue_id IN (SELECT get_user_venue_ids()));
-
+-- Service role bypass (always needed)
 CREATE POLICY "Service role can manage forecasts"
   ON venue_day_forecast FOR ALL
-  USING (auth.role() = 'service_role');
-
--- forecast_accuracy policies
-CREATE POLICY "Users can view accuracy for their venues"
-  ON forecast_accuracy FOR SELECT
-  USING (venue_id IN (SELECT get_user_venue_ids()));
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
 
 CREATE POLICY "Service role can manage accuracy"
   ON forecast_accuracy FOR ALL
-  USING (auth.role() = 'service_role');
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- User access: can view forecasts for venues in their organization
+CREATE POLICY "Users can view forecasts for their venues"
+  ON venue_day_forecast FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM venues v
+      JOIN organization_users ou ON ou.organization_id = v.organization_id
+      WHERE v.id = venue_day_forecast.venue_id
+        AND ou.user_id = auth.uid()
+        AND ou.is_active = TRUE
+    )
+  );
+
+CREATE POLICY "Users can view accuracy for their venues"
+  ON forecast_accuracy FOR SELECT
+  TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM venues v
+      JOIN organization_users ou ON ou.organization_id = v.organization_id
+      WHERE v.id = forecast_accuracy.venue_id
+        AND ou.user_id = auth.uid()
+        AND ou.is_active = TRUE
+    )
+  );
+
+-- ============================================================================
+-- 4. VIEW: FORECAST VS ACTUAL (only if venue_day_facts exists)
+-- ============================================================================
+
+DO $$
+BEGIN
+  -- Only create view if venue_day_facts table exists
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'venue_day_facts') THEN
+    EXECUTE $view$
+      CREATE OR REPLACE VIEW forecast_vs_actual AS
+      SELECT
+        f.venue_id,
+        v.name as venue_name,
+        f.business_date,
+        f.forecast_type,
+        f.yhat as predicted,
+        f.yhat_lower as predicted_lower,
+        f.yhat_upper as predicted_upper,
+        CASE
+          WHEN f.forecast_type = 'net_sales' THEN vdf.net_sales
+          WHEN f.forecast_type = 'covers' THEN vdf.covers_count::numeric
+        END as actual,
+        CASE
+          WHEN f.forecast_type = 'net_sales' THEN f.yhat - vdf.net_sales
+          WHEN f.forecast_type = 'covers' THEN f.yhat - vdf.covers_count::numeric
+        END as error,
+        CASE
+          WHEN f.forecast_type = 'net_sales' AND vdf.net_sales > 0
+            THEN ABS(f.yhat - vdf.net_sales) / vdf.net_sales * 100
+          WHEN f.forecast_type = 'covers' AND vdf.covers_count > 0
+            THEN ABS(f.yhat - vdf.covers_count::numeric) / vdf.covers_count * 100
+        END as abs_pct_error,
+        CASE
+          WHEN f.forecast_type = 'net_sales'
+            THEN vdf.net_sales BETWEEN f.yhat_lower AND f.yhat_upper
+          WHEN f.forecast_type = 'covers'
+            THEN vdf.covers_count::numeric BETWEEN f.yhat_lower AND f.yhat_upper
+        END as within_interval,
+        f.model_version,
+        f.generated_at
+      FROM (
+        SELECT DISTINCT ON (venue_id, business_date, forecast_type)
+          venue_id,
+          business_date,
+          forecast_type,
+          yhat,
+          yhat_lower,
+          yhat_upper,
+          model_version,
+          generated_at
+        FROM venue_day_forecast
+        ORDER BY venue_id, business_date, forecast_type, generated_at DESC
+      ) f
+      JOIN venues v ON v.id = f.venue_id
+      LEFT JOIN venue_day_facts vdf
+        ON vdf.venue_id = f.venue_id
+        AND vdf.business_date = f.business_date
+    $view$;
+
+    COMMENT ON VIEW forecast_vs_actual IS
+      'Compare Prophet forecasts to actual venue performance';
+
+    RAISE NOTICE 'Created forecast_vs_actual view';
+  ELSE
+    RAISE NOTICE 'Skipping forecast_vs_actual view - venue_day_facts table does not exist';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 5. FUNCTION: Get forecast for entertainment budgeting
@@ -240,4 +274,4 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 COMMENT ON FUNCTION get_forecast_for_date IS
   'Get forecast values with budget basis recommendation based on uncertainty';
 
-SELECT 'venue_day_forecast table created successfully' as status;
+SELECT 'venue_day_forecast migration completed' as status;
