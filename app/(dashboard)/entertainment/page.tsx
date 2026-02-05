@@ -26,6 +26,7 @@ import {
   UserPlus,
   Calendar,
   Monitor,
+  User,
 } from 'lucide-react';
 
 import type {
@@ -399,6 +400,18 @@ function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
                                 <span>{type} - {entry.config}</span>
                               </div>
                               <div className="space-y-2 text-sm">
+                                {entry.performer_name && (
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">{entry.performer_name}</span>
+                                  </div>
+                                )}
+                                {entry.booked_by && (
+                                  <div className="flex items-center gap-2 text-muted-foreground">
+                                    <UserPlus className="h-4 w-4" />
+                                    <span>Booked by {entry.booked_by}</span>
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-2 text-muted-foreground">
                                   <Clock className="h-4 w-4" />
                                   <span>{formatTime(entry.time_slot_start)} - {formatTime(entry.time_slot_end)}</span>
