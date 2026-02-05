@@ -146,12 +146,12 @@
 
   /* Sage Badge */
   .badge-sage {
-    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-sage-light text-sage-dark;
+    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-sage-50 text-sage-800;
   }
 
   /* Brass Badge */
   .badge-brass {
-    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-brass-light text-brass-dark;
+    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-brass-50 text-brass-800;
   }
 
   /* Error Badge */
