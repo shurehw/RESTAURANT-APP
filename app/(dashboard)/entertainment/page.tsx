@@ -339,6 +339,22 @@ function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
     DAYS_OF_WEEK.some((day) => scheduleByTypeAndDay[type][day].length > 0)
   );
 
+  // Calculate daily totals
+  const dailyTotals = DAYS_OF_WEEK.reduce((acc, day) => {
+    let total = 0;
+    ENTERTAINMENT_TYPES.forEach((type) => {
+      scheduleByTypeAndDay[type]?.[day]?.forEach((entry) => {
+        if (entry.rate_amount) {
+          total += entry.rate_amount;
+        }
+      });
+    });
+    acc[day] = total;
+    return acc;
+  }, {} as Record<DayOfWeek, number>);
+
+  const weeklyTotal = Object.values(dailyTotals).reduce((sum, val) => sum + val, 0);
+
   return (
     <div className="overflow-x-auto">
       <div className="bg-card border rounded-lg min-w-[700px]">
@@ -391,6 +407,9 @@ function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
                               <div className="opacity-75">
                                 {formatTime(entry.time_slot_start)} - {formatTime(entry.time_slot_end)}
                               </div>
+                              {entry.rate_amount && (
+                                <div className="font-medium mt-0.5">{formatCurrency(entry.rate_amount)}</div>
+                              )}
                             </button>
                           </PopoverTrigger>
                           <PopoverContent className="w-64" align="start">
@@ -410,6 +429,12 @@ function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
                                   <div className="flex items-center gap-2 text-muted-foreground">
                                     <UserPlus className="h-4 w-4" />
                                     <span>Booked by {entry.booked_by}</span>
+                                  </div>
+                                )}
+                                {entry.rate_amount && (
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">{formatCurrency(entry.rate_amount)}</span>
                                   </div>
                                 )}
                                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -441,6 +466,36 @@ function ScheduleGrid({ schedule }: { schedule: VenueSchedule }) {
             })}
           </div>
         ))}
+
+        {/* Daily Totals Row */}
+        {activeTypes.length > 0 && (
+          <div className="grid grid-cols-8 border-b-2 border-brass bg-muted/70">
+            <div className="p-3 border-r border-border">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                <span className="text-sm font-semibold">Daily Total</span>
+              </div>
+            </div>
+            {DAYS_OF_WEEK.map((day) => (
+              <div
+                key={day}
+                className="p-3 text-center border-l border-border font-semibold"
+              >
+                {dailyTotals[day] > 0 ? formatCurrency(dailyTotals[day]) : '—'}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Weekly Summary */}
+        {activeTypes.length > 0 && weeklyTotal > 0 && (
+          <div className="p-3 bg-brass/10 border-t border-brass/30">
+            <div className="flex justify-between items-center text-sm">
+              <span className="font-medium">Weekly Entertainment Total</span>
+              <span className="font-bold text-lg">{formatCurrency(weeklyTotal)}</span>
+            </div>
+          </div>
+        )}
 
         {/* Empty state if no entertainment scheduled */}
         {activeTypes.length === 0 && (
