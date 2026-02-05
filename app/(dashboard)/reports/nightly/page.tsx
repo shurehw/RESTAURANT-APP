@@ -95,13 +95,20 @@ interface NightlyReportData {
   }>;
 }
 
-// Map OpsOS venue names to TipSee location UUIDs
-const VENUE_TO_TIPSEE_MAP: Record<string, string> = {
-  'The Nice Guy': 'aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4',
-  // Add more mappings as needed
-};
+interface VenueMapping {
+  venue_id: string;
+  venue_name: string;
+  tipsee_location_uuid: string;
+}
 
-const DEFAULT_TIPSEE_LOCATION = 'aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4';
+interface FactsSummary {
+  food_sales?: number;
+  beverage_sales?: number;
+  wine_sales?: number;
+  liquor_sales?: number;
+  beer_sales?: number;
+  beverage_pct?: number;
+}
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -124,36 +131,71 @@ export default function NightlyReportPage() {
     return yesterday.toISOString().split('T')[0];
   });
   const [report, setReport] = useState<NightlyReportData | null>(null);
+  const [factsSummary, setFactsSummary] = useState<FactsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mappings, setMappings] = useState<VenueMapping[]>([]);
 
-  // Get TipSee location UUID from selected venue
-  const locationUuid = selectedVenue?.name
-    ? VENUE_TO_TIPSEE_MAP[selectedVenue.name] || DEFAULT_TIPSEE_LOCATION
-    : DEFAULT_TIPSEE_LOCATION;
+  // Fetch venue mappings on mount
+  useEffect(() => {
+    async function fetchMappings() {
+      try {
+        const res = await fetch('/api/nightly/facts?action=mappings');
+        if (res.ok) {
+          const data = await res.json();
+          setMappings(data.mappings || []);
+        }
+      } catch (e) {
+        console.error('Failed to fetch venue mappings:', e);
+      }
+    }
+    fetchMappings();
+  }, []);
+
+  // Get TipSee location UUID from selected venue via mapping
+  const currentMapping = mappings.find(m => m.venue_id === selectedVenue?.id);
+  const locationUuid = currentMapping?.tipsee_location_uuid || 'aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4';
 
   // Fetch report when date or location changes
   useEffect(() => {
     async function fetchReport() {
+      if (!selectedVenue?.id) return;
+
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/nightly?date=${date}&location=${locationUuid}`);
-        if (!res.ok) {
-          const errData = await res.json();
+        // Fetch live TipSee data and fact tables in parallel
+        const [liveRes, factsRes] = await Promise.all([
+          fetch(`/api/nightly?date=${date}&location=${locationUuid}`),
+          fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`),
+        ]);
+
+        if (!liveRes.ok) {
+          const errData = await liveRes.json();
           throw new Error(errData.error || 'Failed to fetch report');
         }
-        const data = await res.json();
-        setReport(data);
+        const liveData = await liveRes.json();
+        setReport(liveData);
+
+        // Get food/bev breakdown from fact tables if available
+        if (factsRes.ok) {
+          const factsData = await factsRes.json();
+          if (factsData.has_data) {
+            setFactsSummary(factsData.summary);
+          } else {
+            setFactsSummary(null);
+          }
+        }
       } catch (err: any) {
         setError(err.message);
         setReport(null);
+        setFactsSummary(null);
       } finally {
         setLoading(false);
       }
     }
     fetchReport();
-  }, [date, locationUuid]);
+  }, [date, locationUuid, selectedVenue?.id]);
 
   function changeDate(days: number) {
     const d = new Date(date);
@@ -276,6 +318,37 @@ export default function NightlyReportPage() {
               icon={<Percent className="h-5 w-5 text-muted-foreground" />}
             />
           </div>
+
+          {/* Food/Bev Breakdown (from fact tables) */}
+          {factsSummary && (factsSummary.food_sales || factsSummary.beverage_sales) && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <StatCard
+                label="Food Sales"
+                value={formatCurrency(factsSummary.food_sales || 0)}
+                icon={<UtensilsCrossed className="h-5 w-5 text-brass" />}
+              />
+              <StatCard
+                label="Beverage Sales"
+                value={formatCurrency(factsSummary.beverage_sales || 0)}
+                icon={<DollarSign className="h-5 w-5 text-sage" />}
+              />
+              <StatCard
+                label="Wine"
+                value={formatCurrency(factsSummary.wine_sales || 0)}
+                icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
+              />
+              <StatCard
+                label="Liquor"
+                value={formatCurrency(factsSummary.liquor_sales || 0)}
+                icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
+              />
+              <StatCard
+                label="Bev %"
+                value={`${(factsSummary.beverage_pct || 0).toFixed(1)}%`}
+                icon={<Percent className="h-5 w-5 text-sage" />}
+              />
+            </div>
+          )}
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
