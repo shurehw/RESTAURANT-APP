@@ -42,7 +42,7 @@ interface ScheduleBookingModalProps {
   onSuccess?: () => void;
 }
 
-const ENTERTAINMENT_TYPES = ['Band', 'Dancers', 'DJ'] as const;
+const ENTERTAINMENT_TYPES = ['Band', 'Dancers', 'DJ', 'AV'] as const;
 
 export function ScheduleBookingModal({
   open,

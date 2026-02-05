@@ -5,7 +5,7 @@
 
 export type DayOfWeek = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 
-export type EntertainmentType = 'Band' | 'Dancers' | 'DJ';
+export type EntertainmentType = 'Band' | 'Dancers' | 'DJ' | 'AV';
 
 export type PerformanceConfig =
   | 'SOLO'
@@ -42,6 +42,7 @@ export interface Artist {
   entertainment_type: EntertainmentType;
   phone?: string;
   email?: string;
+  standard_rate?: number;
   is_coordinator: boolean; // true if they manage others (like Ryan Cross)
   notes?: string;
 }
@@ -84,7 +85,7 @@ export const TIME_SLOTS: TimeSlot[] = [
 
 export const DAYS_OF_WEEK: DayOfWeek[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-export const ENTERTAINMENT_TYPES: EntertainmentType[] = ['Band', 'Dancers', 'DJ'];
+export const ENTERTAINMENT_TYPES: EntertainmentType[] = ['Band', 'Dancers', 'DJ', 'AV'];
 
 export const PERFORMANCE_CONFIGS: PerformanceConfig[] = [
   'SOLO',
