@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
   try {
     // Return venue mappings
     if (action === 'mappings') {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('venue_tipsee_mapping')
         .select(`
           venue_id,
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       itemResult,
     ] = await Promise.all([
       // Venue day facts (summary)
-      supabase
+      (supabase as any)
         .from('venue_day_facts')
         .select('*')
         .eq('venue_id', venueId)
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         .single(),
 
       // Category breakdown
-      supabase
+      (supabase as any)
         .from('category_day_facts')
         .select('*')
         .eq('venue_id', venueId)
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         .order('gross_sales', { ascending: false }),
 
       // Server performance
-      supabase
+      (supabase as any)
         .from('server_day_facts')
         .select('*')
         .eq('venue_id', venueId)
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         .order('gross_sales', { ascending: false }),
 
       // Menu items
-      supabase
+      (supabase as any)
         .from('item_day_facts')
         .select('*')
         .eq('venue_id', venueId)
