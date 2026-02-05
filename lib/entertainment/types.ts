@@ -32,6 +32,8 @@ export interface ScheduleEntry {
   time_slot_start: string; // e.g., "19:00"
   time_slot_end: string;   // e.g., "21:00"
   config: PerformanceConfig; // e.g., "DUO", "4 PIECE BAND"
+  performer_name?: string; // Artist/performer name if assigned
+  booked_by?: string; // Who made the booking
   notes?: string;
 }
 
