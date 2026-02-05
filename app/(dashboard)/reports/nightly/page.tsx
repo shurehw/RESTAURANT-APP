@@ -521,42 +521,61 @@ export default function NightlyReportPage() {
               value={`${report.summary.net_sales > 0 ? ((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1) : '0.0'}%`}
               icon={<Gift className="h-5 w-5 text-error" />}
             />
-            {factsSummary && (
-              <>
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-muted">
-                      <UtensilsCrossed className="h-5 w-5 text-brass" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.food_sales || 0)}
+            {/* Calculate Food/Bev from salesByCategory (live TipSee data) */}
+            {(() => {
+              const isBevCategory = (cat: string) => {
+                const lower = (cat || '').toLowerCase();
+                return lower.includes('bev') || lower.includes('wine') ||
+                       lower.includes('beer') || lower.includes('liquor') ||
+                       lower.includes('cocktail');
+              };
+              // Sum from salesByCategory (grouped by parent_category)
+              const foodSales = report.salesByCategory
+                .filter(c => !isBevCategory(c.category))
+                .reduce((sum, c) => sum + (c.net_sales || 0), 0);
+              const bevSales = report.salesByCategory
+                .filter(c => isBevCategory(c.category))
+                .reduce((sum, c) => sum + (c.net_sales || 0), 0);
+              // Use net_sales from summary for percentage calculation
+              const netSales = report.summary.net_sales || 0;
+              const foodPct = netSales > 0 ? (foodSales / netSales * 100) : 0;
+              const bevPct = netSales > 0 ? (bevSales / netSales * 100) : 0;
+
+              return (
+                <>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-md bg-muted">
+                        <UtensilsCrossed className="h-5 w-5 text-brass" />
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        FOOD · {report.summary.net_sales > 0
-                          ? ((factsSummary.food_sales || 0) / report.summary.net_sales * 100).toFixed(1)
-                          : '0.0'}%
+                      <div>
+                        <div className="text-2xl font-bold tabular-nums">
+                          {formatCurrency(foodSales)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          FOOD · {foodPct.toFixed(1)}%
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-muted">
-                      <DollarSign className="h-5 w-5 text-sage" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.beverage_sales || 0)}
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-md bg-muted">
+                        <DollarSign className="h-5 w-5 text-sage" />
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        BEVERAGE · {(factsSummary.beverage_pct || 0).toFixed(1)}%
+                      <div>
+                        <div className="text-2xl font-bold tabular-nums">
+                          {formatCurrency(bevSales)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          BEVERAGE · {bevPct.toFixed(1)}%
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              </>
-            )}
+                  </Card>
+                </>
+              );
+            })()}
           </div>
 
           {/* Labor Metrics */}
