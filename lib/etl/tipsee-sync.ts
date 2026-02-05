@@ -187,7 +187,7 @@ export async function syncVenueDay(
     };
   }
 
-  const etlRunId = etlRun.id;
+  const etlRunId = (etlRun as any).id;
   let rowsExtracted = 0;
   let rowsLoaded = 0;
 
