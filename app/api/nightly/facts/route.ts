@@ -56,6 +56,8 @@ export async function GET(request: NextRequest) {
       categoryResult,
       serverResult,
       itemResult,
+      laborResult,
+      timePunchesResult,
     ] = await Promise.all([
       // Venue day facts (summary)
       (supabase as any)
@@ -89,6 +91,23 @@ export async function GET(request: NextRequest) {
         .eq('business_date', date)
         .order('gross_sales', { ascending: false })
         .limit(15),
+
+      // Labor efficiency
+      (supabase as any)
+        .from('labor_efficiency_daily')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .single(),
+
+      // Time punches for OT calculation
+      (supabase as any)
+        .from('time_punches')
+        .select('user_id, clock_in, clock_out')
+        .eq('venue_id', venueId)
+        .gte('clock_in', `${date}T00:00:00`)
+        .lte('clock_in', `${date}T23:59:59`)
+        .not('clock_out', 'is', null),
     ]);
 
     // Check if we have data
@@ -101,6 +120,23 @@ export async function GET(request: NextRequest) {
         message: 'No fact data for this date. Data may not be synced yet.',
       });
     }
+
+    // Calculate OT hours (hours over 8 per employee per day)
+    const timePunches = timePunchesResult.data || [];
+    const employeeHours: Record<string, number> = {};
+    for (const punch of timePunches) {
+      if (!punch.clock_out) continue;
+      const hoursWorked =
+        (new Date(punch.clock_out).getTime() - new Date(punch.clock_in).getTime()) /
+        (1000 * 60 * 60);
+      employeeHours[punch.user_id] = (employeeHours[punch.user_id] || 0) + hoursWorked;
+    }
+    const otHours = Object.values(employeeHours).reduce((sum, hours) => {
+      return sum + Math.max(0, hours - 8);
+    }, 0);
+
+    // Labor data
+    const labor = laborResult.data as any;
 
     // Format response to match existing NightlyReportData structure
     const response = {
@@ -155,6 +191,16 @@ export async function GET(request: NextRequest) {
         net_total: item.gross_sales,
         category: item.parent_category,
       })),
+
+      labor: labor
+        ? {
+            total_hours: labor.total_labor_hours,
+            labor_cost: labor.labor_cost,
+            labor_pct: labor.labor_cost_pct,
+            splh: labor.sales_per_labor_hour,
+            ot_hours: otHours,
+          }
+        : null,
     };
 
     return NextResponse.json(response);

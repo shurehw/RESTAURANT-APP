@@ -15,7 +15,6 @@ import {
   Calendar,
   DollarSign,
   Users,
-  Receipt,
   TrendingUp,
   Percent,
   Gift,
@@ -24,6 +23,8 @@ import {
   ChevronRight,
   Loader2,
   UtensilsCrossed,
+  Clock,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface NightlyReportData {
@@ -110,6 +111,14 @@ interface FactsSummary {
   liquor_sales?: number;
   beer_sales?: number;
   beverage_pct?: number;
+  // Labor metrics
+  labor?: {
+    total_hours: number;
+    labor_cost: number;
+    labor_pct: number;
+    splh: number;
+    ot_hours: number;
+  } | null;
 }
 
 function formatCurrency(value: number): string {
@@ -137,6 +146,8 @@ export default function NightlyReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mappings, setMappings] = useState<VenueMapping[]>([]);
+  const [compNotes, setCompNotes] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState<string | null>(null);
 
   // Fetch venue mappings on mount
   useEffect(() => {
@@ -179,14 +190,30 @@ export default function NightlyReportPage() {
         const liveData = await liveRes.json();
         setReport(liveData);
 
-        // Get food/bev breakdown from fact tables if available
+        // Get food/bev breakdown and labor from fact tables if available
         if (factsRes.ok) {
           const factsData = await factsRes.json();
           if (factsData.has_data) {
-            setFactsSummary(factsData.summary);
+            setFactsSummary({
+              ...factsData.summary,
+              labor: factsData.labor,
+            });
           } else {
             setFactsSummary(null);
           }
+        }
+
+        // Fetch comp notes
+        try {
+          const notesRes = await fetch(
+            `/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`
+          );
+          if (notesRes.ok) {
+            const notesData = await notesRes.json();
+            setCompNotes(notesData.notes || {});
+          }
+        } catch (e) {
+          console.error('Failed to fetch comp notes:', e);
         }
       } catch (err: any) {
         setError(err.message);
@@ -203,6 +230,28 @@ export default function NightlyReportPage() {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     setDate(d.toISOString().split('T')[0]);
+  }
+
+  async function saveCompNote(checkId: string, notes: string) {
+    if (!selectedVenue?.id) return;
+    setSavingNote(checkId);
+    try {
+      await fetch('/api/nightly/comp-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: selectedVenue.id,
+          business_date: date,
+          check_id: checkId,
+          notes,
+        }),
+      });
+      setCompNotes((prev: Record<string, string>) => ({ ...prev, [checkId]: notes }));
+    } catch (e) {
+      console.error('Failed to save comp note:', e);
+    } finally {
+      setSavingNote(null);
+    }
   }
 
   const formatDate = (dateStr: string) => {
@@ -283,8 +332,8 @@ export default function NightlyReportPage() {
       {/* Report Content */}
       {!loading && !error && report && (
         <>
-          {/* Summary Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {/* Summary Stats - Single Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
             <StatCard
               label="Net Sales"
               value={formatCurrency(report.summary.net_sales || 0)}
@@ -296,102 +345,68 @@ export default function NightlyReportPage() {
               icon={<Users className="h-5 w-5 text-sage" />}
             />
             <StatCard
-              label="Checks"
-              value={formatNumber(report.summary.total_checks || 0)}
-              icon={<Receipt className="h-5 w-5 text-brass" />}
-            />
-            <StatCard
-              label="Avg Check"
+              label="Avg/Cover"
               value={formatCurrency(
-                report.summary.total_checks > 0
-                  ? report.summary.net_sales / report.summary.total_checks
+                report.summary.total_covers > 0
+                  ? report.summary.net_sales / report.summary.total_covers
                   : 0
               )}
               icon={<TrendingUp className="h-5 w-5 text-sage" />}
             />
             <StatCard
-              label="Comps"
-              value={formatCurrency(report.summary.total_comps || 0)}
+              label="Comp %"
+              value={`${report.summary.net_sales > 0 ? ((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1) : '0.0'}%`}
               icon={<Gift className="h-5 w-5 text-error" />}
             />
-            <StatCard
-              label="Tax"
-              value={formatCurrency(report.summary.total_tax || 0)}
-              icon={<Percent className="h-5 w-5 text-muted-foreground" />}
-            />
+            {factsSummary && (
+              <>
+                <StatCard
+                  label="Food"
+                  value={formatCurrency(factsSummary.food_sales || 0)}
+                  icon={<UtensilsCrossed className="h-5 w-5 text-brass" />}
+                />
+                <StatCard
+                  label="Beverage"
+                  value={formatCurrency(factsSummary.beverage_sales || 0)}
+                  icon={<DollarSign className="h-5 w-5 text-sage" />}
+                />
+                <StatCard
+                  label="Bev %"
+                  value={`${(factsSummary.beverage_pct || 0).toFixed(1)}%`}
+                  icon={<Percent className="h-5 w-5 text-sage" />}
+                />
+              </>
+            )}
           </div>
 
-          {/* Food/Bev Breakdown (from fact tables) */}
-          {factsSummary && (factsSummary.food_sales || factsSummary.beverage_sales) && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {/* Labor Metrics */}
+          {factsSummary?.labor && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
-                label="Food Sales"
-                value={formatCurrency(factsSummary.food_sales || 0)}
-                icon={<UtensilsCrossed className="h-5 w-5 text-brass" />}
+                label="SPLH"
+                value={formatCurrency(factsSummary.labor.splh || 0)}
+                icon={<TrendingUp className="h-5 w-5 text-brass" />}
               />
               <StatCard
-                label="Beverage Sales"
-                value={formatCurrency(factsSummary.beverage_sales || 0)}
-                icon={<DollarSign className="h-5 w-5 text-sage" />}
-              />
-              <StatCard
-                label="Wine"
-                value={formatCurrency(factsSummary.wine_sales || 0)}
-                icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
-              />
-              <StatCard
-                label="Liquor"
-                value={formatCurrency(factsSummary.liquor_sales || 0)}
-                icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
-              />
-              <StatCard
-                label="Bev %"
-                value={`${(factsSummary.beverage_pct || 0).toFixed(1)}%`}
+                label="Labor %"
+                value={`${(factsSummary.labor.labor_pct || 0).toFixed(1)}%`}
                 icon={<Percent className="h-5 w-5 text-sage" />}
+              />
+              <StatCard
+                label="Total Hours"
+                value={`${(factsSummary.labor.total_hours || 0).toFixed(1)}`}
+                icon={<Clock className="h-5 w-5 text-muted-foreground" />}
+              />
+              <StatCard
+                label="OT Hours"
+                value={`${(factsSummary.labor.ot_hours || 0).toFixed(1)}`}
+                icon={<AlertTriangle className={`h-5 w-5 ${factsSummary.labor.ot_hours > 0 ? 'text-error' : 'text-muted-foreground'}`} />}
               />
             </div>
           )}
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Sales by Category */}
-            <Card>
-              <CardHeader className="border-b border-brass/20">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-brass" />
-                  Sales by Category
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {report.salesByCategory.length > 0 ? (
-                  <table className="table-opsos">
-                    <thead>
-                      <tr>
-                        <th>Category</th>
-                        <th className="text-right">Net Sales</th>
-                        <th className="text-right">Comps</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.salesByCategory.map((cat, i) => (
-                        <tr key={i}>
-                          <td className="font-medium">{cat.category}</td>
-                          <td className="text-right">{formatCurrency(cat.net_sales || 0)}</td>
-                          <td className="text-right text-error">
-                            {cat.comps > 0 ? formatCurrency(cat.comps) : '-'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-state py-8">
-                    <p className="text-muted-foreground">No sales data</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
             {/* Server Performance */}
             <Card>
               <CardHeader className="border-b border-brass/20">
@@ -406,7 +421,6 @@ export default function NightlyReportPage() {
                     <thead>
                       <tr>
                         <th>Server</th>
-                        <th className="text-right">Tickets</th>
                         <th className="text-right">Covers</th>
                         <th className="text-right">Sales</th>
                         <th className="text-right">Avg/Cover</th>
@@ -421,7 +435,6 @@ export default function NightlyReportPage() {
                               {server.employee_role_name}
                             </div>
                           </td>
-                          <td className="text-right">{server.tickets}</td>
                           <td className="text-right">{server.covers}</td>
                           <td className="text-right">{formatCurrency(server.net_sales || 0)}</td>
                           <td className="text-right">{formatCurrency(server.avg_per_cover || 0)}</td>
@@ -608,6 +621,20 @@ export default function NightlyReportPage() {
                                   {comp.comped_items.join(', ')}
                                 </div>
                               )}
+                              <input
+                                type="text"
+                                placeholder="Add manager note..."
+                                defaultValue={compNotes[comp.check_id] || ''}
+                                onBlur={(e: { target: { value: string } }) => {
+                                  const newValue = e.target.value.trim();
+                                  if (newValue !== (compNotes[comp.check_id] || '')) {
+                                    saveCompNote(comp.check_id, newValue);
+                                  }
+                                }}
+                                className={`mt-2 w-full text-sm px-2 py-1.5 rounded border border-border bg-background placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-brass ${
+                                  savingNote === comp.check_id ? 'opacity-50' : ''
+                                }`}
+                              />
                             </div>
                           ))}
                         </div>
@@ -627,116 +654,134 @@ export default function NightlyReportPage() {
             </Card>
           </div>
 
-          {/* Notable Guests */}
+          {/* VIP Activity */}
           <Card>
             <CardHeader className="border-b border-brass/20">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Star className="h-5 w-5 text-brass" />
-                Notable Guests (Top Spenders)
+                VIP Activity
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              {report.notableGuests.length > 0 ? (
-                <div className="divide-y divide-border">
-                  {report.notableGuests.map((guest, i) => (
-                    <div key={i} className="p-4 hover:bg-muted/50 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <span className="font-semibold text-lg">
-                            {formatCurrency(guest.payment || 0)}
-                          </span>
-                          <span className="text-muted-foreground text-sm ml-2">
-                            Table {guest.table_name}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          {guest.cardholder_name && (
-                            <div className="font-medium">{guest.cardholder_name}</div>
-                          )}
-                          {guest.tip_percent !== null && (
-                            <div className="text-sm text-sage">
-                              {guest.tip_percent}% tip
+              {(report.notableGuests.length > 0 || report.peopleWeKnow.length > 0) ? (
+                <Tabs defaultValue="top-spenders" className="w-full">
+                  <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
+                    <TabsTrigger
+                      value="top-spenders"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-brass data-[state=active]:bg-transparent"
+                    >
+                      Top Spenders ({report.notableGuests.length})
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="vips"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-brass data-[state=active]:bg-transparent"
+                    >
+                      VIPs ({report.peopleWeKnow.length})
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="top-spenders" className="mt-0">
+                    {report.notableGuests.length > 0 ? (
+                      <div className="divide-y divide-border">
+                        {report.notableGuests.map((guest, i) => (
+                          <div key={i} className="p-4 hover:bg-muted/50 transition-colors">
+                            <div className="flex justify-between items-start mb-2">
+                              <div>
+                                <span className="font-semibold text-lg">
+                                  {formatCurrency(guest.payment || 0)}
+                                </span>
+                                <span className="text-muted-foreground text-sm ml-2">
+                                  Table {guest.table_name}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                {guest.cardholder_name && (
+                                  <div className="font-medium">{guest.cardholder_name}</div>
+                                )}
+                                {guest.tip_percent !== null && (
+                                  <div className="text-sm text-sage">
+                                    {guest.tip_percent}% tip
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
+                            <div className="text-sm text-muted-foreground">
+                              <span>Server: {guest.server}</span>
+                              <span className="mx-2">|</span>
+                              <span>{guest.covers} covers</span>
+                            </div>
+                            {guest.items.length > 0 && (
+                              <div className="mt-2 text-sm">
+                                {guest.items.join(', ')}
+                                {guest.additional_items > 0 && (
+                                  <span className="text-muted-foreground">
+                                    {' '}+{guest.additional_items} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        <span>Server: {guest.server}</span>
-                        <span className="mx-2">|</span>
-                        <span>{guest.covers} covers</span>
+                    ) : (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">No top spenders</p>
                       </div>
-                      {guest.items.length > 0 && (
-                        <div className="mt-2 text-sm">
-                          {guest.items.join(', ')}
-                          {guest.additional_items > 0 && (
-                            <span className="text-muted-foreground">
-                              {' '}+{guest.additional_items} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="vips" className="mt-0">
+                    {report.peopleWeKnow.length > 0 ? (
+                      <table className="table-opsos">
+                        <thead>
+                          <tr>
+                            <th>Guest</th>
+                            <th>Party</th>
+                            <th className="text-right">Spent</th>
+                            <th>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {report.peopleWeKnow.map((person, i) => (
+                            <tr key={i}>
+                              <td>
+                                <div className="flex items-center gap-2">
+                                  {person.is_vip && (
+                                    <span className="badge-brass">VIP</span>
+                                  )}
+                                  <span className="font-medium">
+                                    {person.first_name} {person.last_name}
+                                  </span>
+                                </div>
+                                {person.tags && person.tags.length > 0 && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {person.tags.join(', ')}
+                                  </div>
+                                )}
+                              </td>
+                              <td>{person.party_size}</td>
+                              <td className="text-right">
+                                {formatCurrency(person.total_payment || 0)}
+                              </td>
+                              <td>
+                                <span className="badge-sage">{person.status}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">No VIPs</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
               ) : (
                 <div className="empty-state py-8">
-                  <p className="text-muted-foreground">No guest data</p>
+                  <p className="text-muted-foreground">No VIP activity</p>
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {/* People We Know (VIPs) */}
-          {report.peopleWeKnow.length > 0 && (
-            <Card>
-              <CardHeader className="border-b border-brass/20">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Star className="h-5 w-5 text-sage" />
-                  People We Know
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <table className="table-opsos">
-                  <thead>
-                    <tr>
-                      <th>Guest</th>
-                      <th>Party</th>
-                      <th className="text-right">Spent</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {report.peopleWeKnow.map((person, i) => (
-                      <tr key={i}>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            {person.is_vip && (
-                              <span className="badge-brass">VIP</span>
-                            )}
-                            <span className="font-medium">
-                              {person.first_name} {person.last_name}
-                            </span>
-                          </div>
-                          {person.tags && person.tags.length > 0 && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {person.tags.join(', ')}
-                            </div>
-                          )}
-                        </td>
-                        <td>{person.party_size}</td>
-                        <td className="text-right">
-                          {formatCurrency(person.total_payment || 0)}
-                        </td>
-                        <td>
-                          <span className="badge-sage">{person.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          )}
 
         </>
       )}
