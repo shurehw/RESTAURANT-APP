@@ -5,9 +5,11 @@
 
 'use client';
 
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
 import { useVenue } from '@/components/providers/VenueProvider';
@@ -621,19 +623,17 @@ export default function NightlyReportPage() {
                                   {comp.comped_items.join(', ')}
                                 </div>
                               )}
-                              <input
+                              <Input
                                 type="text"
                                 placeholder="Add manager note..."
                                 defaultValue={compNotes[comp.check_id] || ''}
-                                onBlur={(e: { target: { value: string } }) => {
+                                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
                                   const newValue = e.target.value.trim();
                                   if (newValue !== (compNotes[comp.check_id] || '')) {
                                     saveCompNote(comp.check_id, newValue);
                                   }
                                 }}
-                                className={`mt-2 w-full text-sm px-2 py-1.5 rounded border border-border bg-background placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-brass ${
-                                  savingNote === comp.check_id ? 'opacity-50' : ''
-                                }`}
+                                className={`mt-2 h-8 text-sm ${savingNote === comp.check_id ? 'opacity-50' : ''}`}
                               />
                             </div>
                           ))}
