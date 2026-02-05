@@ -245,31 +245,62 @@ export async function fetchNightlyReport(
     [locationUuid, date]
   );
 
-  // 6. Discounts/Comps Summary
+  // 6. Discounts/Comps Summary - combines check-level and item-level comps
   const discountsResult = await pool.query(
-    `SELECT
-      COALESCE(NULLIF(voidcomp_reason_text, ''), 'Unknown') as reason,
-      COUNT(*) as qty,
-      SUM(comp_total) as amount
-    FROM public.tipsee_checks
-    WHERE location_uuid = $1 AND trading_day = $2 AND comp_total > 0
-    GROUP BY voidcomp_reason_text
+    `WITH check_comps AS (
+      -- Comps recorded at check level
+      SELECT
+        COALESCE(NULLIF(voidcomp_reason_text, ''), 'Unknown') as reason,
+        id as check_id,
+        comp_total as amount
+      FROM public.tipsee_checks
+      WHERE location_uuid = $1 AND trading_day = $2 AND comp_total > 0
+    ),
+    item_comps AS (
+      -- Comps recorded at item level (may not be reflected in check total)
+      SELECT
+        COALESCE(NULLIF(ci.voidcomp_reason, ''), 'Unknown') as reason,
+        ci.check_id,
+        SUM(ci.comp_total) as amount
+      FROM public.tipsee_check_items ci
+      JOIN public.tipsee_checks c ON ci.check_id = c.id
+      WHERE c.location_uuid = $1 AND c.trading_day = $2 AND ci.comp_total > 0
+      GROUP BY ci.voidcomp_reason, ci.check_id
+    ),
+    all_comps AS (
+      -- Use item-level comps if available, fall back to check-level
+      SELECT DISTINCT ON (check_id)
+        COALESCE(ic.reason, cc.reason) as reason,
+        COALESCE(ic.amount, cc.amount) as amount
+      FROM check_comps cc
+      FULL OUTER JOIN item_comps ic ON cc.check_id = ic.check_id
+      ORDER BY check_id, ic.amount DESC NULLS LAST
+    )
+    SELECT reason, COUNT(*) as qty, SUM(amount) as amount
+    FROM all_comps
+    GROUP BY reason
     ORDER BY amount DESC`,
     [locationUuid, date]
   );
 
-  // 7. Detailed Comps
+  // 7. Detailed Comps - finds checks with comps at either check or item level
   const detailedCompsResult = await pool.query(
-    `SELECT
+    `SELECT DISTINCT
       c.id as check_id,
       c.table_name,
       c.employee_name as server,
-      c.comp_total,
+      GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
       c.revenue_total as check_total,
-      COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason
+      COALESCE(NULLIF(c.voidcomp_reason_text, ''), NULLIF(item_comps.reason, ''), 'Unknown') as reason
     FROM public.tipsee_checks c
-    WHERE c.location_uuid = $1 AND c.trading_day = $2 AND c.comp_total > 0
-    ORDER BY c.comp_total DESC`,
+    LEFT JOIN LATERAL (
+      SELECT SUM(comp_total) as total, MAX(voidcomp_reason) as reason
+      FROM public.tipsee_check_items
+      WHERE check_id = c.id AND comp_total > 0
+    ) item_comps ON true
+    WHERE c.location_uuid = $1 AND c.trading_day = $2
+      AND (c.comp_total > 0 OR item_comps.total > 0)
+    ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
     [locationUuid, date]
   );
 
