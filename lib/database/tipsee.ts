@@ -269,12 +269,12 @@ export async function fetchNightlyReport(
     ),
     all_comps AS (
       -- Use item-level comps if available, fall back to check-level
-      SELECT DISTINCT ON (check_id)
+      SELECT DISTINCT ON (COALESCE(ic.check_id, cc.check_id))
         COALESCE(ic.reason, cc.reason) as reason,
         COALESCE(ic.amount, cc.amount) as amount
       FROM check_comps cc
       FULL OUTER JOIN item_comps ic ON cc.check_id = ic.check_id
-      ORDER BY check_id, ic.amount DESC NULLS LAST
+      ORDER BY COALESCE(ic.check_id, cc.check_id), ic.amount DESC NULLS LAST
     )
     SELECT reason, COUNT(*) as qty, SUM(amount) as amount
     FROM all_comps
