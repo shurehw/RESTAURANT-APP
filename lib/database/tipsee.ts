@@ -259,13 +259,13 @@ export async function fetchNightlyReport(
     item_comps AS (
       -- Comps recorded at item level (may not be reflected in check total)
       SELECT
-        COALESCE(NULLIF(ci.voidcomp_reason, ''), 'Unknown') as reason,
+        COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason,
         ci.check_id,
         SUM(ci.comp_total) as amount
       FROM public.tipsee_check_items ci
       JOIN public.tipsee_checks c ON ci.check_id = c.id
       WHERE c.location_uuid = $1 AND c.trading_day = $2 AND ci.comp_total > 0
-      GROUP BY ci.voidcomp_reason, ci.check_id
+      GROUP BY c.voidcomp_reason_text, ci.check_id
     ),
     all_comps AS (
       -- Use item-level comps if available, fall back to check-level
@@ -291,10 +291,10 @@ export async function fetchNightlyReport(
       c.employee_name as server,
       GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
       c.revenue_total as check_total,
-      COALESCE(NULLIF(c.voidcomp_reason_text, ''), NULLIF(item_comps.reason, ''), 'Unknown') as reason
+      COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason
     FROM public.tipsee_checks c
     LEFT JOIN LATERAL (
-      SELECT SUM(comp_total) as total, MAX(voidcomp_reason) as reason
+      SELECT SUM(comp_total) as total
       FROM public.tipsee_check_items
       WHERE check_id = c.id AND comp_total > 0
     ) item_comps ON true
