@@ -170,7 +170,7 @@ export async function syncVenueDay(
       venue_id: venueId,
       business_date: businessDate,
       status: 'running',
-    })
+    } as any)
     .select()
     .single();
 
@@ -332,7 +332,7 @@ export async function syncVenueDay(
         raw_hash: computeHash(snapshotData),
         etl_run_id: etlRunId,
         extracted_at: new Date().toISOString(),
-      }, {
+      } as any, {
         onConflict: 'venue_id,business_date,source_system',
       });
     rowsLoaded++;
@@ -361,7 +361,7 @@ export async function syncVenueDay(
         is_complete: true,
         last_synced_at: new Date().toISOString(),
         etl_run_id: etlRunId,
-      }, {
+      } as any, {
         onConflict: 'venue_id,business_date',
       });
     rowsLoaded++;
@@ -381,7 +381,7 @@ export async function syncVenueDay(
           voids_total: parseFloat(cat.voids_total) || 0,
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
-        }, {
+        } as any, {
           onConflict: 'venue_id,business_date,category',
         });
       rowsLoaded++;
@@ -405,7 +405,7 @@ export async function syncVenueDay(
           tips_total: 0, // Would need per-server tip query
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
-        }, {
+        } as any, {
           onConflict: 'venue_id,business_date,employee_name',
         });
       rowsLoaded++;
@@ -429,7 +429,7 @@ export async function syncVenueDay(
           voids_total: parseFloat(item.voids_total) || 0,
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
-        }, {
+        } as any, {
           onConflict: 'venue_id,business_date,menu_item_name',
         });
       rowsLoaded++;
@@ -443,7 +443,7 @@ export async function syncVenueDay(
         finished_at: new Date().toISOString(),
         rows_extracted: rowsExtracted,
         rows_loaded: rowsLoaded,
-      })
+      } as any)
       .eq('id', etlRunId);
 
     return {
@@ -466,7 +466,7 @@ export async function syncVenueDay(
         rows_extracted: rowsExtracted,
         rows_loaded: rowsLoaded,
         error_message: error.message,
-      })
+      } as any)
       .eq('id', etlRunId);
 
     return {
