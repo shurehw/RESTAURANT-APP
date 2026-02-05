@@ -219,12 +219,31 @@ export default function NightlyReportPage() {
 
   // Get TipSee location UUID from selected venue via mapping
   const currentMapping = mappings.find(m => m.venue_id === selectedVenue?.id);
-  const locationUuid = currentMapping?.tipsee_location_uuid || 'aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4';
+  const locationUuid = currentMapping?.tipsee_location_uuid || null;
+  const isAllVenues = selectedVenue?.id === 'all';
 
   // Fetch report when date or location changes
   useEffect(() => {
     async function fetchReport() {
       if (!selectedVenue?.id) return;
+
+      // Handle "All Venues" - nightly report requires a specific venue
+      if (isAllVenues) {
+        setError('Please select a specific venue for the nightly report');
+        setReport(null);
+        setFactsSummary(null);
+        setLoading(false);
+        return;
+      }
+
+      // Handle missing TipSee mapping
+      if (!locationUuid) {
+        setError(`No TipSee mapping found for ${selectedVenue.name}. Configure venue mappings to view this report.`);
+        setReport(null);
+        setFactsSummary(null);
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
       setError(null);
@@ -278,7 +297,7 @@ export default function NightlyReportPage() {
       }
     }
     fetchReport();
-  }, [date, locationUuid, selectedVenue?.id]);
+  }, [date, locationUuid, selectedVenue?.id, selectedVenue?.name, isAllVenues]);
 
   function changeDate(days: number) {
     const d = new Date(date);
