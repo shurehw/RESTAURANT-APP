@@ -134,26 +134,27 @@ export interface NightlyReportData {
   }>;
 }
 
+// Helper: extract result from allSettled, return fallback on failure
+function settled<T>(result: PromiseSettledResult<T>, fallback: T, label: string): T {
+  if (result.status === 'fulfilled') return result.value;
+  console.error(`[nightly] ${label} query failed:`, result.reason);
+  return fallback;
+}
+
+// Empty query result for fallback
+const EMPTY_RESULT = { rows: [] as any[], rowCount: 0 };
+
 export async function fetchNightlyReport(
   date: string,
   locationUuid: string
 ): Promise<NightlyReportData> {
   const pool = getTipseePool();
+  const t0 = Date.now();
 
-  // Run all 10 independent queries in parallel
-  const [
-    summaryResult,
-    salesByCategoryResult,
-    salesBySubcategoryResult,
-    serversResult,
-    menuItemsResult,
-    discountsResult,
-    detailedCompsResult,
-    logbookResult,
-    notableGuestsResult,
-    peopleWeKnowResult,
-  ] = await Promise.all([
-    // 1. Daily Summary
+  // Run all 10 independent queries in parallel — allSettled so non-critical
+  // failures don't nuke the whole page. Pool max=5 naturally caps concurrency.
+  const results = await Promise.allSettled([
+    // 0: Daily Summary
     pool.query(
       `SELECT
         trading_day,
@@ -170,7 +171,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 2. Sales by Category (true net = gross - comps - voids)
+    // 1: Sales by Category (true net = gross - comps - voids)
     pool.query(
       `SELECT
         COALESCE(parent_category, 'Other') as category,
@@ -185,7 +186,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 3. Sales by Subcategory
+    // 2: Sales by Subcategory
     pool.query(
       `SELECT
         COALESCE(parent_category, 'Other') as parent_category,
@@ -198,7 +199,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 4. Server Performance
+    // 3: Server Performance
     pool.query(
       `SELECT
         employee_name,
@@ -216,7 +217,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 5. Menu Items Sold (top 10 food + top 10 beverage)
+    // 4: Menu Items Sold (top 10 food + top 10 beverage)
     pool.query(
       `WITH ranked_items AS (
         SELECT
@@ -250,7 +251,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 6. Discounts/Comps Summary - combines check-level and item-level comps
+    // 5: Discounts/Comps Summary - combines check-level and item-level comps
     pool.query(
       `WITH check_comps AS (
         SELECT
@@ -285,7 +286,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 7. Detailed Comps - finds checks with comps at either check or item level
+    // 6: Detailed Comps - finds checks with comps at either check or item level
     pool.query(
       `SELECT DISTINCT
         c.id as check_id,
@@ -306,7 +307,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 8. Logbook
+    // 7: Logbook
     pool.query(
       `SELECT * FROM public.tipsee_daily_logbook
        WHERE location_uuid = $1 AND logbook_date = $2
@@ -314,7 +315,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 9. Notable Guests (Top 5 spenders) - includes items inline via array_agg
+    // 8: Notable Guests (Top 5 spenders)
     pool.query(
       `SELECT
         c.id as check_id,
@@ -341,7 +342,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     ),
 
-    // 10. People We Know (VIP reservations)
+    // 9: People We Know (VIP reservations)
     pool.query(
       `SELECT
         first_name,
@@ -359,6 +360,20 @@ export async function fetchNightlyReport(
     ),
   ]);
 
+  const t1 = Date.now();
+
+  // Extract results with fail-soft defaults
+  const summaryResult = settled(results[0], EMPTY_RESULT, 'summary');
+  const salesByCategoryResult = settled(results[1], EMPTY_RESULT, 'salesByCategory');
+  const salesBySubcategoryResult = settled(results[2], EMPTY_RESULT, 'salesBySubcategory');
+  const serversResult = settled(results[3], EMPTY_RESULT, 'servers');
+  const menuItemsResult = settled(results[4], EMPTY_RESULT, 'menuItems');
+  const discountsResult = settled(results[5], EMPTY_RESULT, 'discounts');
+  const detailedCompsResult = settled(results[6], EMPTY_RESULT, 'detailedComps');
+  const logbookResult = settled(results[7], EMPTY_RESULT, 'logbook');
+  const notableGuestsResult = settled(results[8], EMPTY_RESULT, 'notableGuests');
+  const peopleWeKnowResult = settled(results[9], EMPTY_RESULT, 'peopleWeKnow');
+
   const summary = summaryResult.rows[0]
     ? cleanRow(summaryResult.rows[0])
     : {
@@ -372,64 +387,75 @@ export async function fetchNightlyReport(
         total_voids: 0,
       };
 
-  // Batch all comp item sub-queries in parallel (instead of N+1 sequential)
-  const detailedComps = await Promise.all(
-    detailedCompsResult.rows.map(async (check) => {
-      const checkData = cleanRow(check);
-      const compedItemsResult = await pool.query(
-        `SELECT name, quantity, comp_total
-         FROM public.tipsee_check_items
-         WHERE check_id = $1 AND comp_total > 0
-         ORDER BY comp_total DESC`,
-        [check.check_id]
-      );
+  // Batch comp item lookups: 1 query for ALL comp check IDs (eliminates N+1)
+  const compCheckIds = detailedCompsResult.rows.map((r) => r.check_id);
+  const compItemsMap = new Map<string, string[]>();
+  if (compCheckIds.length > 0) {
+    const compItemsResult = await pool.query(
+      `SELECT check_id, name, quantity, comp_total
+       FROM public.tipsee_check_items
+       WHERE check_id = ANY($1::text[]) AND comp_total > 0
+       ORDER BY check_id, comp_total DESC`,
+      [compCheckIds]
+    );
+    for (const item of compItemsResult.rows) {
+      const label = item.quantity > 1
+        ? `${item.name} x${Math.floor(item.quantity)} ($${parseFloat(item.comp_total).toFixed(2)})`
+        : `${item.name} ($${parseFloat(item.comp_total).toFixed(2)})`;
+      const arr = compItemsMap.get(item.check_id) || [];
+      arr.push(label);
+      compItemsMap.set(item.check_id, arr);
+    }
+  }
 
-      checkData.comped_items = compedItemsResult.rows.map((item) => {
-        if (item.quantity > 1) {
-          return `${item.name} x${Math.floor(item.quantity)} ($${parseFloat(item.comp_total).toFixed(2)})`;
-        }
-        return `${item.name} ($${parseFloat(item.comp_total).toFixed(2)})`;
-      });
-
-      return checkData;
-    })
-  );
+  const detailedComps = detailedCompsResult.rows.map((check) => {
+    const checkData = cleanRow(check);
+    checkData.comped_items = compItemsMap.get(check.check_id) || [];
+    return checkData;
+  });
 
   const logbook = logbookResult.rows[0] ? cleanRow(logbookResult.rows[0]) : null;
 
-  // Batch all notable guest item sub-queries in parallel (instead of N+1 sequential)
-  const notableGuests = await Promise.all(
-    notableGuestsResult.rows.map(async (guest) => {
-      const guestData = cleanRow(guest);
+  // Batch notable guest item lookups: 1 query for ALL guest check IDs (eliminates N+1)
+  const guestCheckIds = notableGuestsResult.rows.map((r) => r.check_id);
+  const guestItemsMap = new Map<string, Array<{ name: string; quantity: number; price: number }>>();
+  if (guestCheckIds.length > 0) {
+    const guestItemsResult = await pool.query(
+      `SELECT check_id, name, quantity, price
+       FROM public.tipsee_check_items
+       WHERE check_id = ANY($1::text[])
+       ORDER BY check_id, price DESC`,
+      [guestCheckIds]
+    );
+    for (const item of guestItemsResult.rows) {
+      const arr = guestItemsMap.get(item.check_id) || [];
+      arr.push({ name: item.name, quantity: parseFloat(item.quantity) || 1, price: parseFloat(item.price) || 0 });
+      guestItemsMap.set(item.check_id, arr);
+    }
+  }
 
-      // Calculate tip percentage
-      if (guestData.payment && guestData.tip_amount) {
-        const baseAmount = guestData.payment - guestData.tip_amount;
-        guestData.tip_percent = baseAmount > 0 ? Math.round((guestData.tip_amount / baseAmount) * 100) : 0;
-      } else {
-        guestData.tip_percent = null;
-      }
+  const notableGuests = notableGuestsResult.rows.map((guest) => {
+    const guestData = cleanRow(guest);
 
-      // Get items for this check
-      const itemsResult = await pool.query(
-        `SELECT name, quantity
-         FROM public.tipsee_check_items
-         WHERE check_id = $1
-         ORDER BY price DESC`,
-        [guest.check_id]
-      );
+    if (guestData.payment && guestData.tip_amount) {
+      const baseAmount = guestData.payment - guestData.tip_amount;
+      guestData.tip_percent = baseAmount > 0 ? Math.round((guestData.tip_amount / baseAmount) * 100) : 0;
+    } else {
+      guestData.tip_percent = null;
+    }
 
-      guestData.items = itemsResult.rows.slice(0, 5).map((item) => {
-        if (item.quantity > 1) {
-          return `${item.name} x${Math.floor(item.quantity)}`;
-        }
-        return item.name;
-      });
+    const allItems = guestItemsMap.get(guest.check_id) || [];
+    guestData.items = allItems.slice(0, 5).map((item) => {
+      if (item.quantity > 1) return `${item.name} x${Math.floor(item.quantity)}`;
+      return item.name;
+    });
+    guestData.additional_items = Math.max(0, allItems.length - 5);
+    return guestData;
+  });
 
-      guestData.additional_items = Math.max(0, itemsResult.rows.length - 5);
-      return guestData;
-    })
-  );
+  const t2 = Date.now();
+  const failCount = results.filter((r) => r.status === 'rejected').length;
+  console.log(`[nightly] ${date} ${locationUuid.substring(0, 8)} | queries=${t1 - t0}ms batch=${t2 - t1}ms total=${t2 - t0}ms${failCount ? ` FAILED=${failCount}` : ''}`);
 
   return {
     date,
