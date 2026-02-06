@@ -198,12 +198,13 @@ export async function GET(request: NextRequest) {
         .lte('clock_in', `${date}T23:59:59`)
         .not('clock_out', 'is', null),
 
-      // Prophet forecasts for current date (net_sales and covers)
+      // Demand forecasts with bias correction (covers and revenue)
       (supabase as any)
-        .from('venue_day_forecast')
-        .select('forecast_type, yhat, yhat_lower, yhat_upper')
+        .from('forecasts_with_bias')
+        .select('covers_predicted, covers_lower, covers_upper, revenue_predicted, covers_raw, bias_corrected')
         .eq('venue_id', venueId)
-        .eq('business_date', date),
+        .eq('business_date', date)
+        .maybeSingle(),
 
       // Same Day Last Week (SDLW) - 7 days ago
       (supabase as any)
@@ -282,10 +283,18 @@ export async function GET(request: NextRequest) {
     // Labor data
     const labor = laborResult.data as any;
 
-    // Process Prophet forecasts (grouped by forecast_type)
-    const forecasts = forecastResult.data || [];
-    const salesForecast = forecasts.find((f: any) => f.forecast_type === 'net_sales');
-    const coversForecast = forecasts.find((f: any) => f.forecast_type === 'covers');
+    // Process demand forecasts (with bias correction applied)
+    const forecast = forecastResult.data as any;
+    const coversForecast = forecast ? {
+      yhat: forecast.covers_predicted,
+      yhat_lower: forecast.covers_lower,
+      yhat_upper: forecast.covers_upper,
+      raw: forecast.covers_raw,
+      bias_corrected: forecast.bias_corrected,
+    } : null;
+    const salesForecast = forecast ? {
+      yhat: forecast.revenue_predicted,
+    } : null;
 
     // SDLW and SDLY data (may be null if no data exists)
     const sdlw = sdlwResult.data as any;
@@ -400,14 +409,16 @@ export async function GET(request: NextRequest) {
           }
         : null,
 
-      // Prophet forecast data
+      // Demand forecast data (with bias correction)
       forecast: {
         net_sales: salesForecast?.yhat || null,
-        net_sales_lower: salesForecast?.yhat_lower || null,
-        net_sales_upper: salesForecast?.yhat_upper || null,
+        net_sales_lower: null, // Not available in demand_forecasts
+        net_sales_upper: null,
         covers: coversForecast?.yhat || null,
         covers_lower: coversForecast?.yhat_lower || null,
         covers_upper: coversForecast?.yhat_upper || null,
+        covers_raw: coversForecast?.raw || null, // Raw before bias correction
+        bias_corrected: coversForecast?.bias_corrected || false,
       },
 
       // Variance comparisons
