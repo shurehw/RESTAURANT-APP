@@ -141,8 +141,8 @@ function settled<T>(result: PromiseSettledResult<T>, fallback: T, label: string)
   return fallback;
 }
 
-// Empty query result for fallback
-const EMPTY_RESULT = { rows: [] as any[], rowCount: 0 };
+// Empty query result for fallback (matches pg QueryResult shape)
+const EMPTY_RESULT = { rows: [] as any[], rowCount: 0, command: '', oid: 0, fields: [] as any[] };
 
 export async function fetchNightlyReport(
   date: string,
