@@ -9,6 +9,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 
+type DayType = 'weekday' | 'friday' | 'saturday' | 'sunday' | 'holiday';
+
+interface DayTypeOffsets {
+  weekday?: number;
+  friday?: number;
+  saturday?: number;
+  sunday?: number;
+  holiday?: number;
+}
+
 interface AccuracyMetrics {
   venue_id: string;
   venue_name: string;
@@ -25,21 +35,48 @@ interface AccuracyMetrics {
   corrected_within_10pct?: number;
   corrected_within_20pct?: number;
   bias_offset?: number;
+  day_type_offsets?: DayTypeOffsets;
+}
+
+// Compute day type from date string
+function getDayType(dateStr: string): DayType {
+  const date = new Date(dateStr + 'T12:00:00Z');
+  const dow = date.getUTCDay();
+
+  // US Holidays (simplified)
+  const holidays = [
+    '2025-01-01', '2025-01-20', '2025-02-17', '2025-05-26', '2025-07-04',
+    '2025-09-01', '2025-11-27', '2025-11-28', '2025-12-25', '2025-12-31',
+    '2026-01-01', '2026-01-19', '2026-02-16', '2026-05-25', '2026-07-04',
+    '2026-09-07', '2026-11-26', '2026-11-27', '2026-12-25', '2026-12-31',
+  ];
+
+  if (holidays.includes(dateStr)) return 'holiday';
+
+  switch (dow) {
+    case 0: return 'sunday';
+    case 5: return 'friday';
+    case 6: return 'saturday';
+    default: return 'weekday';
+  }
 }
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = getServiceClient();
 
-    // Get bias adjustments for each venue
+    // Get bias adjustments for each venue (including day_type_offsets)
     const { data: biasAdjustments } = await (supabase as any)
       .from('forecast_bias_adjustments')
-      .select('venue_id, covers_offset')
+      .select('venue_id, covers_offset, day_type_offsets')
       .is('effective_to', null);
 
-    const biasMap = new Map<string, number>();
+    const biasMap = new Map<string, { flat: number; byDayType: DayTypeOffsets }>();
     for (const adj of biasAdjustments || []) {
-      biasMap.set(adj.venue_id, adj.covers_offset || 0);
+      biasMap.set(adj.venue_id, {
+        flat: adj.covers_offset || 0,
+        byDayType: adj.day_type_offsets || {},
+      });
     }
 
     // Get all forecasts
@@ -105,6 +142,7 @@ export async function GET(request: NextRequest) {
       // Bias-corrected errors
       corrected_pct_errors: number[];
       bias_offset: number;
+      day_type_offsets: DayTypeOffsets;
     }>();
 
     let matchedCount = 0;
@@ -122,7 +160,11 @@ export async function GET(request: NextRequest) {
       matchedCount++;
       const venueName = (forecast.venues as any)?.name || 'Unknown';
 
-      const biasOffset = biasMap.get(forecast.venue_id) || 0;
+      const biasData = biasMap.get(forecast.venue_id) || { flat: 0, byDayType: {} };
+      const dayType = getDayType(forecast.business_date);
+
+      // Use day-type specific offset if available, otherwise fall back to flat offset
+      const biasOffset = biasData.byDayType[dayType] ?? biasData.flat;
 
       if (!venueMetrics.has(forecast.venue_id)) {
         venueMetrics.set(forecast.venue_id, {
@@ -132,7 +174,8 @@ export async function GET(request: NextRequest) {
           covers_pct_errors: [],
           revenue_pct_errors: [],
           corrected_pct_errors: [],
-          bias_offset: biasOffset,
+          bias_offset: biasData.flat,
+          day_type_offsets: biasData.byDayType,
         });
       }
 
@@ -149,7 +192,7 @@ export async function GET(request: NextRequest) {
       metrics.covers_errors.push(coversError);
       metrics.covers_pct_errors.push(coversPctError);
 
-      // Bias-corrected covers error (simulate what accuracy would be)
+      // Bias-corrected covers error (using day-type specific offset)
       const correctedPredicted = coversPredicted + biasOffset;
       const correctedError = correctedPredicted - coversActual;
       const correctedPctError = coversActual > 0
@@ -216,6 +259,7 @@ export async function GET(request: NextRequest) {
         corrected_within_10pct: Math.round(correctedWithin10),
         corrected_within_20pct: Math.round(correctedWithin20),
         bias_offset: data.bias_offset,
+        day_type_offsets: data.day_type_offsets,
       });
     }
 
