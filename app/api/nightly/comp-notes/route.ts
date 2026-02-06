@@ -28,6 +28,10 @@ export async function GET(request: NextRequest) {
       .eq('business_date', businessDate);
 
     if (error) {
+      // If table doesn't exist, return empty notes gracefully
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ notes: {} });
+      }
       console.error('Error fetching comp notes:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     // Get TipSee location UUID from venue mapping
     const supabase = getServiceClient();
     const { data: mapping, error: mappingError } = await (supabase as any)
-      .from('venue_tipsee_mappings')
+      .from('venue_tipsee_mapping')
       .select('tipsee_location_uuid')
       .eq('venue_id', venueId)
       .single();
