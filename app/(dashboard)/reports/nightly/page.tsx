@@ -926,9 +926,10 @@ export default function NightlyReportPage() {
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-0">
-                {/* Overall Assessment */}
-                <div className="px-4 py-3 border-b bg-blue-500/10 border-blue-500/20">
+              {compReviewExpanded && (
+                <CardContent className="p-0">
+                  {/* Overall Assessment */}
+                  <div className="px-4 py-3 border-b bg-blue-500/10 border-blue-500/20">
                   <p className="text-sm font-medium text-foreground">
                     {compReview.summary.overallAssessment}
                   </p>
@@ -1030,7 +1031,8 @@ export default function NightlyReportPage() {
                     </ul>
                   </div>
                 )}
-              </CardContent>
+                </CardContent>
+              )}
             </Card>
           )}
 
