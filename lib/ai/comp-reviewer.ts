@@ -131,10 +131,30 @@ ${input.historical ? `### Historical Context
 - Previous week comp %: ${input.historical.previous_week_comp_pct.toFixed(1)}%
 ` : ''}
 
+### Employee Comp Summary
+${(() => {
+  // Group comps by employee
+  const byEmployee = new Map<string, { count: number; total: number; reasons: Set<string>; maxAmount: number }>();
+  input.allComps.forEach(comp => {
+    const existing = byEmployee.get(comp.server) || { count: 0, total: 0, reasons: new Set(), maxAmount: 0 };
+    existing.count++;
+    existing.total += comp.comp_total;
+    existing.reasons.add(comp.reason);
+    existing.maxAmount = Math.max(existing.maxAmount, comp.comp_total);
+    byEmployee.set(comp.server, existing);
+  });
+
+  return Array.from(byEmployee.entries())
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([name, data]) =>
+      `- ${name}: ${data.count} comps, $${data.total.toFixed(2)} total, max $${data.maxAmount.toFixed(2)}, ${data.reasons.size} different reasons`
+    ).join('\n');
+})()}
+
 ### All Comps (${input.allComps.length} total)
 ${input.allComps.map((comp, i) => `
 ${i + 1}. Check ${comp.check_id} - Table ${comp.table_name}
-   Server: ${comp.server}
+   Employee: ${comp.server}
    Comp: $${comp.comp_total.toFixed(2)} of $${comp.check_total.toFixed(2)} (${comp.check_total > 0 ? ((comp.comp_total / comp.check_total) * 100).toFixed(0) : '0'}%)
    Reason: "${comp.reason}"
    Items: ${comp.comped_items.map(item => `${item.name} ($${item.amount.toFixed(2)})`).join(', ')}
@@ -185,7 +205,7 @@ Analyze ALL comps (not just exceptions) and provide:
 
 ## GUIDELINES
 
-- **Be specific**: Reference check IDs, servers, and amounts
+- **Be specific**: Reference check IDs, servers/managers, and amounts
 - **Be actionable**: Every recommendation should have a clear next step
 - **Prioritize correctly**:
   - Urgent = needs immediate action (fraud risk, major violations)
@@ -196,6 +216,26 @@ Analyze ALL comps (not just exceptions) and provide:
 - **Validate legitimacy**: Consider context (items, reason, timing)
 - **Be balanced**: Acknowledge what's going well, not just problems
 - **Focus on results**: What action should management take?
+
+## MANAGER-SPECIFIC ANALYSIS
+
+Pay special attention to:
+- **Authority levels**: Are employees comping amounts appropriate to their role?
+  - Servers typically shouldn't comp >$50 without manager approval
+  - High-value comps ($200+) should be from managers
+  - Identify if servers are overstepping authority
+- **Manager oversight**: Which managers need to review their team's comp activity?
+- **Manager comp patterns**: Track managers who comp frequently
+  - Manager Meals should be reasonable and not excessive
+  - Executive/Partner comps should be documented
+- **Team patterns**: If multiple servers under same manager have issues, flag for manager training
+- **Approval gaps**: Identify where manager approval/oversight is missing
+
+Include manager-specific recommendations:
+- "Manager [Name] should review Server [X]'s comp documentation"
+- "High-value comp needs GM approval - escalate to [Manager]"
+- "Manager [Name]'s team has 3 violations - schedule training session"
+- "Manager [Name] is comping appropriately - positive pattern"
 
 Generate the JSON response now:`;
 }
