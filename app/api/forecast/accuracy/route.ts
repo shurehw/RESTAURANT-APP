@@ -61,6 +61,9 @@ function getDayType(dateStr: string): DayType {
   }
 }
 
+type VenueClass = 'high_end_social' | 'nightclub' | 'member_club';
+type HolidayCode = 'NYE' | 'NYD' | 'BLACK_FRIDAY' | 'THANKSGIVING' | 'CHRISTMAS' | 'JULY_4TH' | 'LABOR_DAY' | 'MEMORIAL_DAY' | 'MLK_DAY' | 'PRESIDENTS_DAY' | 'VALENTINES';
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = getServiceClient();
@@ -77,6 +80,37 @@ export async function GET(request: NextRequest) {
         flat: adj.covers_offset || 0,
         byDayType: adj.day_type_offsets || {},
       });
+    }
+
+    // Get venue classifications
+    const { data: venues } = await (supabase as any)
+      .from('venues')
+      .select('id, venue_class');
+
+    const venueClassMap = new Map<string, VenueClass>();
+    for (const v of venues || []) {
+      if (v.venue_class) venueClassMap.set(v.id, v.venue_class);
+    }
+
+    // Get holiday calendar
+    const { data: holidays } = await (supabase as any)
+      .from('holiday_calendar')
+      .select('holiday_date, holiday_code');
+
+    const holidayMap = new Map<string, HolidayCode>();
+    for (const h of holidays || []) {
+      holidayMap.set(h.holiday_date, h.holiday_code);
+    }
+
+    // Get holiday adjustments
+    const { data: holidayAdj } = await (supabase as any)
+      .from('holiday_adjustments')
+      .select('holiday_code, venue_class, covers_offset');
+
+    const holidayAdjMap = new Map<string, number>();
+    for (const ha of holidayAdj || []) {
+      const key = `${ha.holiday_code}|${ha.venue_class}`;
+      holidayAdjMap.set(key, ha.covers_offset || 0);
     }
 
     // Get all forecasts
@@ -164,7 +198,19 @@ export async function GET(request: NextRequest) {
       const dayType = getDayType(forecast.business_date);
 
       // Use day-type specific offset if available, otherwise fall back to flat offset
-      const biasOffset = biasData.byDayType[dayType] ?? biasData.flat;
+      const dayTypeOffset = biasData.byDayType[dayType] ?? biasData.flat;
+
+      // Get holiday adjustment if applicable
+      const holidayCode = holidayMap.get(forecast.business_date);
+      const venueClass = venueClassMap.get(forecast.venue_id);
+      let holidayOffset = 0;
+      if (holidayCode && venueClass) {
+        const key = `${holidayCode}|${venueClass}`;
+        holidayOffset = holidayAdjMap.get(key) || 0;
+      }
+
+      // Total bias = day_type + holiday
+      const biasOffset = dayTypeOffset + holidayOffset;
 
       if (!venueMetrics.has(forecast.venue_id)) {
         venueMetrics.set(forecast.venue_id, {
