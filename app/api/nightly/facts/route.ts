@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getFiscalPeriod, FiscalCalendarType } from '@/lib/fiscal-calendar';
+import { fetchLaborSummary } from '@/lib/database/tipsee';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -132,14 +133,22 @@ export async function GET(request: NextRequest) {
     const lastWeekWeekStartStr = new Date(lastWeekWeekStartMs).toISOString().split('T')[0];
     const lastWeekSameDayStr = sdlwDateStr; // Already calculated above
 
+    // Look up TipSee location UUID for this venue (for labor data)
+    const { data: mappingData } = await (supabase as any)
+      .from('venue_tipsee_mapping')
+      .select('tipsee_location_uuid')
+      .eq('venue_id', venueId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    const tipseeLocationUuid = mappingData?.tipsee_location_uuid || null;
+
     // Fetch all fact data in parallel
     const [
       venueDayResult,
       categoryResult,
       serverResult,
       itemResult,
-      laborResult,
-      timePunchesResult,
       forecastResult,
       sdlwResult,
       sdlyResult,
@@ -180,23 +189,6 @@ export async function GET(request: NextRequest) {
         .eq('business_date', date)
         .order('gross_sales', { ascending: false })
         .limit(15),
-
-      // Labor efficiency
-      (supabase as any)
-        .from('labor_efficiency_daily')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .maybeSingle(),
-
-      // Time punches for OT calculation
-      (supabase as any)
-        .from('time_punches')
-        .select('user_id, clock_in, clock_out')
-        .eq('venue_id', venueId)
-        .gte('clock_in', `${date}T00:00:00`)
-        .lte('clock_in', `${date}T23:59:59`)
-        .not('clock_out', 'is', null),
 
       // Demand forecasts with bias correction (covers and revenue)
       (supabase as any)
@@ -266,22 +258,20 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Calculate OT hours (hours over 8 per employee per day)
-    const timePunches = timePunchesResult.data || [];
-    const employeeHours: Record<string, number> = {};
-    for (const punch of timePunches) {
-      if (!punch.clock_out) continue;
-      const hoursWorked =
-        (new Date(punch.clock_out).getTime() - new Date(punch.clock_in).getTime()) /
-        (1000 * 60 * 60);
-      employeeHours[punch.user_id] = (employeeHours[punch.user_id] || 0) + hoursWorked;
+    // Fetch labor data from TipSee (punches table)
+    let tipseeLabor = null;
+    if (tipseeLocationUuid) {
+      try {
+        tipseeLabor = await fetchLaborSummary(
+          tipseeLocationUuid,
+          date,
+          summary.net_sales || 0,
+          summary.covers_count || 0
+        );
+      } catch (laborErr) {
+        console.error('Error fetching TipSee labor:', laborErr);
+      }
     }
-    const otHours = Object.values(employeeHours).reduce((sum, hours) => {
-      return sum + Math.max(0, hours - 8);
-    }, 0);
-
-    // Labor data
-    const labor = laborResult.data as any;
 
     // Process demand forecasts (with bias correction applied)
     const forecast = forecastResult.data as any;
@@ -395,17 +385,14 @@ export async function GET(request: NextRequest) {
         category: item.parent_category,
       })),
 
-      labor: labor
+      labor: tipseeLabor
         ? {
-            total_hours: labor.total_labor_hours,
-            labor_cost: labor.labor_cost,
-            labor_pct: labor.labor_cost_pct,
-            splh: labor.sales_per_labor_hour,
-            ot_hours: otHours,
-            covers_per_labor_hour:
-              labor.total_labor_hours > 0
-                ? summary.covers_count / labor.total_labor_hours
-                : null,
+            total_hours: tipseeLabor.total_hours,
+            labor_cost: tipseeLabor.labor_cost,
+            labor_pct: tipseeLabor.labor_pct,
+            splh: tipseeLabor.splh,
+            ot_hours: tipseeLabor.ot_hours,
+            covers_per_labor_hour: tipseeLabor.covers_per_labor_hour,
           }
         : null,
 
