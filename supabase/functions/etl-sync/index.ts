@@ -376,8 +376,9 @@ async function syncVenueDay(
     }
 
     // 11. Extract and upsert labor_day_facts
-    // Primary: new_tipsee_punches (all venues, most complete)
-    // Fallback: punches (has trading_day + hourly_wage built in, stale for LA venues)
+    // Primary: tipsee_7shifts_punches (most complete, hourly_wage inline in cents)
+    // Fallback 1: new_tipsee_punches + wage join
+    // Fallback 2: punches (old table, stale for LA)
     const laborSummaryResult = await tipsee.queryObject<{
       punch_count: bigint;
       employee_count: bigint;
@@ -386,32 +387,61 @@ async function syncVenueDay(
     }>`
       SELECT
         COUNT(*) as punch_count,
-        COUNT(DISTINCT p.user_id) as employee_count,
-        COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+        COUNT(DISTINCT user_id) as employee_count,
+        COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0) as total_hours,
         COALESCE(SUM(
-          EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
-          COALESCE(w.wage_cents, 0) / 100
+          EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
+          COALESCE(hourly_wage, 0) / 100
         ), 0) as labor_cost
-      FROM public.new_tipsee_punches p
-      LEFT JOIN LATERAL (
-        SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
-        WHERE user_id = p.user_id
-          AND effective_date <= p.clocked_in::date
-        ORDER BY effective_date DESC
-        LIMIT 1
-      ) w ON true
-      WHERE p.location_uuid = ${tipseeLocationUuid}
-        AND p.clocked_in::date = ${businessDate}::date
-        AND p.clocked_out IS NOT NULL
-        AND p.is_deleted IS NOT TRUE
+      FROM public.tipsee_7shifts_punches
+      WHERE location_uuid = ${tipseeLocationUuid}
+        AND clocked_in::date = ${businessDate}::date
+        AND clocked_out IS NOT NULL
+        AND deleted IS NOT TRUE
     `;
     rowsExtracted++;
 
     let laborRow = laborSummaryResult.rows[0];
+    let laborTable = 'tipsee_7shifts_punches';
 
-    // Fallback: old punches table
+    // Fallback 1: new_tipsee_punches with wage join
     if (!laborRow || Number(laborRow.punch_count) === 0) {
-      const fallbackResult = await tipsee.queryObject<{
+      const fb1Result = await tipsee.queryObject<{
+        punch_count: bigint;
+        employee_count: bigint;
+        total_hours: number;
+        labor_cost: number;
+      }>`
+        SELECT
+          COUNT(*) as punch_count,
+          COUNT(DISTINCT p.user_id) as employee_count,
+          COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+          COALESCE(SUM(
+            EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
+            COALESCE(w.wage_cents, 0) / 100
+          ), 0) as labor_cost
+        FROM public.new_tipsee_punches p
+        LEFT JOIN LATERAL (
+          SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
+          WHERE user_id = p.user_id
+            AND effective_date <= p.clocked_in::date
+          ORDER BY effective_date DESC
+          LIMIT 1
+        ) w ON true
+        WHERE p.location_uuid = ${tipseeLocationUuid}
+          AND p.clocked_in::date = ${businessDate}::date
+          AND p.clocked_out IS NOT NULL
+          AND p.is_deleted IS NOT TRUE
+      `;
+      if (fb1Result.rows[0] && Number(fb1Result.rows[0].punch_count) > 0) {
+        laborRow = fb1Result.rows[0];
+        laborTable = 'new_tipsee_punches';
+      }
+    }
+
+    // Fallback 2: old punches table
+    if (!laborRow || Number(laborRow.punch_count) === 0) {
+      const fb2Result = await tipsee.queryObject<{
         punch_count: bigint;
         employee_count: bigint;
         total_hours: number;
@@ -428,27 +458,46 @@ async function syncVenueDay(
           AND deleted IS NOT TRUE
           AND clocked_out IS NOT NULL
       `;
-      laborRow = fallbackResult.rows[0];
+      if (fb2Result.rows[0] && Number(fb2Result.rows[0].punch_count) > 0) {
+        laborRow = fb2Result.rows[0];
+        laborTable = 'punches';
+      }
     }
 
     if (laborRow && Number(laborRow.punch_count) > 0) {
-      // Calculate OT hours
-      const otResult = await tipsee.queryObject<{
-        user_id: string;
-        daily_hours: number;
-      }>`
-        SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
-        FROM public.new_tipsee_punches
-        WHERE location_uuid = ${tipseeLocationUuid}
-          AND clocked_in::date = ${businessDate}::date
-          AND clocked_out IS NOT NULL
-          AND is_deleted IS NOT TRUE
-        GROUP BY user_id
-        HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8
-      `;
-
-      const otHours = otResult.rows.reduce((sum, r) =>
-        sum + Math.max(0, Number(r.daily_hours) - 8), 0);
+      // Calculate OT hours from whichever table had data
+      let otHours = 0;
+      if (laborTable === 'tipsee_7shifts_punches') {
+        const otResult = await tipsee.queryObject<{
+          user_id: string;
+          daily_hours: number;
+        }>`
+          SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+          FROM public.tipsee_7shifts_punches
+          WHERE location_uuid = ${tipseeLocationUuid}
+            AND clocked_in::date = ${businessDate}::date
+            AND clocked_out IS NOT NULL
+            AND deleted IS NOT TRUE
+          GROUP BY user_id
+          HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8
+        `;
+        otHours = otResult.rows.reduce((sum, r) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
+      } else if (laborTable === 'new_tipsee_punches') {
+        const otResult = await tipsee.queryObject<{
+          user_id: string;
+          daily_hours: number;
+        }>`
+          SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+          FROM public.new_tipsee_punches
+          WHERE location_uuid = ${tipseeLocationUuid}
+            AND clocked_in::date = ${businessDate}::date
+            AND clocked_out IS NOT NULL
+            AND is_deleted IS NOT TRUE
+          GROUP BY user_id
+          HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8
+        `;
+        otHours = otResult.rows.reduce((sum, r) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
+      }
 
       await supabase.from('labor_day_facts').upsert({
         venue_id: venueId,
