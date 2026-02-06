@@ -321,11 +321,16 @@ export default function NightlyReportPage() {
 
       setLoading(true);
       setError(null);
+      setCompReview(null);
+      setCompExceptions(null);
+      setCompNotes({});
       try {
-        // Fetch live TipSee data and fact tables in parallel
-        const [liveRes, factsRes] = await Promise.all([
+        // Fire ALL independent fetches in parallel — don't block on comp data
+        const [liveRes, factsRes, notesRes, exceptionsRes] = await Promise.all([
           fetch(`/api/nightly?date=${date}&location=${locationUuid}`),
           fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`),
+          fetch(`/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`, { credentials: 'include' }),
+          fetch(`/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' }),
         ]);
 
         if (!liveRes.ok) {
@@ -335,7 +340,7 @@ export default function NightlyReportPage() {
         const liveData = await liveRes.json();
         setReport(liveData);
 
-        // Get food/bev breakdown, labor, forecast, and variance from fact tables
+        // Process facts (Supabase — fast)
         if (factsRes.ok) {
           const factsData = await factsRes.json();
           if (factsData.has_data) {
@@ -350,53 +355,28 @@ export default function NightlyReportPage() {
           }
         }
 
-        // Fetch comp notes and comp exceptions in parallel
-        try {
-          const [notesRes, exceptionsRes] = await Promise.all([
-            fetch(
-              `/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`,
-              { credentials: 'include' }
-            ),
-            fetch(
-              `/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`,
-              { credentials: 'include' }
-            ),
-          ]);
+        // Process comp notes (non-blocking)
+        if (notesRes.ok) {
+          const notesData = await notesRes.json();
+          setCompNotes(notesData.notes || {});
+        }
 
-          if (notesRes.ok) {
-            const notesData = await notesRes.json();
-            setCompNotes(notesData.notes || {});
+        // Process comp exceptions (non-blocking)
+        if (exceptionsRes.ok) {
+          const exceptionsData = await exceptionsRes.json();
+          if (exceptionsData.success) {
+            setCompExceptions(exceptionsData.data);
           }
+        }
 
-          if (exceptionsRes.ok) {
-            const exceptionsData = await exceptionsRes.json();
-            if (exceptionsData.success) {
-              setCompExceptions(exceptionsData.data);
-
-              // Fetch AI comp review if there are comps to review
-              if (liveData?.summary?.total_comps > 0) {
-                setLoadingCompReview(true);
-                try {
-                  const reviewRes = await fetch(
-                    `/api/ai/comp-review?venue_id=${selectedVenue.id}&date=${date}`,
-                    { credentials: 'include' }
-                  );
-                  if (reviewRes.ok) {
-                    const reviewData = await reviewRes.json();
-                    if (reviewData.success) {
-                      setCompReview(reviewData.data);
-                    }
-                  }
-                } catch (reviewErr) {
-                  console.error('Failed to fetch AI comp review:', reviewErr);
-                } finally {
-                  setLoadingCompReview(false);
-                }
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Failed to fetch comp data:', e);
+        // AI comp review fires AFTER page is visible (non-blocking)
+        if (liveData?.summary?.total_comps > 0) {
+          setLoadingCompReview(true);
+          fetch(`/api/ai/comp-review?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => { if (data?.success) setCompReview(data.data); })
+            .catch(err => console.error('AI comp review error:', err))
+            .finally(() => setLoadingCompReview(false));
         }
       } catch (err: any) {
         setError(err.message);

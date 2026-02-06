@@ -140,22 +140,224 @@ export async function fetchNightlyReport(
 ): Promise<NightlyReportData> {
   const pool = getTipseePool();
 
-  // 1. Daily Summary
-  const summaryResult = await pool.query(
-    `SELECT
-      trading_day,
-      COUNT(*) as total_checks,
-      SUM(guest_count) as total_covers,
-      SUM(revenue_total) as net_sales,
-      SUM(sub_total) as sub_total,
-      SUM(tax_total) as total_tax,
-      SUM(comp_total) as total_comps,
-      SUM(void_total) as total_voids
-    FROM public.tipsee_checks
-    WHERE location_uuid = $1 AND trading_day = $2
-    GROUP BY trading_day`,
-    [locationUuid, date]
-  );
+  // Run all 10 independent queries in parallel
+  const [
+    summaryResult,
+    salesByCategoryResult,
+    salesBySubcategoryResult,
+    serversResult,
+    menuItemsResult,
+    discountsResult,
+    detailedCompsResult,
+    logbookResult,
+    notableGuestsResult,
+    peopleWeKnowResult,
+  ] = await Promise.all([
+    // 1. Daily Summary
+    pool.query(
+      `SELECT
+        trading_day,
+        COUNT(*) as total_checks,
+        SUM(guest_count) as total_covers,
+        SUM(revenue_total) as net_sales,
+        SUM(sub_total) as sub_total,
+        SUM(tax_total) as total_tax,
+        SUM(comp_total) as total_comps,
+        SUM(void_total) as total_voids
+      FROM public.tipsee_checks
+      WHERE location_uuid = $1 AND trading_day = $2
+      GROUP BY trading_day`,
+      [locationUuid, date]
+    ),
+
+    // 2. Sales by Category (true net = gross - comps - voids)
+    pool.query(
+      `SELECT
+        COALESCE(parent_category, 'Other') as category,
+        SUM(price * quantity) as gross_sales,
+        SUM(comp_total) as comps,
+        SUM(void_value) as voids,
+        SUM(price * quantity) - SUM(COALESCE(comp_total, 0)) - SUM(COALESCE(void_value, 0)) as net_sales
+      FROM public.tipsee_check_items
+      WHERE location_uuid = $1 AND trading_day = $2
+      GROUP BY parent_category
+      ORDER BY net_sales DESC`,
+      [locationUuid, date]
+    ),
+
+    // 3. Sales by Subcategory
+    pool.query(
+      `SELECT
+        COALESCE(parent_category, 'Other') as parent_category,
+        category,
+        SUM(price * quantity) as net_sales
+      FROM public.tipsee_check_items
+      WHERE location_uuid = $1 AND trading_day = $2
+      GROUP BY parent_category, category
+      ORDER BY parent_category, net_sales DESC`,
+      [locationUuid, date]
+    ),
+
+    // 4. Server Performance
+    pool.query(
+      `SELECT
+        employee_name,
+        employee_role_name,
+        COUNT(*) as tickets,
+        SUM(guest_count) as covers,
+        SUM(revenue_total) as net_sales,
+        ROUND(AVG(revenue_total)::numeric, 2) as avg_ticket,
+        ROUND(AVG(CASE WHEN close_time > open_time THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins,
+        ROUND((SUM(revenue_total) / NULLIF(SUM(guest_count), 0))::numeric, 2) as avg_per_cover
+      FROM public.tipsee_checks
+      WHERE location_uuid = $1 AND trading_day = $2
+      GROUP BY employee_name, employee_role_name
+      ORDER BY net_sales DESC`,
+      [locationUuid, date]
+    ),
+
+    // 5. Menu Items Sold (top 10 food + top 10 beverage)
+    pool.query(
+      `WITH ranked_items AS (
+        SELECT
+          ci.name,
+          COALESCE(ci.parent_category, 'Other') as parent_category,
+          SUM(ci.quantity) as qty,
+          SUM(ci.price * ci.quantity) as net_total,
+          ROW_NUMBER() OVER (
+            PARTITION BY CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
+                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
+                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
+                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
+                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
+                         THEN 'Beverage' ELSE 'Food' END
+            ORDER BY SUM(ci.price * ci.quantity) DESC
+          ) as rn,
+          CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
+                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
+                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
+                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
+                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
+               THEN 'Beverage' ELSE 'Food' END as item_type
+        FROM public.tipsee_check_items ci
+        WHERE ci.location_uuid = $1 AND ci.trading_day = $2
+        GROUP BY ci.name, ci.parent_category
+      )
+      SELECT name, parent_category, qty, net_total
+      FROM ranked_items
+      WHERE rn <= 10
+      ORDER BY item_type, net_total DESC`,
+      [locationUuid, date]
+    ),
+
+    // 6. Discounts/Comps Summary - combines check-level and item-level comps
+    pool.query(
+      `WITH check_comps AS (
+        SELECT
+          COALESCE(NULLIF(voidcomp_reason_text, ''), 'Unknown') as reason,
+          id as check_id,
+          comp_total as amount
+        FROM public.tipsee_checks
+        WHERE location_uuid = $1 AND trading_day = $2 AND comp_total > 0
+      ),
+      item_comps AS (
+        SELECT
+          COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason,
+          ci.check_id,
+          SUM(ci.comp_total) as amount
+        FROM public.tipsee_check_items ci
+        JOIN public.tipsee_checks c ON ci.check_id = c.id
+        WHERE c.location_uuid = $1 AND c.trading_day = $2 AND ci.comp_total > 0
+        GROUP BY c.voidcomp_reason_text, ci.check_id
+      ),
+      all_comps AS (
+        SELECT DISTINCT ON (COALESCE(ic.check_id, cc.check_id))
+          COALESCE(ic.reason, cc.reason) as reason,
+          COALESCE(ic.amount, cc.amount) as amount
+        FROM check_comps cc
+        FULL OUTER JOIN item_comps ic ON cc.check_id = ic.check_id
+        ORDER BY COALESCE(ic.check_id, cc.check_id), ic.amount DESC NULLS LAST
+      )
+      SELECT reason, COUNT(*) as qty, SUM(amount) as amount
+      FROM all_comps
+      GROUP BY reason
+      ORDER BY amount DESC`,
+      [locationUuid, date]
+    ),
+
+    // 7. Detailed Comps - finds checks with comps at either check or item level
+    pool.query(
+      `SELECT DISTINCT
+        c.id as check_id,
+        c.table_name,
+        c.employee_name as server,
+        GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
+        c.revenue_total as check_total,
+        COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason
+      FROM public.tipsee_checks c
+      LEFT JOIN LATERAL (
+        SELECT SUM(comp_total) as total
+        FROM public.tipsee_check_items
+        WHERE check_id = c.id AND comp_total > 0
+      ) item_comps ON true
+      WHERE c.location_uuid = $1 AND c.trading_day = $2
+        AND (c.comp_total > 0 OR item_comps.total > 0)
+      ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
+      [locationUuid, date]
+    ),
+
+    // 8. Logbook
+    pool.query(
+      `SELECT * FROM public.tipsee_daily_logbook
+       WHERE location_uuid = $1 AND logbook_date = $2
+       LIMIT 1`,
+      [locationUuid, date]
+    ),
+
+    // 9. Notable Guests (Top 5 spenders) - includes items inline via array_agg
+    pool.query(
+      `SELECT
+        c.id as check_id,
+        c.employee_name as server,
+        c.guest_count as covers,
+        c.revenue_total as payment,
+        c.open_time,
+        c.close_time,
+        c.table_name,
+        p.cc_name as cardholder_name,
+        p.tip_amount,
+        p.amount as payment_amount
+      FROM public.tipsee_checks c
+      LEFT JOIN LATERAL (
+        SELECT cc_name, tip_amount, amount
+        FROM public.tipsee_payments
+        WHERE check_id = c.id
+        ORDER BY (cc_name IS NOT NULL AND cc_name != '') DESC, tip_amount DESC NULLS LAST, amount DESC
+        LIMIT 1
+      ) p ON true
+      WHERE c.location_uuid = $1 AND c.trading_day = $2 AND c.revenue_total > 0
+      ORDER BY c.revenue_total DESC
+      LIMIT 5`,
+      [locationUuid, date]
+    ),
+
+    // 10. People We Know (VIP reservations)
+    pool.query(
+      `SELECT
+        first_name,
+        last_name,
+        is_vip,
+        tags,
+        max_guests as party_size,
+        total_payment,
+        status
+      FROM public.full_reservations
+      WHERE location_uuid = $1 AND date = $2
+        AND status IN ('COMPLETE', 'ARRIVED', 'SEATED')
+      ORDER BY is_vip DESC, total_payment DESC`,
+      [locationUuid, date]
+    ),
+  ]);
 
   const summary = summaryResult.rows[0]
     ? cleanRow(summaryResult.rows[0])
@@ -170,251 +372,63 @@ export async function fetchNightlyReport(
         total_voids: 0,
       };
 
-  // 2. Sales by Category (true net = gross - comps - voids)
-  const salesByCategoryResult = await pool.query(
-    `SELECT
-      COALESCE(parent_category, 'Other') as category,
-      SUM(price * quantity) as gross_sales,
-      SUM(comp_total) as comps,
-      SUM(void_value) as voids,
-      SUM(price * quantity) - SUM(COALESCE(comp_total, 0)) - SUM(COALESCE(void_value, 0)) as net_sales
-    FROM public.tipsee_check_items
-    WHERE location_uuid = $1 AND trading_day = $2
-    GROUP BY parent_category
-    ORDER BY net_sales DESC`,
-    [locationUuid, date]
+  // Batch all comp item sub-queries in parallel (instead of N+1 sequential)
+  const detailedComps = await Promise.all(
+    detailedCompsResult.rows.map(async (check) => {
+      const checkData = cleanRow(check);
+      const compedItemsResult = await pool.query(
+        `SELECT name, quantity, comp_total
+         FROM public.tipsee_check_items
+         WHERE check_id = $1 AND comp_total > 0
+         ORDER BY comp_total DESC`,
+        [check.check_id]
+      );
+
+      checkData.comped_items = compedItemsResult.rows.map((item) => {
+        if (item.quantity > 1) {
+          return `${item.name} x${Math.floor(item.quantity)} ($${parseFloat(item.comp_total).toFixed(2)})`;
+        }
+        return `${item.name} ($${parseFloat(item.comp_total).toFixed(2)})`;
+      });
+
+      return checkData;
+    })
   );
 
-  // 3. Sales by Subcategory
-  const salesBySubcategoryResult = await pool.query(
-    `SELECT
-      COALESCE(parent_category, 'Other') as parent_category,
-      category,
-      SUM(price * quantity) as net_sales
-    FROM public.tipsee_check_items
-    WHERE location_uuid = $1 AND trading_day = $2
-    GROUP BY parent_category, category
-    ORDER BY parent_category, net_sales DESC`,
-    [locationUuid, date]
-  );
-
-  // 4. Server Performance
-  const serversResult = await pool.query(
-    `SELECT
-      employee_name,
-      employee_role_name,
-      COUNT(*) as tickets,
-      SUM(guest_count) as covers,
-      SUM(revenue_total) as net_sales,
-      ROUND(AVG(revenue_total)::numeric, 2) as avg_ticket,
-      ROUND(AVG(CASE WHEN close_time > open_time THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins,
-      ROUND((SUM(revenue_total) / NULLIF(SUM(guest_count), 0))::numeric, 2) as avg_per_cover
-    FROM public.tipsee_checks
-    WHERE location_uuid = $1 AND trading_day = $2
-    GROUP BY employee_name, employee_role_name
-    ORDER BY net_sales DESC`,
-    [locationUuid, date]
-  );
-
-  // 5. Menu Items Sold (top 10 food + top 10 beverage)
-  const menuItemsResult = await pool.query(
-    `WITH ranked_items AS (
-      SELECT
-        ci.name,
-        COALESCE(ci.parent_category, 'Other') as parent_category,
-        SUM(ci.quantity) as qty,
-        SUM(ci.price * ci.quantity) as net_total,
-        ROW_NUMBER() OVER (
-          PARTITION BY CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
-                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
-                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
-                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
-                            OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
-                       THEN 'Beverage' ELSE 'Food' END
-          ORDER BY SUM(ci.price * ci.quantity) DESC
-        ) as rn,
-        CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
-                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
-                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
-                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
-                  OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
-             THEN 'Beverage' ELSE 'Food' END as item_type
-      FROM public.tipsee_check_items ci
-      WHERE ci.location_uuid = $1 AND ci.trading_day = $2
-      GROUP BY ci.name, ci.parent_category
-    )
-    SELECT name, parent_category, qty, net_total
-    FROM ranked_items
-    WHERE rn <= 10
-    ORDER BY item_type, net_total DESC`,
-    [locationUuid, date]
-  );
-
-  // 6. Discounts/Comps Summary - combines check-level and item-level comps
-  const discountsResult = await pool.query(
-    `WITH check_comps AS (
-      -- Comps recorded at check level
-      SELECT
-        COALESCE(NULLIF(voidcomp_reason_text, ''), 'Unknown') as reason,
-        id as check_id,
-        comp_total as amount
-      FROM public.tipsee_checks
-      WHERE location_uuid = $1 AND trading_day = $2 AND comp_total > 0
-    ),
-    item_comps AS (
-      -- Comps recorded at item level (may not be reflected in check total)
-      SELECT
-        COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason,
-        ci.check_id,
-        SUM(ci.comp_total) as amount
-      FROM public.tipsee_check_items ci
-      JOIN public.tipsee_checks c ON ci.check_id = c.id
-      WHERE c.location_uuid = $1 AND c.trading_day = $2 AND ci.comp_total > 0
-      GROUP BY c.voidcomp_reason_text, ci.check_id
-    ),
-    all_comps AS (
-      -- Use item-level comps if available, fall back to check-level
-      SELECT DISTINCT ON (COALESCE(ic.check_id, cc.check_id))
-        COALESCE(ic.reason, cc.reason) as reason,
-        COALESCE(ic.amount, cc.amount) as amount
-      FROM check_comps cc
-      FULL OUTER JOIN item_comps ic ON cc.check_id = ic.check_id
-      ORDER BY COALESCE(ic.check_id, cc.check_id), ic.amount DESC NULLS LAST
-    )
-    SELECT reason, COUNT(*) as qty, SUM(amount) as amount
-    FROM all_comps
-    GROUP BY reason
-    ORDER BY amount DESC`,
-    [locationUuid, date]
-  );
-
-  // 7. Detailed Comps - finds checks with comps at either check or item level
-  const detailedCompsResult = await pool.query(
-    `SELECT DISTINCT
-      c.id as check_id,
-      c.table_name,
-      c.employee_name as server,
-      GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
-      c.revenue_total as check_total,
-      COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason
-    FROM public.tipsee_checks c
-    LEFT JOIN LATERAL (
-      SELECT SUM(comp_total) as total
-      FROM public.tipsee_check_items
-      WHERE check_id = c.id AND comp_total > 0
-    ) item_comps ON true
-    WHERE c.location_uuid = $1 AND c.trading_day = $2
-      AND (c.comp_total > 0 OR item_comps.total > 0)
-    ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
-    [locationUuid, date]
-  );
-
-  const detailedComps = [];
-  for (const check of detailedCompsResult.rows) {
-    const checkData = cleanRow(check);
-    const compedItemsResult = await pool.query(
-      `SELECT name, quantity, comp_total
-       FROM public.tipsee_check_items
-       WHERE check_id = $1 AND comp_total > 0
-       ORDER BY comp_total DESC`,
-      [check.check_id]
-    );
-
-    const itemList = compedItemsResult.rows.map((item) => {
-      if (item.quantity > 1) {
-        return `${item.name} x${Math.floor(item.quantity)} ($${parseFloat(item.comp_total).toFixed(2)})`;
-      }
-      return `${item.name} ($${parseFloat(item.comp_total).toFixed(2)})`;
-    });
-
-    checkData.comped_items = itemList;
-    detailedComps.push(checkData);
-  }
-
-  // 8. Logbook
-  const logbookResult = await pool.query(
-    `SELECT * FROM public.tipsee_daily_logbook
-     WHERE location_uuid = $1 AND logbook_date = $2
-     LIMIT 1`,
-    [locationUuid, date]
-  );
   const logbook = logbookResult.rows[0] ? cleanRow(logbookResult.rows[0]) : null;
 
-  // 9. Notable Guests (Top 5 spenders)
-  const notableGuestsResult = await pool.query(
-    `SELECT
-      c.id as check_id,
-      c.employee_name as server,
-      c.guest_count as covers,
-      c.revenue_total as payment,
-      c.open_time,
-      c.close_time,
-      c.table_name,
-      p.cc_name as cardholder_name,
-      p.tip_amount,
-      p.amount as payment_amount
-    FROM public.tipsee_checks c
-    LEFT JOIN LATERAL (
-      SELECT cc_name, tip_amount, amount
-      FROM public.tipsee_payments
-      WHERE check_id = c.id
-      ORDER BY (cc_name IS NOT NULL AND cc_name != '') DESC, tip_amount DESC NULLS LAST, amount DESC
-      LIMIT 1
-    ) p ON true
-    WHERE c.location_uuid = $1 AND c.trading_day = $2 AND c.revenue_total > 0
-    ORDER BY c.revenue_total DESC
-    LIMIT 5`,
-    [locationUuid, date]
-  );
+  // Batch all notable guest item sub-queries in parallel (instead of N+1 sequential)
+  const notableGuests = await Promise.all(
+    notableGuestsResult.rows.map(async (guest) => {
+      const guestData = cleanRow(guest);
 
-  const notableGuests = [];
-  for (const guest of notableGuestsResult.rows) {
-    const guestData = cleanRow(guest);
-
-    // Calculate tip percentage
-    if (guestData.payment && guestData.tip_amount) {
-      const baseAmount = guestData.payment - guestData.tip_amount;
-      guestData.tip_percent = baseAmount > 0 ? Math.round((guestData.tip_amount / baseAmount) * 100) : 0;
-    } else {
-      guestData.tip_percent = null;
-    }
-
-    // Get items for this check
-    const itemsResult = await pool.query(
-      `SELECT name, quantity
-       FROM public.tipsee_check_items
-       WHERE check_id = $1
-       ORDER BY price DESC`,
-      [guest.check_id]
-    );
-
-    const items = itemsResult.rows.slice(0, 5).map((item) => {
-      if (item.quantity > 1) {
-        return `${item.name} x${Math.floor(item.quantity)}`;
+      // Calculate tip percentage
+      if (guestData.payment && guestData.tip_amount) {
+        const baseAmount = guestData.payment - guestData.tip_amount;
+        guestData.tip_percent = baseAmount > 0 ? Math.round((guestData.tip_amount / baseAmount) * 100) : 0;
+      } else {
+        guestData.tip_percent = null;
       }
-      return item.name;
-    });
 
-    guestData.items = items;
-    guestData.additional_items = Math.max(0, itemsResult.rows.length - 5);
-    notableGuests.push(guestData);
-  }
+      // Get items for this check
+      const itemsResult = await pool.query(
+        `SELECT name, quantity
+         FROM public.tipsee_check_items
+         WHERE check_id = $1
+         ORDER BY price DESC`,
+        [guest.check_id]
+      );
 
-  // 10. People We Know (VIP reservations)
-  const peopleWeKnowResult = await pool.query(
-    `SELECT
-      first_name,
-      last_name,
-      is_vip,
-      tags,
-      max_guests as party_size,
-      total_payment,
-      status
-    FROM public.full_reservations
-    WHERE location_uuid = $1 AND date = $2
-      AND status IN ('COMPLETE', 'ARRIVED', 'SEATED')
-    ORDER BY is_vip DESC, total_payment DESC`,
-    [locationUuid, date]
+      guestData.items = itemsResult.rows.slice(0, 5).map((item) => {
+        if (item.quantity > 1) {
+          return `${item.name} x${Math.floor(item.quantity)}`;
+        }
+        return item.name;
+      });
+
+      guestData.additional_items = Math.max(0, itemsResult.rows.length - 5);
+      return guestData;
+    })
   );
 
   return {
