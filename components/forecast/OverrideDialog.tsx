@@ -155,7 +155,7 @@ export function OverrideDialog({ open, onOpenChange, forecast, onSaved }: Overri
                 className="font-mono text-lg"
               />
               {delta !== 0 && (
-                <Badge variant={delta > 0 ? 'default' : 'secondary'} className="whitespace-nowrap">
+                <Badge variant={delta > 0 ? 'sage' : 'error'} className="whitespace-nowrap">
                   {delta > 0 ? '+' : ''}{delta}
                 </Badge>
               )}

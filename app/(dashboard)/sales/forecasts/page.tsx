@@ -69,7 +69,7 @@ export default async function ForecastsPage({
         <div className="flex items-center gap-3">
           <h1 className="page-header">Demand Forecasts</h1>
           {hasBiasCorrections && (
-            <Badge variant="secondary" className="text-xs">Bias-corrected</Badge>
+            <Badge variant="sage" className="text-xs">Bias-corrected</Badge>
           )}
         </div>
         <p className="text-muted-foreground">
