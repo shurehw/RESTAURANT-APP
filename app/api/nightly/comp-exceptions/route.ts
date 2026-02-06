@@ -4,17 +4,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveContext } from '@/lib/auth/resolveContext';
 import { fetchCompExceptions } from '@/lib/database/tipsee';
-import { createAdminClient } from '@/lib/supabase/server';
+import { getServiceClient } from '@/lib/supabase/service';
 
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await resolveContext();
-    if (!ctx || !ctx.isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const date = searchParams.get('date');
     const venueId = searchParams.get('venue_id');
@@ -27,8 +21,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Get TipSee location UUID from venue mapping
-    const adminClient = createAdminClient();
-    const { data: mapping, error: mappingError } = await adminClient
+    const supabase = getServiceClient();
+    const { data: mapping, error: mappingError } = await (supabase as any)
       .from('venue_tipsee_mappings')
       .select('tipsee_location_uuid')
       .eq('venue_id', venueId)
