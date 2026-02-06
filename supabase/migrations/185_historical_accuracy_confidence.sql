@@ -50,7 +50,7 @@ GRANT SELECT ON forecast_accuracy_stats TO authenticated;
 -- ============================================================================
 CREATE OR REPLACE FUNCTION refresh_forecast_accuracy_stats(
   p_lookback_days INTEGER DEFAULT 90
-) RETURNS TABLE(venue_id UUID, day_type TEXT, mape NUMERIC, within_10 NUMERIC, sample_n INTEGER) AS $$
+) RETURNS TABLE(out_venue_id UUID, out_day_type TEXT, out_mape NUMERIC, out_within_10 NUMERIC, out_sample_n INTEGER) AS $$
 BEGIN
   RETURN QUERY
   WITH paired AS (
@@ -67,47 +67,10 @@ BEGIN
     JOIN venue_day_facts vdf ON
       vdf.venue_id = f.venue_id
       AND vdf.business_date = f.business_date
-    JOIN forecast_bias_adjustments ba ON
-      ba.venue_id = f.venue_id
-      AND ba.effective_from <= f.business_date
-      AND (ba.effective_to IS NULL OR ba.effective_to >= f.business_date)
-    LEFT JOIN holiday_calendar hc ON hc.holiday_date = f.business_date
-    LEFT JOIN venues v ON v.id = f.venue_id
-    LEFT JOIN holiday_adjustments ha ON
-      ha.holiday_code = hc.holiday_code
-      AND ha.venue_class = v.venue_class
     WHERE vdf.covers_count > 0
       AND f.business_date >= CURRENT_DATE - p_lookback_days
       AND f.business_date < CURRENT_DATE
   ),
-  -- Apply bias correction in computation
-  corrected AS (
-    SELECT
-      p.venue_id,
-      p.day_type,
-      p.actual,
-      -- Recompute corrected prediction using bias
-      CASE WHEN p.actual > 0
-        THEN ABS(p.predicted
-          + COALESCE((ba.day_type_offsets->>p.day_type)::integer, ba.covers_offset, 0)
-          + COALESCE(ha.covers_offset, 0)
-          - p.actual)::numeric / p.actual * 100
-        ELSE 0
-      END as corrected_pct_error,
-      p.predicted
-        + COALESCE((ba.day_type_offsets->>p.day_type)::integer, ba.covers_offset, 0)
-        + COALESCE(ha.covers_offset, 0)
-        - p.actual as signed_error
-    FROM paired p
-    LEFT JOIN forecast_bias_adjustments ba ON
-      ba.venue_id = p.venue_id
-      AND ba.effective_to IS NULL
-    LEFT JOIN holiday_calendar hc ON hc.holiday_date IS NOT NULL  -- dummy join
-    LEFT JOIN venues v ON v.id = p.venue_id
-    LEFT JOIN holiday_adjustments ha ON ha.venue_class = v.venue_class
-    WHERE 1=0  -- This CTE approach won't work cleanly, simplify below
-  ),
-  -- Simpler approach: just compute raw accuracy from paired data
   stats AS (
     SELECT
       p.venue_id,
@@ -142,7 +105,7 @@ BEGIN
     sample_start_date = EXCLUDED.sample_start_date,
     sample_end_date = EXCLUDED.sample_end_date,
     last_computed_at = EXCLUDED.last_computed_at
-  RETURNING forecast_accuracy_stats.venue_id, forecast_accuracy_stats.day_type, forecast_accuracy_stats.mape, forecast_accuracy_stats.within_10pct as within_10, forecast_accuracy_stats.sample_size as sample_n;
+  RETURNING forecast_accuracy_stats.venue_id, forecast_accuracy_stats.day_type, forecast_accuracy_stats.mape, forecast_accuracy_stats.within_10pct, forecast_accuracy_stats.sample_size;
 END;
 $$ LANGUAGE plpgsql;
 
