@@ -56,33 +56,45 @@ CREATE INDEX idx_manager_actions_created ON manager_actions(created_at DESC);
 -- RLS Policies
 ALTER TABLE manager_actions ENABLE ROW LEVEL SECURITY;
 
--- Users can see actions for their venues
+-- Users can see actions for their organization's venues
 CREATE POLICY "Users can view actions for their venues"
   ON manager_actions
   FOR SELECT
   USING (
     venue_id IN (
-      SELECT venue_id FROM venue_access WHERE user_id = auth.uid()
+      SELECT v.id FROM venues v
+      WHERE v.organization_id IN (
+        SELECT organization_id FROM organization_users
+        WHERE user_id = auth.uid() AND is_active = TRUE
+      )
     )
   );
 
--- Users can update actions for their venues
+-- Users can update actions for their organization's venues
 CREATE POLICY "Users can update actions for their venues"
   ON manager_actions
   FOR UPDATE
   USING (
     venue_id IN (
-      SELECT venue_id FROM venue_access WHERE user_id = auth.uid()
+      SELECT v.id FROM venues v
+      WHERE v.organization_id IN (
+        SELECT organization_id FROM organization_users
+        WHERE user_id = auth.uid() AND is_active = TRUE
+      )
     )
   );
 
--- Users can insert actions for their venues
+-- Users can insert actions for their organization's venues
 CREATE POLICY "Users can create actions for their venues"
   ON manager_actions
   FOR INSERT
   WITH CHECK (
     venue_id IN (
-      SELECT venue_id FROM venue_access WHERE user_id = auth.uid()
+      SELECT v.id FROM venues v
+      WHERE v.organization_id IN (
+        SELECT organization_id FROM organization_users
+        WHERE user_id = auth.uid() AND is_active = TRUE
+      )
     )
   );
 
