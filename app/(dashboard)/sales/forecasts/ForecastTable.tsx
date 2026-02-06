@@ -46,30 +46,49 @@ interface ForecastTableProps {
   venueId: string;
 }
 
-/** Human-readable day-type label for adjustments */
-function dayTypeLabel(dayType: string): string {
-  switch (dayType) {
-    case 'weekday': return 'Weekday';
-    case 'friday': return 'Fri';
-    case 'saturday': return 'Sat';
-    case 'sunday': return 'Sun';
-    case 'holiday': return 'Holiday';
-    default: return dayType;
-  }
+/** Confidence tier from within-10% hit rate */
+function confidenceTier(pct: number): { label: string; color: string; bg: string } {
+  if (pct >= 60) return { label: 'Strong', color: 'text-opsos-sage-600', bg: 'bg-sage/10' };
+  if (pct >= 40) return { label: 'Good', color: 'text-opsos-sage-600', bg: 'bg-sage/10' };
+  if (pct >= 25) return { label: 'Fair', color: 'text-brass', bg: 'bg-brass/10' };
+  return { label: 'Low', color: 'text-muted-foreground', bg: 'bg-muted' };
 }
 
-/** Convert within-10% accuracy into a human-readable label */
-function trackRecordLabel(pct: number): { label: string; color: string } {
-  if (pct >= 60) return { label: 'Strong', color: 'text-opsos-sage-600' };
-  if (pct >= 40) return { label: 'Good', color: 'text-opsos-sage-600' };
-  if (pct >= 25) return { label: 'Fair', color: 'text-brass' };
-  return { label: 'Low', color: 'text-muted-foreground' };
+/** Build a short human-readable explanation of what adjustments were applied */
+function adjustmentSummary(forecast: ForecastRow): string | null {
+  const parts: string[] = [];
+
+  if (forecast.day_type_offset !== 0) {
+    const dir = forecast.day_type_offset > 0 ? 'up' : 'down';
+    const abs = Math.abs(forecast.day_type_offset);
+    const dayName: Record<string, string> = {
+      weekday: 'weekday', friday: 'Friday', saturday: 'Saturday',
+      sunday: 'Sunday', holiday: 'holiday',
+    };
+    parts.push(`${dayName[forecast.day_type] || forecast.day_type} pattern ${dir} ${abs}`);
+  }
+
+  if (forecast.holiday_offset !== 0) {
+    const dir = forecast.holiday_offset > 0 ? 'up' : 'down';
+    parts.push(`holiday adj ${dir} ${Math.abs(forecast.holiday_offset)}`);
+  }
+
+  if (forecast.pacing_multiplier !== 1) {
+    const dir = forecast.pacing_multiplier > 1 ? 'above' : 'below';
+    parts.push(`resos ${dir} typical`);
+  }
+
+  return parts.length > 0 ? parts.join(', ') : null;
 }
 
 export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTableProps) {
   const router = useRouter();
   const [selectedForecast, setSelectedForecast] = useState<ForecastRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Only show shift column if there are multiple shift types
+  const shiftTypes = new Set(forecasts.map(f => f.shift_type));
+  const showShift = shiftTypes.size > 1;
 
   const handleOverrideClick = (forecast: ForecastRow) => {
     setSelectedForecast(forecast);
@@ -89,12 +108,11 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
             <thead className="border-b">
               <tr className="text-left text-sm text-muted-foreground">
                 <th className="pb-3 font-medium">Date</th>
-                <th className="pb-3 font-medium">Shift</th>
+                {showShift && <th className="pb-3 font-medium">Shift</th>}
                 <th className="pb-3 font-medium text-right">Covers</th>
                 <th className="pb-3 font-medium text-right">Revenue</th>
-                <th className="pb-3 font-medium text-right">Adjustments</th>
-                <th className="pb-3 font-medium text-right">Track Record</th>
-                <th className="pb-3 font-medium text-center w-16"></th>
+                <th className="pb-3 font-medium text-right">Reliability</th>
+                <th className="pb-3 w-10"></th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -104,111 +122,96 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                 const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 const overrideKey = `${forecast.business_date}|${forecast.shift_type}`;
                 const override = overrideMap[overrideKey];
-                const hasAdjustments = forecast.day_type_offset !== 0
-                  || forecast.holiday_offset !== 0
-                  || forecast.pacing_multiplier !== 1;
-                const track = trackRecordLabel(forecast.confidence_pct);
+                const tier = confidenceTier(forecast.confidence_pct);
+                const adjText = adjustmentSummary(forecast);
+
+                // ± range from midpoint
+                const margin = Math.round(
+                  (forecast.covers_upper - forecast.covers_lower) / 2
+                );
 
                 return (
                   <tr key={forecast.id} className="hover:bg-muted/30 group">
-                    {/* Date + Day combined */}
-                    <td className="py-3 text-sm">
+                    {/* Date */}
+                    <td className="py-3.5 text-sm">
                       <span className="font-medium">{dayOfWeek}</span>
-                      <span className="text-muted-foreground ml-1">{dateStr}</span>
+                      <span className="text-muted-foreground ml-1.5">{dateStr}</span>
                       {forecast.holiday_code && (
-                        <Badge variant="outline" className="ml-1.5 text-[10px] py-0">
+                        <Badge variant="brass" className="ml-1.5 text-[10px] py-0">
                           {forecast.holiday_code}
                         </Badge>
                       )}
                     </td>
 
-                    {/* Shift */}
-                    <td className="py-3 text-sm text-muted-foreground capitalize">
-                      {forecast.shift_type}
-                    </td>
+                    {/* Shift (only if multiple) */}
+                    {showShift && (
+                      <td className="py-3.5 text-sm text-muted-foreground capitalize">
+                        {forecast.shift_type}
+                      </td>
+                    )}
 
-                    {/* Covers - the primary number */}
-                    <td className="py-3 text-sm text-right">
+                    {/* Covers */}
+                    <td className="py-3.5 text-right">
                       <div className="font-mono">
                         {override ? (
                           <>
-                            <span className="line-through text-muted-foreground mr-1">
+                            <span className="text-sm line-through text-muted-foreground mr-1">
                               {forecast.covers_predicted}
                             </span>
-                            <span className="font-semibold text-brass">
+                            <span className="text-lg font-semibold text-brass">
                               {override.forecast_post_override}
                             </span>
                           </>
                         ) : (
-                          <span className="font-semibold">{forecast.covers_predicted}</span>
+                          <span className="text-lg font-semibold">
+                            {forecast.covers_predicted}
+                          </span>
                         )}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground font-mono">
-                        {forecast.covers_lower}-{forecast.covers_upper} range
+                        <span className="text-xs text-muted-foreground ml-1">
+                          ±{margin}
+                        </span>
                       </div>
                     </td>
 
                     {/* Revenue */}
-                    <td className="py-3 text-sm text-right font-mono">
+                    <td className="py-3.5 text-sm text-right font-mono text-muted-foreground">
                       ${forecast.revenue_predicted?.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}
                     </td>
 
-                    {/* Adjustments - human-readable */}
-                    <td className="py-3 text-sm text-right">
-                      {hasAdjustments || override ? (
-                        <div className="flex flex-wrap justify-end gap-1">
-                          {forecast.day_type_offset !== 0 && (
-                            <Badge variant="default" className="text-[10px] py-0">
-                              {dayTypeLabel(forecast.day_type)} {forecast.day_type_offset > 0 ? '+' : ''}{forecast.day_type_offset}
-                            </Badge>
-                          )}
-                          {forecast.holiday_offset !== 0 && (
-                            <Badge variant="default" className="text-[10px] py-0">
-                              Holiday {forecast.holiday_offset > 0 ? '+' : ''}{forecast.holiday_offset}
-                            </Badge>
-                          )}
-                          {forecast.pacing_multiplier !== 1 && (
-                            <Badge variant="default" className="text-[10px] py-0">
-                              Pacing x{forecast.pacing_multiplier?.toFixed(2)}
-                            </Badge>
+                    {/* Reliability — merged track record + adjustments */}
+                    <td className="py-3.5 text-sm text-right">
+                      {forecast.accuracy_sample_size > 0 ? (
+                        <div>
+                          <Badge variant="default" className={`text-[11px] py-0.5 px-2 ${tier.bg} ${tier.color} border-0`}>
+                            {tier.label}
+                          </Badge>
+                          {adjText && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {adjText}
+                            </div>
                           )}
                           {override && (
-                            <Badge variant="outline" className="text-[10px] py-0 border-brass text-brass">
-                              {override.reason_code.replace(/_/g, ' ')}
-                            </Badge>
+                            <div className="text-[10px] text-brass mt-0.5">
+                              override: {override.reason_code.replace(/_/g, ' ').toLowerCase()}
+                            </div>
                           )}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-xs">None</span>
-                      )}
-                    </td>
-
-                    {/* Track Record */}
-                    <td className="py-3 text-sm text-right">
-                      {forecast.accuracy_sample_size > 0 ? (
-                        <div className="text-right">
-                          <span className={`font-medium ${track.color}`}>
-                            {track.label}
-                          </span>
-                          <span className={`text-xs ${track.color} ml-0.5`}>
-                            {Math.round(forecast.confidence_pct)}%
-                          </span>
-                          <div className="text-[10px] text-muted-foreground">
-                            {forecast.accuracy_sample_size} past forecasts
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-right">
-                          <span className="text-muted-foreground text-xs">New</span>
-                          <div className="text-[10px] text-muted-foreground">
-                            No history yet
-                          </div>
+                        <div>
+                          <Badge variant="default" className="text-[11px] py-0.5 px-2">
+                            New
+                          </Badge>
+                          {adjText && (
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {adjText}
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>
 
                     {/* Override button */}
-                    <td className="py-3 text-center">
+                    <td className="py-3.5 text-center">
                       <Button
                         variant="ghost"
                         size="sm"
