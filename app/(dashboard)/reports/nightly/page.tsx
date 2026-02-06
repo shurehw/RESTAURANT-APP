@@ -524,8 +524,8 @@ export default function NightlyReportPage() {
             />
             {/* Food/Bev calculated from salesByCategory (live TipSee data) */}
             {(() => {
-              // Always calculate from salesByCategory (live TipSee data)
-              // Facts table food_sales/beverage_sales are not reliably populated
+              // Calculate Food/Bev split from category data, then apply to actual net sales
+              // Item-level gross doesn't match check-level net, so we use the ratio
               const categories = report.salesByCategory || [];
               const isBevCategory = (cat: string) => {
                 const lower = (cat || '').toLowerCase();
@@ -533,17 +533,22 @@ export default function NightlyReportPage() {
                        lower.includes('beer') || lower.includes('liquor') ||
                        lower.includes('cocktail');
               };
-              const foodSales = categories
+              const foodGross = categories
                 .filter((c: { category: string; net_sales: number }) => !isBevCategory(c.category))
                 .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
-              const bevSales = categories
+              const bevGross = categories
                 .filter((c: { category: string; net_sales: number }) => isBevCategory(c.category))
                 .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
 
               // Calculate mix percentage (food vs bev)
-              const totalCategorySales = foodSales + bevSales;
-              const foodPct = totalCategorySales > 0 ? (foodSales / totalCategorySales * 100) : 0;
-              const bevPct = totalCategorySales > 0 ? (bevSales / totalCategorySales * 100) : 0;
+              const totalCategoryGross = foodGross + bevGross;
+              const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
+              const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
+
+              // Apply percentages to actual check-level net sales
+              const actualNetSales = report.summary.net_sales || 0;
+              const foodSales = actualNetSales * (foodPct / 100);
+              const bevSales = actualNetSales * (bevPct / 100);
 
               return (
                 <>
