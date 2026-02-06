@@ -447,3 +447,293 @@ export async function fetchTipseeLocations(): Promise<TipseeLocation[]> {
   );
   return result.rows.map(cleanRow) as TipseeLocation[];
 }
+
+// ============================================================================
+// COMP EXCEPTION DETECTION
+// Based on h.wood Group Comps, Voids and Discounts SOP
+// ============================================================================
+
+// Approved comp reason codes from SOP
+const APPROVED_COMP_REASONS = [
+  // Drink Tickets
+  'drink ticket', 'drink tickets',
+  // Promoter/Customer Development
+  'promoter', 'promoter dinner', 'customer development', 'cust dev',
+  // Guest Recovery
+  'guest recovery', 'recovery',
+  // Black Card
+  'black card', 'blackcard',
+  // Employee/Staff Discounts
+  'staff 10%', 'staff 20%', 'staff 25%', 'staff 30%', 'staff 50%',
+  'staff10', 'staff20', 'staff25', 'staff30', 'staff50',
+  'employee discount', 'employee', 'emp discount',
+  // Executive/Partner Comps (these are typically names, handled separately)
+  'executive comp', 'partner comp', 'exec comp',
+  // Goodwill
+  'goodwill', 'good will',
+  // DNL (Did Not Like)
+  'dnl', 'did not like', 'didnt like',
+  // Spill
+  'spill', 'spilled', 'broken',
+  // FOH Mistake
+  'foh mistake', 'foh', 'front of house', 'server error', 'server mistake',
+  // BOH Mistake
+  'boh mistake', 'boh', 'back of house', 'kitchen mistake', 'kitchen error', 'wrong temp',
+  // Barbuy
+  'barbuy', 'bar buy',
+  // Performer
+  'performer', 'band', 'dj',
+  // Media/PR/Celebrity
+  'media', 'pr', 'celebrity', 'press', 'media/pr', 'media/pr/celebrity',
+  // Manager Meal
+  'manager meal', 'mgr meal', 'manager', 'management meal',
+];
+
+// Reasons that indicate promoter-related comps
+const PROMOTER_REASONS = [
+  'promoter', 'promoter dinner', 'customer development', 'cust dev',
+];
+
+export type CompExceptionSeverity = 'critical' | 'warning' | 'info';
+
+export type CompExceptionType =
+  | 'unapproved_reason'
+  | 'missing_reason'
+  | 'high_value'
+  | 'high_comp_pct'
+  | 'promoter_item_mismatch'
+  | 'daily_comp_over_budget';
+
+export interface CompException {
+  type: CompExceptionType;
+  severity: CompExceptionSeverity;
+  check_id: string;
+  table_name: string;
+  server: string;
+  comp_total: number;
+  check_total: number;
+  reason: string;
+  comped_items: Array<{ name: string; quantity: number; amount: number }>;
+  message: string;
+  details: string;
+}
+
+export interface CompExceptionSummary {
+  date: string;
+  total_comps: number;
+  net_sales: number;
+  comp_pct: number;
+  comp_pct_status: 'ok' | 'warning' | 'critical';
+  exception_count: number;
+  critical_count: number;
+  warning_count: number;
+}
+
+export interface CompExceptionsResult {
+  summary: CompExceptionSummary;
+  exceptions: CompException[];
+}
+
+// Configuration thresholds
+const COMP_THRESHOLDS = {
+  HIGH_VALUE_COMP: 200, // Flag individual comps over $200
+  HIGH_COMP_PCT_OF_CHECK: 0.5, // Flag checks where comp > 50% of total
+  DAILY_COMP_PCT_WARNING: 0.02, // 2% of net sales
+  DAILY_COMP_PCT_CRITICAL: 0.03, // 3% of net sales
+};
+
+function isApprovedReason(reason: string): boolean {
+  const normalized = reason.toLowerCase().trim();
+  return APPROVED_COMP_REASONS.some(approved =>
+    normalized.includes(approved) || approved.includes(normalized)
+  );
+}
+
+function isPromoterReason(reason: string): boolean {
+  const normalized = reason.toLowerCase().trim();
+  return PROMOTER_REASONS.some(promo =>
+    normalized.includes(promo) || promo.includes(normalized)
+  );
+}
+
+function hasPromoterItems(items: Array<{ name: string }>): boolean {
+  return items.some((item: { name: string }) =>
+    item.name.toLowerCase().includes('promo') ||
+    item.name.toLowerCase().includes('promoter')
+  );
+}
+
+export async function fetchCompExceptions(
+  date: string,
+  locationUuid: string
+): Promise<CompExceptionsResult> {
+  const pool = getTipseePool();
+  const exceptions: CompException[] = [];
+
+  // Get daily summary for comp % calculation
+  const summaryResult = await pool.query(
+    `SELECT
+      SUM(revenue_total) as net_sales,
+      SUM(comp_total) as total_comps
+    FROM public.tipsee_checks
+    WHERE location_uuid = $1 AND trading_day = $2`,
+    [locationUuid, date]
+  );
+
+  const dailySummary = summaryResult.rows[0] || { net_sales: 0, total_comps: 0 };
+  const netSales = parseFloat(dailySummary.net_sales) || 0;
+  const totalComps = parseFloat(dailySummary.total_comps) || 0;
+  const compPct = netSales > 0 ? totalComps / netSales : 0;
+
+  // Get all comps with their items
+  const compsResult = await pool.query(
+    `SELECT DISTINCT
+      c.id as check_id,
+      c.table_name,
+      c.employee_name as server,
+      c.guest_count as covers,
+      GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
+      c.revenue_total as check_total,
+      COALESCE(NULLIF(c.voidcomp_reason_text, ''), '') as reason
+    FROM public.tipsee_checks c
+    LEFT JOIN LATERAL (
+      SELECT SUM(comp_total) as total
+      FROM public.tipsee_check_items
+      WHERE check_id = c.id AND comp_total > 0
+    ) item_comps ON true
+    WHERE c.location_uuid = $1 AND c.trading_day = $2
+      AND (c.comp_total > 0 OR item_comps.total > 0)
+    ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
+    [locationUuid, date]
+  );
+
+  for (const comp of compsResult.rows) {
+    const checkId = comp.check_id;
+    const compTotal = parseFloat(comp.comp_total) || 0;
+    const checkTotal = parseFloat(comp.check_total) || 0;
+    const reason = comp.reason || '';
+
+    // Get comped items for this check
+    const itemsResult = await pool.query(
+      `SELECT name, quantity, comp_total as amount
+       FROM public.tipsee_check_items
+       WHERE check_id = $1 AND comp_total > 0
+       ORDER BY comp_total DESC`,
+      [checkId]
+    );
+
+    const compedItems = itemsResult.rows.map(item => ({
+      name: item.name,
+      quantity: parseFloat(item.quantity) || 1,
+      amount: parseFloat(item.amount) || 0,
+    }));
+
+    const baseException = {
+      check_id: checkId,
+      table_name: comp.table_name || 'Unknown',
+      server: comp.server || 'Unknown',
+      comp_total: compTotal,
+      check_total: checkTotal,
+      reason: reason || 'Unknown',
+      comped_items: compedItems,
+    };
+
+    // Check 1: Missing reason
+    if (!reason || reason.toLowerCase() === 'unknown') {
+      exceptions.push({
+        ...baseException,
+        type: 'missing_reason',
+        severity: 'critical',
+        message: 'Comp has no reason code',
+        details: `$${compTotal.toFixed(2)} comped with no reason specified`,
+      });
+      continue; // Skip other checks for this comp
+    }
+
+    // Check 2: Unapproved reason
+    if (!isApprovedReason(reason)) {
+      exceptions.push({
+        ...baseException,
+        type: 'unapproved_reason',
+        severity: 'critical',
+        message: `"${reason}" is not an approved comp reason`,
+        details: `Reason "${reason}" not found in SOP approved list`,
+      });
+    }
+
+    // Check 3: Promoter items with non-promoter reason
+    if (hasPromoterItems(compedItems) && !isPromoterReason(reason)) {
+      exceptions.push({
+        ...baseException,
+        type: 'promoter_item_mismatch',
+        severity: 'warning',
+        message: 'Promoter items comped under non-promoter reason',
+        details: `Items contain "promo" but reason is "${reason}" - should this be "Promoter"?`,
+      });
+    }
+
+    // Check 4: High value comp
+    if (compTotal >= COMP_THRESHOLDS.HIGH_VALUE_COMP) {
+      // Don't double-flag if already flagged for unapproved reason
+      const alreadyFlagged = exceptions.some(
+        e => e.check_id === checkId && (e.type === 'unapproved_reason' || e.type === 'missing_reason')
+      );
+      if (!alreadyFlagged) {
+        exceptions.push({
+          ...baseException,
+          type: 'high_value',
+          severity: 'warning',
+          message: `High-value comp: $${compTotal.toFixed(2)}`,
+          details: `Exceeds $${COMP_THRESHOLDS.HIGH_VALUE_COMP} threshold - manager review recommended`,
+        });
+      }
+    }
+
+    // Check 5: High comp % of check (near-full comp)
+    if (checkTotal > 0 && compTotal / checkTotal > COMP_THRESHOLDS.HIGH_COMP_PCT_OF_CHECK) {
+      const compPctOfCheck = (compTotal / checkTotal * 100).toFixed(0);
+      // Don't double-flag if already flagged for other reasons
+      const alreadyFlagged = exceptions.some(
+        e => e.check_id === checkId &&
+          (e.type === 'unapproved_reason' || e.type === 'missing_reason' || e.type === 'high_value')
+      );
+      if (!alreadyFlagged) {
+        exceptions.push({
+          ...baseException,
+          type: 'high_comp_pct',
+          severity: 'warning',
+          message: `${compPctOfCheck}% of check comped`,
+          details: `$${compTotal.toFixed(2)} of $${checkTotal.toFixed(2)} total - near-full comp`,
+        });
+      }
+    }
+  }
+
+  // Determine daily comp % status
+  let compPctStatus: 'ok' | 'warning' | 'critical' = 'ok';
+  if (compPct >= COMP_THRESHOLDS.DAILY_COMP_PCT_CRITICAL) {
+    compPctStatus = 'critical';
+  } else if (compPct >= COMP_THRESHOLDS.DAILY_COMP_PCT_WARNING) {
+    compPctStatus = 'warning';
+  }
+
+  const summary: CompExceptionSummary = {
+    date,
+    total_comps: totalComps,
+    net_sales: netSales,
+    comp_pct: compPct * 100,
+    comp_pct_status: compPctStatus,
+    exception_count: exceptions.length,
+    critical_count: exceptions.filter(e => e.severity === 'critical').length,
+    warning_count: exceptions.filter(e => e.severity === 'warning').length,
+  };
+
+  // Sort exceptions: critical first, then by comp amount
+  exceptions.sort((a, b) => {
+    if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+    if (a.severity !== 'critical' && b.severity === 'critical') return 1;
+    return b.comp_total - a.comp_total;
+  });
+
+  return { summary, exceptions };
+}
