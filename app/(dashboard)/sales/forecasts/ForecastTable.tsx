@@ -19,7 +19,9 @@ interface ForecastRow {
   covers_lower: number;
   covers_upper: number;
   revenue_predicted: number;
-  confidence_level: number;
+  confidence_pct: number;
+  historical_mape: number;
+  accuracy_sample_size: number;
   day_type_offset: number;
   holiday_offset: number;
   holiday_code: string | null;
@@ -73,7 +75,7 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                 <th className="pb-3 font-medium text-right">Adjusted</th>
                 <th className="pb-3 font-medium text-right">Revenue</th>
                 <th className="pb-3 font-medium text-right">Layers</th>
-                <th className="pb-3 font-medium text-right">Confidence</th>
+                <th className="pb-3 font-medium text-right">Accuracy</th>
                 <th className="pb-3 font-medium text-center w-20"></th>
               </tr>
             </thead>
@@ -154,13 +156,22 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                       )}
                     </td>
                     <td className="py-3 text-sm text-right">
-                      <span className={`font-medium ${
-                        forecast.confidence_level >= 0.85 ? 'text-opsos-sage-600' :
-                        forecast.confidence_level >= 0.70 ? 'text-brass' :
-                        'text-muted-foreground'
-                      }`}>
-                        {((forecast.confidence_level || 0) * 100).toFixed(0)}%
-                      </span>
+                      {forecast.accuracy_sample_size > 0 ? (
+                        <div className="text-right">
+                          <span className={`font-medium ${
+                            forecast.confidence_pct >= 50 ? 'text-opsos-sage-600' :
+                            forecast.confidence_pct >= 30 ? 'text-brass' :
+                            'text-muted-foreground'
+                          }`}>
+                            {Math.round(forecast.confidence_pct)}%
+                          </span>
+                          <div className="text-[10px] text-muted-foreground">
+                            n={forecast.accuracy_sample_size}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
                     </td>
                     <td className="py-3 text-center">
                       <Button

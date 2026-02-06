@@ -59,7 +59,9 @@ export default async function ForecastsPage({
   const totalCovers = forecasts?.reduce((sum, f) => sum + (f.covers_predicted || 0), 0) || 0;
   const totalRevenue = forecasts?.reduce((sum, f) => sum + (f.revenue_predicted || 0), 0) || 0;
   const avgCheck = totalCovers > 0 ? totalRevenue / totalCovers : 0;
-  const avgConfidence = forecasts?.reduce((sum, f) => sum + (f.confidence_level || 0), 0) / (forecasts?.length || 1) || 0;
+  const avgAccuracy = forecasts?.length
+    ? forecasts.reduce((sum, f) => sum + (f.confidence_pct || 0), 0) / forecasts.length
+    : 0;
   const hasBiasCorrections = forecasts?.some(f => f.bias_corrected) || false;
 
   return (
@@ -123,9 +125,9 @@ export default async function ForecastsPage({
           <div className="flex items-center gap-3">
             <TrendingUp className="w-8 h-8 text-brass" />
             <div>
-              <div className="text-sm text-muted-foreground">Forecast Confidence</div>
-              <div className="text-2xl font-bold">{(avgConfidence * 100).toFixed(0)}%</div>
-              <div className="text-xs text-muted-foreground">Average accuracy</div>
+              <div className="text-sm text-muted-foreground">Forecast Accuracy</div>
+              <div className="text-2xl font-bold">{Math.round(avgAccuracy)}%</div>
+              <div className="text-xs text-muted-foreground">Within 10% historically</div>
             </div>
           </div>
         </Card>
