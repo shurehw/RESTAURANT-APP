@@ -149,7 +149,19 @@
       "Bash(head:*)",
       "Bash(npm run lint:*)",
       "Bash(npx next lint)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(npx supabase db push:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nFix NaN% in comps by converting PostgreSQL numeric strings to numbers\n\nPostgreSQL returns SUM\\(\\) and numeric types as strings in node-postgres.\nThe cleanRow function only handled bigint conversion, causing string\nconcatenation instead of addition when calculating comp percentages.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(node -e:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(more:*)",
+      "Bash(node scripts/run-backfill.mjs:*)",
+      "Bash(node scripts/direct-backfill.mjs:*)",
+      "Bash(vercel --version:*)",
+      "WebFetch(domain:opsos-restaurant-djwn0436j-shureprint.vercel.app)",
+      "WebFetch(domain:opsos-restaurant-7m5ifljrl-shureprint.vercel.app)",
+      "Bash(python3:*)",
+      "Bash(xargs:*)"
     ],
     "deny": [],
     "ask": []
