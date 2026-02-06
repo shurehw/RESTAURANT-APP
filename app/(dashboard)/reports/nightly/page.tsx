@@ -537,10 +537,10 @@ export default function NightlyReportPage() {
               const bevSales = categories
                 .filter(c => isBevCategory(c.category))
                 .reduce((sum, c) => sum + (Number(c.net_sales) || 0), 0);
-              // Use net_sales from summary for percentage calculation
-              const netSales = Number(report.summary.net_sales) || 0;
-              const foodPct = netSales > 0 ? (foodSales / netSales * 100) : 0;
-              const bevPct = netSales > 0 ? (bevSales / netSales * 100) : 0;
+              // Use total of categories for percentage (so food + bev = 100%)
+              const totalSales = foodSales + bevSales;
+              const foodPct = totalSales > 0 ? (foodSales / totalSales * 100) : 0;
+              const bevPct = totalSales > 0 ? (bevSales / totalSales * 100) : 0;
 
               return (
                 <>
