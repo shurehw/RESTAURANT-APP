@@ -45,9 +45,10 @@ interface NightlyReportData {
   };
   salesByCategory: Array<{
     category: string;
-    net_sales: number;
+    gross_sales: number;
     comps: number;
     voids: number;
+    net_sales: number;
   }>;
   servers: Array<{
     employee_name: string;
@@ -521,22 +522,36 @@ export default function NightlyReportPage() {
               value={`${report.summary.net_sales > 0 ? ((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1) : '0.0'}%`}
               icon={<Gift className="h-5 w-5 text-error" />}
             />
-            {/* Calculate Food/Bev from salesByCategory (live TipSee data) */}
+            {/* Food/Bev from facts summary (pre-calculated) or fallback to salesByCategory */}
             {(() => {
-              const categories = report.salesByCategory || [];
-              const isBevCategory = (cat: string) => {
-                const lower = (cat || '').toLowerCase();
-                return lower.includes('bev') || lower.includes('wine') ||
-                       lower.includes('beer') || lower.includes('liquor') ||
-                       lower.includes('cocktail');
-              };
-              // Sum from salesByCategory (grouped by parent_category)
-              const foodSales = categories
-                .filter(c => !isBevCategory(c.category))
-                .reduce((sum, c) => sum + (Number(c.net_sales) || 0), 0);
-              const bevSales = categories
-                .filter(c => isBevCategory(c.category))
-                .reduce((sum, c) => sum + (Number(c.net_sales) || 0), 0);
+              // Use facts summary if available (most accurate)
+              const factsFoodSales = factsSummary?.summary?.food_sales;
+              const factsBevSales = factsSummary?.summary?.beverage_sales;
+
+              let foodSales: number;
+              let bevSales: number;
+
+              if (factsFoodSales != null || factsBevSales != null) {
+                // Use pre-calculated values from facts tables
+                foodSales = Number(factsFoodSales) || 0;
+                bevSales = Number(factsBevSales) || 0;
+              } else {
+                // Fallback: calculate from salesByCategory
+                const categories = report.salesByCategory || [];
+                const isBevCategory = (cat: string) => {
+                  const lower = (cat || '').toLowerCase();
+                  return lower.includes('bev') || lower.includes('wine') ||
+                         lower.includes('beer') || lower.includes('liquor') ||
+                         lower.includes('cocktail');
+                };
+                foodSales = categories
+                  .filter((c: { category: string; net_sales: number }) => !isBevCategory(c.category))
+                  .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
+                bevSales = categories
+                  .filter((c: { category: string; net_sales: number }) => isBevCategory(c.category))
+                  .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
+              }
+
               // Calculate mix percentage (food vs bev)
               const totalCategorySales = foodSales + bevSales;
               const foodPct = totalCategorySales > 0 ? (foodSales / totalCategorySales * 100) : 0;

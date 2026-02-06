@@ -67,9 +67,10 @@ export interface NightlyReportData {
   };
   salesByCategory: Array<{
     category: string;
-    net_sales: number;
+    gross_sales: number;
     comps: number;
     voids: number;
+    net_sales: number;
   }>;
   salesBySubcategory: Array<{
     parent_category: string;
@@ -166,13 +167,14 @@ export async function fetchNightlyReport(
         total_voids: 0,
       };
 
-  // 2. Sales by Category
+  // 2. Sales by Category (true net = gross - comps - voids)
   const salesByCategoryResult = await pool.query(
     `SELECT
       COALESCE(parent_category, 'Other') as category,
-      SUM(price * quantity) as net_sales,
+      SUM(price * quantity) as gross_sales,
       SUM(comp_total) as comps,
-      SUM(void_value) as voids
+      SUM(void_value) as voids,
+      SUM(price * quantity) - SUM(COALESCE(comp_total, 0)) - SUM(COALESCE(void_value, 0)) as net_sales
     FROM public.tipsee_check_items
     WHERE location_uuid = $1 AND trading_day = $2
     GROUP BY parent_category
