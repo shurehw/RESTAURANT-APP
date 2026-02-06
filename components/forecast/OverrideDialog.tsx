@@ -34,7 +34,7 @@ interface OverrideDialogProps {
     shift_type: string;
     covers_predicted: number;
     day_type?: string;
-    holiday_code?: string;
+    holiday_code?: string | null;
     day_type_offset?: number;
     holiday_offset?: number;
     pacing_multiplier?: number;
