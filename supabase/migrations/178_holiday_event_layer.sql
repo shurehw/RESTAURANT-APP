@@ -8,9 +8,9 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'venue_class') THEN
     CREATE TYPE venue_class AS ENUM (
-      'high_end_nightlife',  -- Delilah, Bird Streets (NYE 2-3x, Black Friday collapses)
-      'steady_social',       -- Nice Guy, Poppy (holidays ~normal)
-      'casual_dining'        -- Keys (moderate holiday swings)
+      'high_end_social',   -- Nice Guy, Delilah LA, Delilah Miami (upscale dining + social scene)
+      'nightclub',         -- Keys, Poppy (late-night club, event-driven)
+      'member_club'        -- Bird Streets (private membership, volatile)
     );
   END IF;
 END$$;
@@ -83,10 +83,10 @@ CREATE TABLE IF NOT EXISTS holiday_calendar (
   UNIQUE(holiday_date)
 );
 
--- Classify existing venues based on backtest analysis
-UPDATE venues SET venue_class = 'high_end_nightlife' WHERE name IN ('Delilah LA', 'Delilah Miami', 'Bird Streets Club');
-UPDATE venues SET venue_class = 'steady_social' WHERE name IN ('Nice Guy LA', 'Poppy');
-UPDATE venues SET venue_class = 'casual_dining' WHERE name IN ('Keys Los Angeles');
+-- Classify existing venues based on actual venue types
+UPDATE venues SET venue_class = 'high_end_social' WHERE name IN ('Nice Guy LA', 'Delilah LA', 'Delilah Miami');
+UPDATE venues SET venue_class = 'nightclub' WHERE name IN ('Keys Los Angeles', 'Poppy');
+UPDATE venues SET venue_class = 'member_club' WHERE name IN ('Bird Streets Club');
 
 -- Populate holiday calendar (2025-2026)
 INSERT INTO holiday_calendar (holiday_date, holiday_code) VALUES
@@ -119,25 +119,34 @@ ON CONFLICT DO NOTHING;
 -- Seed holiday adjustments based on backtest analysis
 -- Only apply to venue classes where data shows significant deviation
 INSERT INTO holiday_adjustments (holiday_code, venue_class, covers_offset, max_uplift_pct, confidence, notes) VALUES
-  -- NYE: Forced attendance event (high_end_nightlife explodes)
-  ('NYE', 'high_end_nightlife', 300, 350, 'observed', 'Miami +536, LA +269, Bird Streets +150 from backtest'),
-  ('NYE', 'steady_social', 60, 150, 'observed', 'Nice Guy +123, Poppy ~0 - moderate uplift'),
-  ('NYE', 'casual_dining', 10, 120, 'observed', 'Keys +11 - minimal change'),
+  -- NYE: Forced attendance event
+  -- high_end_social explodes (Miami +536, Delilah LA +269, Nice Guy +123)
+  ('NYE', 'high_end_social', 300, 350, 'observed', 'Miami +536, LA +269, Nice Guy +123 from backtest'),
+  -- nightclubs already busy on NYE, model handles well (Poppy -1, Keys +11)
+  ('NYE', 'nightclub', 0, 120, 'observed', 'Poppy -1, Keys +11 - model already accurate'),
+  -- member club volatile (Bird Streets +150)
+  ('NYE', 'member_club', 150, 250, 'observed', 'Bird Streets +150'),
 
-  -- Black Friday: Shopping diversion (nightlife collapses)
-  ('BLACK_FRIDAY', 'high_end_nightlife', -100, 100, 'observed', 'Miami -177, Bird Streets -98 from backtest'),
-  ('BLACK_FRIDAY', 'steady_social', -20, 100, 'observed', 'Nice Guy -35, Poppy +2 - slight dip'),
-  ('BLACK_FRIDAY', 'casual_dining', 0, 100, 'inferred', 'No significant change expected'),
+  -- Black Friday: Shopping diversion
+  -- high_end_social collapses (Miami -177, Delilah LA -68, Nice Guy -35)
+  ('BLACK_FRIDAY', 'high_end_social', -80, 100, 'observed', 'Miami -177, LA -68, Nice Guy -35'),
+  -- nightclubs unaffected (Poppy +2 perfect)
+  ('BLACK_FRIDAY', 'nightclub', 0, 100, 'observed', 'Poppy +2 - no change needed'),
+  -- member club collapses (Bird Streets -98)
+  ('BLACK_FRIDAY', 'member_club', -100, 100, 'observed', 'Bird Streets -98'),
 
   -- New Years Day: Post-event hangover
-  ('NYD', 'high_end_nightlife', -50, 100, 'observed', 'Bird Streets predicted 144, actual 15 - collapse'),
-  ('NYD', 'steady_social', 0, 100, 'observed', 'Nice Guy, Keys almost perfect'),
-  ('NYD', 'casual_dining', 0, 100, 'observed', 'Keys -2 - no change needed'),
+  -- high_end_social slight dip (Miami -41, Nice Guy -1)
+  ('NYD', 'high_end_social', -20, 100, 'observed', 'Miami -41, Nice Guy -1'),
+  -- nightclubs unaffected (Keys -2 perfect)
+  ('NYD', 'nightclub', 0, 100, 'observed', 'Keys -2 - model accurate'),
+  -- member club MASSIVE collapse (Bird Streets predicted 144, actual 15!)
+  ('NYD', 'member_club', -100, 100, 'observed', 'Bird Streets: pred 144, actual 15 - post-NYE collapse'),
 
-  -- MLK Day: Monday holiday (minimal impact)
-  ('MLK_DAY', 'high_end_nightlife', -30, 100, 'observed', 'Bird Streets -48'),
-  ('MLK_DAY', 'steady_social', 0, 100, 'observed', 'Nice Guy -2, Poppy -25 mixed'),
-  ('MLK_DAY', 'casual_dining', 0, 100, 'inferred', 'No data')
+  -- MLK Day: Monday holiday
+  ('MLK_DAY', 'high_end_social', 0, 100, 'observed', 'Nice Guy -2 perfect'),
+  ('MLK_DAY', 'nightclub', -15, 100, 'observed', 'Poppy -25 slight dip'),
+  ('MLK_DAY', 'member_club', -40, 100, 'observed', 'Bird Streets -48')
 ON CONFLICT DO NOTHING;
 
 -- Create indexes
