@@ -538,6 +538,7 @@ export interface CompExceptionsResult {
 const COMP_THRESHOLDS = {
   HIGH_VALUE_COMP: 200, // Flag individual comps over $200
   HIGH_COMP_PCT_OF_CHECK: 0.5, // Flag checks where comp > 50% of total
+  HIGH_COMP_PCT_MIN_AMOUNT: 100, // Only flag high % comps if they're over $100 (avoids split-check false positives)
   DAILY_COMP_PCT_WARNING: 0.02, // 2% of net sales
   DAILY_COMP_PCT_CRITICAL: 0.03, // 3% of net sales
 };
@@ -690,7 +691,10 @@ export async function fetchCompExceptions(
     }
 
     // Check 5: High comp % of check (near-full comp)
-    if (checkTotal > 0 && compTotal / checkTotal > COMP_THRESHOLDS.HIGH_COMP_PCT_OF_CHECK) {
+    // Only flag if over threshold percentage AND above minimum amount (avoids small split-check false positives)
+    if (checkTotal > 0 &&
+        compTotal / checkTotal > COMP_THRESHOLDS.HIGH_COMP_PCT_OF_CHECK &&
+        compTotal >= COMP_THRESHOLDS.HIGH_COMP_PCT_MIN_AMOUNT) {
       const compPctOfCheck = (compTotal / checkTotal * 100).toFixed(0);
       // Don't double-flag if already flagged for other reasons
       const alreadyFlagged = exceptions.some(
