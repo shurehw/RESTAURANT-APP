@@ -525,8 +525,8 @@ export default function NightlyReportPage() {
             {/* Food/Bev from facts summary (pre-calculated) or fallback to salesByCategory */}
             {(() => {
               // Use facts summary if available (most accurate)
-              const factsFoodSales = factsSummary?.summary?.food_sales;
-              const factsBevSales = factsSummary?.summary?.beverage_sales;
+              const factsFoodSales = factsSummary?.food_sales;
+              const factsBevSales = factsSummary?.beverage_sales;
 
               let foodSales: number;
               let bevSales: number;
