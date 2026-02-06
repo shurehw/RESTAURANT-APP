@@ -22,6 +22,7 @@ import {
   Calculator,
   Moon,
   Music2,
+  ShieldCheck,
 } from "lucide-react";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
@@ -129,6 +130,9 @@ function Sidebar() {
           </NavLink>
           <NavLink href="/reports/nightly" icon={<Moon className="w-5 h-5" />}>
             Nightly Report
+          </NavLink>
+          <NavLink href="/control-plane" icon={<ShieldCheck className="w-5 h-5" />}>
+            Control Plane
           </NavLink>
           <NavLink href="/entertainment" icon={<Music2 className="w-5 h-5" />}>
             Entertainment
