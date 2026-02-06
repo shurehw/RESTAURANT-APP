@@ -4,16 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
-import { resolveContext } from '@/lib/auth/resolveContext';
+import { getServiceClient } from '@/lib/supabase/service';
 
 export async function GET(request: NextRequest) {
   try {
-    const ctx = await resolveContext();
-    if (!ctx || !ctx.isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const venueId = searchParams.get('venue_id');
     const businessDate = searchParams.get('business_date');
@@ -25,9 +19,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const adminClient = createAdminClient();
+    const supabase = getServiceClient();
 
-    const { data, error } = await (adminClient as any)
+    const { data, error } = await (supabase as any)
       .from('comp_notes')
       .select('check_id, notes, updated_at')
       .eq('venue_id', venueId)
@@ -53,11 +47,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const ctx = await resolveContext();
-    if (!ctx || !ctx.isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const body = await request.json();
     const { venue_id, business_date, check_id, notes } = body;
 
@@ -68,19 +57,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminClient = createAdminClient();
+    const supabase = getServiceClient();
 
     // Get venue's organization_id
-    const { data: venue } = await adminClient
+    const { data: venue } = await (supabase as any)
       .from('venues')
       .select('organization_id')
       .eq('id', venue_id)
       .single();
 
-    const organizationId = venue?.organization_id || ctx.orgId;
+    const organizationId = venue?.organization_id;
 
     // Upsert the note
-    const { data, error } = await (adminClient as any)
+    const { data, error } = await (supabase as any)
       .from('comp_notes')
       .upsert({
         organization_id: organizationId,
@@ -88,7 +77,6 @@ export async function POST(request: NextRequest) {
         business_date,
         check_id,
         notes: notes || null,
-        created_by: ctx.authUserId,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'venue_id,business_date,check_id',
