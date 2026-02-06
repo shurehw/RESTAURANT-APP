@@ -741,3 +741,94 @@ export async function fetchCompExceptions(
 
   return { summary, exceptions };
 }
+
+// ============================================================================
+// LABOR DATA (from TipSee punches table via 7Shifts)
+// ============================================================================
+
+export interface LaborSummary {
+  total_hours: number;
+  labor_cost: number;
+  labor_pct: number;
+  splh: number;
+  ot_hours: number;
+  covers_per_labor_hour: number | null;
+  employee_count: number;
+  punch_count: number;
+}
+
+/**
+ * Fetch daily labor summary from TipSee punches table
+ * Uses the `punches` table which has pre-calculated total_hours and hourly_wage
+ */
+export async function fetchLaborSummary(
+  locationUuid: string,
+  date: string,
+  netSales: number,
+  covers: number
+): Promise<LaborSummary | null> {
+  const pool = getTipseePool();
+
+  try {
+    // Aggregate labor from punches table
+    // trading_day is stored as DATE in TipSee
+    const result = await pool.query(
+      `SELECT
+        COUNT(*) as punch_count,
+        COUNT(DISTINCT user_id) as employee_count,
+        COALESCE(SUM(total_hours), 0) as total_hours,
+        COALESCE(SUM(total_hours * hourly_wage), 0) as labor_cost
+      FROM public.punches
+      WHERE location_uuid = $1
+        AND trading_day = $2
+        AND deleted = false
+        AND approved = true
+        AND clocked_out IS NOT NULL`,
+      [locationUuid, date]
+    );
+
+    const row = result.rows[0];
+    if (!row || Number(row.punch_count) === 0) {
+      return null;
+    }
+
+    const totalHours = Number(row.total_hours) || 0;
+    const laborCost = Number(row.labor_cost) || 0;
+    const employeeCount = Number(row.employee_count) || 0;
+    const punchCount = Number(row.punch_count) || 0;
+
+    // Calculate OT: hours over 8 per employee per day
+    const otResult = await pool.query(
+      `SELECT
+        user_id,
+        SUM(total_hours) as daily_hours
+      FROM public.punches
+      WHERE location_uuid = $1
+        AND trading_day = $2
+        AND deleted = false
+        AND approved = true
+        AND clocked_out IS NOT NULL
+      GROUP BY user_id
+      HAVING SUM(total_hours) > 8`,
+      [locationUuid, date]
+    );
+
+    const otHours = otResult.rows.reduce((sum: number, r: any) => {
+      return sum + Math.max(0, Number(r.daily_hours) - 8);
+    }, 0);
+
+    return {
+      total_hours: totalHours,
+      labor_cost: laborCost,
+      labor_pct: netSales > 0 ? (laborCost / netSales) * 100 : 0,
+      splh: totalHours > 0 ? netSales / totalHours : 0,
+      ot_hours: otHours,
+      covers_per_labor_hour: totalHours > 0 ? covers / totalHours : null,
+      employee_count: employeeCount,
+      punch_count: punchCount,
+    };
+  } catch (error) {
+    console.error('Error fetching TipSee labor data:', error);
+    return null;
+  }
+}
