@@ -375,6 +375,64 @@ async function syncVenueDay(
       rowsLoaded++;
     }
 
+    // 11. Extract and upsert labor_day_facts (from TipSee punches table)
+    const laborSummaryResult = await tipsee.queryObject<{
+      punch_count: bigint;
+      employee_count: bigint;
+      total_hours: number;
+      labor_cost: number;
+    }>`
+      SELECT
+        COUNT(*) as punch_count,
+        COUNT(DISTINCT user_id) as employee_count,
+        COALESCE(SUM(total_hours), 0) as total_hours,
+        COALESCE(SUM(total_hours * hourly_wage), 0) as labor_cost
+      FROM public.punches
+      WHERE location_uuid = ${tipseeLocationUuid}
+        AND trading_day = ${businessDate}
+        AND deleted = false
+        AND approved = true
+        AND clocked_out IS NOT NULL
+    `;
+    rowsExtracted++;
+
+    const laborRow = laborSummaryResult.rows[0];
+    if (laborRow && Number(laborRow.punch_count) > 0) {
+      // Calculate OT hours
+      const otResult = await tipsee.queryObject<{
+        user_id: string;
+        daily_hours: number;
+      }>`
+        SELECT user_id, SUM(total_hours) as daily_hours
+        FROM public.punches
+        WHERE location_uuid = ${tipseeLocationUuid}
+          AND trading_day = ${businessDate}
+          AND deleted = false
+          AND approved = true
+          AND clocked_out IS NOT NULL
+        GROUP BY user_id
+        HAVING SUM(total_hours) > 8
+      `;
+
+      const otHours = otResult.rows.reduce((sum, r) =>
+        sum + Math.max(0, Number(r.daily_hours) - 8), 0);
+
+      await supabase.from('labor_day_facts').upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        total_hours: Number(laborRow.total_hours) || 0,
+        ot_hours: otHours,
+        labor_cost: Number(laborRow.labor_cost) || 0,
+        punch_count: Number(laborRow.punch_count) || 0,
+        employee_count: Number(laborRow.employee_count) || 0,
+        net_sales: Number(summary.net_sales) || 0,
+        covers: Number(summary.total_covers) || 0,
+        last_synced_at: new Date().toISOString(),
+        etl_run_id: etlRunId,
+      }, { onConflict: 'venue_id,business_date' });
+      rowsLoaded++;
+    }
+
     // Mark ETL run successful
     await supabase.from('etl_runs').update({
       status: 'success',
