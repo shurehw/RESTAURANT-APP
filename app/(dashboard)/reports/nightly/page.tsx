@@ -417,30 +417,50 @@ export default function NightlyReportPage() {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {/* Net Sales with variance */}
-                  <div className="space-y-1">
-                    <div className="text-2xl font-bold tabular-nums">
-                      {formatCurrency(report.summary.net_sales || 0)}
-                    </div>
-                    <div className="text-xs text-muted-foreground uppercase">Net Sales</div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1">
-                      <VarianceBadge value={factsSummary.variance.vs_forecast_pct} label="Fcst" />
-                      <VarianceBadge value={factsSummary.variance.vs_sdlw_pct} label="SDLW" />
-                      <VarianceBadge value={factsSummary.variance.vs_sdly_pct} label="SDLY" />
-                    </div>
-                  </div>
-                  {/* Covers with variance */}
-                  <div className="space-y-1">
-                    <div className="text-2xl font-bold tabular-nums">
-                      {formatNumber(report.summary.total_covers || 0)}
-                    </div>
-                    <div className="text-xs text-muted-foreground uppercase">Covers</div>
-                    <div className="flex flex-wrap gap-x-3 gap-y-1">
-                      <VarianceBadge value={factsSummary.variance.vs_forecast_covers_pct} label="Fcst" />
-                      <VarianceBadge value={factsSummary.variance.vs_sdlw_covers_pct} label="SDLW" />
-                      <VarianceBadge value={factsSummary.variance.vs_sdly_covers_pct} label="SDLY" />
-                    </div>
-                  </div>
+                  {/* Net Sales with variance - recalculate using live TipSee data */}
+                  {(() => {
+                    const liveNetSales = report.summary.net_sales || 0;
+                    const liveCovers = report.summary.total_covers || 0;
+                    const calcVar = (actual: number, comparison: number | null | undefined) => {
+                      if (!comparison || comparison === 0) return null;
+                      return ((actual - comparison) / comparison) * 100;
+                    };
+                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary.variance.sdlw_net_sales);
+                    const sdlySalesPct = calcVar(liveNetSales, factsSummary.variance.sdly_net_sales);
+                    const sdlwCoversPct = calcVar(liveCovers, factsSummary.variance.sdlw_covers);
+                    const sdlyCoversPct = calcVar(liveCovers, factsSummary.variance.sdly_covers);
+                    // Forecast variance uses fact table data since forecast is also from fact table
+                    const fcstSalesPct = factsSummary.variance.vs_forecast_pct;
+                    const fcstCoversPct = factsSummary.variance.vs_forecast_covers_pct;
+
+                    return (
+                      <>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums">
+                            {formatCurrency(liveNetSales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Net Sales</div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1">
+                            <VarianceBadge value={fcstSalesPct} label="Fcst" />
+                            <VarianceBadge value={sdlwSalesPct} label="SDLW" />
+                            <VarianceBadge value={sdlySalesPct} label="SDLY" />
+                          </div>
+                        </div>
+                        {/* Covers with variance */}
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums">
+                            {formatNumber(liveCovers)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Covers</div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1">
+                            <VarianceBadge value={fcstCoversPct} label="Fcst" />
+                            <VarianceBadge value={sdlwCoversPct} label="SDLW" />
+                            <VarianceBadge value={sdlyCoversPct} label="SDLY" />
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                   {/* Forecast context */}
                   {factsSummary.forecast?.net_sales && (
                     <div className="space-y-1">
