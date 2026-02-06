@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
+import { getFiscalPeriod, FiscalCalendarType } from '@/lib/fiscal-calendar';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -60,20 +61,41 @@ export async function GET(request: NextRequest) {
     sdlyDate.setFullYear(sdlyDate.getFullYear() - 1);
     const sdlyDateStr = sdlyDate.toISOString().split('T')[0];
 
-    // PTD (Period-to-Date): Monday of current week → selected date
-    const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, ...
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sun=6, Mon=0, Tue=1, etc.
-    const weekStartDate = new Date(currentDate);
-    weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
-    const weekStartStr = weekStartDate.toISOString().split('T')[0];
+    // Fetch fiscal calendar settings for the venue's organization
+    const { data: venueData } = await (supabase as any)
+      .from('venues')
+      .select('organization_id')
+      .eq('id', venueId)
+      .single();
 
-    // Same period last week
-    const lastWeekStartDate = new Date(weekStartDate);
-    lastWeekStartDate.setDate(lastWeekStartDate.getDate() - 7);
-    const lastWeekStartStr = lastWeekStartDate.toISOString().split('T')[0];
-    const lastWeekEndDate = new Date(currentDate);
-    lastWeekEndDate.setDate(lastWeekEndDate.getDate() - 7);
-    const lastWeekEndStr = lastWeekEndDate.toISOString().split('T')[0];
+    let fiscalCalendarType: FiscalCalendarType = 'standard';
+    let fiscalYearStartDate: string | null = null;
+
+    if (venueData?.organization_id) {
+      const { data: settingsData } = await (supabase as any)
+        .from('proforma_settings')
+        .select('fiscal_calendar_type, fiscal_year_start_date')
+        .eq('org_id', venueData.organization_id)
+        .single();
+
+      if (settingsData) {
+        fiscalCalendarType = settingsData.fiscal_calendar_type || 'standard';
+        fiscalYearStartDate = settingsData.fiscal_year_start_date;
+      }
+    }
+
+    // Get fiscal period info for PTD calculation
+    const fiscalPeriod = getFiscalPeriod(date, fiscalCalendarType, fiscalYearStartDate);
+
+    // PTD (Period-to-Date): Start of fiscal period → selected date
+    const periodStartStr = fiscalPeriod.periodStartDate;
+
+    // Same period last week (go back 7 days within fiscal context)
+    const lastWeekDate = new Date(currentDate);
+    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+    const lastWeekFiscalPeriod = getFiscalPeriod(lastWeekDate.toISOString().split('T')[0], fiscalCalendarType, fiscalYearStartDate);
+    const lastWeekPeriodStartStr = lastWeekFiscalPeriod.periodStartDate;
+    const lastWeekEndStr = lastWeekDate.toISOString().split('T')[0];
 
     // Fetch all fact data in parallel
     const [
@@ -162,20 +184,20 @@ export async function GET(request: NextRequest) {
         .eq('business_date', sdlyDateStr)
         .maybeSingle(),
 
-      // PTD This Week (Monday → selected date)
+      // PTD This Period (fiscal period start → selected date)
       (supabase as any)
         .from('venue_day_facts')
         .select('net_sales, covers_count')
         .eq('venue_id', venueId)
-        .gte('business_date', weekStartStr)
+        .gte('business_date', periodStartStr)
         .lte('business_date', date),
 
-      // PTD Last Week (same period last week)
+      // PTD Last Period (same relative period last week)
       (supabase as any)
         .from('venue_day_facts')
         .select('net_sales, covers_count')
         .eq('venue_id', venueId)
-        .gte('business_date', lastWeekStartStr)
+        .gte('business_date', lastWeekPeriodStartStr)
         .lte('business_date', lastWeekEndStr),
     ]);
 
@@ -334,13 +356,25 @@ export async function GET(request: NextRequest) {
         sdly_covers: sdly?.covers_count || null,
         vs_sdly_pct: calcVariance(actualNetSales, sdly?.net_sales),
         vs_sdly_covers_pct: calcVariance(actualCovers, sdly?.covers_count),
-        // PTD (Period-to-Date): Monday → selected date vs same period last week
+        // PTD (Period-to-Date): fiscal period start → selected date vs same period last week
         ptd_net_sales: ptdThisWeek.net_sales,
         ptd_covers: ptdThisWeek.covers,
         ptd_lw_net_sales: ptdLastWeek.net_sales,
         ptd_lw_covers: ptdLastWeek.covers,
         vs_ptd_pct: calcVariance(ptdThisWeek.net_sales, ptdLastWeek.net_sales),
         vs_ptd_covers_pct: calcVariance(ptdThisWeek.covers, ptdLastWeek.covers),
+      },
+
+      // Fiscal calendar info
+      fiscal: {
+        calendar_type: fiscalCalendarType,
+        fy_start_date: fiscalYearStartDate,
+        fiscal_year: fiscalPeriod.fiscalYear,
+        fiscal_quarter: fiscalPeriod.fiscalQuarter,
+        fiscal_period: fiscalPeriod.fiscalPeriod,
+        period_start_date: fiscalPeriod.periodStartDate,
+        period_end_date: fiscalPeriod.periodEndDate,
+        week_in_period: fiscalPeriod.weekInPeriod,
       },
     };
 
