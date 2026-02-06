@@ -35,6 +35,8 @@ import {
   Sparkles,
   CheckCircle2,
   Info,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 interface NightlyReportData {
@@ -268,6 +270,7 @@ export default function NightlyReportPage() {
   const [compExceptions, setCompExceptions] = useState<CompExceptionsData | null>(null);
   const [compReview, setCompReview] = useState<CompReviewData | null>(null);
   const [loadingCompReview, setLoadingCompReview] = useState<boolean>(false);
+  const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
 
   // Fetch venue mappings on mount
   useEffect(() => {
@@ -882,7 +885,10 @@ export default function NightlyReportPage() {
 
           {compReview && !loadingCompReview && (
             <Card className="border-blue-500/50 bg-blue-500/5">
-              <CardHeader className="border-b border-blue-500/20">
+              <CardHeader
+                className="border-b border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
+                onClick={() => setCompReviewExpanded(!compReviewExpanded)}
+              >
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-blue-500" />
                   AI Comp Review
@@ -902,6 +908,21 @@ export default function NightlyReportPage() {
                         {compReview.summary.approved} Approved
                       </span>
                     )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 ml-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCompReviewExpanded(!compReviewExpanded);
+                      }}
+                    >
+                      {compReviewExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
                   </span>
                 </CardTitle>
               </CardHeader>
