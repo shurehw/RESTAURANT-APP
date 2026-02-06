@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Save, Plus, Trash2, Info } from "lucide-react";
+import { Save, Plus, Trash2, Info, AlertTriangle } from "lucide-react";
 import { ManagePresenceThresholdDialog } from "../ManagePresenceThresholdDialog";
 
 const CONCEPT_TYPES = [
@@ -479,10 +479,10 @@ export function LaborAssumptions({
                   <span className="text-zinc-600">Target range for {activeConcept}: </span>
                   <span className="text-zinc-900 font-medium">{benchmarks.labor_pct_min}–{benchmarks.labor_pct_max}%</span>
                   {laborMetrics.totalLaborPct < benchmarks.labor_pct_min && (
-                    <span className="text-amber-600 ml-2 font-medium">⚠️ Below target</span>
+                    <span className="text-amber-600 ml-2 font-medium inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Below target</span>
                   )}
                   {laborMetrics.totalLaborPct > benchmarks.labor_pct_max && (
-                    <span className="text-rose-600 ml-2 font-medium">⚠️ Above target</span>
+                    <span className="text-rose-600 ml-2 font-medium inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Above target</span>
                   )}
                   {laborMetrics.totalLaborPct >= benchmarks.labor_pct_min && laborMetrics.totalLaborPct <= benchmarks.labor_pct_max && (
                     <span className="text-emerald-600 ml-2 font-medium">✓ Within target</span>
@@ -512,8 +512,8 @@ export function LaborAssumptions({
                       {laborMetrics.coversPerHour.toFixed(1)}
                     </div>
                     <div className="text-zinc-500 mt-0.5">
-                      {laborMetrics.isLowProductivity && '⚠️ Low productivity'}
-                      {laborMetrics.isHighProductivity && '⚠️ High productivity'}
+                      {laborMetrics.isLowProductivity && <span className="inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Low productivity</span>}
+                      {laborMetrics.isHighProductivity && <span className="inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> High productivity</span>}
                       {!laborMetrics.isLowProductivity && !laborMetrics.isHighProductivity && '✓ Normal'}
                     </div>
                   </div>
@@ -532,7 +532,7 @@ export function LaborAssumptions({
               {/* Validation Warnings */}
               {laborMetrics.isUnrealisticLabor && (
                 <div className="mt-3 bg-rose-100 border border-rose-300 rounded p-3">
-                  <div className="text-xs font-semibold text-rose-800 mb-1">⚠️ Unrealistic Labor Cost</div>
+                  <div className="text-xs font-semibold text-rose-800 mb-1 flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> Unrealistic Labor Cost</div>
                   <div className="text-xs text-rose-700">
                     Labor % exceeds 50% of sales. Check your hours per 100 covers settings.
                   </div>
@@ -542,8 +542,8 @@ export function LaborAssumptions({
               {/* Layer 1 ↔ Layer 2 Reconciliation Warning */}
               {reconciliation && reconciliation.hasSignificantVariance && (
                 <div className="mt-3 bg-amber-100 border border-amber-400 rounded p-3">
-                  <div className="text-xs font-semibold text-amber-900 mb-2">
-                    ⚠️ Layer 1 vs Layer 2 Variance Detected
+                  <div className="text-xs font-semibold text-amber-900 mb-2 flex items-center gap-1">
+                    <AlertTriangle className="w-4 h-4" /> Layer 1 vs Layer 2 Variance Detected
                   </div>
                   <div className="text-xs text-amber-800 mb-3">
                     Your blended hours (Layer 1) differ from position templates (Layer 2) by more than 10%.

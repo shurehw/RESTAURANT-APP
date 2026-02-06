@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { AlertTriangle } from 'lucide-react';
 
 interface Venue {
   id: string;
@@ -148,7 +149,7 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
         {/* Warning (e.g., duplicate invoice) */}
         {warning && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-4">
-            <p className="font-semibold">⚠️ Already Exists</p>
+            <p className="font-semibold flex items-center gap-1"><AlertTriangle className="w-4 h-4" /> Already Exists</p>
             <p className="text-sm">{warning}</p>
             <p className="text-xs mt-2 text-yellow-700">This invoice has already been uploaded and is in your system.</p>
           </div>
