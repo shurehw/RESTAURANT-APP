@@ -3,6 +3,7 @@
  * GET /api/forecast/accuracy
  *
  * Compares demand_forecasts predictions to venue_day_facts actuals
+ * Shows both raw and bias-corrected accuracy metrics
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,11 +20,27 @@ interface AccuracyMetrics {
   avg_bias: number;
   within_10pct: number;
   within_20pct: number;
+  // Bias-corrected metrics (simulated)
+  corrected_mape?: number;
+  corrected_within_10pct?: number;
+  corrected_within_20pct?: number;
+  bias_offset?: number;
 }
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = getServiceClient();
+
+    // Get bias adjustments for each venue
+    const { data: biasAdjustments } = await (supabase as any)
+      .from('forecast_bias_adjustments')
+      .select('venue_id, covers_offset')
+      .is('effective_to', null);
+
+    const biasMap = new Map<string, number>();
+    for (const adj of biasAdjustments || []) {
+      biasMap.set(adj.venue_id, adj.covers_offset || 0);
+    }
 
     // Get all forecasts
     const { data: forecasts, error: forecastError } = await (supabase as any)
@@ -78,13 +95,16 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Calculate accuracy by venue
+    // Calculate accuracy by venue (both raw and bias-corrected)
     const venueMetrics = new Map<string, {
       venue_name: string;
       covers_errors: number[];
       revenue_errors: number[];
       covers_pct_errors: number[];
       revenue_pct_errors: number[];
+      // Bias-corrected errors
+      corrected_pct_errors: number[];
+      bias_offset: number;
     }>();
 
     let matchedCount = 0;
@@ -102,6 +122,8 @@ export async function GET(request: NextRequest) {
       matchedCount++;
       const venueName = (forecast.venues as any)?.name || 'Unknown';
 
+      const biasOffset = biasMap.get(forecast.venue_id) || 0;
+
       if (!venueMetrics.has(forecast.venue_id)) {
         venueMetrics.set(forecast.venue_id, {
           venue_name: venueName,
@@ -109,12 +131,14 @@ export async function GET(request: NextRequest) {
           revenue_errors: [],
           covers_pct_errors: [],
           revenue_pct_errors: [],
+          corrected_pct_errors: [],
+          bias_offset: biasOffset,
         });
       }
 
       const metrics = venueMetrics.get(forecast.venue_id)!;
 
-      // Covers error
+      // Raw covers error
       const coversPredicted = forecast.covers_predicted || 0;
       const coversActual = actual.covers;
       const coversError = coversPredicted - coversActual;
@@ -124,6 +148,14 @@ export async function GET(request: NextRequest) {
 
       metrics.covers_errors.push(coversError);
       metrics.covers_pct_errors.push(coversPctError);
+
+      // Bias-corrected covers error (simulate what accuracy would be)
+      const correctedPredicted = coversPredicted + biasOffset;
+      const correctedError = correctedPredicted - coversActual;
+      const correctedPctError = coversActual > 0
+        ? Math.abs(correctedError / coversActual) * 100
+        : 0;
+      metrics.corrected_pct_errors.push(correctedPctError);
 
       // Revenue error
       if (forecast.revenue_predicted && actual.revenue > 0) {
@@ -163,6 +195,11 @@ export async function GET(request: NextRequest) {
       const within10 = (data.covers_pct_errors.filter(e => e <= 10).length / n) * 100;
       const within20 = (data.covers_pct_errors.filter(e => e <= 20).length / n) * 100;
 
+      // Bias-corrected metrics
+      const correctedMape = data.corrected_pct_errors.reduce((a, b) => a + b, 0) / n;
+      const correctedWithin10 = (data.corrected_pct_errors.filter(e => e <= 10).length / n) * 100;
+      const correctedWithin20 = (data.corrected_pct_errors.filter(e => e <= 20).length / n) * 100;
+
       allMetrics.push({
         venue_id: venueId,
         venue_name: data.venue_name,
@@ -174,10 +211,15 @@ export async function GET(request: NextRequest) {
         avg_bias: Math.round(avgBias * 10) / 10,
         within_10pct: Math.round(within10),
         within_20pct: Math.round(within20),
+        // Bias-corrected metrics
+        corrected_mape: Math.round(correctedMape * 10) / 10,
+        corrected_within_10pct: Math.round(correctedWithin10),
+        corrected_within_20pct: Math.round(correctedWithin20),
+        bias_offset: data.bias_offset,
       });
     }
 
-    // Overall summary
+    // Overall summary (both raw and corrected)
     let summary = null;
     if (allMetrics.length > 0) {
       const totalDays = allMetrics.reduce((a, b) => a + b.total_days, 0);
@@ -185,21 +227,34 @@ export async function GET(request: NextRequest) {
       const avgWithin10 = allMetrics.reduce((a, b) => a + b.within_10pct * b.total_days, 0) / totalDays;
       const avgWithin20 = allMetrics.reduce((a, b) => a + b.within_20pct * b.total_days, 0) / totalDays;
 
-      let rating: string;
-      if (avgMape < 10) rating = 'Excellent (MAPE < 10%)';
-      else if (avgMape < 15) rating = 'Good (MAPE 10-15%)';
-      else if (avgMape < 20) rating = 'Moderate (MAPE 15-20%) - consider tuning';
-      else rating = 'Poor (MAPE > 20%) - model needs improvement';
+      // Corrected averages
+      const avgCorrectedMape = allMetrics.reduce((a, b) => a + (b.corrected_mape || 0) * b.total_days, 0) / totalDays;
+      const avgCorrectedWithin10 = allMetrics.reduce((a, b) => a + (b.corrected_within_10pct || 0) * b.total_days, 0) / totalDays;
+      const avgCorrectedWithin20 = allMetrics.reduce((a, b) => a + (b.corrected_within_20pct || 0) * b.total_days, 0) / totalDays;
+
+      const getRating = (mape: number) => {
+        if (mape < 10) return 'Excellent (MAPE < 10%)';
+        if (mape < 15) return 'Good (MAPE 10-15%)';
+        if (mape < 20) return 'Moderate (MAPE 15-20%)';
+        return 'Poor (MAPE > 20%)';
+      };
 
       summary = {
         total_forecasts: forecasts.length,
         matched_with_actuals: matchedCount,
         unmatched: unmatchedCount,
         total_days_analyzed: totalDays,
+        // Raw metrics
         avg_mape: Math.round(avgMape * 10) / 10,
         avg_within_10pct: Math.round(avgWithin10),
         avg_within_20pct: Math.round(avgWithin20),
-        rating,
+        rating: getRating(avgMape),
+        // Bias-corrected metrics (simulated improvement)
+        corrected_avg_mape: Math.round(avgCorrectedMape * 10) / 10,
+        corrected_avg_within_10pct: Math.round(avgCorrectedWithin10),
+        corrected_avg_within_20pct: Math.round(avgCorrectedWithin20),
+        corrected_rating: getRating(avgCorrectedMape),
+        mape_improvement: Math.round((avgMape - avgCorrectedMape) * 10) / 10,
       };
     }
 
