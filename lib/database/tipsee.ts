@@ -38,7 +38,7 @@ export async function closeTipseePool(): Promise<void> {
   }
 }
 
-// Type for cleaning database rows
+// Type for cleaning database rows - converts bigints and numeric strings to numbers
 function cleanRow(row: Record<string, any>): Record<string, any> {
   const clean: Record<string, any> = {};
   for (const [k, v] of Object.entries(row)) {
@@ -46,6 +46,9 @@ function cleanRow(row: Record<string, any>): Record<string, any> {
       clean[k] = Number(v);
     } else if (v instanceof Date) {
       clean[k] = v.toISOString();
+    } else if (typeof v === 'string' && v !== '' && !isNaN(Number(v)) && !isNaN(parseFloat(v))) {
+      // Convert numeric strings (from PostgreSQL SUM/COUNT) to numbers
+      clean[k] = parseFloat(v);
     } else {
       clean[k] = v;
     }
