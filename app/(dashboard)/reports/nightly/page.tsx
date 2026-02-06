@@ -29,6 +29,9 @@ import {
   Clock,
   AlertTriangle,
   Target,
+  ShieldAlert,
+  XCircle,
+  AlertOctagon,
 } from 'lucide-react';
 
 interface NightlyReportData {
@@ -107,6 +110,36 @@ interface VenueMapping {
   venue_id: string;
   venue_name: string;
   tipsee_location_uuid: string;
+}
+
+interface CompException {
+  type: string;
+  severity: 'critical' | 'warning' | 'info';
+  check_id: string;
+  table_name: string;
+  server: string;
+  comp_total: number;
+  check_total: number;
+  reason: string;
+  comped_items: Array<{ name: string; quantity: number; amount: number }>;
+  message: string;
+  details: string;
+}
+
+interface CompExceptionSummary {
+  date: string;
+  total_comps: number;
+  net_sales: number;
+  comp_pct: number;
+  comp_pct_status: 'ok' | 'warning' | 'critical';
+  exception_count: number;
+  critical_count: number;
+  warning_count: number;
+}
+
+interface CompExceptionsData {
+  summary: CompExceptionSummary;
+  exceptions: CompException[];
 }
 
 interface FactsSummary {
@@ -208,6 +241,7 @@ export default function NightlyReportPage() {
   const [mappings, setMappings] = useState<VenueMapping[]>([]);
   const [compNotes, setCompNotes] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
+  const [compExceptions, setCompExceptions] = useState<CompExceptionsData | null>(null);
 
   // Fetch venue mappings on mount
   useEffect(() => {
@@ -284,18 +318,32 @@ export default function NightlyReportPage() {
           }
         }
 
-        // Fetch comp notes
+        // Fetch comp notes and comp exceptions in parallel
         try {
-          const notesRes = await fetch(
-            `/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`,
-            { credentials: 'include' }
-          );
+          const [notesRes, exceptionsRes] = await Promise.all([
+            fetch(
+              `/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`,
+              { credentials: 'include' }
+            ),
+            fetch(
+              `/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`,
+              { credentials: 'include' }
+            ),
+          ]);
+
           if (notesRes.ok) {
             const notesData = await notesRes.json();
             setCompNotes(notesData.notes || {});
           }
+
+          if (exceptionsRes.ok) {
+            const exceptionsData = await exceptionsRes.json();
+            if (exceptionsData.success) {
+              setCompExceptions(exceptionsData.data);
+            }
+          }
         } catch (e) {
-          console.error('Failed to fetch comp notes:', e);
+          console.error('Failed to fetch comp data:', e);
         }
       } catch (err: any) {
         setError(err.message);
@@ -667,6 +715,125 @@ export default function NightlyReportPage() {
                 icon={<AlertTriangle className={`h-5 w-5 ${factsSummary.labor.ot_hours > 0 ? 'text-error' : 'text-muted-foreground'}`} />}
               />
             </div>
+          )}
+
+          {/* Comp Exceptions - Policy Violations */}
+          {compExceptions && compExceptions.exceptions.length > 0 && (
+            <Card className="border-error/50 bg-error/5">
+              <CardHeader className="border-b border-error/20">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ShieldAlert className="h-5 w-5 text-error" />
+                  Comp Policy Exceptions
+                  <span className="ml-auto flex items-center gap-2">
+                    {compExceptions.summary.critical_count > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-error text-white rounded">
+                        {compExceptions.summary.critical_count} Critical
+                      </span>
+                    )}
+                    {compExceptions.summary.warning_count > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-500 text-white rounded">
+                        {compExceptions.summary.warning_count} Warning
+                      </span>
+                    )}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {/* Daily Comp % Status Banner */}
+                {compExceptions.summary.comp_pct_status !== 'ok' && (
+                  <div className={`px-4 py-3 border-b ${
+                    compExceptions.summary.comp_pct_status === 'critical'
+                      ? 'bg-error/10 border-error/20'
+                      : 'bg-yellow-500/10 border-yellow-500/20'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <AlertOctagon className={`h-4 w-4 ${
+                        compExceptions.summary.comp_pct_status === 'critical'
+                          ? 'text-error'
+                          : 'text-yellow-600'
+                      }`} />
+                      <span className="text-sm font-medium">
+                        Daily comp % is {compExceptions.summary.comp_pct.toFixed(1)}% of net sales
+                        {compExceptions.summary.comp_pct_status === 'critical'
+                          ? ' (exceeds 3% threshold)'
+                          : ' (exceeds 2% target)'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Exception List */}
+                <div className="divide-y divide-border max-h-96 overflow-y-auto">
+                  {compExceptions.exceptions.map((exc: CompException, i: number) => (
+                    <div
+                      key={`${exc.check_id}-${i}`}
+                      className={`p-4 ${
+                        exc.severity === 'critical'
+                          ? 'bg-error/5 hover:bg-error/10'
+                          : 'hover:bg-muted/50'
+                      } transition-colors`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          {exc.severity === 'critical' ? (
+                            <XCircle className="h-5 w-5 text-error mt-0.5 flex-shrink-0" />
+                          ) : (
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`font-semibold ${
+                                exc.severity === 'critical' ? 'text-error' : 'text-yellow-700'
+                              }`}>
+                                {exc.message}
+                              </span>
+                              <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
+                                exc.severity === 'critical'
+                                  ? 'bg-error/20 text-error'
+                                  : 'bg-yellow-500/20 text-yellow-700'
+                              }`}>
+                                {exc.severity.toUpperCase()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {exc.details}
+                            </p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                              <span>Table {exc.table_name}</span>
+                              <span>•</span>
+                              <span>Server: {exc.server}</span>
+                              <span>•</span>
+                              <span className="font-semibold text-error">
+                                {formatCurrency(exc.comp_total)} comped
+                              </span>
+                            </div>
+                            {exc.comped_items.length > 0 && (
+                              <div className="mt-2 text-sm">
+                                <span className="text-muted-foreground">Items: </span>
+                                {exc.comped_items.map((item: { name: string; quantity: number; amount: number }, j: number) => (
+                                  <span key={j}>
+                                    {j > 0 && ', '}
+                                    <span className={
+                                      item.name.toLowerCase().includes('promo')
+                                        ? 'text-yellow-700 font-medium'
+                                        : ''
+                                    }>
+                                      {item.name}
+                                    </span>
+                                    {item.quantity > 1 && ` x${item.quantity}`}
+                                    {' '}(${item.amount.toFixed(2)})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Main Content Grid */}
