@@ -28,12 +28,9 @@ export async function GET(request: NextRequest) {
       .eq('business_date', businessDate);
 
     if (error) {
-      // If table doesn't exist, return empty notes gracefully
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        return NextResponse.json({ notes: {} });
-      }
-      console.error('Error fetching comp notes:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      // Return empty notes gracefully for table/schema issues
+      console.error('Error fetching comp notes:', error.code, error.message);
+      return NextResponse.json({ notes: {} });
     }
 
     // Return as a map of check_id -> notes for easy lookup
