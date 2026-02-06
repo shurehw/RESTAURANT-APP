@@ -523,6 +523,7 @@ export default function NightlyReportPage() {
             />
             {/* Calculate Food/Bev from salesByCategory (live TipSee data) */}
             {(() => {
+              const categories = report.salesByCategory || [];
               const isBevCategory = (cat: string) => {
                 const lower = (cat || '').toLowerCase();
                 return lower.includes('bev') || lower.includes('wine') ||
@@ -530,14 +531,14 @@ export default function NightlyReportPage() {
                        lower.includes('cocktail');
               };
               // Sum from salesByCategory (grouped by parent_category)
-              const foodSales = report.salesByCategory
+              const foodSales = categories
                 .filter(c => !isBevCategory(c.category))
-                .reduce((sum, c) => sum + (c.net_sales || 0), 0);
-              const bevSales = report.salesByCategory
+                .reduce((sum, c) => sum + (Number(c.net_sales) || 0), 0);
+              const bevSales = categories
                 .filter(c => isBevCategory(c.category))
-                .reduce((sum, c) => sum + (c.net_sales || 0), 0);
+                .reduce((sum, c) => sum + (Number(c.net_sales) || 0), 0);
               // Use net_sales from summary for percentage calculation
-              const netSales = report.summary.net_sales || 0;
+              const netSales = Number(report.summary.net_sales) || 0;
               const foodPct = netSales > 0 ? (foodSales / netSales * 100) : 0;
               const bevPct = netSales > 0 ? (bevSales / netSales * 100) : 0;
 
