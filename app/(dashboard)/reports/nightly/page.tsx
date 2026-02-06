@@ -32,6 +32,9 @@ import {
   ShieldAlert,
   XCircle,
   AlertOctagon,
+  Sparkles,
+  CheckCircle2,
+  Info,
 } from 'lucide-react';
 
 interface NightlyReportData {
@@ -142,6 +145,27 @@ interface CompExceptionsData {
   exceptions: CompException[];
 }
 
+interface CompReviewRecommendation {
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  category: 'violation' | 'training' | 'process' | 'policy' | 'positive';
+  title: string;
+  description: string;
+  action: string;
+  relatedComps?: string[];
+}
+
+interface CompReviewData {
+  summary: {
+    totalReviewed: number;
+    approved: number;
+    needsFollowup: number;
+    urgent: number;
+    overallAssessment: string;
+  };
+  recommendations: CompReviewRecommendation[];
+  insights: string[];
+}
+
 interface FactsSummary {
   food_sales?: number;
   beverage_sales?: number;
@@ -242,6 +266,8 @@ export default function NightlyReportPage() {
   const [compNotes, setCompNotes] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [compExceptions, setCompExceptions] = useState<CompExceptionsData | null>(null);
+  const [compReview, setCompReview] = useState<CompReviewData | null>(null);
+  const [loadingCompReview, setLoadingCompReview] = useState<boolean>(false);
 
   // Fetch venue mappings on mount
   useEffect(() => {
@@ -340,6 +366,27 @@ export default function NightlyReportPage() {
             const exceptionsData = await exceptionsRes.json();
             if (exceptionsData.success) {
               setCompExceptions(exceptionsData.data);
+
+              // Fetch AI comp review if there are comps to review
+              if (liveData?.summary?.total_comps > 0) {
+                setLoadingCompReview(true);
+                try {
+                  const reviewRes = await fetch(
+                    `/api/ai/comp-review?venue_id=${selectedVenue.id}&date=${date}`,
+                    { credentials: 'include' }
+                  );
+                  if (reviewRes.ok) {
+                    const reviewData = await reviewRes.json();
+                    if (reviewData.success) {
+                      setCompReview(reviewData.data);
+                    }
+                  }
+                } catch (reviewErr) {
+                  console.error('Failed to fetch AI comp review:', reviewErr);
+                } finally {
+                  setLoadingCompReview(false);
+                }
+              }
             }
           }
         } catch (e) {
@@ -815,6 +862,153 @@ export default function NightlyReportPage() {
                     </div>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AI Comp Review */}
+          {loadingCompReview && (
+            <Card className="border-blue-500/50 bg-blue-500/5">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-center gap-3">
+                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                  <span className="text-sm text-muted-foreground">
+                    AI is reviewing all comp activity...
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {compReview && !loadingCompReview && (
+            <Card className="border-blue-500/50 bg-blue-500/5">
+              <CardHeader className="border-b border-blue-500/20">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-blue-500" />
+                  AI Comp Review
+                  <span className="ml-auto flex items-center gap-2">
+                    {compReview.summary.urgent > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-error text-white rounded">
+                        {compReview.summary.urgent} Urgent
+                      </span>
+                    )}
+                    {compReview.summary.needsFollowup > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-500 text-white rounded">
+                        {compReview.summary.needsFollowup} Follow-up
+                      </span>
+                    )}
+                    {compReview.summary.approved > 0 && (
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-green-600 text-white rounded">
+                        {compReview.summary.approved} Approved
+                      </span>
+                    )}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {/* Overall Assessment */}
+                <div className="px-4 py-3 border-b bg-blue-500/10 border-blue-500/20">
+                  <p className="text-sm font-medium text-foreground">
+                    {compReview.summary.overallAssessment}
+                  </p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>{compReview.summary.totalReviewed} comps reviewed</span>
+                  </div>
+                </div>
+
+                {/* Recommendations */}
+                {compReview.recommendations.length > 0 && (
+                  <div className="divide-y divide-border">
+                    {compReview.recommendations.map((rec, i) => {
+                      const priorityColors = {
+                        urgent: {
+                          bg: 'bg-error/5 hover:bg-error/10',
+                          icon: 'text-error',
+                          badge: 'bg-error/20 text-error',
+                        },
+                        high: {
+                          bg: 'bg-yellow-500/5 hover:bg-yellow-500/10',
+                          icon: 'text-yellow-600',
+                          badge: 'bg-yellow-500/20 text-yellow-700',
+                        },
+                        medium: {
+                          bg: 'bg-blue-500/5 hover:bg-blue-500/10',
+                          icon: 'text-blue-600',
+                          badge: 'bg-blue-500/20 text-blue-700',
+                        },
+                        low: {
+                          bg: 'bg-green-500/5 hover:bg-green-500/10',
+                          icon: 'text-green-600',
+                          badge: 'bg-green-500/20 text-green-700',
+                        },
+                      };
+
+                      const colors = priorityColors[rec.priority];
+                      const Icon =
+                        rec.priority === 'urgent'
+                          ? XCircle
+                          : rec.priority === 'high'
+                          ? AlertTriangle
+                          : rec.category === 'positive'
+                          ? CheckCircle2
+                          : Info;
+
+                      return (
+                        <div
+                          key={i}
+                          className={`p-4 ${colors.bg} transition-colors`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 flex-1">
+                              <Icon className={`h-5 w-5 ${colors.icon} mt-0.5 flex-shrink-0`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-semibold">{rec.title}</span>
+                                  <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${colors.badge}`}>
+                                    {rec.priority.toUpperCase()}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">
+                                    {rec.category}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {rec.description}
+                                </p>
+                                <div className="mt-2 p-2 bg-background/50 rounded text-sm">
+                                  <span className="font-medium text-foreground">Action: </span>
+                                  <span className="text-foreground">{rec.action}</span>
+                                </div>
+                                {rec.relatedComps && rec.relatedComps.length > 0 && (
+                                  <div className="mt-2 text-xs text-muted-foreground">
+                                    Related checks: {rec.relatedComps.join(', ')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Insights */}
+                {compReview.insights.length > 0 && (
+                  <div className="p-4 border-t bg-muted/30">
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      Key Insights
+                    </h4>
+                    <ul className="space-y-1">
+                      {compReview.insights.map((insight, i) => (
+                        <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <span className="text-blue-500 mt-1">•</span>
+                          <span>{insight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
