@@ -89,13 +89,21 @@ export async function GET(request: NextRequest) {
 
     // PTD (Period-to-Date): Start of fiscal period → selected date
     const periodStartStr = fiscalPeriod.periodStartDate;
+    const periodStart = new Date(periodStartStr);
 
-    // Same period last week (go back 7 days within fiscal context)
-    const lastWeekDate = new Date(currentDate);
-    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
-    const lastWeekFiscalPeriod = getFiscalPeriod(lastWeekDate.toISOString().split('T')[0], fiscalCalendarType, fiscalYearStartDate);
-    const lastWeekPeriodStartStr = lastWeekFiscalPeriod.periodStartDate;
-    const lastWeekEndStr = lastWeekDate.toISOString().split('T')[0];
+    // Calculate days into current period
+    const daysIntoPeriod = Math.floor((currentDate.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000));
+
+    // For PTD comparison: same relative days into PREVIOUS period
+    // Go back to previous period start (varies by calendar type, typically 4-5 weeks)
+    const prevPeriodStart = new Date(periodStart);
+    const weeksInPrevPeriod = fiscalCalendarType === 'standard' ? 4 :
+      (fiscalPeriod.fiscalPeriod % 3 === 1 ? 5 : fiscalPeriod.fiscalPeriod % 3 === 2 ? 4 : 4); // Based on 4-4-5 pattern position
+    prevPeriodStart.setDate(prevPeriodStart.getDate() - (weeksInPrevPeriod * 7));
+    const prevPeriodStartStr = prevPeriodStart.toISOString().split('T')[0];
+    const prevPeriodEndDate = new Date(prevPeriodStart);
+    prevPeriodEndDate.setDate(prevPeriodEndDate.getDate() + daysIntoPeriod);
+    const prevPeriodEndStr = prevPeriodEndDate.toISOString().split('T')[0];
 
     // WTD (Week-to-Date): Monday → selected date (calendar week, not fiscal)
     const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, ...
@@ -207,13 +215,13 @@ export async function GET(request: NextRequest) {
         .gte('business_date', periodStartStr)
         .lte('business_date', date),
 
-      // PTD Last Period (same relative period last week)
+      // PTD Last Period (same # of days into previous period)
       (supabase as any)
         .from('venue_day_facts')
         .select('net_sales, covers_count')
         .eq('venue_id', venueId)
-        .gte('business_date', lastWeekPeriodStartStr)
-        .lte('business_date', lastWeekEndStr),
+        .gte('business_date', prevPeriodStartStr)
+        .lte('business_date', prevPeriodEndStr),
 
       // WTD This Week (Monday → selected date, calendar week)
       (supabase as any)
