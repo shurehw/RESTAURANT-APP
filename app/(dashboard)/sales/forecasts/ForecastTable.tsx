@@ -129,17 +129,17 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                       {hasAdjustments ? (
                         <div className="flex flex-wrap justify-end gap-1">
                           {forecast.day_type_offset !== 0 && (
-                            <Badge variant="secondary" className="text-[10px] py-0">
+                            <Badge variant="default" className="text-[10px] py-0">
                               DT {forecast.day_type_offset > 0 ? '+' : ''}{forecast.day_type_offset}
                             </Badge>
                           )}
                           {forecast.holiday_offset !== 0 && (
-                            <Badge variant="secondary" className="text-[10px] py-0">
+                            <Badge variant="default" className="text-[10px] py-0">
                               H {forecast.holiday_offset > 0 ? '+' : ''}{forecast.holiday_offset}
                             </Badge>
                           )}
                           {forecast.pacing_multiplier !== 1 && (
-                            <Badge variant="secondary" className="text-[10px] py-0">
+                            <Badge variant="default" className="text-[10px] py-0">
                               P x{forecast.pacing_multiplier?.toFixed(2)}
                             </Badge>
                           )}
