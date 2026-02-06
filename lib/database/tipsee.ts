@@ -799,8 +799,9 @@ export interface LaborSummary {
 
 /**
  * Fetch daily labor summary from TipSee
- * Primary: new_tipsee_punches (all venues, most complete)
- * Fallback: punches (has trading_day + hourly_wage built in, but stale for LA venues)
+ * Primary: tipsee_7shifts_punches (most complete — has all venues + hourly_wage inline)
+ * Fallback 1: new_tipsee_punches + wage join (some venues only here)
+ * Fallback 2: punches (old table, stale for LA since May 2025)
  */
 export async function fetchLaborSummary(
   locationUuid: string,
@@ -811,36 +812,61 @@ export async function fetchLaborSummary(
   const pool = getTipseePool();
 
   try {
-    // Primary: new_tipsee_punches with wage lookup
+    // Primary: tipsee_7shifts_punches (hourly_wage in cents on the row)
     const result = await pool.query(
       `SELECT
         COUNT(*) as punch_count,
-        COUNT(DISTINCT p.user_id) as employee_count,
-        COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+        COUNT(DISTINCT user_id) as employee_count,
+        COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0) as total_hours,
         COALESCE(SUM(
-          EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
-          COALESCE(w.wage_cents, 0) / 100
+          EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
+          COALESCE(hourly_wage, 0) / 100
         ), 0) as labor_cost
-      FROM public.new_tipsee_punches p
-      LEFT JOIN LATERAL (
-        SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
-        WHERE user_id = p.user_id
-          AND effective_date <= p.clocked_in::date
-        ORDER BY effective_date DESC
-        LIMIT 1
-      ) w ON true
-      WHERE p.location_uuid = $1
-        AND p.clocked_in::date = $2::date
-        AND p.clocked_out IS NOT NULL
-        AND p.is_deleted IS NOT TRUE`,
+      FROM public.tipsee_7shifts_punches
+      WHERE location_uuid = $1
+        AND clocked_in::date = $2::date
+        AND clocked_out IS NOT NULL
+        AND deleted IS NOT TRUE`,
       [locationUuid, date]
     );
 
     let row = result.rows[0];
+    let punchTable = 'tipsee_7shifts_punches';
 
-    // Fallback: old punches table if new_tipsee_punches has no data
+    // Fallback 1: new_tipsee_punches with wage join
     if (!row || Number(row.punch_count) === 0) {
-      const fallbackResult = await pool.query(
+      const fb1 = await pool.query(
+        `SELECT
+          COUNT(*) as punch_count,
+          COUNT(DISTINCT p.user_id) as employee_count,
+          COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+          COALESCE(SUM(
+            EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
+            COALESCE(w.wage_cents, 0) / 100
+          ), 0) as labor_cost
+        FROM public.new_tipsee_punches p
+        LEFT JOIN LATERAL (
+          SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
+          WHERE user_id = p.user_id
+            AND effective_date <= p.clocked_in::date
+          ORDER BY effective_date DESC
+          LIMIT 1
+        ) w ON true
+        WHERE p.location_uuid = $1
+          AND p.clocked_in::date = $2::date
+          AND p.clocked_out IS NOT NULL
+          AND p.is_deleted IS NOT TRUE`,
+        [locationUuid, date]
+      );
+      if (fb1.rows[0] && Number(fb1.rows[0].punch_count) > 0) {
+        row = fb1.rows[0];
+        punchTable = 'new_tipsee_punches';
+      }
+    }
+
+    // Fallback 2: old punches table
+    if (!row || Number(row.punch_count) === 0) {
+      const fb2 = await pool.query(
         `SELECT
           COUNT(*) as punch_count,
           COUNT(DISTINCT user_id) as employee_count,
@@ -853,7 +879,10 @@ export async function fetchLaborSummary(
           AND clocked_out IS NOT NULL`,
         [locationUuid, date]
       );
-      row = fallbackResult.rows[0];
+      if (fb2.rows[0] && Number(fb2.rows[0].punch_count) > 0) {
+        row = fb2.rows[0];
+        punchTable = 'punches';
+      }
     }
 
     if (!row || Number(row.punch_count) === 0) {
@@ -865,22 +894,35 @@ export async function fetchLaborSummary(
     const employeeCount = Number(row.employee_count) || 0;
     const punchCount = Number(row.punch_count) || 0;
 
-    // Calculate OT: hours over 8 per employee per day
-    const otResult = await pool.query(
-      `SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
-      FROM public.new_tipsee_punches
-      WHERE location_uuid = $1
-        AND clocked_in::date = $2::date
-        AND clocked_out IS NOT NULL
-        AND is_deleted IS NOT TRUE
-      GROUP BY user_id
-      HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8`,
-      [locationUuid, date]
-    );
-
-    const otHours = otResult.rows.reduce((sum: number, r: any) => {
-      return sum + Math.max(0, Number(r.daily_hours) - 8);
-    }, 0);
+    // Calculate OT: hours over 8 per employee per day (from same table that had data)
+    let otHours = 0;
+    if (punchTable === 'tipsee_7shifts_punches') {
+      const otResult = await pool.query(
+        `SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+        FROM public.tipsee_7shifts_punches
+        WHERE location_uuid = $1
+          AND clocked_in::date = $2::date
+          AND clocked_out IS NOT NULL
+          AND deleted IS NOT TRUE
+        GROUP BY user_id
+        HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8`,
+        [locationUuid, date]
+      );
+      otHours = otResult.rows.reduce((sum: number, r: any) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
+    } else if (punchTable === 'new_tipsee_punches') {
+      const otResult = await pool.query(
+        `SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+        FROM public.new_tipsee_punches
+        WHERE location_uuid = $1
+          AND clocked_in::date = $2::date
+          AND clocked_out IS NOT NULL
+          AND is_deleted IS NOT TRUE
+        GROUP BY user_id
+        HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8`,
+        [locationUuid, date]
+      );
+      otHours = otResult.rows.reduce((sum: number, r: any) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
+    }
 
     return {
       total_hours: totalHours,
