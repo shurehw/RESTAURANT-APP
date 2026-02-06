@@ -146,13 +146,20 @@ interface FactsSummary {
     sdly_covers: number | null;
     vs_sdly_pct: number | null;
     vs_sdly_covers_pct: number | null;
-    // PTD (Period-to-Date)
+    // PTD (Period-to-Date) - Fiscal period
     ptd_net_sales: number | null;
     ptd_covers: number | null;
     ptd_lw_net_sales: number | null;
     ptd_lw_covers: number | null;
     vs_ptd_pct: number | null;
     vs_ptd_covers_pct: number | null;
+    // WTD (Week-to-Date) - Calendar week
+    wtd_net_sales: number | null;
+    wtd_covers: number | null;
+    wtd_lw_net_sales: number | null;
+    wtd_lw_covers: number | null;
+    vs_wtd_pct: number | null;
+    vs_wtd_covers_pct: number | null;
   };
 }
 
@@ -497,7 +504,19 @@ export default function NightlyReportPage() {
                       </div>
                     </div>
                   )}
-                  {/* PTD (Period-to-Date) */}
+                  {/* WTD (Week-to-Date) - Calendar week Mon→Today */}
+                  {factsSummary.variance.wtd_net_sales != null && factsSummary.variance.wtd_net_sales > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(factsSummary.variance.wtd_net_sales)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">WTD Sales</div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1">
+                        <VarianceBadge value={factsSummary.variance.vs_wtd_pct} label="vs LW" />
+                      </div>
+                    </div>
+                  )}
+                  {/* PTD (Period-to-Date) - Fiscal period start→Today */}
                   {factsSummary.variance.ptd_net_sales != null && factsSummary.variance.ptd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
@@ -505,7 +524,7 @@ export default function NightlyReportPage() {
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">PTD Sales</div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance.vs_ptd_pct} label="vs LW" />
+                        <VarianceBadge value={factsSummary.variance.vs_ptd_pct} label="vs LP" />
                       </div>
                     </div>
                   )}

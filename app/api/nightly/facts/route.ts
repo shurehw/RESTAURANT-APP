@@ -97,6 +97,19 @@ export async function GET(request: NextRequest) {
     const lastWeekPeriodStartStr = lastWeekFiscalPeriod.periodStartDate;
     const lastWeekEndStr = lastWeekDate.toISOString().split('T')[0];
 
+    // WTD (Week-to-Date): Monday → selected date (calendar week, not fiscal)
+    const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, ...
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const weekStartDate = new Date(currentDate);
+    weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
+    const weekStartStr = weekStartDate.toISOString().split('T')[0];
+
+    // WTD Last Week: Same Mon→Day range but 7 days earlier
+    const lastWeekWeekStart = new Date(weekStartDate);
+    lastWeekWeekStart.setDate(lastWeekWeekStart.getDate() - 7);
+    const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
+    const lastWeekSameDayStr = sdlwDateStr; // Already calculated above
+
     // Fetch all fact data in parallel
     const [
       venueDayResult,
@@ -110,6 +123,8 @@ export async function GET(request: NextRequest) {
       sdlyResult,
       ptdThisWeekResult,
       ptdLastWeekResult,
+      wtdThisWeekResult,
+      wtdLastWeekResult,
     ] = await Promise.all([
       // Venue day facts (summary)
       (supabase as any)
@@ -199,6 +214,22 @@ export async function GET(request: NextRequest) {
         .eq('venue_id', venueId)
         .gte('business_date', lastWeekPeriodStartStr)
         .lte('business_date', lastWeekEndStr),
+
+      // WTD This Week (Monday → selected date, calendar week)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // WTD Last Week (same Mon→Day range, 7 days earlier)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', lastWeekWeekStartStr)
+        .lte('business_date', lastWeekSameDayStr),
     ]);
 
     // Check if we have data
@@ -247,6 +278,22 @@ export async function GET(request: NextRequest) {
       { net_sales: 0, covers: 0 }
     );
     const ptdLastWeek = (ptdLastWeekResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+
+    // Aggregate WTD totals (calendar week: Monday → selected date)
+    const wtdThisWeek = (wtdThisWeekResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+    const wtdLastWeek = (wtdLastWeekResult.data || []).reduce(
       (acc: { net_sales: number; covers: number }, row: any) => ({
         net_sales: acc.net_sales + (row.net_sales || 0),
         covers: acc.covers + (row.covers_count || 0),
@@ -363,6 +410,13 @@ export async function GET(request: NextRequest) {
         ptd_lw_covers: ptdLastWeek.covers,
         vs_ptd_pct: calcVariance(ptdThisWeek.net_sales, ptdLastWeek.net_sales),
         vs_ptd_covers_pct: calcVariance(ptdThisWeek.covers, ptdLastWeek.covers),
+        // WTD (Week-to-Date): calendar week Monday → selected date vs same days last week
+        wtd_net_sales: wtdThisWeek.net_sales,
+        wtd_covers: wtdThisWeek.covers,
+        wtd_lw_net_sales: wtdLastWeek.net_sales,
+        wtd_lw_covers: wtdLastWeek.covers,
+        vs_wtd_pct: calcVariance(wtdThisWeek.net_sales, wtdLastWeek.net_sales),
+        vs_wtd_covers_pct: calcVariance(wtdThisWeek.covers, wtdLastWeek.covers),
       },
 
       // Fiscal calendar info
