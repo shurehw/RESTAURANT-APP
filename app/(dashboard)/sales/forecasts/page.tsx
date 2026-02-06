@@ -125,9 +125,9 @@ export default async function ForecastsPage({
           <div className="flex items-center gap-3">
             <TrendingUp className="w-8 h-8 text-brass" />
             <div>
-              <div className="text-sm text-muted-foreground">Forecast Accuracy</div>
+              <div className="text-sm text-muted-foreground">Track Record</div>
               <div className="text-2xl font-bold">{Math.round(avgAccuracy)}%</div>
-              <div className="text-xs text-muted-foreground">Within 10% historically</div>
+              <div className="text-xs text-muted-foreground">Hit rate within 10%</div>
             </div>
           </div>
         </Card>
