@@ -89,33 +89,47 @@ export async function GET(request: NextRequest) {
 
     // PTD (Period-to-Date): Start of fiscal period → selected date
     const periodStartStr = fiscalPeriod.periodStartDate;
-    const periodStart = new Date(periodStartStr);
-
-    // Calculate days into current period
-    const daysIntoPeriod = Math.floor((currentDate.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000));
 
     // For PTD comparison: same relative days into PREVIOUS period
-    // Go back to previous period start (varies by calendar type, typically 4-5 weeks)
-    const prevPeriodStart = new Date(periodStart);
-    const weeksInPrevPeriod = fiscalCalendarType === 'standard' ? 4 :
-      (fiscalPeriod.fiscalPeriod % 3 === 1 ? 5 : fiscalPeriod.fiscalPeriod % 3 === 2 ? 4 : 4); // Based on 4-4-5 pattern position
-    prevPeriodStart.setDate(prevPeriodStart.getDate() - (weeksInPrevPeriod * 7));
-    const prevPeriodStartStr = prevPeriodStart.toISOString().split('T')[0];
-    const prevPeriodEndDate = new Date(prevPeriodStart);
-    prevPeriodEndDate.setDate(prevPeriodEndDate.getDate() + daysIntoPeriod);
+    // Use the fiscal library to get previous period info
+    const prevPeriodDate = new Date(date);
+    // Go back to get into the previous period (use the period length from current period position)
+    const periodPosition = ((fiscalPeriod.fiscalPeriod - 1) % 3); // 0, 1, or 2
+    // For 4-4-5: position 0=4wks, 1=4wks, 2=5wks. Previous period lengths:
+    // If position 0, prev was position 2 (5 weeks)
+    // If position 1, prev was position 0 (4 weeks)
+    // If position 2, prev was position 1 (4 weeks)
+    const prevPeriodWeeks = fiscalCalendarType === 'standard' ? 4 :
+      (periodPosition === 0 ? 5 : 4);
+    prevPeriodDate.setDate(prevPeriodDate.getDate() - (prevPeriodWeeks * 7));
+    const prevPeriodInfo = getFiscalPeriod(prevPeriodDate.toISOString().split('T')[0], fiscalCalendarType, fiscalYearStartDate);
+    const prevPeriodStartStr = prevPeriodInfo.periodStartDate;
+
+    // Calculate days into current period (using date strings to avoid timezone issues)
+    const periodStartParts = periodStartStr.split('-').map(Number);
+    const dateParts = date.split('-').map(Number);
+    const periodStartMs = Date.UTC(periodStartParts[0], periodStartParts[1] - 1, periodStartParts[2]);
+    const dateMs = Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    const daysIntoPeriod = Math.floor((dateMs - periodStartMs) / (24 * 60 * 60 * 1000));
+
+    // Calculate equivalent end date in previous period
+    const prevStartParts = prevPeriodStartStr.split('-').map(Number);
+    const prevPeriodEndMs = Date.UTC(prevStartParts[0], prevStartParts[1] - 1, prevStartParts[2] + daysIntoPeriod);
+    const prevPeriodEndDate = new Date(prevPeriodEndMs);
     const prevPeriodEndStr = prevPeriodEndDate.toISOString().split('T')[0];
 
     // WTD (Week-to-Date): Monday → selected date (calendar week, not fiscal)
-    const dayOfWeek = currentDate.getDay(); // 0=Sun, 1=Mon, ...
+    // Use UTC to avoid timezone issues
+    const dateForWeek = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
+    const dayOfWeek = dateForWeek.getUTCDay(); // 0=Sun, 1=Mon, ...
     const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStartDate = new Date(currentDate);
-    weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
+    const weekStartMs = dateMs - (daysFromMonday * 24 * 60 * 60 * 1000);
+    const weekStartDate = new Date(weekStartMs);
     const weekStartStr = weekStartDate.toISOString().split('T')[0];
 
     // WTD Last Week: Same Mon→Day range but 7 days earlier
-    const lastWeekWeekStart = new Date(weekStartDate);
-    lastWeekWeekStart.setDate(lastWeekWeekStart.getDate() - 7);
-    const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
+    const lastWeekWeekStartMs = weekStartMs - (7 * 24 * 60 * 60 * 1000);
+    const lastWeekWeekStartStr = new Date(lastWeekWeekStartMs).toISOString().split('T')[0];
     const lastWeekSameDayStr = sdlwDateStr; // Already calculated above
 
     // Fetch all fact data in parallel
@@ -425,6 +439,14 @@ export async function GET(request: NextRequest) {
         wtd_lw_covers: wtdLastWeek.covers,
         vs_wtd_pct: calcVariance(wtdThisWeek.net_sales, wtdLastWeek.net_sales),
         vs_wtd_covers_pct: calcVariance(wtdThisWeek.covers, wtdLastWeek.covers),
+        // Debug: date ranges being queried
+        _debug: {
+          wtd_range: `${weekStartStr} → ${date}`,
+          wtd_lw_range: `${lastWeekWeekStartStr} → ${lastWeekSameDayStr}`,
+          ptd_range: `${periodStartStr} → ${date}`,
+          ptd_lp_range: `${prevPeriodStartStr} → ${prevPeriodEndStr}`,
+          days_into_period: daysIntoPeriod,
+        },
       },
 
       // Fiscal calendar info

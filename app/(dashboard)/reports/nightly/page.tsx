@@ -486,9 +486,6 @@ export default function NightlyReportPage() {
                     const sdlySalesPct = calcVar(liveNetSales, factsSummary.variance.sdly_net_sales);
                     const sdlwCoversPct = calcVar(liveCovers, factsSummary.variance.sdlw_covers);
                     const sdlyCoversPct = calcVar(liveCovers, factsSummary.variance.sdly_covers);
-                    // Forecast variance uses fact table data since forecast is also from fact table
-                    const fcstSalesPct = factsSummary.variance.vs_forecast_pct;
-                    const fcstCoversPct = factsSummary.variance.vs_forecast_covers_pct;
 
                     return (
                       <>
@@ -498,7 +495,6 @@ export default function NightlyReportPage() {
                           </div>
                           <div className="text-xs text-muted-foreground uppercase">Net Sales</div>
                           <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <VarianceBadge value={fcstSalesPct} label="Fcst" />
                             <VarianceBadge value={sdlwSalesPct} label="SDLW" />
                             <VarianceBadge value={sdlySalesPct} label="SDLY" />
                           </div>
@@ -510,7 +506,6 @@ export default function NightlyReportPage() {
                           </div>
                           <div className="text-xs text-muted-foreground uppercase">Covers</div>
                           <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <VarianceBadge value={fcstCoversPct} label="Fcst" />
                             <VarianceBadge value={sdlwCoversPct} label="SDLW" />
                             <VarianceBadge value={sdlyCoversPct} label="SDLY" />
                           </div>
@@ -518,18 +513,6 @@ export default function NightlyReportPage() {
                       </>
                     );
                   })()}
-                  {/* Forecast context */}
-                  {factsSummary.forecast?.net_sales && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.forecast.net_sales)}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">Forecast</div>
-                      <div className="text-xs text-muted-foreground">
-                        Range: {formatCurrency(factsSummary.forecast.net_sales_lower || 0)} - {formatCurrency(factsSummary.forecast.net_sales_upper || 0)}
-                      </div>
-                    </div>
-                  )}
                   {/* SDLW context */}
                   {factsSummary.variance.sdlw_net_sales && (
                     <div className="space-y-1">
