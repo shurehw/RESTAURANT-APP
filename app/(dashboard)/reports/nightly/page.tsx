@@ -183,6 +183,7 @@ interface FactsSummary {
     splh: number;
     ot_hours: number;
     covers_per_labor_hour: number | null;
+    employee_count: number;
   } | null;
   // Prophet forecast
   forecast?: {
@@ -700,38 +701,101 @@ export default function NightlyReportPage() {
             })()}
           </div>
 
-          {/* Labor Metrics */}
-          {factsSummary?.labor && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              <StatCard
-                label="SPLH"
-                value={formatCurrency(factsSummary.labor.splh || 0)}
-                icon={<TrendingUp className="h-5 w-5 text-brass" />}
-              />
-              <StatCard
-                label="Covers/Hr"
-                value={factsSummary.labor.covers_per_labor_hour
-                  ? factsSummary.labor.covers_per_labor_hour.toFixed(1)
-                  : '—'}
-                icon={<Users className="h-5 w-5 text-brass" />}
-              />
-              <StatCard
-                label="Labor %"
-                value={`${(factsSummary.labor.labor_pct || 0).toFixed(1)}%`}
-                icon={<Percent className="h-5 w-5 text-sage" />}
-              />
-              <StatCard
-                label="Total Hours"
-                value={`${(factsSummary.labor.total_hours || 0).toFixed(1)}`}
-                icon={<Clock className="h-5 w-5 text-muted-foreground" />}
-              />
-              <StatCard
-                label="OT Hours"
-                value={`${(factsSummary.labor.ot_hours || 0).toFixed(1)}`}
-                icon={<AlertTriangle className={`h-5 w-5 ${factsSummary.labor.ot_hours > 0 ? 'text-error' : 'text-muted-foreground'}`} />}
-              />
-            </div>
-          )}
+          {/* Labor & Productivity */}
+          {factsSummary?.labor && (() => {
+            const labor = factsSummary.labor!;
+            const otPct = labor.total_hours > 0 ? (labor.ot_hours / labor.total_hours) * 100 : 0;
+            const avgRate = labor.total_hours > 0 ? labor.labor_cost / labor.total_hours : 0;
+            const otCost = labor.ot_hours * avgRate * 1.5;
+            const costPerCover = (report.summary.total_covers > 0)
+              ? labor.labor_cost / report.summary.total_covers
+              : 0;
+            const hasOT = labor.ot_hours > 0;
+
+            return (
+              <Card>
+                <CardHeader className="border-b border-brass/20 py-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-brass" />
+                    Labor & Productivity
+                    <span className="ml-auto text-sm font-normal text-muted-foreground">
+                      {labor.employee_count || 0} employees
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {/* Primary KPIs */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(labor.labor_cost || 0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Labor Cost</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className={`text-2xl font-bold tabular-nums ${
+                        (labor.labor_pct || 0) > 30 ? 'text-error' : (labor.labor_pct || 0) > 25 ? 'text-yellow-500' : ''
+                      }`}>
+                        {(labor.labor_pct || 0).toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Labor %</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums">
+                        {formatCurrency(labor.splh || 0)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">SPLH</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-2xl font-bold tabular-nums">
+                        {labor.covers_per_labor_hour
+                          ? labor.covers_per_labor_hour.toFixed(1)
+                          : '—'}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Covers/Hr</div>
+                    </div>
+                  </div>
+
+                  {/* Hours & OT Row */}
+                  <div className={`grid grid-cols-2 md:grid-cols-4 gap-4 p-3 rounded-lg ${
+                    hasOT ? 'bg-error/5 border border-error/20' : 'bg-muted/30'
+                  }`}>
+                    <div className="space-y-1">
+                      <div className="text-lg font-semibold tabular-nums">
+                        {(labor.total_hours || 0).toFixed(1)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Total Hours</div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className={`text-lg font-semibold tabular-nums ${hasOT ? 'text-error' : ''}`}>
+                        {(labor.ot_hours || 0).toFixed(1)}
+                        {hasOT && (
+                          <span className="text-sm ml-1">({otPct.toFixed(0)}%)</span>
+                        )}
+                      </div>
+                      <div className={`text-xs uppercase ${hasOT ? 'text-error/70' : 'text-muted-foreground'}`}>
+                        OT Hours
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className={`text-lg font-semibold tabular-nums ${hasOT ? 'text-error' : ''}`}>
+                        {hasOT ? formatCurrency(otCost) : '$0'}
+                      </div>
+                      <div className={`text-xs uppercase ${hasOT ? 'text-error/70' : 'text-muted-foreground'}`}>
+                        Est. OT Cost
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-lg font-semibold tabular-nums">
+                        {formatCurrency(costPerCover)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">Cost/Cover</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Comp Exceptions - Policy Violations */}
           {compExceptions && compExceptions.exceptions.length > 0 && (

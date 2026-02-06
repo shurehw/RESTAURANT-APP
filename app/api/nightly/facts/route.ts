@@ -277,6 +277,7 @@ export async function GET(request: NextRequest) {
           splh: laborFact.splh,
           ot_hours: laborFact.ot_hours,
           covers_per_labor_hour: laborFact.covers_per_labor_hour,
+          employee_count: laborFact.employee_count,
         }
       : null;
 
@@ -297,6 +298,7 @@ export async function GET(request: NextRequest) {
             splh: liveLaborData.splh,
             ot_hours: liveLaborData.ot_hours,
             covers_per_labor_hour: liveLaborData.covers_per_labor_hour,
+            employee_count: liveLaborData.employee_count,
           };
         }
       } catch (laborErr) {
