@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getFiscalPeriod, FiscalCalendarType } from '@/lib/fiscal-calendar';
-import { fetchLaborSummary } from '@/lib/database/tipsee';
+import { fetchLaborSummary } from '@/lib/database/tipsee'; // Fallback for live query
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -149,6 +149,7 @@ export async function GET(request: NextRequest) {
       categoryResult,
       serverResult,
       itemResult,
+      laborFactResult,
       forecastResult,
       sdlwResult,
       sdlyResult,
@@ -189,6 +190,14 @@ export async function GET(request: NextRequest) {
         .eq('business_date', date)
         .order('gross_sales', { ascending: false })
         .limit(15),
+
+      // Labor day facts
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .maybeSingle(),
 
       // Demand forecasts with bias correction (covers and revenue)
       (supabase as any)
@@ -258,18 +267,40 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch labor data from TipSee (punches table)
-    let tipseeLabor = null;
-    if (tipseeLocationUuid) {
+    // Labor data: prefer synced labor_day_facts, fall back to live TipSee query
+    const laborFact = laborFactResult.data as any;
+    let laborData = laborFact
+      ? {
+          total_hours: laborFact.total_hours,
+          labor_cost: laborFact.labor_cost,
+          labor_pct: laborFact.labor_pct,
+          splh: laborFact.splh,
+          ot_hours: laborFact.ot_hours,
+          covers_per_labor_hour: laborFact.covers_per_labor_hour,
+        }
+      : null;
+
+    // Fallback: live query TipSee if no synced data
+    if (!laborData && tipseeLocationUuid) {
       try {
-        tipseeLabor = await fetchLaborSummary(
+        const liveLaborData = await fetchLaborSummary(
           tipseeLocationUuid,
           date,
           summary.net_sales || 0,
           summary.covers_count || 0
         );
+        if (liveLaborData) {
+          laborData = {
+            total_hours: liveLaborData.total_hours,
+            labor_cost: liveLaborData.labor_cost,
+            labor_pct: liveLaborData.labor_pct,
+            splh: liveLaborData.splh,
+            ot_hours: liveLaborData.ot_hours,
+            covers_per_labor_hour: liveLaborData.covers_per_labor_hour,
+          };
+        }
       } catch (laborErr) {
-        console.error('Error fetching TipSee labor:', laborErr);
+        console.error('Error fetching live TipSee labor:', laborErr);
       }
     }
 
@@ -385,16 +416,7 @@ export async function GET(request: NextRequest) {
         category: item.parent_category,
       })),
 
-      labor: tipseeLabor
-        ? {
-            total_hours: tipseeLabor.total_hours,
-            labor_cost: tipseeLabor.labor_cost,
-            labor_pct: tipseeLabor.labor_pct,
-            splh: tipseeLabor.splh,
-            ot_hours: tipseeLabor.ot_hours,
-            covers_per_labor_hour: tipseeLabor.covers_per_labor_hour,
-          }
-        : null,
+      labor: laborData,
 
       // Demand forecast data (with bias correction)
       forecast: {

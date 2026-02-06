@@ -170,6 +170,56 @@ async function syncVenueDay(venueId, tipseeLocationUuid, businessDate) {
     }
     rowsLoaded++;
 
+    // 5. Extract and upsert labor_day_facts (from punches table)
+    const laborResult = await tipseePool.query(
+      `SELECT
+        COUNT(*) as punch_count,
+        COUNT(DISTINCT user_id) as employee_count,
+        COALESCE(SUM(total_hours), 0) as total_hours,
+        COALESCE(SUM(total_hours * hourly_wage), 0) as labor_cost
+      FROM public.punches
+      WHERE location_uuid = $1
+        AND trading_day = $2
+        AND deleted = false
+        AND approved = true
+        AND clocked_out IS NOT NULL`,
+      [tipseeLocationUuid, businessDate]
+    );
+
+    const laborRow = laborResult.rows[0];
+    if (laborRow && parseInt(laborRow.punch_count) > 0) {
+      // Calculate OT hours
+      const otResult = await tipseePool.query(
+        `SELECT user_id, SUM(total_hours) as daily_hours
+        FROM public.punches
+        WHERE location_uuid = $1
+          AND trading_day = $2
+          AND deleted = false
+          AND approved = true
+          AND clocked_out IS NOT NULL
+        GROUP BY user_id
+        HAVING SUM(total_hours) > 8`,
+        [tipseeLocationUuid, businessDate]
+      );
+
+      const otHours = otResult.rows.reduce((sum, r) =>
+        sum + Math.max(0, parseFloat(r.daily_hours) - 8), 0);
+
+      await supabase.from('labor_day_facts').upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        total_hours: parseFloat(laborRow.total_hours) || 0,
+        ot_hours: otHours,
+        labor_cost: parseFloat(laborRow.labor_cost) || 0,
+        punch_count: parseInt(laborRow.punch_count) || 0,
+        employee_count: parseInt(laborRow.employee_count) || 0,
+        net_sales: parseFloat(summary.net_sales) || 0,
+        covers: parseInt(summary.total_covers) || 0,
+        last_synced_at: new Date().toISOString(),
+      }, { onConflict: 'venue_id,business_date' });
+      rowsLoaded++;
+    }
+
     return {
       success: true,
       venue_id: venueId,
