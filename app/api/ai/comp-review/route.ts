@@ -96,6 +96,24 @@ export async function GET(request: NextRequest) {
     // Run AI review
     const review = await reviewComps(reviewInput);
 
+    // Save recommendations as manager actions in Control Plane
+    try {
+      const { saveCompReviewActions } = await import('@/lib/database/control-plane');
+      const actionResult = await saveCompReviewActions(
+        venueId,
+        date,
+        venueName,
+        review.recommendations
+      );
+
+      if (!actionResult.success) {
+        console.error('Failed to save some actions:', actionResult.errors);
+      }
+    } catch (actionError) {
+      console.error('Error saving actions to Control Plane:', actionError);
+      // Don't fail the whole request if action saving fails
+    }
+
     return NextResponse.json({
       success: true,
       data: review,
