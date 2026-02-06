@@ -758,8 +758,9 @@ export interface LaborSummary {
 }
 
 /**
- * Fetch daily labor summary from TipSee punches table
- * Uses the `punches` table which has pre-calculated total_hours and hourly_wage
+ * Fetch daily labor summary from TipSee
+ * Primary: new_tipsee_punches (all venues, most complete)
+ * Fallback: punches (has trading_day + hourly_wage built in, but stale for LA venues)
  */
 export async function fetchLaborSummary(
   locationUuid: string,
@@ -770,24 +771,51 @@ export async function fetchLaborSummary(
   const pool = getTipseePool();
 
   try {
-    // Aggregate labor from punches table
-    // trading_day is stored as DATE in TipSee
+    // Primary: new_tipsee_punches with wage lookup
     const result = await pool.query(
       `SELECT
         COUNT(*) as punch_count,
-        COUNT(DISTINCT user_id) as employee_count,
-        COALESCE(SUM(total_hours), 0) as total_hours,
-        COALESCE(SUM(total_hours * hourly_wage), 0) as labor_cost
-      FROM public.punches
-      WHERE location_uuid = $1
-        AND trading_day = $2
-        AND deleted = false
-        AND approved = true
-        AND clocked_out IS NOT NULL`,
+        COUNT(DISTINCT p.user_id) as employee_count,
+        COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+        COALESCE(SUM(
+          EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
+          COALESCE(w.wage_cents, 0) / 100
+        ), 0) as labor_cost
+      FROM public.new_tipsee_punches p
+      LEFT JOIN LATERAL (
+        SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
+        WHERE user_id = p.user_id
+          AND effective_date <= p.clocked_in::date
+        ORDER BY effective_date DESC
+        LIMIT 1
+      ) w ON true
+      WHERE p.location_uuid = $1
+        AND p.clocked_in::date = $2::date
+        AND p.clocked_out IS NOT NULL
+        AND p.is_deleted IS NOT TRUE`,
       [locationUuid, date]
     );
 
-    const row = result.rows[0];
+    let row = result.rows[0];
+
+    // Fallback: old punches table if new_tipsee_punches has no data
+    if (!row || Number(row.punch_count) === 0) {
+      const fallbackResult = await pool.query(
+        `SELECT
+          COUNT(*) as punch_count,
+          COUNT(DISTINCT user_id) as employee_count,
+          COALESCE(SUM(total_hours), 0) as total_hours,
+          COALESCE(SUM(total_hours * hourly_wage / 100), 0) as labor_cost
+        FROM public.punches
+        WHERE location_uuid = $1
+          AND trading_day = $2
+          AND deleted IS NOT TRUE
+          AND clocked_out IS NOT NULL`,
+        [locationUuid, date]
+      );
+      row = fallbackResult.rows[0];
+    }
+
     if (!row || Number(row.punch_count) === 0) {
       return null;
     }
@@ -799,17 +827,14 @@ export async function fetchLaborSummary(
 
     // Calculate OT: hours over 8 per employee per day
     const otResult = await pool.query(
-      `SELECT
-        user_id,
-        SUM(total_hours) as daily_hours
-      FROM public.punches
+      `SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+      FROM public.new_tipsee_punches
       WHERE location_uuid = $1
-        AND trading_day = $2
-        AND deleted = false
-        AND approved = true
+        AND clocked_in::date = $2::date
         AND clocked_out IS NOT NULL
+        AND is_deleted IS NOT TRUE
       GROUP BY user_id
-      HAVING SUM(total_hours) > 8`,
+      HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8`,
       [locationUuid, date]
     );
 

@@ -255,11 +255,7 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 
 export default function NightlyReportPage() {
   const { selectedVenue } = useVenue();
-  const [date, setDate] = useState(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
-  });
+  const [date, setDate] = useState('');
   const [report, setReport] = useState<NightlyReportData | null>(null);
   const [factsSummary, setFactsSummary] = useState<FactsSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -271,6 +267,13 @@ export default function NightlyReportPage() {
   const [compReview, setCompReview] = useState<CompReviewData | null>(null);
   const [loadingCompReview, setLoadingCompReview] = useState<boolean>(false);
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
+
+  // Set initial date on client only (avoids hydration mismatch)
+  useEffect(() => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    setDate(yesterday.toISOString().split('T')[0]);
+  }, []);
 
   // Fetch venue mappings on mount
   useEffect(() => {
@@ -296,7 +299,7 @@ export default function NightlyReportPage() {
   // Fetch report when date or location changes
   useEffect(() => {
     async function fetchReport() {
-      if (!selectedVenue?.id) return;
+      if (!selectedVenue?.id || !date) return;
 
       // Handle "All Venues" - nightly report requires a specific venue
       if (isAllVenues) {

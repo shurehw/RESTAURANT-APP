@@ -21,6 +21,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: 'AI comp review not configured (missing ANTHROPIC_API_KEY)' },
+        { status: 503 }
+      );
+    }
+
     // Get TipSee location UUID from venue mapping
     const supabase = getServiceClient();
     const { data: mapping, error: mappingError } = await (supabase as any)
