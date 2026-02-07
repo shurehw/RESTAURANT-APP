@@ -801,10 +801,19 @@ export default function NightlyReportPage() {
                     const fohHrs = labor.foh?.hours || 0;
                     const bohHrs = labor.boh?.hours || 0;
                     const otherHrs = labor.other?.hours || 0;
-                    const totalHrs = fohHrs + bohHrs + otherHrs;
-                    const fohPct = totalHrs > 0 ? (fohHrs / totalHrs) * 100 : 0;
-                    const bohPct = totalHrs > 0 ? (bohHrs / totalHrs) * 100 : 0;
-                    const otherPct = totalHrs > 0 ? (otherHrs / totalHrs) * 100 : 0;
+                    const fohCost = labor.foh?.cost || 0;
+                    const bohCost = labor.boh?.cost || 0;
+                    const otherCost = labor.other?.cost || 0;
+                    const netSales = report.summary.net_sales || 0;
+                    // % of sales labels
+                    const fohPct = netSales > 0 ? (fohCost / netSales) * 100 : 0;
+                    const bohPct = netSales > 0 ? (bohCost / netSales) * 100 : 0;
+                    const otherPct = netSales > 0 ? (otherCost / netSales) * 100 : 0;
+                    // Bar widths: proportional share of total labor (fills 100%)
+                    const totalCost = fohCost + bohCost + otherCost;
+                    const fohBar = totalCost > 0 ? (fohCost / totalCost) * 100 : 0;
+                    const bohBar = totalCost > 0 ? (bohCost / totalCost) * 100 : 0;
+                    const otherBar = totalCost > 0 ? (otherCost / totalCost) * 100 : 0;
 
                     return (
                       <div className="mt-4 space-y-3">
@@ -813,25 +822,25 @@ export default function NightlyReportPage() {
                         </div>
                         {/* Stacked bar */}
                         <div className="flex h-3 rounded-full overflow-hidden bg-muted">
-                          {fohPct > 0 && (
+                          {fohBar > 0 && (
                             <div
                               className="bg-brass h-full transition-all"
-                              style={{ width: `${fohPct}%` }}
-                              title={`FOH: ${fohHrs.toFixed(1)}h (${fohPct.toFixed(0)}%)`}
+                              style={{ width: `${fohBar}%` }}
+                              title={`FOH: ${fohPct.toFixed(1)}% of sales`}
                             />
                           )}
-                          {bohPct > 0 && (
+                          {bohBar > 0 && (
                             <div
                               className="bg-sage h-full transition-all"
-                              style={{ width: `${bohPct}%` }}
-                              title={`BOH: ${bohHrs.toFixed(1)}h (${bohPct.toFixed(0)}%)`}
+                              style={{ width: `${bohBar}%` }}
+                              title={`BOH: ${bohPct.toFixed(1)}% of sales`}
                             />
                           )}
-                          {otherPct > 0 && (
+                          {otherBar > 0 && (
                             <div
                               className="bg-muted-foreground/30 h-full transition-all"
-                              style={{ width: `${otherPct}%` }}
-                              title={`Other: ${otherHrs.toFixed(1)}h (${otherPct.toFixed(0)}%)`}
+                              style={{ width: `${otherBar}%` }}
+                              title={`Other: ${otherPct.toFixed(1)}% of sales`}
                             />
                           )}
                         </div>
