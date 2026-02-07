@@ -841,7 +841,7 @@ export default function NightlyReportPage() {
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-brass flex-shrink-0" />
                               <div>
-                                <div className="font-semibold">FOH</div>
+                                <div className="font-semibold">FOH <span className="font-normal text-muted-foreground">{fohPct.toFixed(0)}%</span></div>
                                 <div className="text-xs text-muted-foreground">
                                   {fohHrs.toFixed(1)}h · {formatCurrency(labor.foh.cost)} · {labor.foh.employee_count} emp
                                 </div>
@@ -852,7 +852,7 @@ export default function NightlyReportPage() {
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-sage flex-shrink-0" />
                               <div>
-                                <div className="font-semibold">BOH</div>
+                                <div className="font-semibold">BOH <span className="font-normal text-muted-foreground">{bohPct.toFixed(0)}%</span></div>
                                 <div className="text-xs text-muted-foreground">
                                   {bohHrs.toFixed(1)}h · {formatCurrency(labor.boh.cost)} · {labor.boh.employee_count} emp
                                 </div>
@@ -863,7 +863,7 @@ export default function NightlyReportPage() {
                             <div className="flex items-center gap-2">
                               <div className="w-3 h-3 rounded-full bg-muted-foreground/30 flex-shrink-0" />
                               <div>
-                                <div className="font-semibold">Other</div>
+                                <div className="font-semibold">Other <span className="font-normal text-muted-foreground">{otherPct.toFixed(0)}%</span></div>
                                 <div className="text-xs text-muted-foreground">
                                   {otherHrs.toFixed(1)}h · {formatCurrency(labor.other.cost)} · {labor.other.employee_count} emp
                                 </div>
