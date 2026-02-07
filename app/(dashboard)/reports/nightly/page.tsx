@@ -38,6 +38,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { AttestationSection } from '@/components/attestation/AttestationSection';
 
 interface NightlyReportData {
   date: string;
@@ -1549,6 +1550,33 @@ export default function NightlyReportPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Operator Attestation */}
+          {report && selectedVenue && date && (
+            <AttestationSection
+              venueId={selectedVenue.id}
+              businessDate={date}
+              reportData={{
+                venue_id: selectedVenue.id,
+                business_date: date,
+                net_sales: report.summary.net_sales,
+                forecasted_sales: factsSummary?.forecast?.net_sales || 0,
+                total_comp_amount: report.summary.total_comps,
+                comp_count: report.detailedComps?.length || 0,
+                comps: (report.detailedComps || []).map(c => ({
+                  check_id: c.check_id,
+                  check_amount: c.check_total,
+                  comp_amount: c.comp_total,
+                  comp_reason: c.reason,
+                  employee_name: c.server,
+                })),
+                actual_labor_cost: factsSummary?.labor?.labor_cost || 0,
+                scheduled_labor_cost: 0,
+                overtime_hours: factsSummary?.labor?.ot_hours || 0,
+                walkout_count: 0,
+              }}
+            />
+          )}
 
         </>
       )}
