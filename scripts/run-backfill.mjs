@@ -277,6 +277,32 @@ async function syncVenueDay(venueId, tipseeLocationUuid, businessDate) {
         otHours = otResult.rows.reduce((sum, r) => sum + Math.max(0, parseFloat(r.daily_hours) - 8), 0);
       }
 
+      // FOH/BOH breakdown (only from tipsee_7shifts_punches)
+      let fohHours = 0, fohCost = 0, fohEmpCount = 0;
+      let bohHours = 0, bohCost = 0, bohEmpCount = 0;
+      let otherHours = 0, otherCost = 0, otherEmpCount = 0;
+
+      if (laborTable === 'tipsee_7shifts_punches') {
+        const deptResult = await tipseePool.query(
+          `SELECT
+            CASE WHEN d.name = 'FOH' THEN 'FOH' WHEN d.name = 'BOH' THEN 'BOH' ELSE 'Other' END as dept_group,
+            COUNT(DISTINCT p.user_id) as employee_count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 * COALESCE(p.hourly_wage, 0) / 100), 0) as labor_cost
+          FROM public.tipsee_7shifts_punches p
+          LEFT JOIN (SELECT DISTINCT ON (id) id, name FROM public.departments) d ON d.id = p.department_id
+          WHERE p.location_uuid = $1 AND p.clocked_in::date = $2::date
+            AND p.clocked_out IS NOT NULL AND p.deleted IS NOT TRUE
+          GROUP BY dept_group`,
+          [tipseeLocationUuid, businessDate]
+        );
+        for (const r of deptResult.rows) {
+          if (r.dept_group === 'FOH') { fohHours = parseFloat(r.total_hours) || 0; fohCost = parseFloat(r.labor_cost) || 0; fohEmpCount = parseInt(r.employee_count) || 0; }
+          else if (r.dept_group === 'BOH') { bohHours = parseFloat(r.total_hours) || 0; bohCost = parseFloat(r.labor_cost) || 0; bohEmpCount = parseInt(r.employee_count) || 0; }
+          else { otherHours = parseFloat(r.total_hours) || 0; otherCost = parseFloat(r.labor_cost) || 0; otherEmpCount = parseInt(r.employee_count) || 0; }
+        }
+      }
+
       const { error: laborError } = await supabase.from('labor_day_facts').upsert({
         venue_id: venueId,
         business_date: businessDate,
@@ -287,6 +313,15 @@ async function syncVenueDay(venueId, tipseeLocationUuid, businessDate) {
         employee_count: parseInt(laborRow.employee_count) || 0,
         net_sales: parseFloat(summary.net_sales) || 0,
         covers: parseInt(summary.total_covers) || 0,
+        foh_hours: fohHours,
+        foh_cost: fohCost,
+        foh_employee_count: fohEmpCount,
+        boh_hours: bohHours,
+        boh_cost: bohCost,
+        boh_employee_count: bohEmpCount,
+        other_hours: otherHours,
+        other_cost: otherCost,
+        other_employee_count: otherEmpCount,
         last_synced_at: new Date().toISOString(),
       }, { onConflict: 'venue_id,business_date' });
       if (laborError) {

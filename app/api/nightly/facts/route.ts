@@ -269,6 +269,9 @@ export async function GET(request: NextRequest) {
 
     // Labor data: prefer synced labor_day_facts, fall back to live TipSee query
     const laborFact = laborFactResult.data as any;
+    const buildDeptBreakdown = (hours: number, cost: number, empCount: number) =>
+      (hours > 0 || cost > 0) ? { hours, cost, employee_count: empCount } : null;
+
     let laborData = laborFact
       ? {
           total_hours: laborFact.total_hours,
@@ -278,6 +281,9 @@ export async function GET(request: NextRequest) {
           ot_hours: laborFact.ot_hours,
           covers_per_labor_hour: laborFact.covers_per_labor_hour,
           employee_count: laborFact.employee_count,
+          foh: buildDeptBreakdown(laborFact.foh_hours || 0, laborFact.foh_cost || 0, laborFact.foh_employee_count || 0),
+          boh: buildDeptBreakdown(laborFact.boh_hours || 0, laborFact.boh_cost || 0, laborFact.boh_employee_count || 0),
+          other: buildDeptBreakdown(laborFact.other_hours || 0, laborFact.other_cost || 0, laborFact.other_employee_count || 0),
         }
       : null;
 
@@ -299,6 +305,9 @@ export async function GET(request: NextRequest) {
             ot_hours: liveLaborData.ot_hours,
             covers_per_labor_hour: liveLaborData.covers_per_labor_hour,
             employee_count: liveLaborData.employee_count,
+            foh: liveLaborData.foh,
+            boh: liveLaborData.boh,
+            other: liveLaborData.other,
           };
         }
       } catch (laborErr) {
