@@ -35,24 +35,24 @@ export function getFiscalPeriod(
   // For standard calendar, use calendar months
   if (calendarType === 'standard' || !fyStartDate) {
     const year = targetDate.getFullYear();
-    const month = targetDate.getMonth() + 1;
-    const quarter = Math.ceil(month / 3);
+    const month = targetDate.getMonth(); // 0-indexed
+    const quarter = Math.ceil((month + 1) / 3);
 
-    // Get Monday of the current week
-    const dayOfWeek = targetDate.getDay();
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStart = new Date(targetDate);
-    weekStart.setDate(weekStart.getDate() - daysFromMonday);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
+    // Period = calendar month (1st of month → last day of month)
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month + 1, 0); // last day of month
+
+    // Calculate week in period
+    const dayOfMonth = targetDate.getDate();
+    const weekInPeriod = Math.ceil(dayOfMonth / 7);
 
     return {
       fiscalYear: year,
       fiscalQuarter: quarter,
-      fiscalPeriod: month,
-      periodStartDate: weekStart.toISOString().split('T')[0],
-      periodEndDate: weekEnd.toISOString().split('T')[0],
-      weekInPeriod: 1,
+      fiscalPeriod: month + 1,
+      periodStartDate: monthStart.toISOString().split('T')[0],
+      periodEndDate: monthEnd.toISOString().split('T')[0],
+      weekInPeriod,
     };
   }
 
