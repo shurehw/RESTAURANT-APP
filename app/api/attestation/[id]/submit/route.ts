@@ -108,7 +108,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     if (updateError) throw updateError;
 
     // Generate control plane actions (non-blocking — don't fail submission)
-    let actionResult = { actionsCreated: 0, errors: undefined as string[] | undefined };
+    let actionResult: { success: boolean; actionsCreated: number; errors?: string[] } = { success: true, actionsCreated: 0 };
     try {
       // Fetch children for control plane
       const [compRes, incidents, coaching] = await Promise.all([
