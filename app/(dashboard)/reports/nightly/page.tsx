@@ -184,6 +184,9 @@ interface FactsSummary {
     ot_hours: number;
     covers_per_labor_hour: number | null;
     employee_count: number;
+    foh: { hours: number; cost: number; employee_count: number } | null;
+    boh: { hours: number; cost: number; employee_count: number } | null;
+    other: { hours: number; cost: number; employee_count: number } | null;
   } | null;
   // Prophet forecast
   forecast?: {
@@ -792,6 +795,85 @@ export default function NightlyReportPage() {
                       <div className="text-xs text-muted-foreground uppercase">Cost/Cover</div>
                     </div>
                   </div>
+
+                  {/* FOH / BOH Split */}
+                  {(labor.foh || labor.boh) && (() => {
+                    const fohHrs = labor.foh?.hours || 0;
+                    const bohHrs = labor.boh?.hours || 0;
+                    const otherHrs = labor.other?.hours || 0;
+                    const totalHrs = fohHrs + bohHrs + otherHrs;
+                    const fohPct = totalHrs > 0 ? (fohHrs / totalHrs) * 100 : 0;
+                    const bohPct = totalHrs > 0 ? (bohHrs / totalHrs) * 100 : 0;
+                    const otherPct = totalHrs > 0 ? (otherHrs / totalHrs) * 100 : 0;
+
+                    return (
+                      <div className="mt-4 space-y-3">
+                        <div className="text-xs text-muted-foreground uppercase font-semibold tracking-wide">
+                          FOH / BOH Split
+                        </div>
+                        {/* Stacked bar */}
+                        <div className="flex h-3 rounded-full overflow-hidden bg-muted">
+                          {fohPct > 0 && (
+                            <div
+                              className="bg-brass h-full transition-all"
+                              style={{ width: `${fohPct}%` }}
+                              title={`FOH: ${fohHrs.toFixed(1)}h (${fohPct.toFixed(0)}%)`}
+                            />
+                          )}
+                          {bohPct > 0 && (
+                            <div
+                              className="bg-sage h-full transition-all"
+                              style={{ width: `${bohPct}%` }}
+                              title={`BOH: ${bohHrs.toFixed(1)}h (${bohPct.toFixed(0)}%)`}
+                            />
+                          )}
+                          {otherPct > 0 && (
+                            <div
+                              className="bg-muted-foreground/30 h-full transition-all"
+                              style={{ width: `${otherPct}%` }}
+                              title={`Other: ${otherHrs.toFixed(1)}h (${otherPct.toFixed(0)}%)`}
+                            />
+                          )}
+                        </div>
+                        {/* Legend row */}
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          {labor.foh && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-brass flex-shrink-0" />
+                              <div>
+                                <div className="font-semibold">FOH</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {fohHrs.toFixed(1)}h · {formatCurrency(labor.foh.cost)} · {labor.foh.employee_count} emp
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {labor.boh && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-sage flex-shrink-0" />
+                              <div>
+                                <div className="font-semibold">BOH</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {bohHrs.toFixed(1)}h · {formatCurrency(labor.boh.cost)} · {labor.boh.employee_count} emp
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {labor.other && otherHrs > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded-full bg-muted-foreground/30 flex-shrink-0" />
+                              <div>
+                                <div className="font-semibold">Other</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {otherHrs.toFixed(1)}h · {formatCurrency(labor.other.cost)} · {labor.other.employee_count} emp
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );

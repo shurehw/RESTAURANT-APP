@@ -786,6 +786,12 @@ export async function fetchCompExceptions(
 // LABOR DATA (from TipSee punches table via 7Shifts)
 // ============================================================================
 
+export interface LaborDeptBreakdown {
+  hours: number;
+  cost: number;
+  employee_count: number;
+}
+
 export interface LaborSummary {
   total_hours: number;
   labor_cost: number;
@@ -795,6 +801,9 @@ export interface LaborSummary {
   covers_per_labor_hour: number | null;
   employee_count: number;
   punch_count: number;
+  foh: LaborDeptBreakdown | null;
+  boh: LaborDeptBreakdown | null;
+  other: LaborDeptBreakdown | null;
 }
 
 /**
@@ -924,6 +933,48 @@ export async function fetchLaborSummary(
       otHours = otResult.rows.reduce((sum: number, r: any) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
     }
 
+    // FOH/BOH breakdown (only for tipsee_7shifts_punches which has department_id)
+    let foh: LaborDeptBreakdown | null = null;
+    let boh: LaborDeptBreakdown | null = null;
+    let other: LaborDeptBreakdown | null = null;
+
+    if (punchTable === 'tipsee_7shifts_punches') {
+      const deptResult = await pool.query(
+        `SELECT
+          CASE
+            WHEN d.name = 'FOH' THEN 'FOH'
+            WHEN d.name = 'BOH' THEN 'BOH'
+            ELSE 'Other'
+          END as dept_group,
+          COUNT(DISTINCT p.user_id) as employee_count,
+          COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+          COALESCE(SUM(
+            EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
+            COALESCE(p.hourly_wage, 0) / 100
+          ), 0) as labor_cost
+        FROM public.tipsee_7shifts_punches p
+        LEFT JOIN (SELECT DISTINCT ON (id) id, name FROM public.departments) d
+          ON d.id = p.department_id
+        WHERE p.location_uuid = $1
+          AND p.clocked_in::date = $2::date
+          AND p.clocked_out IS NOT NULL
+          AND p.deleted IS NOT TRUE
+        GROUP BY dept_group`,
+        [locationUuid, date]
+      );
+
+      for (const r of deptResult.rows) {
+        const entry: LaborDeptBreakdown = {
+          hours: Number(r.total_hours) || 0,
+          cost: Number(r.labor_cost) || 0,
+          employee_count: Number(r.employee_count) || 0,
+        };
+        if (r.dept_group === 'FOH') foh = entry;
+        else if (r.dept_group === 'BOH') boh = entry;
+        else other = entry;
+      }
+    }
+
     return {
       total_hours: totalHours,
       labor_cost: laborCost,
@@ -933,6 +984,9 @@ export async function fetchLaborSummary(
       covers_per_labor_hour: totalHours > 0 ? covers / totalHours : null,
       employee_count: employeeCount,
       punch_count: punchCount,
+      foh,
+      boh,
+      other,
     };
   } catch (error) {
     console.error('Error fetching TipSee labor data:', error);
