@@ -38,7 +38,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { AttestationSection } from '@/components/attestation/AttestationSection';
+import { useAttestation } from '@/components/attestation/useAttestation';
+import { RevenueAttestation } from '@/components/attestation/RevenueAttestation';
+import { LaborAttestation } from '@/components/attestation/LaborAttestation';
+import { CompResolutionPanel } from '@/components/attestation/CompResolutionPanel';
+import { AttestationFooter } from '@/components/attestation/AttestationFooter';
+import type { NightlyReportPayload } from '@/lib/attestation/types';
 
 interface NightlyReportData {
   date: string;
@@ -272,6 +277,33 @@ export default function NightlyReportPage() {
   const [compReview, setCompReview] = useState<CompReviewData | null>(null);
   const [loadingCompReview, setLoadingCompReview] = useState<boolean>(false);
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
+
+  // Build attestation report payload (memoised to avoid re-triggering hook)
+  const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
+    if (!report || !selectedVenue?.id || !date) return null;
+    return {
+      venue_id: selectedVenue.id,
+      business_date: date,
+      net_sales: report.summary.net_sales,
+      forecasted_sales: factsSummary?.forecast?.net_sales || 0,
+      total_comp_amount: report.summary.total_comps,
+      comp_count: report.detailedComps?.length || 0,
+      comps: (report.detailedComps || []).map(c => ({
+        check_id: c.check_id,
+        check_amount: c.check_total,
+        comp_amount: c.comp_total,
+        comp_reason: c.reason,
+        employee_name: c.server,
+      })),
+      actual_labor_cost: factsSummary?.labor?.labor_cost || 0,
+      scheduled_labor_cost: 0,
+      overtime_hours: factsSummary?.labor?.ot_hours || 0,
+      walkout_count: 0,
+    };
+  }, [report, selectedVenue?.id, date, factsSummary]);
+
+  // Attestation hook — lifted to page level so inline modules share state
+  const att = useAttestation(selectedVenue?.id, date, attestationReportData);
 
   // Set initial date on client only (avoids hydration mismatch)
   useEffect(() => {
@@ -624,6 +656,18 @@ export default function NightlyReportPage() {
             </Card>
           )}
 
+          {/* Revenue Attestation — inline after revenue summary */}
+          {att.attestation && (
+            <div className="border-l-2 border-brass/30 pl-4 ml-2">
+              <RevenueAttestation
+                triggers={att.triggers}
+                attestation={att.attestation}
+                onUpdate={att.updateField}
+                disabled={att.isLocked}
+              />
+            </div>
+          )}
+
           {/* Summary Stats - Single Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
@@ -888,6 +932,18 @@ export default function NightlyReportPage() {
               </Card>
             );
           })()}
+
+          {/* Labor Attestation — inline after labor card */}
+          {att.attestation && (
+            <div className="border-l-2 border-brass/30 pl-4 ml-2">
+              <LaborAttestation
+                triggers={att.triggers}
+                attestation={att.attestation}
+                onUpdate={att.updateField}
+                disabled={att.isLocked}
+              />
+            </div>
+          )}
 
           {/* Comp Exceptions - Policy Violations */}
           {compExceptions && compExceptions.exceptions.length > 0 && (
@@ -1173,6 +1229,18 @@ export default function NightlyReportPage() {
                 </CardContent>
               )}
             </Card>
+          )}
+
+          {/* Comp Resolution Attestation — inline after comp analysis */}
+          {att.attestation && (
+            <div className="border-l-2 border-brass/30 pl-4 ml-2">
+              <CompResolutionPanel
+                triggers={att.triggers}
+                resolutions={att.compResolutions}
+                onAdd={att.addCompResolution}
+                disabled={att.isLocked}
+              />
+            </div>
           )}
 
           {/* Main Content Grid */}
@@ -1551,32 +1619,23 @@ export default function NightlyReportPage() {
             </CardContent>
           </Card>
 
-          {/* Operator Attestation */}
-          {report && selectedVenue && date && (
-            <AttestationSection
-              venueId={selectedVenue.id}
-              businessDate={date}
-              reportData={{
-                venue_id: selectedVenue.id,
-                business_date: date,
-                net_sales: report.summary.net_sales,
-                forecasted_sales: factsSummary?.forecast?.net_sales || 0,
-                total_comp_amount: report.summary.total_comps,
-                comp_count: report.detailedComps?.length || 0,
-                comps: (report.detailedComps || []).map(c => ({
-                  check_id: c.check_id,
-                  check_amount: c.check_total,
-                  comp_amount: c.comp_total,
-                  comp_reason: c.reason,
-                  employee_name: c.server,
-                })),
-                actual_labor_cost: factsSummary?.labor?.labor_cost || 0,
-                scheduled_labor_cost: 0,
-                overtime_hours: factsSummary?.labor?.ot_hours || 0,
-                walkout_count: 0,
-              }}
-            />
-          )}
+          {/* Attestation Footer — Incidents, Coaching & Submit */}
+          <AttestationFooter
+            attestation={att.attestation}
+            triggers={att.triggers}
+            incidents={att.incidents}
+            coachingActions={att.coachingActions}
+            completionState={att.completionState}
+            canSubmit={att.canSubmit}
+            isLocked={att.isLocked}
+            loading={att.loading}
+            saving={att.saving}
+            submitting={att.submitting}
+            error={att.error}
+            onAddIncident={att.addIncident}
+            onAddCoaching={att.addCoaching}
+            onSubmit={att.submitAttestation}
+          />
 
         </>
       )}
