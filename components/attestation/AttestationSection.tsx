@@ -115,55 +115,77 @@ export function AttestationSection({ venueId, businessDate, reportData }: Props)
             </div>
           )}
 
-          {/* Modules */}
+          {/* All 5 modules — always visible */}
           {!loading && attestation && (
             <>
-              {/* Revenue */}
-              {(triggers?.revenue_attestation_required || attestation.revenue_confirmed !== null) && (
+              {/* 1. Revenue */}
+              <CollapsibleModule
+                label="Revenue"
+                required={triggers?.revenue_attestation_required}
+                defaultExpanded={triggers?.revenue_attestation_required ?? false}
+              >
                 <RevenueAttestation
                   triggers={triggers}
                   attestation={attestation}
                   onUpdate={updateField}
                   disabled={isLocked}
                 />
-              )}
+              </CollapsibleModule>
 
-              {/* Comp Resolutions */}
-              {(triggers?.comp_resolution_required || compResolutions.length > 0) && (
+              {/* 2. Comp Resolutions */}
+              <CollapsibleModule
+                label="Comps"
+                required={triggers?.comp_resolution_required}
+                defaultExpanded={triggers?.comp_resolution_required ?? false}
+              >
                 <CompResolutionPanel
                   triggers={triggers}
                   resolutions={compResolutions}
                   onAdd={addCompResolution}
                   disabled={isLocked}
                 />
-              )}
+              </CollapsibleModule>
 
-              {/* Labor */}
-              {(triggers?.labor_attestation_required || attestation.labor_confirmed !== null) && (
+              {/* 3. Labor */}
+              <CollapsibleModule
+                label="Labor"
+                required={triggers?.labor_attestation_required}
+                defaultExpanded={triggers?.labor_attestation_required ?? false}
+              >
                 <LaborAttestation
                   triggers={triggers}
                   attestation={attestation}
                   onUpdate={updateField}
                   disabled={isLocked}
                 />
-              )}
+              </CollapsibleModule>
 
-              {/* Incidents */}
-              {(triggers?.incident_log_required || incidents.length > 0) && (
+              {/* 4. Incidents */}
+              <CollapsibleModule
+                label="Incidents"
+                required={triggers?.incident_log_required}
+                defaultExpanded={triggers?.incident_log_required ?? false}
+              >
                 <IncidentLog
                   triggers={triggers}
                   incidents={incidents}
                   onAdd={addIncident}
                   disabled={isLocked}
                 />
-              )}
+              </CollapsibleModule>
 
-              {/* Coaching (always optional, always visible) */}
-              <CoachingQueue
-                actions={coachingActions}
-                onAdd={addCoaching}
-                disabled={isLocked}
-              />
+              {/* 5. Coaching */}
+              <CollapsibleModule
+                label="Coaching"
+                required={false}
+                defaultExpanded={false}
+              >
+                <CoachingQueue
+                  actions={coachingActions}
+                  onAdd={addCoaching}
+                  disabled={isLocked}
+                />
+              </CollapsibleModule>
 
               {/* Submit bar */}
               <AttestationSubmitBar
@@ -180,5 +202,69 @@ export function AttestationSection({ venueId, businessDate, reportData }: Props)
         </CardContent>
       )}
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Collapsible wrapper — required modules start expanded, optional collapsed
+// ---------------------------------------------------------------------------
+
+function CollapsibleModule({
+  label,
+  required,
+  defaultExpanded,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  defaultExpanded: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultExpanded);
+
+  return (
+    <div>
+      {/* Collapsed summary — only shown when collapsed */}
+      {!open && (
+        <div
+          className={`
+            flex items-center justify-between px-4 py-2.5 rounded-md cursor-pointer
+            transition-colors
+            ${required
+              ? 'bg-brass/5 border border-brass/30 hover:bg-brass/10'
+              : 'bg-muted/30 border border-muted hover:bg-muted/50'
+            }
+          `}
+          onClick={() => setOpen(true)}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">{label}</span>
+            {required ? (
+              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-brass text-white rounded">
+                Required
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">Optional</span>
+            )}
+          </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </div>
+      )}
+
+      {/* Expanded content */}
+      {open && (
+        <div className="relative">
+          {/* Collapse button floated top-right inside the child card */}
+          <button
+            className="absolute top-3 right-3 z-10 p-1 rounded hover:bg-muted/50 transition-colors"
+            onClick={() => setOpen(false)}
+            title={`Collapse ${label}`}
+          >
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+          </button>
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
