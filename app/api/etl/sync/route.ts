@@ -85,13 +85,13 @@ export async function GET(request: NextRequest) {
     if (action === 'reviews') {
       console.log('Starting incremental review sync...');
       const result = await syncReviews();
-      return NextResponse.json({ success: result.success, ...result });
+      return NextResponse.json(result);
     }
 
     if (action === 'reviews_backfill') {
       console.log('Starting full review backfill...');
       const result = await backfillReviews();
-      return NextResponse.json({ success: result.success, ...result });
+      return NextResponse.json(result);
     }
 
     if (action === 'mappings') {
