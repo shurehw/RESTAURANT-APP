@@ -6,6 +6,8 @@
  * GET /api/etl/sync?date=2024-01-15&venue_id=xxx - Sync specific date and venue
  * GET /api/etl/sync?action=today              - Sync today's data
  * GET /api/etl/sync?action=yesterday          - Sync yesterday's data
+ * GET /api/etl/sync?action=reviews            - Incremental review sync
+ * GET /api/etl/sync?action=reviews_backfill   - Full review backfill
  * POST /api/etl/sync (body: { startDate, endDate, venueId? }) - Backfill range
  */
 
@@ -18,6 +20,7 @@ import {
   backfillDateRange,
   getVenueTipseeMappings,
 } from '@/lib/etl/tipsee-sync';
+import { syncReviews, backfillReviews } from '@/lib/etl/review-sync';
 import { getServiceClient } from '@/lib/supabase/service';
 
 // Secret for cron job authentication (set in env vars)
@@ -79,6 +82,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    if (action === 'reviews') {
+      console.log('Starting incremental review sync...');
+      const result = await syncReviews();
+      return NextResponse.json({ success: result.success, ...result });
+    }
+
+    if (action === 'reviews_backfill') {
+      console.log('Starting full review backfill...');
+      const result = await backfillReviews();
+      return NextResponse.json({ success: result.success, ...result });
+    }
+
     if (action === 'mappings') {
       const mappings = await getVenueTipseeMappings();
       return NextResponse.json({ mappings });
@@ -137,6 +152,8 @@ export async function GET(request: NextRequest) {
         'GET ?action=yesterday': 'Sync yesterday\'s data for all venues',
         'GET ?date=YYYY-MM-DD': 'Sync specific date for all venues',
         'GET ?date=YYYY-MM-DD&venue_id=xxx': 'Sync specific date and venue',
+        'GET ?action=reviews': 'Incremental review sync from TipSee (Widewail)',
+        'GET ?action=reviews_backfill': 'Full review backfill from TipSee',
         'GET ?action=mappings': 'List venue-TipSee mappings',
         'POST { startDate, endDate, venueId? }': 'Backfill date range',
       },
