@@ -19,6 +19,16 @@ export interface CompletionState {
   coaching: 'always_optional';
 }
 
+/** Extract error message from API JSON response { error: '...' } */
+async function extractError(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    return body.error || `${fallback} (${res.status})`;
+  } catch {
+    return `${fallback} (${res.status})`;
+  }
+}
+
 export function useAttestation(
   venueId: string | undefined,
   businessDate: string | undefined,
@@ -68,8 +78,7 @@ export function useAttestation(
       });
 
       if (!createRes.ok) {
-        const err = await createRes.json();
-        throw new Error(err.message || 'Failed to create attestation');
+        throw new Error(await extractError(createRes, 'Failed to create attestation'));
       }
 
       const { data: created } = await createRes.json();
@@ -80,29 +89,21 @@ export function useAttestation(
         credentials: 'include',
       });
 
-      if (!detailRes.ok) throw new Error('Failed to fetch attestation');
+      if (!detailRes.ok) {
+        throw new Error(await extractError(detailRes, 'Failed to fetch attestation'));
+      }
 
       const { data } = await detailRes.json();
       setAttestation(data.attestation);
       setCompResolutions(data.comp_resolutions || []);
       setIncidents(data.incidents || []);
       setCoachingActions(data.coaching_actions || []);
-
-      // Save trigger snapshot if draft and we have triggers
-      if (data.attestation.status === 'draft' && triggers) {
-        await fetch(`/api/attestation/${attestationId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({}), // triggers saved separately — the snapshot is set on submit
-        });
-      }
     } catch (err: any) {
       setError(err.message || 'Failed to initialize attestation');
     } finally {
       setLoading(false);
     }
-  }, [venueId, businessDate, triggers]);
+  }, [venueId, businessDate]);
 
   useEffect(() => {
     initAttestation();
@@ -134,8 +135,7 @@ export function useAttestation(
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Failed to save');
+          throw new Error(await extractError(res, 'Failed to save'));
         }
 
         const { data } = await res.json();
@@ -165,8 +165,7 @@ export function useAttestation(
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Failed to save comp resolution');
+          throw new Error(await extractError(res, 'Failed to save comp resolution'));
         }
 
         const { data } = await res.json();
@@ -196,8 +195,7 @@ export function useAttestation(
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Failed to save incident');
+          throw new Error(await extractError(res, 'Failed to save incident'));
         }
 
         const { data } = await res.json();
@@ -227,8 +225,7 @@ export function useAttestation(
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Failed to save coaching action');
+          throw new Error(await extractError(res, 'Failed to save coaching action'));
         }
 
         const { data } = await res.json();
@@ -259,8 +256,7 @@ export function useAttestation(
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.message || 'Failed to submit attestation');
+          throw new Error(await extractError(res, 'Failed to submit attestation'));
         }
 
         const { data, actions_created } = await res.json();
