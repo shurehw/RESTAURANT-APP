@@ -56,7 +56,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_server_performance',
     description:
-      'Get server/employee performance metrics: tickets, covers, net sales, average ticket, average per cover, turn time, tip percentage, and total tips. Use for questions about staff performance, top servers, or tip analysis.',
+      'Get server/employee productivity: net sales, check count, guest count, average spend per guest, table turns, average check, tip percentage, and total tips. Use for questions about staff performance, top servers, or tip analysis.',
     input_schema: {
       type: 'object' as const,
       properties: {
