@@ -1,6 +1,9 @@
 /**
  * AI Comp Review API
  * Analyzes all comp activity and generates actionable recommendations
+ *
+ * POST /api/ai/comp-review — accepts pre-fetched report data (fast, no duplicate queries)
+ * GET  /api/ai/comp-review?venue_id=xxx&date=yyyy-mm-dd — legacy: fetches its own data
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,6 +11,114 @@ import { fetchNightlyReport, fetchCompExceptions } from '@/lib/database/tipsee';
 import { reviewComps, type CompReviewInput } from '@/lib/ai/comp-reviewer';
 import { getServiceClient } from '@/lib/supabase/service';
 
+/**
+ * POST — receives pre-fetched comp data from the nightly report page.
+ * Eliminates the duplicate TipSee round-trip that made AI review slow.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { date, venue_id: venueId, venue_name: venueName, detailedComps, exceptions, summary } = body;
+
+    if (!date || !venueId || !detailedComps || !summary) {
+      return NextResponse.json(
+        { error: 'date, venue_id, venue_name, detailedComps, exceptions, and summary are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return NextResponse.json(
+        { error: 'AI comp review not configured (missing ANTHROPIC_API_KEY)' },
+        { status: 503 }
+      );
+    }
+
+    // Get TipSee location UUID for historical data query
+    const supabase = getServiceClient();
+    const { data: mapping } = await (supabase as any)
+      .from('venue_tipsee_mapping')
+      .select('tipsee_location_uuid')
+      .eq('venue_id', venueId)
+      .maybeSingle();
+
+    // Historical data only needs 1 lightweight TipSee query
+    const historicalData = mapping?.tipsee_location_uuid
+      ? await fetchHistoricalCompData(mapping.tipsee_location_uuid, date)
+      : { avg_daily_comp_pct: 0, avg_daily_comp_total: 0, previous_week_comp_pct: 0 };
+
+    // Build review input from pre-fetched data
+    const reviewInput: CompReviewInput = {
+      date,
+      venueName: venueName || 'Unknown Venue',
+      allComps: (detailedComps || []).map((comp: any) => ({
+        check_id: comp.check_id,
+        table_name: comp.table_name,
+        server: comp.server,
+        comp_total: comp.comp_total,
+        check_total: comp.check_total,
+        reason: comp.reason,
+        comped_items: (comp.comped_items || []).map((itemStr: string) => {
+          const match = itemStr.match(/^(.+)\s+\(\$([0-9.]+)\)$/);
+          if (match) {
+            return {
+              name: match[1].replace(/\s+x\d+$/, ''),
+              quantity: 1,
+              amount: parseFloat(match[2]),
+            };
+          }
+          return { name: itemStr, quantity: 1, amount: 0 };
+        }),
+      })),
+      exceptions: exceptions || { summary: { date, total_comps: 0, net_sales: 0, comp_pct: 0, comp_pct_status: 'ok', exception_count: 0, critical_count: 0, warning_count: 0 }, exceptions: [] },
+      summary: {
+        total_comps: summary.total_comps,
+        net_sales: summary.net_sales,
+        comp_pct: summary.net_sales > 0
+          ? (summary.total_comps / summary.net_sales) * 100
+          : 0,
+        total_checks: summary.total_checks,
+      },
+      historical: historicalData,
+    };
+
+    // Run AI review
+    const review = await reviewComps(reviewInput);
+
+    // Save recommendations as manager actions in Control Plane
+    try {
+      const { saveCompReviewActions } = await import('@/lib/database/control-plane');
+      const actionResult = await saveCompReviewActions(
+        venueId,
+        date,
+        venueName || 'Unknown Venue',
+        review.recommendations
+      );
+
+      if (!actionResult.success) {
+        console.error('Failed to save some actions:', actionResult.errors);
+      }
+    } catch (actionError) {
+      console.error('Error saving actions to Control Plane:', actionError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: review,
+    });
+  } catch (error: any) {
+    console.error('AI Comp Review API error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * GET — legacy fallback that fetches its own data from TipSee.
+ * Slower because it re-runs all nightly report queries.
+ */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -28,41 +139,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get TipSee location UUID from venue mapping
+    // Get TipSee location UUID and venue name in parallel
     const supabase = getServiceClient();
-    const { data: mapping, error: mappingError } = await (supabase as any)
-      .from('venue_tipsee_mapping')
-      .select('tipsee_location_uuid')
-      .eq('venue_id', venueId)
-      .single();
+    const [mappingResult, venueResult] = await Promise.all([
+      (supabase as any)
+        .from('venue_tipsee_mapping')
+        .select('tipsee_location_uuid')
+        .eq('venue_id', venueId)
+        .single(),
+      (supabase as any)
+        .from('venues')
+        .select('name')
+        .eq('id', venueId)
+        .single(),
+    ]);
 
-    if (mappingError || !mapping?.tipsee_location_uuid) {
+    if (mappingResult.error || !mappingResult.data?.tipsee_location_uuid) {
       return NextResponse.json(
         { error: 'No TipSee mapping found for this venue' },
         { status: 404 }
       );
     }
 
-    // Get venue name
-    const { data: venue } = await (supabase as any)
-      .from('venues')
-      .select('name')
-      .eq('id', venueId)
-      .single();
+    const locationUuid = mappingResult.data.tipsee_location_uuid;
+    const venueName = venueResult.data?.name || 'Unknown Venue';
 
-    const venueName = venue?.name || 'Unknown Venue';
-
-    // Fetch nightly report data (includes all comps)
-    const reportData = await fetchNightlyReport(date, mapping.tipsee_location_uuid);
-
-    // Fetch comp exceptions
-    const exceptionsData = await fetchCompExceptions(date, mapping.tipsee_location_uuid);
-
-    // Get historical data for context (last 7 days)
-    const historicalData = await fetchHistoricalCompData(
-      mapping.tipsee_location_uuid,
-      date
-    );
+    // Fetch report data, exceptions, and historical data in parallel
+    const [reportData, exceptionsData, historicalData] = await Promise.all([
+      fetchNightlyReport(date, locationUuid),
+      fetchCompExceptions(date, locationUuid),
+      fetchHistoricalCompData(locationUuid, date),
+    ]);
 
     // Prepare input for AI review
     const reviewInput: CompReviewInput = {
@@ -76,11 +183,10 @@ export async function GET(request: NextRequest) {
         check_total: comp.check_total,
         reason: comp.reason,
         comped_items: comp.comped_items.map(itemStr => {
-          // Parse "Item Name ($123.45)" format
           const match = itemStr.match(/^(.+)\s+\(\$([0-9.]+)\)$/);
           if (match) {
             return {
-              name: match[1].replace(/\s+x\d+$/, ''), // Remove "x2" quantity suffix
+              name: match[1].replace(/\s+x\d+$/, ''),
               quantity: 1,
               amount: parseFloat(match[2]),
             };
@@ -118,7 +224,6 @@ export async function GET(request: NextRequest) {
       }
     } catch (actionError) {
       console.error('Error saving actions to Control Plane:', actionError);
-      // Don't fail the whole request if action saving fails
     }
 
     return NextResponse.json({
@@ -135,7 +240,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Fetch historical comp data for context
+ * Fetch historical comp data for context (1 lightweight query)
  */
 async function fetchHistoricalCompData(
   locationUuid: string,
@@ -149,7 +254,6 @@ async function fetchHistoricalCompData(
   const pool = getTipseePool();
 
   try {
-    // Get last 7 days (excluding current date)
     const result = await pool.query(
       `SELECT
         AVG(CASE WHEN revenue_total > 0 THEN (comp_total / revenue_total) * 100 ELSE 0 END) as avg_comp_pct,

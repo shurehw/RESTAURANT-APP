@@ -619,42 +619,64 @@ export async function fetchCompExceptions(
   const pool = getTipseePool();
   const exceptions: CompException[] = [];
 
-  // Get daily summary for comp % calculation
-  const summaryResult = await pool.query(
-    `SELECT
-      SUM(revenue_total) as net_sales,
-      SUM(comp_total) as total_comps
-    FROM public.tipsee_checks
-    WHERE location_uuid = $1 AND trading_day = $2`,
-    [locationUuid, date]
-  );
+  // Get daily summary AND all comps in parallel
+  const [summaryResult, compsResult] = await Promise.all([
+    pool.query(
+      `SELECT
+        SUM(revenue_total) as net_sales,
+        SUM(comp_total) as total_comps
+      FROM public.tipsee_checks
+      WHERE location_uuid = $1 AND trading_day = $2`,
+      [locationUuid, date]
+    ),
+    pool.query(
+      `SELECT DISTINCT
+        c.id as check_id,
+        c.table_name,
+        c.employee_name as server,
+        c.guest_count as covers,
+        GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
+        c.revenue_total as check_total,
+        COALESCE(NULLIF(c.voidcomp_reason_text, ''), '') as reason
+      FROM public.tipsee_checks c
+      LEFT JOIN LATERAL (
+        SELECT SUM(comp_total) as total
+        FROM public.tipsee_check_items
+        WHERE check_id = c.id AND comp_total > 0
+      ) item_comps ON true
+      WHERE c.location_uuid = $1 AND c.trading_day = $2
+        AND (c.comp_total > 0 OR item_comps.total > 0)
+      ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
+      [locationUuid, date]
+    ),
+  ]);
 
   const dailySummary = summaryResult.rows[0] || { net_sales: 0, total_comps: 0 };
   const netSales = parseFloat(dailySummary.net_sales) || 0;
   const totalComps = parseFloat(dailySummary.total_comps) || 0;
   const compPct = netSales > 0 ? totalComps / netSales : 0;
 
-  // Get all comps with their items
-  const compsResult = await pool.query(
-    `SELECT DISTINCT
-      c.id as check_id,
-      c.table_name,
-      c.employee_name as server,
-      c.guest_count as covers,
-      GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
-      c.revenue_total as check_total,
-      COALESCE(NULLIF(c.voidcomp_reason_text, ''), '') as reason
-    FROM public.tipsee_checks c
-    LEFT JOIN LATERAL (
-      SELECT SUM(comp_total) as total
-      FROM public.tipsee_check_items
-      WHERE check_id = c.id AND comp_total > 0
-    ) item_comps ON true
-    WHERE c.location_uuid = $1 AND c.trading_day = $2
-      AND (c.comp_total > 0 OR item_comps.total > 0)
-    ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
-    [locationUuid, date]
-  );
+  // Batch fetch ALL comp items in 1 query (eliminates N+1)
+  const compCheckIds = compsResult.rows.map((r: any) => r.check_id);
+  const compItemsMap = new Map<string, Array<{ name: string; quantity: number; amount: number }>>();
+  if (compCheckIds.length > 0) {
+    const itemsResult = await pool.query(
+      `SELECT check_id, name, quantity, comp_total as amount
+       FROM public.tipsee_check_items
+       WHERE check_id = ANY($1::text[]) AND comp_total > 0
+       ORDER BY check_id, comp_total DESC`,
+      [compCheckIds]
+    );
+    for (const item of itemsResult.rows) {
+      const arr = compItemsMap.get(item.check_id) || [];
+      arr.push({
+        name: item.name,
+        quantity: parseFloat(item.quantity) || 1,
+        amount: parseFloat(item.amount) || 0,
+      });
+      compItemsMap.set(item.check_id, arr);
+    }
+  }
 
   for (const comp of compsResult.rows) {
     const checkId = comp.check_id;
@@ -662,20 +684,7 @@ export async function fetchCompExceptions(
     const checkTotal = parseFloat(comp.check_total) || 0;
     const reason = comp.reason || '';
 
-    // Get comped items for this check
-    const itemsResult = await pool.query(
-      `SELECT name, quantity, comp_total as amount
-       FROM public.tipsee_check_items
-       WHERE check_id = $1 AND comp_total > 0
-       ORDER BY comp_total DESC`,
-      [checkId]
-    );
-
-    const compedItems = itemsResult.rows.map(item => ({
-      name: item.name,
-      quantity: parseFloat(item.quantity) || 1,
-      amount: parseFloat(item.amount) || 0,
-    }));
+    const compedItems = compItemsMap.get(checkId) || [];
 
     const baseException = {
       check_id: checkId,
