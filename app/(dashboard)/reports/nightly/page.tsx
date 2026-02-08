@@ -461,17 +461,32 @@ export default function NightlyReportPage() {
         }
 
         // Process comp exceptions (non-blocking)
+        let parsedExceptions = null;
         if (exceptionsRes.ok) {
           const exceptionsData = await exceptionsRes.json();
           if (exceptionsData.success) {
+            parsedExceptions = exceptionsData.data;
             setCompExceptions(exceptionsData.data);
           }
         }
 
         // AI comp review fires AFTER page is visible (non-blocking)
+        // Uses POST with pre-fetched data to avoid duplicate TipSee round-trip
         if (liveData?.summary?.total_comps > 0) {
           setLoadingCompReview(true);
-          fetch(`/api/ai/comp-review?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+          fetch('/api/ai/comp-review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              date,
+              venue_id: selectedVenue.id,
+              venue_name: selectedVenue.name,
+              detailedComps: liveData.detailedComps,
+              exceptions: parsedExceptions,
+              summary: liveData.summary,
+            }),
+          })
             .then(res => res.ok ? res.json() : null)
             .then(data => { if (data?.success) setCompReview(data.data); })
             .catch(err => console.error('AI comp review error:', err))
