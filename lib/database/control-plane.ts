@@ -92,6 +92,83 @@ export async function saveCompReviewActions(
 }
 
 /**
+ * Save server coaching actions to the Control Plane
+ * Only creates actions for servers rated 'needs_improvement' or 'average'
+ */
+export async function saveServerCoachingActions(
+  venueId: string,
+  businessDate: string,
+  venueName: string,
+  serverName: string,
+  review: { overallRating: string; improvements: string[]; coachingTip: string }
+): Promise<{ success: boolean; actionsCreated: number; errors?: string[] }> {
+  if (review.overallRating !== 'needs_improvement' && review.overallRating !== 'average') {
+    return { success: true, actionsCreated: 0 };
+  }
+
+  const supabase = getServiceClient();
+  const errors: string[] = [];
+  let actionsCreated = 0;
+
+  const priority = review.overallRating === 'needs_improvement' ? 'high' : 'medium';
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  // Create action for each improvement area
+  const allItems = [
+    ...review.improvements.map((item) => ({ text: item, isCoachingTip: false })),
+    { text: review.coachingTip, isCoachingTip: true },
+  ];
+
+  for (const item of allItems) {
+    try {
+      const action: ManagerAction = {
+        venue_id: venueId,
+        business_date: businessDate,
+        source_report: `nightly_${businessDate}`,
+        source_type: 'ai_server_coaching',
+        priority,
+        category: 'training',
+        title: item.isCoachingTip
+          ? `Coaching tip for ${serverName}`
+          : `Improvement area for ${serverName}`,
+        description: item.text,
+        action: item.isCoachingTip
+          ? `Discuss this coaching tip with ${serverName} before their next shift`
+          : `Address this with ${serverName} during next pre-shift or 1-on-1`,
+        assigned_to: serverName,
+        related_employees: [serverName],
+        metadata: {
+          venue_name: venueName,
+          ai_generated: true,
+          overall_rating: review.overallRating,
+          is_coaching_tip: item.isCoachingTip,
+        },
+        status: 'pending',
+        expires_at: expiresAt,
+      };
+
+      const { error } = await (supabase as any)
+        .from('manager_actions')
+        .insert(action);
+
+      if (error) {
+        errors.push(`Failed to save coaching action for ${serverName}: ${error.message}`);
+      } else {
+        actionsCreated++;
+      }
+    } catch (err: any) {
+      errors.push(`Error saving coaching for ${serverName}: ${err.message}`);
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    actionsCreated,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+}
+
+/**
  * Extract manager/employee name from action text
  * Examples:
  * - "Manager John should review..." → "John"

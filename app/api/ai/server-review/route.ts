@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { date, venueName, server, teamAverages } = body;
+    const { date, venueName, server, teamAverages, venueId, periodLabel } = body;
 
     if (!date || !server || !teamAverages) {
       return NextResponse.json(
@@ -28,11 +28,33 @@ export async function POST(request: NextRequest) {
     const reviewInput: ServerReviewInput = {
       date,
       venueName: venueName || 'Unknown Venue',
+      periodLabel: periodLabel || 'Tonight',
       server,
       teamAverages,
     };
 
     const review = await reviewServerPerformance(reviewInput);
+
+    // Save coaching actions to Control Plane only for end-of-period reviews
+    // (single shifts don't provide enough data for actionable coaching items)
+    if (venueId && periodLabel === 'Period to Date') {
+      try {
+        const { saveServerCoachingActions } = await import('@/lib/database/control-plane');
+        const actionResult = await saveServerCoachingActions(
+          venueId,
+          date,
+          venueName || 'Unknown Venue',
+          server.employee_name,
+          review
+        );
+
+        if (!actionResult.success) {
+          console.error('Failed to save some coaching actions:', actionResult.errors);
+        }
+      } catch (actionError) {
+        console.error('Error saving coaching actions to Control Plane:', actionError);
+      }
+    }
 
     return NextResponse.json({
       success: true,
