@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/route-guard';
-import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues } from '@/lib/tenant';
+import { requireContext } from '@/lib/auth/resolveContext';
 import { rateLimit } from '@/lib/rate-limit';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getTipseePool } from '@/lib/database/tipsee';
@@ -9,6 +8,9 @@ import { z } from 'zod';
 import Anthropic from '@anthropic-ai/sdk';
 import { CHATBOT_TOOLS } from '@/lib/chatbot/tools';
 import { executeTool } from '@/lib/chatbot/executor';
+
+// Tool-use loop can make multiple API calls; allow up to 60s on Vercel
+export const maxDuration = 60;
 
 const chatSchema = z.object({
   question: z.string().min(1),
@@ -78,11 +80,15 @@ const MAX_TOOL_ITERATIONS = 5;
 export async function POST(req: NextRequest) {
   return guard(async () => {
     rateLimit(req, ':chatbot');
-    const user = await requireUser();
-    const { venueIds } = await getUserOrgAndVenues(user.id);
+    const ctx = await requireContext();
 
-    // Resolve venue IDs → TipSee location UUIDs
+    // Get venues for the user's organization
     const supabase = getServiceClient();
+    const { data: venues } = await (supabase as any)
+      .from('venues')
+      .select('id')
+      .eq('organization_id', ctx.orgId);
+    const venueIds: string[] = (venues || []).map((v: any) => v.id);
     const { data: mappings } = await (supabase as any)
       .from('venue_tipsee_mapping')
       .select('tipsee_location_uuid')
