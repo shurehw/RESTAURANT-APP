@@ -160,6 +160,12 @@ export async function GET(request: NextRequest) {
       wtdLastWeekResult,
       serverWtdResult,
       serverPtdResult,
+      categoryWtdResult,
+      categoryPtdResult,
+      itemWtdResult,
+      itemPtdResult,
+      laborWtdResult,
+      laborPtdResult,
     ] = await Promise.all([
       // Venue day facts (summary)
       (supabase as any)
@@ -270,6 +276,54 @@ export async function GET(request: NextRequest) {
       (supabase as any)
         .from('server_day_facts')
         .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // Category WTD (aggregated category breakdown for the week)
+      (supabase as any)
+        .from('category_day_facts')
+        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // Category PTD (aggregated category breakdown for the fiscal period)
+      (supabase as any)
+        .from('category_day_facts')
+        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // Items WTD (aggregated menu items for the week)
+      (supabase as any)
+        .from('item_day_facts')
+        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // Items PTD (aggregated menu items for the fiscal period)
+      (supabase as any)
+        .from('item_day_facts')
+        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // Labor WTD (aggregated labor metrics for the week)
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // Labor PTD (aggregated labor metrics for the fiscal period)
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
         .eq('venue_id', venueId)
         .gte('business_date', periodStartStr)
         .lte('business_date', date),
@@ -451,8 +505,140 @@ export async function GET(request: NextRequest) {
         .sort((a, b) => b.net_sales - a.net_sales);
     }
 
+    // Aggregate category data across date ranges
+    function aggregateCategories(rows: any[]): any[] {
+      const byCategory = new Map<string, {
+        sales: number;
+        comps: number;
+        voids: number;
+        qty: number;
+      }>();
+
+      for (const row of rows) {
+        const category = row.category || 'Other';
+        const existing = byCategory.get(category) || { sales: 0, comps: 0, voids: 0, qty: 0 };
+        existing.sales += row.gross_sales || 0;
+        existing.comps += row.comps_total || 0;
+        existing.voids += row.voids_total || 0;
+        existing.qty += row.quantity_sold || 0;
+        byCategory.set(category, existing);
+      }
+
+      return Array.from(byCategory.entries())
+        .map(([category, data]) => ({
+          category,
+          gross_sales: data.sales,
+          comps: data.comps,
+          voids: data.voids,
+          net_sales: data.sales - data.comps - data.voids,
+          quantity: data.qty,
+        }))
+        .sort((a, b) => b.net_sales - a.net_sales);
+    }
+
+    // Aggregate menu items across date ranges
+    function aggregateItems(rows: any[]): any[] {
+      const byItem = new Map<string, {
+        name: string;
+        sales: number;
+        qty: number;
+        category: string;
+      }>();
+
+      for (const row of rows) {
+        const name = row.menu_item_name;
+        const existing = byItem.get(name) || {
+          name,
+          sales: 0,
+          qty: 0,
+          category: row.parent_category || 'Other',
+        };
+        existing.sales += row.gross_sales || 0;
+        existing.qty += row.quantity_sold || 0;
+        byItem.set(name, existing);
+      }
+
+      return Array.from(byItem.values())
+        .map((item) => ({
+          name: item.name,
+          qty: item.qty,
+          net_total: item.sales,
+          category: item.category,
+        }))
+        .sort((a, b) => b.net_total - a.net_total)
+        .slice(0, 15); // Top 15 items
+    }
+
+    // Aggregate labor data across date ranges
+    function aggregateLabor(rows: any[], totalNetSales: number, totalCovers: number): any {
+      if (!rows || rows.length === 0) return null;
+
+      const totals = rows.reduce((acc, row) => ({
+        total_hours: acc.total_hours + (row.total_hours || 0),
+        labor_cost: acc.labor_cost + (row.labor_cost || 0),
+        ot_hours: acc.ot_hours + (row.ot_hours || 0),
+        employee_count: Math.max(acc.employee_count, row.employee_count || 0), // Max employees in any single day
+        foh_hours: acc.foh_hours + (row.foh_hours || 0),
+        foh_cost: acc.foh_cost + (row.foh_cost || 0),
+        foh_employee_count: Math.max(acc.foh_employee_count, row.foh_employee_count || 0),
+        boh_hours: acc.boh_hours + (row.boh_hours || 0),
+        boh_cost: acc.boh_cost + (row.boh_cost || 0),
+        boh_employee_count: Math.max(acc.boh_employee_count, row.boh_employee_count || 0),
+        other_hours: acc.other_hours + (row.other_hours || 0),
+        other_cost: acc.other_cost + (row.other_cost || 0),
+        other_employee_count: Math.max(acc.other_employee_count, row.other_employee_count || 0),
+      }), {
+        total_hours: 0,
+        labor_cost: 0,
+        ot_hours: 0,
+        employee_count: 0,
+        foh_hours: 0,
+        foh_cost: 0,
+        foh_employee_count: 0,
+        boh_hours: 0,
+        boh_cost: 0,
+        boh_employee_count: 0,
+        other_hours: 0,
+        other_cost: 0,
+        other_employee_count: 0,
+      });
+
+      const buildDeptBreakdown = (hours: number, cost: number, empCount: number) =>
+        (hours > 0 || cost > 0) ? { hours, cost, employee_count: empCount } : null;
+
+      return {
+        total_hours: totals.total_hours,
+        labor_cost: totals.labor_cost,
+        labor_pct: totalNetSales > 0 ? (totals.labor_cost / totalNetSales) * 100 : 0,
+        splh: totals.total_hours > 0 ? totalNetSales / totals.total_hours : 0,
+        ot_hours: totals.ot_hours,
+        covers_per_labor_hour: totals.total_hours > 0 ? totalCovers / totals.total_hours : 0,
+        employee_count: totals.employee_count,
+        foh: buildDeptBreakdown(totals.foh_hours, totals.foh_cost, totals.foh_employee_count),
+        boh: buildDeptBreakdown(totals.boh_hours, totals.boh_cost, totals.boh_employee_count),
+        other: buildDeptBreakdown(totals.other_hours, totals.other_cost, totals.other_employee_count),
+      };
+    }
+
     const serversWtd = aggregateServerData(serverWtdResult.data || []);
     const serversPtd = aggregateServerData(serverPtdResult.data || []);
+
+    const categoriesWtd = aggregateCategories(categoryWtdResult.data || []);
+    const categoriesPtd = aggregateCategories(categoryPtdResult.data || []);
+
+    const itemsWtd = aggregateItems(itemWtdResult.data || []);
+    const itemsPtd = aggregateItems(itemPtdResult.data || []);
+
+    const laborWtd = aggregateLabor(
+      laborWtdResult.data || [],
+      wtdThisWeek.net_sales,
+      wtdThisWeek.covers
+    );
+    const laborPtd = aggregateLabor(
+      laborPtdResult.data || [],
+      ptdThisWeek.net_sales,
+      ptdThisWeek.covers
+    );
 
     // Format response to match existing NightlyReportData structure
     const response = {
@@ -581,6 +767,18 @@ export async function GET(request: NextRequest) {
       // Aggregated server performance for WTD and PTD
       servers_wtd: serversWtd,
       servers_ptd: serversPtd,
+
+      // Aggregated category breakdown for WTD and PTD
+      categories_wtd: categoriesWtd,
+      categories_ptd: categoriesPtd,
+
+      // Aggregated menu items for WTD and PTD
+      items_wtd: itemsWtd,
+      items_ptd: itemsPtd,
+
+      // Aggregated labor metrics for WTD and PTD
+      labor_wtd: laborWtd,
+      labor_ptd: laborPtd,
     };
 
     return NextResponse.json(response);

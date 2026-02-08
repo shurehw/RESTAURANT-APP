@@ -7,6 +7,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -260,6 +261,72 @@ interface FactsSummary {
     total_tips: number;
     days_worked: number;
   }>;
+  // Period aggregations for categories
+  categories_wtd?: Array<{
+    category: string;
+    gross_sales: number;
+    comps: number;
+    voids: number;
+    net_sales: number;
+    quantity: number;
+  }>;
+  categories_ptd?: Array<{
+    category: string;
+    gross_sales: number;
+    comps: number;
+    voids: number;
+    net_sales: number;
+    quantity: number;
+  }>;
+  // Period aggregations for menu items
+  items_wtd?: Array<{
+    name: string;
+    qty: number;
+    net_total: number;
+    category: string;
+  }>;
+  items_ptd?: Array<{
+    name: string;
+    qty: number;
+    net_total: number;
+    category: string;
+  }>;
+  // Period aggregations for labor
+  labor_wtd?: {
+    total_hours: number;
+    labor_cost: number;
+    labor_pct: number;
+    splh: number;
+    ot_hours: number;
+    covers_per_labor_hour: number | null;
+    employee_count: number;
+    foh: { hours: number; cost: number; employee_count: number } | null;
+    boh: { hours: number; cost: number; employee_count: number } | null;
+    other: { hours: number; cost: number; employee_count: number } | null;
+  } | null;
+  labor_ptd?: {
+    total_hours: number;
+    labor_cost: number;
+    labor_pct: number;
+    splh: number;
+    ot_hours: number;
+    covers_per_labor_hour: number | null;
+    employee_count: number;
+    foh: { hours: number; cost: number; employee_count: number } | null;
+    boh: { hours: number; cost: number; employee_count: number } | null;
+    other: { hours: number; cost: number; employee_count: number } | null;
+  } | null;
+  // Fiscal calendar info
+  fiscal?: {
+    calendar_type: string;
+    fy_start_date: string | null;
+    fiscal_year: number;
+    fiscal_quarter: number;
+    fiscal_period: number;
+    period_start_date: string;
+    period_end_date: string;
+    week_in_period: number;
+  };
 }
 
 function formatCurrency(value: number): string {
@@ -295,6 +362,14 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 
 export default function NightlyReportPage() {
   const { selectedVenue } = useVenue();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Global view mode state (synchronized with URL)
+  const [viewMode, setViewMode] = useState<'nightly' | 'wtd' | 'ptd'>(
+    (searchParams.get('view') as 'nightly' | 'wtd' | 'ptd') || 'nightly'
+  );
+
   const [date, setDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -315,13 +390,45 @@ export default function NightlyReportPage() {
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
   const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
-  const [serverPerfTab, setServerPerfTab] = useState<'nightly' | 'wtd' | 'ptd'>('nightly');
 
-  // Compute team averages for server comparison (based on active tab)
+  // Handler for view mode changes (updates URL)
+  function handleViewChange(newView: 'nightly' | 'wtd' | 'ptd') {
+    setViewMode(newView);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', newView);
+    router.push(`?${params.toString()}`, { scroll: false });
+  }
+
+  // Helper: Get period start date for WTD/PTD
+  function getPeriodStart(endDate: string, mode: 'wtd' | 'ptd'): string {
+    if (mode === 'wtd') {
+      // Calculate Monday of current week
+      const dateObj = new Date(endDate + 'T00:00:00');
+      const dayOfWeek = dateObj.getDay();
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(dateObj);
+      monday.setDate(monday.getDate() - daysFromMonday);
+      return monday.toISOString().split('T')[0];
+    } else {
+      // PTD: Use fiscal period start from factsSummary
+      return factsSummary?.fiscal?.period_start_date || endDate;
+    }
+  }
+
+  // Helper: Format date for display
+  function formatDateDisplay(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  // Compute team averages for server comparison (based on active view mode)
   const serverTeamAverages = React.useMemo(() => {
-    const servers = serverPerfTab === 'nightly'
+    const servers = viewMode === 'nightly'
       ? report?.servers
-      : serverPerfTab === 'wtd'
+      : viewMode === 'wtd'
         ? factsSummary?.servers_wtd
         : factsSummary?.servers_ptd;
     if (!servers?.length) return null;
@@ -338,7 +445,7 @@ export default function NightlyReportPage() {
         : null,
       server_count: count,
     };
-  }, [report?.servers, factsSummary?.servers_wtd, factsSummary?.servers_ptd, serverPerfTab]);
+  }, [report?.servers, factsSummary?.servers_wtd, factsSummary?.servers_ptd, viewMode]);
 
   // Build attestation report payload (memoised to avoid re-triggering hook)
   const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
