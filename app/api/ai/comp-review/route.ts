@@ -14,10 +14,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchNightlyReport, fetchCompExceptions } from '@/lib/database/tipsee';
 import { reviewComps, type CompReviewInput } from '@/lib/ai/comp-reviewer';
 import { getServiceClient } from '@/lib/supabase/service';
+import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
 
 // ── In-memory cache for historical comp data (stable per venue+date window) ──
 const historicalCache = new Map<string, { data: HistoricalData; ts: number }>();
+const pendingFetches = new Map<string, Promise<HistoricalData>>();
 const HISTORICAL_TTL_MS = 15 * 60 * 1000; // 15 min
+const MAX_CACHE_SIZE = 100;
 
 interface HistoricalData {
   avg_daily_comp_pct: number;
@@ -77,8 +80,11 @@ export async function POST(request: NextRequest) {
       ? await fetchHistoricalCached(mapping.tipsee_location_uuid, date)
       : { avg_daily_comp_pct: 0, avg_daily_comp_total: 0, previous_week_comp_pct: 0 };
 
-    // Run AI review
-    const review = await reviewComps(reviewInput);
+    // Get org-specific comp settings
+    const compSettings = await getCompSettingsForVenue(venueId);
+
+    // Run AI review with org settings
+    const review = await reviewComps(reviewInput, compSettings ?? undefined);
 
     // Cache result + save to Control Plane (non-blocking)
     await Promise.all([
@@ -142,11 +148,24 @@ export async function GET(request: NextRequest) {
     const locationUuid = mappingResult.data.tipsee_location_uuid;
     const venueName = venueResult.data?.name || 'Unknown Venue';
 
-    const [reportData, exceptionsData, historicalData] = await Promise.all([
+    const [reportData, historicalData, compSettings] = await Promise.all([
       fetchNightlyReport(date, locationUuid),
-      fetchCompExceptions(date, locationUuid),
       fetchHistoricalCached(locationUuid, date),
+      getCompSettingsForVenue(venueId),
     ]);
+
+    // Fetch exceptions with org settings
+    const exceptionsData = await fetchCompExceptions(
+      date,
+      locationUuid,
+      compSettings ? {
+        approved_reasons: compSettings.approved_reasons,
+        high_value_comp_threshold: compSettings.high_value_comp_threshold,
+        high_comp_pct_threshold: compSettings.high_comp_pct_threshold,
+        daily_comp_pct_warning: compSettings.daily_comp_pct_warning,
+        daily_comp_pct_critical: compSettings.daily_comp_pct_critical,
+      } : undefined
+    );
 
     const reviewInput = buildReviewInput(
       date,
@@ -164,7 +183,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: cached, cached: true });
     }
 
-    const review = await reviewComps(reviewInput);
+    const review = await reviewComps(reviewInput, compSettings ?? undefined);
 
     await Promise.all([
       setCachedReview(supabase, venueId, date, inputHash, review),
@@ -202,11 +221,22 @@ function buildReviewInput(
       reason: comp.reason,
       comped_items: (comp.comped_items || []).map((itemStr: any) => {
         if (typeof itemStr === 'string') {
-          const match = itemStr.match(/^(.+)\s+\(\$([0-9.]+)\)$/);
-          if (match) {
-            return { name: match[1].replace(/\s+x\d+$/, ''), quantity: 1, amount: parseFloat(match[2]) };
-          }
-          return { name: itemStr, quantity: 1, amount: 0 };
+          // Pattern: "Item Name x2 ($12.50)" or "Item Name ($12.50)"
+          // First extract amount from end
+          const amountMatch = itemStr.match(/\(\$([0-9.]+)\)$/);
+          const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+
+          // Remove amount portion to get name part
+          const namePart = amountMatch
+            ? itemStr.substring(0, itemStr.lastIndexOf('($')).trim()
+            : itemStr;
+
+          // Extract quantity from name (e.g., "Item Name x2")
+          const qtyMatch = namePart.match(/^(.+?)\s+x(\d+)$/);
+          const name = qtyMatch ? qtyMatch[1].trim() : namePart;
+          const quantity = qtyMatch ? parseInt(qtyMatch[2], 10) : 1;
+
+          return { name, quantity, amount };
         }
         // Already parsed object (from GET path)
         return itemStr;
@@ -292,26 +322,57 @@ async function saveToControlPlane(venueId: string, date: string, venueName: stri
 /**
  * Fetch historical comp data with in-memory TTL cache.
  * Stable per venue+date window — no need to re-query TipSee every page load.
+ * Prevents duplicate fetches via pending promise tracking.
  */
 async function fetchHistoricalCached(locationUuid: string, currentDate: string): Promise<HistoricalData> {
   const cacheKey = `${locationUuid}:${currentDate}`;
+
+  // Check cache first
   const entry = historicalCache.get(cacheKey);
   if (entry && Date.now() - entry.ts < HISTORICAL_TTL_MS) {
     return entry.data;
   }
 
-  const data = await fetchHistoricalFromTipsee(locationUuid, currentDate);
-  historicalCache.set(cacheKey, { data, ts: Date.now() });
-
-  // Evict stale entries (prevent unbounded growth)
-  if (historicalCache.size > 100) {
-    const now = Date.now();
-    for (const [k, v] of historicalCache) {
-      if (now - v.ts > HISTORICAL_TTL_MS) historicalCache.delete(k);
-    }
+  // Check if fetch is already in progress (prevent duplicate queries)
+  const pending = pendingFetches.get(cacheKey);
+  if (pending) {
+    return pending;
   }
 
-  return data;
+  // Start new fetch and track it
+  const fetchPromise = fetchHistoricalFromTipsee(locationUuid, currentDate)
+    .then((data) => {
+      historicalCache.set(cacheKey, { data, ts: Date.now() });
+      pendingFetches.delete(cacheKey);
+
+      // Evict oldest entries if cache is too large (LRU-style)
+      if (historicalCache.size > MAX_CACHE_SIZE) {
+        const now = Date.now();
+        // First try to evict expired entries
+        for (const [k, v] of historicalCache) {
+          if (now - v.ts > HISTORICAL_TTL_MS) {
+            historicalCache.delete(k);
+          }
+        }
+
+        // If still over limit, evict oldest entries
+        if (historicalCache.size > MAX_CACHE_SIZE) {
+          const sorted = Array.from(historicalCache.entries())
+            .sort((a, b) => a[1].ts - b[1].ts);
+          const toDelete = sorted.slice(0, historicalCache.size - MAX_CACHE_SIZE);
+          toDelete.forEach(([k]) => historicalCache.delete(k));
+        }
+      }
+
+      return data;
+    })
+    .catch((err) => {
+      pendingFetches.delete(cacheKey);
+      throw err;
+    });
+
+  pendingFetches.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 async function fetchHistoricalFromTipsee(locationUuid: string, currentDate: string): Promise<HistoricalData> {

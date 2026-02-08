@@ -83,6 +83,8 @@ export async function GET(request: NextRequest) {
     let fiscalCalendarType: FiscalCalendarType = 'standard';
     let fiscalYearStartDate: string | null = null;
 
+    const VALID_CALENDAR_TYPES: FiscalCalendarType[] = ['standard', '4-4-5', '4-5-4', '5-4-4'];
+
     if (venueData?.organization_id) {
       const { data: settingsData } = await (supabase as any)
         .from('proforma_settings')
@@ -91,7 +93,12 @@ export async function GET(request: NextRequest) {
         .single();
 
       if (settingsData) {
-        fiscalCalendarType = settingsData.fiscal_calendar_type || 'standard';
+        const dbCalendarType = settingsData.fiscal_calendar_type;
+        if (dbCalendarType && VALID_CALENDAR_TYPES.includes(dbCalendarType)) {
+          fiscalCalendarType = dbCalendarType;
+        } else if (dbCalendarType) {
+          console.warn(`Invalid fiscal_calendar_type '${dbCalendarType}' for org ${venueData.organization_id}, using 'standard'`);
+        }
         fiscalYearStartDate = settingsData.fiscal_year_start_date;
       }
     }
@@ -103,38 +110,38 @@ export async function GET(request: NextRequest) {
     const periodStartStr = fiscalPeriod.periodStartDate;
 
     // For PTD comparison: same relative days into PREVIOUS period
-    const prevPeriodDate = new Date(date);
-    const periodPosition = ((fiscalPeriod.fiscalPeriod - 1) % 3);
-    const prevPeriodWeeks = fiscalCalendarType === 'standard' ? 4 :
-      (periodPosition === 0 ? 5 : 4);
-    prevPeriodDate.setDate(prevPeriodDate.getDate() - (prevPeriodWeeks * 7));
+    // Go back to before current period starts to land in previous period
+    const currentPeriodStart = new Date(fiscalPeriod.periodStartDate);
+    const prevPeriodDate = new Date(currentPeriodStart);
+    prevPeriodDate.setDate(prevPeriodDate.getDate() - 1); // Go to last day of previous period
     const prevPeriodInfo = getFiscalPeriod(prevPeriodDate.toISOString().split('T')[0], fiscalCalendarType, fiscalYearStartDate);
     const prevPeriodStartStr = prevPeriodInfo.periodStartDate;
 
-    // Calculate days into current period (using date strings to avoid timezone issues)
+    // Calculate days into current period (using local dates)
     const periodStartParts = periodStartStr.split('-').map(Number);
     const dateParts = date.split('-').map(Number);
-    const periodStartMs = Date.UTC(periodStartParts[0], periodStartParts[1] - 1, periodStartParts[2]);
-    const dateMs = Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]);
-    const daysIntoPeriod = Math.floor((dateMs - periodStartMs) / (24 * 60 * 60 * 1000));
+    const periodStartDate = new Date(periodStartParts[0], periodStartParts[1] - 1, periodStartParts[2]);
+    const targetDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    const daysIntoPeriod = Math.floor((targetDate.getTime() - periodStartDate.getTime()) / (24 * 60 * 60 * 1000));
 
     // Calculate equivalent end date in previous period
     const prevStartParts = prevPeriodStartStr.split('-').map(Number);
-    const prevPeriodEndMs = Date.UTC(prevStartParts[0], prevStartParts[1] - 1, prevStartParts[2] + daysIntoPeriod);
-    const prevPeriodEndDate = new Date(prevPeriodEndMs);
+    const prevPeriodStartDate = new Date(prevStartParts[0], prevStartParts[1] - 1, prevStartParts[2]);
+    const prevPeriodEndDate = new Date(prevPeriodStartDate);
+    prevPeriodEndDate.setDate(prevPeriodEndDate.getDate() + daysIntoPeriod);
     const prevPeriodEndStr = prevPeriodEndDate.toISOString().split('T')[0];
 
     // WTD (Week-to-Date): Monday → selected date (calendar week, not fiscal)
-    const dateForWeek = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
-    const dayOfWeek = dateForWeek.getUTCDay();
+    const dayOfWeek = targetDate.getDay();
     const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStartMs = dateMs - (daysFromMonday * 24 * 60 * 60 * 1000);
-    const weekStartDate = new Date(weekStartMs);
+    const weekStartDate = new Date(targetDate);
+    weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
     const weekStartStr = weekStartDate.toISOString().split('T')[0];
 
     // WTD Last Week: Same Mon→Day range but 7 days earlier
-    const lastWeekWeekStartMs = weekStartMs - (7 * 24 * 60 * 60 * 1000);
-    const lastWeekWeekStartStr = new Date(lastWeekWeekStartMs).toISOString().split('T')[0];
+    const lastWeekWeekStart = new Date(weekStartDate);
+    lastWeekWeekStart.setDate(lastWeekWeekStart.getDate() - 7);
+    const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
     const lastWeekSameDayStr = sdlwDateStr;
 
     // Fetch all fact data in parallel
@@ -299,6 +306,8 @@ export async function GET(request: NextRequest) {
         }
       : null;
 
+    let laborWarning: string | null = null;
+
     // Fallback: live query TipSee if no synced data
     if (!laborData && tipseeLocationUuid) {
       try {
@@ -321,10 +330,15 @@ export async function GET(request: NextRequest) {
             boh: liveLaborData.boh,
             other: liveLaborData.other,
           };
+        } else {
+          laborWarning = 'Labor data unavailable from TipSee';
         }
-      } catch (laborErr) {
+      } catch (laborErr: any) {
         console.error('Error fetching live TipSee labor:', laborErr);
+        laborWarning = `Labor data error: ${laborErr.message || 'Failed to fetch from TipSee'}`;
       }
+    } else if (!laborData && !tipseeLocationUuid) {
+      laborWarning = 'No TipSee location mapping configured for labor data';
     }
 
     // Process demand forecasts (with bias correction applied)
@@ -430,7 +444,7 @@ export async function GET(request: NextRequest) {
           avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
           avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
           avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
-          tip_pct: s.gross_sales > 0 ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null,
+          tip_pct: s.gross_sales > 0 && s.tips_total > 0 ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null,
           total_tips: s.tips_total,
           days_worked: s.days.size,
         }))
@@ -485,6 +499,10 @@ export async function GET(request: NextRequest) {
         avg_ticket: server.avg_check,
         avg_turn_mins: server.avg_turn_mins,
         avg_per_cover: server.avg_per_cover,
+        tip_pct: server.gross_sales > 0 && server.tips_total != null
+          ? Math.round((server.tips_total / server.gross_sales) * 1000) / 10
+          : null,
+        total_tips: server.tips_total || 0,
       })),
 
       menuItems: (itemResult.data || []).map((item: any) => ({
@@ -495,6 +513,7 @@ export async function GET(request: NextRequest) {
       })),
 
       labor: laborData,
+      labor_warning: laborWarning,
 
       // Demand forecast data (with bias correction)
       forecast: {
