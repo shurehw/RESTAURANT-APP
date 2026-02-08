@@ -390,6 +390,8 @@ export default function NightlyReportPage() {
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
   const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
+  const [laborExceptions, setLaborExceptions] = useState<any | null>(null);
+  const [loadingLaborExceptions, setLoadingLaborExceptions] = useState<boolean>(false);
 
   // Handler for view mode changes (updates URL)
   function handleViewChange(newView: 'nightly' | 'wtd' | 'ptd') {
@@ -616,6 +618,25 @@ export default function NightlyReportPage() {
             .then(data => { if (data?.success) setCompReview(data.data); })
             .catch(err => console.error('Comp exceptions/AI review error:', err))
             .finally(() => setLoadingCompReview(false));
+        }
+
+        // Fetch labor exceptions (non-blocking, only for nightly view)
+        if (viewMode === 'nightly') {
+          setLoadingLaborExceptions(true);
+          fetch(`/api/labor/exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (data?.success && data?.data?.has_data) {
+                setLaborExceptions(data.data);
+              } else {
+                setLaborExceptions(null);
+              }
+            })
+            .catch(err => {
+              console.error('Labor exceptions fetch error:', err);
+              setLaborExceptions(null);
+            })
+            .finally(() => setLoadingLaborExceptions(false));
         }
       } catch (err: any) {
         setError(err.message);
@@ -1195,6 +1216,73 @@ export default function NightlyReportPage() {
                       </div>
                     );
                   })()}
+
+                  {/* Labor Exceptions & Diagnostics (Nightly only) */}
+                  {viewMode === 'nightly' && laborExceptions && laborExceptions.exceptions && laborExceptions.exceptions.length > 0 && (
+                    <div className="mt-4 space-y-3 p-3 rounded-lg border border-error/20 bg-error/5">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground uppercase font-semibold tracking-wide">
+                          Labor Efficiency Exceptions
+                        </div>
+                        {laborExceptions.requires_structural_review && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-error text-white">
+                            STRUCTURAL REVIEW REQUIRED
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Diagnostic Badge */}
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold ${
+                          laborExceptions.diagnostic === 'overstaffed_slow'
+                            ? 'bg-error text-white'
+                            : laborExceptions.diagnostic === 'overstaffed_busy'
+                              ? 'bg-yellow-500 text-white'
+                              : laborExceptions.diagnostic === 'understaffed_or_pacing'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-sage text-white'
+                        }`}>
+                          {laborExceptions.diagnostic === 'overstaffed_slow' && '⚠️ Overstaffed + Slow'}
+                          {laborExceptions.diagnostic === 'overstaffed_busy' && '⚡ Overstaffed (Busy)'}
+                          {laborExceptions.diagnostic === 'understaffed_or_pacing' && '🔄 Understaffed/Pacing'}
+                          {laborExceptions.diagnostic === 'efficient' && '✓ Efficient'}
+                        </span>
+                        <div className="text-xs text-muted-foreground">
+                          SPLH: ${laborExceptions.splh?.toFixed(0) || '—'} ·
+                          CPLH: {laborExceptions.cplh?.toFixed(1) || '—'} ·
+                          Labor %: {laborExceptions.labor_pct?.toFixed(1) || '—'}%
+                        </div>
+                      </div>
+
+                      {/* Exception List */}
+                      <div className="space-y-2">
+                        {laborExceptions.exceptions.map((ex: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className={`flex items-start gap-2 p-2 rounded-md text-sm ${
+                              ex.severity === 'critical' || ex.severity === 'structural'
+                                ? 'bg-error/10'
+                                : 'bg-yellow-500/10'
+                            }`}
+                          >
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold flex-shrink-0 ${
+                              ex.severity === 'critical' || ex.severity === 'structural'
+                                ? 'bg-error text-white'
+                                : 'bg-yellow-500 text-white'
+                            }`}>
+                              {ex.severity === 'critical' || ex.severity === 'structural' ? '!' : '⚠'}
+                            </span>
+                            <div className="flex-1">
+                              <div className="font-semibold text-xs uppercase text-muted-foreground mb-0.5">
+                                {ex.type.replace(/_/g, ' ')}
+                              </div>
+                              <div className="text-sm">{ex.message}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
