@@ -44,10 +44,28 @@ export async function POST(request: NextRequest) {
     let command = `python "${scriptPath}" --venue-id ${validated.venue_id} --week-start ${validated.week_start_date}`;
     if (validated.save) command += ' --save';
 
-    const { stdout, stderr } = await execAsync(command, {
-      env: { ...process.env, PYTHONPATH: path.join(process.cwd(), 'python-services') },
-      timeout: 120000,
-    });
+    let stdout: string;
+    let stderr: string;
+    try {
+      const result = await execAsync(command, {
+        env: { ...process.env, PYTHONPATH: path.join(process.cwd(), 'python-services'), PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+        timeout: 120000,
+      });
+      stdout = result.stdout;
+      stderr = result.stderr;
+    } catch (execError: any) {
+      // execAsync throws when the process exits with non-zero code
+      console.error('Python scheduler failed:', execError.stderr || execError.message);
+      const errOutput = (execError.stderr || execError.stdout || execError.message || '').trim();
+      // Extract the last meaningful line from stderr/stdout for a user-friendly message
+      const lines = errOutput.split('\n').filter((l: string) => l.trim());
+      const lastLine = lines[lines.length - 1] || 'Unknown error';
+      const error: any = new Error(`Schedule generation failed: ${lastLine}`);
+      error.status = 500;
+      error.code = 'SCHEDULER_ERROR';
+      error.details = errOutput.slice(-500); // last 500 chars for debugging
+      throw error;
+    }
 
     if (stderr && !stderr.includes('warning')) console.error('Python stderr:', stderr);
 
@@ -70,15 +88,34 @@ export async function POST(request: NextRequest) {
         schedule = data;
       }
     } else {
-      // Non-saved schedule - parse from stdout JSON
+      // Non-saved schedule - parse from stdout JSON (between markers)
       try {
-        const jsonMatch = stdout.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          schedule = JSON.parse(jsonMatch[0]);
+        const startMarker = '---JSON_START---';
+        const endMarker = '---JSON_END---';
+        const startIdx = stdout.indexOf(startMarker);
+        const endIdx = stdout.indexOf(endMarker);
+        if (startIdx !== -1 && endIdx !== -1) {
+          const jsonStr = stdout.slice(startIdx + startMarker.length, endIdx).trim();
+          schedule = JSON.parse(jsonStr);
         }
       } catch (e) {
         console.error('Failed to parse schedule JSON:', e);
       }
+    }
+
+    if (!schedule && !scheduleId) {
+      // Python ran OK but produced no schedule — surface why
+      let reason: string;
+      if (stdout.includes('MISSING_EMPLOYEES')) {
+        reason = 'No active employees found for this venue. Add employees before generating a schedule.';
+      } else if (stdout.includes('MISSING_POSITIONS')) {
+        reason = 'No active positions found for this venue. Add positions before generating a schedule.';
+      } else if (stdout.includes('Could not find optimal')) {
+        reason = 'Could not find an optimal schedule with available staff. Check employee/position setup.';
+      } else {
+        reason = 'Scheduler ran but produced no schedule. Check employees, positions, and requirements data.';
+      }
+      return NextResponse.json({ success: false, error: 'NO_SCHEDULE', message: reason, output: stdout }, { status: 422 });
     }
 
     return NextResponse.json({ success: true, schedule_id: scheduleId, schedule, output: stdout });
