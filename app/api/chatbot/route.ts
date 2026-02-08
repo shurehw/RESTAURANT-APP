@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
 import { rateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
 
 const chatSchema = z.object({
   question: z.string().min(1),
@@ -15,12 +15,12 @@ const chatSchema = z.object({
   })).optional().default([]),
 });
 
-let _openai: OpenAI | null = null;
-function getOpenAI(): OpenAI {
-  if (!_openai) {
-    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _anthropic: Anthropic | null = null;
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   }
-  return _openai;
+  return _anthropic;
 }
 
 /**
@@ -215,33 +215,30 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
     const context = await getRelevantContext(question, venueIds, supabase);
 
-    // Build messages for OpenAI
-    const messages: any[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-    ];
-
-    if (context) {
-      messages.push({
-        role: 'system',
-        content: `Relevant operational data:\n\n${context}`,
-      });
-    }
+    // Build messages for Claude
+    const messages: Anthropic.MessageParam[] = [];
 
     // Add conversation history
-    messages.push(...history);
+    for (const msg of history) {
+      messages.push({ role: msg.role, content: msg.content });
+    }
 
-    // Add current question
-    messages.push({ role: 'user', content: question });
+    // Add current question with context
+    const userContent = context
+      ? `Relevant operational data:\n\n${context}\n\n---\n\n${question}`
+      : question;
+    messages.push({ role: 'user', content: userContent });
 
-    // Call OpenAI
-    const completion = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o-mini', // Use mini for cost efficiency
+    const response = await getAnthropic().messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      system: SYSTEM_PROMPT,
       messages,
-      temperature: 0.3, // Lower temp for more factual responses
+      temperature: 0.3,
       max_tokens: 1000,
     });
 
-    const answer = completion.choices[0].message.content;
+    const textBlock = response.content.find((b) => b.type === 'text');
+    const answer = textBlock?.type === 'text' ? textBlock.text : '';
 
     return NextResponse.json({
       answer,
