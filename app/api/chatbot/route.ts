@@ -8,6 +8,7 @@ import { z } from 'zod';
 import Anthropic from '@anthropic-ai/sdk';
 import { CHATBOT_TOOLS } from '@/lib/chatbot/tools';
 import { executeTool } from '@/lib/chatbot/executor';
+import { getFiscalPeriod, type FiscalCalendarType } from '@/lib/fiscal-calendar';
 
 // Tool-use loop can make multiple API calls; allow up to 60s on Vercel
 export const maxDuration = 60;
@@ -28,38 +29,15 @@ function getAnthropic(): Anthropic {
   return _anthropic;
 }
 
-function buildSystemPrompt(venueNames: string[]): string {
+function buildSystemPrompt(
+  venueNames: string[],
+  fiscal: { calendarType: FiscalCalendarType; periodInfo: ReturnType<typeof getFiscalPeriod> }
+): string {
   const today = new Date().toISOString().split('T')[0];
+  const { calendarType, periodInfo } = fiscal;
+  const { fiscalYear, fiscalQuarter, fiscalPeriod, periodStartDate, periodEndDate } = periodInfo;
 
-  // Calculate 4-4-5 fiscal calendar (fiscal year starts first Monday of January)
-  const now = new Date();
-  const year = now.getFullYear();
-  const jan1 = new Date(year, 0, 1);
-  const firstMonday = new Date(jan1);
-  firstMonday.setDate(jan1.getDate() + ((8 - jan1.getDay()) % 7));
-  const fyStart = firstMonday;
-  const pattern = [4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5]; // weeks per period
-  let periodStart = new Date(fyStart);
-  let currentPeriod = 1;
-  for (let i = 0; i < 12; i++) {
-    const periodDays = pattern[i] * 7;
-    const periodEnd = new Date(periodStart.getTime() + periodDays * 86400000 - 86400000);
-    if (now >= periodStart && now <= periodEnd) {
-      currentPeriod = i + 1;
-      break;
-    }
-    periodStart = new Date(periodEnd.getTime() + 86400000);
-    currentPeriod = i + 2;
-  }
-  // Recalculate current period start/end for display
-  let pStart = new Date(fyStart);
-  for (let i = 0; i < currentPeriod - 1; i++) {
-    pStart = new Date(pStart.getTime() + pattern[i] * 7 * 86400000);
-  }
-  const pEnd = new Date(pStart.getTime() + pattern[currentPeriod - 1] * 7 * 86400000 - 86400000);
-  const periodStartStr = pStart.toISOString().split('T')[0];
-  const periodEndStr = pEnd.toISOString().split('T')[0];
-  const quarter = Math.ceil(currentPeriod / 3);
+  const calendarLabel = calendarType === 'standard' ? 'standard monthly' : calendarType;
 
   return `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
 
@@ -72,13 +50,12 @@ When the user asks about a specific venue (e.g. "Miami", "Nice Guy", "Dallas"), 
 When the user doesn't specify a venue, query ALL venues (omit the venue parameter) and show per-venue breakdowns when relevant.
 
 FISCAL CALENDAR:
-- The company runs a 4-4-5 fiscal calendar (4 weeks, 4 weeks, 5 weeks per quarter)
-- Fiscal year ${year} starts: ${fyStart.toISOString().split('T')[0]}
-- Current period: P${currentPeriod} (${periodStartStr} to ${periodEndStr}), Q${quarter}
+- Calendar type: ${calendarLabel}
+- Current period: P${fiscalPeriod} (${periodStartDate} to ${periodEndDate}), Q${fiscalQuarter}, FY${fiscalYear}
 - Today: ${today}
-- "PTD" = period-to-date (${periodStartStr} to ${today})
+- "PTD" = period-to-date (${periodStartDate} to ${today})
 - "QTD" = quarter-to-date
-- When the user says "current period", "PTD", or "period to date", use ${periodStartStr} to ${today}
+- When the user says "current period", "PTD", or "period to date", use ${periodStartDate} to ${today}
 
 AVAILABLE DATA (via tools):
 
@@ -188,6 +165,17 @@ export async function POST(req: NextRequest) {
       .filter((v: any) => venueMap[v.name?.toLowerCase()])
       .map((v: any) => v.name);
 
+    // Fetch org fiscal calendar settings
+    const { data: orgSettings } = await (supabase as any)
+      .from('organization_settings')
+      .select('fiscal_calendar_type, fiscal_year_start_date')
+      .eq('organization_id', ctx.orgId)
+      .single();
+
+    const calendarType: FiscalCalendarType = orgSettings?.fiscal_calendar_type || '4-4-5';
+    const fyStartDate: string | null = orgSettings?.fiscal_year_start_date || null;
+    const periodInfo = getFiscalPeriod(new Date(), calendarType, fyStartDate);
+
     const body = await req.json();
     const { question, history } = chatSchema.parse(body);
 
@@ -200,7 +188,7 @@ export async function POST(req: NextRequest) {
 
     const pool = getTipseePool();
     const toolCtx = { locationUuids, venueIds, venueMap, pool, supabase };
-    const systemPrompt = buildSystemPrompt(venueNames);
+    const systemPrompt = buildSystemPrompt(venueNames, { calendarType, periodInfo });
 
     // Tool-use loop
     let response = await getAnthropic().messages.create({
