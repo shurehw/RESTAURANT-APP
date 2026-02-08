@@ -358,7 +358,7 @@ BEGIN
             daily_comp_pct_critical,
             server_max_comp_amount,
             manager_min_for_high_value,
-            manager_roles,
+            ARRAY(SELECT jsonb_array_elements_text(manager_roles)),  -- Cast JSONB array to TEXT[]
             ai_model,
             ai_max_tokens,
             ai_temperature,
