@@ -422,10 +422,9 @@ export default function NightlyReportPage() {
       setCompExceptions(null);
       setCompNotes({});
       try {
-        // Fire initial fetches in parallel (exclude exceptions to avoid duplicate TipSee query)
-        const [liveRes, factsRes, notesRes] = await Promise.all([
+        // CRITICAL PATH: Only block on essential TipSee report data and comp notes
+        const [liveRes, notesRes] = await Promise.all([
           fetch(`/api/nightly?date=${date}&location=${locationUuid}`),
-          fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`),
           fetch(`/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`, { credentials: 'include' }),
         ]);
 
@@ -436,28 +435,30 @@ export default function NightlyReportPage() {
         const liveData = await liveRes.json();
         setReport(liveData);
 
-        // Process facts (Supabase — fast)
-        if (factsRes.ok) {
-          const factsData = await factsRes.json();
-          if (factsData.has_data) {
-            setFactsSummary({
-              ...factsData.summary,
-              labor: factsData.labor,
-              forecast: factsData.forecast,
-              variance: factsData.variance,
-              servers_wtd: factsData.servers_wtd,
-              servers_ptd: factsData.servers_ptd,
-            });
-          } else {
-            setFactsSummary(null);
-          }
-        }
-
-        // Process comp notes (non-blocking)
+        // Process comp notes
         if (notesRes.ok) {
           const notesData = await notesRes.json();
           setCompNotes(notesData.notes || {});
         }
+
+        // NON-BLOCKING: Fetch facts asynchronously (14 Supabase queries, can take time)
+        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+          .then(res => res.ok ? res.json() : null)
+          .then(factsData => {
+            if (factsData?.has_data) {
+              setFactsSummary({
+                ...factsData.summary,
+                labor: factsData.labor,
+                forecast: factsData.forecast,
+                variance: factsData.variance,
+                servers_wtd: factsData.servers_wtd,
+                servers_ptd: factsData.servers_ptd,
+              });
+            } else {
+              setFactsSummary(null);
+            }
+          })
+          .catch(err => console.error('Facts fetch error:', err));
 
         // Fetch comp exceptions AFTER liveData is available, then trigger AI review
         if (liveData) {
