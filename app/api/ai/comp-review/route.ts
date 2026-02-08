@@ -1,20 +1,32 @@
 /**
  * AI Comp Review API
- * Analyzes all comp activity and generates actionable recommendations
+ * Analyzes all comp activity and generates actionable recommendations.
  *
- * POST /api/ai/comp-review — accepts pre-fetched report data (fast, no duplicate queries)
- * GET  /api/ai/comp-review?venue_id=xxx&date=yyyy-mm-dd — legacy: fetches its own data
+ * POST /api/ai/comp-review — accepts pre-fetched report data (fast path)
+ * GET  /api/ai/comp-review?venue_id=xxx&date=yyyy-mm-dd — fetches its own data (legacy)
+ *
+ * Caching: Results are keyed by sha256(minimal_input). Same data → instant return,
+ * no Claude cost. Cache TTL = 24h, stored in Supabase.
  */
 
+import { createHash } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchNightlyReport, fetchCompExceptions } from '@/lib/database/tipsee';
 import { reviewComps, type CompReviewInput } from '@/lib/ai/comp-reviewer';
 import { getServiceClient } from '@/lib/supabase/service';
 
-/**
- * POST — receives pre-fetched comp data from the nightly report page.
- * Eliminates the duplicate TipSee round-trip that made AI review slow.
- */
+// ── In-memory cache for historical comp data (stable per venue+date window) ──
+const historicalCache = new Map<string, { data: HistoricalData; ts: number }>();
+const HISTORICAL_TTL_MS = 15 * 60 * 1000; // 15 min
+
+interface HistoricalData {
+  avg_daily_comp_pct: number;
+  avg_daily_comp_total: number;
+  previous_week_comp_pct: number;
+}
+
+// ── POST: fast path with pre-fetched data ────────────────────────────────────
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -34,78 +46,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get TipSee location UUID for historical data query
     const supabase = getServiceClient();
+
+    // Build the canonical input that determines the AI review
+    const reviewInput = buildReviewInput(
+      date,
+      venueName || 'Unknown Venue',
+      detailedComps,
+      exceptions,
+      summary,
+    );
+
+    // Compute input hash for cache lookup
+    const inputHash = computeInputHash(reviewInput);
+
+    // Check cache first
+    const cached = await getCachedReview(supabase, venueId, date, inputHash);
+    if (cached) {
+      return NextResponse.json({ success: true, data: cached, cached: true });
+    }
+
+    // Get historical data (in-memory cached, 1 lightweight TipSee query if miss)
     const { data: mapping } = await (supabase as any)
       .from('venue_tipsee_mapping')
       .select('tipsee_location_uuid')
       .eq('venue_id', venueId)
       .maybeSingle();
 
-    // Historical data only needs 1 lightweight TipSee query
-    const historicalData = mapping?.tipsee_location_uuid
-      ? await fetchHistoricalCompData(mapping.tipsee_location_uuid, date)
+    reviewInput.historical = mapping?.tipsee_location_uuid
+      ? await fetchHistoricalCached(mapping.tipsee_location_uuid, date)
       : { avg_daily_comp_pct: 0, avg_daily_comp_total: 0, previous_week_comp_pct: 0 };
-
-    // Build review input from pre-fetched data
-    const reviewInput: CompReviewInput = {
-      date,
-      venueName: venueName || 'Unknown Venue',
-      allComps: (detailedComps || []).map((comp: any) => ({
-        check_id: comp.check_id,
-        table_name: comp.table_name,
-        server: comp.server,
-        comp_total: comp.comp_total,
-        check_total: comp.check_total,
-        reason: comp.reason,
-        comped_items: (comp.comped_items || []).map((itemStr: string) => {
-          const match = itemStr.match(/^(.+)\s+\(\$([0-9.]+)\)$/);
-          if (match) {
-            return {
-              name: match[1].replace(/\s+x\d+$/, ''),
-              quantity: 1,
-              amount: parseFloat(match[2]),
-            };
-          }
-          return { name: itemStr, quantity: 1, amount: 0 };
-        }),
-      })),
-      exceptions: exceptions || { summary: { date, total_comps: 0, net_sales: 0, comp_pct: 0, comp_pct_status: 'ok', exception_count: 0, critical_count: 0, warning_count: 0 }, exceptions: [] },
-      summary: {
-        total_comps: summary.total_comps,
-        net_sales: summary.net_sales,
-        comp_pct: summary.net_sales > 0
-          ? (summary.total_comps / summary.net_sales) * 100
-          : 0,
-        total_checks: summary.total_checks,
-      },
-      historical: historicalData,
-    };
 
     // Run AI review
     const review = await reviewComps(reviewInput);
 
-    // Save recommendations as manager actions in Control Plane
-    try {
-      const { saveCompReviewActions } = await import('@/lib/database/control-plane');
-      const actionResult = await saveCompReviewActions(
-        venueId,
-        date,
-        venueName || 'Unknown Venue',
-        review.recommendations
-      );
+    // Cache result + save to Control Plane (non-blocking)
+    await Promise.all([
+      setCachedReview(supabase, venueId, date, inputHash, review),
+      saveToControlPlane(venueId, date, venueName || 'Unknown Venue', review),
+    ]);
 
-      if (!actionResult.success) {
-        console.error('Failed to save some actions:', actionResult.errors);
-      }
-    } catch (actionError) {
-      console.error('Error saving actions to Control Plane:', actionError);
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: review,
-    });
+    return NextResponse.json({ success: true, data: review, cached: false });
   } catch (error: any) {
     console.error('AI Comp Review API error:', error);
     return NextResponse.json(
@@ -115,10 +96,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET — legacy fallback that fetches its own data from TipSee.
- * Slower because it re-runs all nightly report queries.
- */
+// ── GET: legacy path that fetches its own data ───────────────────────────────
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -139,7 +118,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get TipSee location UUID and venue name in parallel
     const supabase = getServiceClient();
     const [mappingResult, venueResult] = await Promise.all([
       (supabase as any)
@@ -164,72 +142,36 @@ export async function GET(request: NextRequest) {
     const locationUuid = mappingResult.data.tipsee_location_uuid;
     const venueName = venueResult.data?.name || 'Unknown Venue';
 
-    // Fetch report data, exceptions, and historical data in parallel
     const [reportData, exceptionsData, historicalData] = await Promise.all([
       fetchNightlyReport(date, locationUuid),
       fetchCompExceptions(date, locationUuid),
-      fetchHistoricalCompData(locationUuid, date),
+      fetchHistoricalCached(locationUuid, date),
     ]);
 
-    // Prepare input for AI review
-    const reviewInput: CompReviewInput = {
+    const reviewInput = buildReviewInput(
       date,
       venueName,
-      allComps: reportData.detailedComps.map(comp => ({
-        check_id: comp.check_id,
-        table_name: comp.table_name,
-        server: comp.server,
-        comp_total: comp.comp_total,
-        check_total: comp.check_total,
-        reason: comp.reason,
-        comped_items: comp.comped_items.map(itemStr => {
-          const match = itemStr.match(/^(.+)\s+\(\$([0-9.]+)\)$/);
-          if (match) {
-            return {
-              name: match[1].replace(/\s+x\d+$/, ''),
-              quantity: 1,
-              amount: parseFloat(match[2]),
-            };
-          }
-          return { name: itemStr, quantity: 1, amount: 0 };
-        }),
-      })),
-      exceptions: exceptionsData,
-      summary: {
-        total_comps: reportData.summary.total_comps,
-        net_sales: reportData.summary.net_sales,
-        comp_pct: reportData.summary.net_sales > 0
-          ? (reportData.summary.total_comps / reportData.summary.net_sales) * 100
-          : 0,
-        total_checks: reportData.summary.total_checks,
-      },
-      historical: historicalData,
-    };
+      reportData.detailedComps,
+      exceptionsData,
+      reportData.summary,
+    );
+    reviewInput.historical = historicalData;
 
-    // Run AI review
-    const review = await reviewComps(reviewInput);
-
-    // Save recommendations as manager actions in Control Plane
-    try {
-      const { saveCompReviewActions } = await import('@/lib/database/control-plane');
-      const actionResult = await saveCompReviewActions(
-        venueId,
-        date,
-        venueName,
-        review.recommendations
-      );
-
-      if (!actionResult.success) {
-        console.error('Failed to save some actions:', actionResult.errors);
-      }
-    } catch (actionError) {
-      console.error('Error saving actions to Control Plane:', actionError);
+    // Check cache
+    const inputHash = computeInputHash(reviewInput);
+    const cached = await getCachedReview(supabase, venueId, date, inputHash);
+    if (cached) {
+      return NextResponse.json({ success: true, data: cached, cached: true });
     }
 
-    return NextResponse.json({
-      success: true,
-      data: review,
-    });
+    const review = await reviewComps(reviewInput);
+
+    await Promise.all([
+      setCachedReview(supabase, venueId, date, inputHash, review),
+      saveToControlPlane(venueId, date, venueName, review),
+    ]);
+
+    return NextResponse.json({ success: true, data: review, cached: false });
   } catch (error: any) {
     console.error('AI Comp Review API error:', error);
     return NextResponse.json(
@@ -239,17 +181,140 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// ── Shared helpers ───────────────────────────────────────────────────────────
+
+function buildReviewInput(
+  date: string,
+  venueName: string,
+  detailedComps: any[],
+  exceptions: any,
+  summary: any,
+): CompReviewInput {
+  return {
+    date,
+    venueName,
+    allComps: (detailedComps || []).map((comp: any) => ({
+      check_id: comp.check_id,
+      table_name: comp.table_name,
+      server: comp.server,
+      comp_total: comp.comp_total,
+      check_total: comp.check_total,
+      reason: comp.reason,
+      comped_items: (comp.comped_items || []).map((itemStr: any) => {
+        if (typeof itemStr === 'string') {
+          const match = itemStr.match(/^(.+)\s+\(\$([0-9.]+)\)$/);
+          if (match) {
+            return { name: match[1].replace(/\s+x\d+$/, ''), quantity: 1, amount: parseFloat(match[2]) };
+          }
+          return { name: itemStr, quantity: 1, amount: 0 };
+        }
+        // Already parsed object (from GET path)
+        return itemStr;
+      }),
+    })),
+    exceptions: exceptions || {
+      summary: { date, total_comps: 0, net_sales: 0, comp_pct: 0, comp_pct_status: 'ok', exception_count: 0, critical_count: 0, warning_count: 0 },
+      exceptions: [],
+    },
+    summary: {
+      total_comps: summary.total_comps,
+      net_sales: summary.net_sales,
+      comp_pct: summary.net_sales > 0 ? (summary.total_comps / summary.net_sales) * 100 : 0,
+      total_checks: summary.total_checks,
+    },
+  };
+}
+
 /**
- * Fetch historical comp data for context (1 lightweight query)
+ * Compute sha256 of the fields that determine the AI output.
+ * Excludes historical data (context-only, doesn't change comp assessment).
  */
-async function fetchHistoricalCompData(
-  locationUuid: string,
-  currentDate: string
-): Promise<{
-  avg_daily_comp_pct: number;
-  avg_daily_comp_total: number;
-  previous_week_comp_pct: number;
-}> {
+function computeInputHash(input: CompReviewInput): string {
+  const hashPayload = {
+    date: input.date,
+    comps: input.allComps.map(c => ({
+      id: c.check_id,
+      amount: c.comp_total,
+      reason: c.reason,
+    })),
+    total_comps: input.summary.total_comps,
+    net_sales: input.summary.net_sales,
+    exception_count: input.exceptions?.exceptions?.length || 0,
+  };
+  return createHash('sha256').update(JSON.stringify(hashPayload)).digest('hex');
+}
+
+async function getCachedReview(supabase: any, venueId: string, date: string, inputHash: string) {
+  try {
+    const { data } = await (supabase as any)
+      .from('ai_comp_review_cache')
+      .select('result')
+      .eq('venue_id', venueId)
+      .eq('business_date', date)
+      .eq('input_hash', inputHash)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+    return data?.result || null;
+  } catch {
+    return null; // Cache miss on error — don't block
+  }
+}
+
+async function setCachedReview(supabase: any, venueId: string, date: string, inputHash: string, result: any) {
+  try {
+    await (supabase as any)
+      .from('ai_comp_review_cache')
+      .upsert({
+        venue_id: venueId,
+        business_date: date,
+        input_hash: inputHash,
+        result,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      }, { onConflict: 'venue_id,business_date,input_hash' });
+  } catch (err) {
+    console.error('Failed to cache AI review:', err);
+  }
+}
+
+async function saveToControlPlane(venueId: string, date: string, venueName: string, review: any) {
+  try {
+    const { saveCompReviewActions } = await import('@/lib/database/control-plane');
+    const actionResult = await saveCompReviewActions(venueId, date, venueName, review.recommendations);
+    if (!actionResult.success) {
+      console.error('Failed to save some actions:', actionResult.errors);
+    }
+  } catch (err) {
+    console.error('Error saving actions to Control Plane:', err);
+  }
+}
+
+/**
+ * Fetch historical comp data with in-memory TTL cache.
+ * Stable per venue+date window — no need to re-query TipSee every page load.
+ */
+async function fetchHistoricalCached(locationUuid: string, currentDate: string): Promise<HistoricalData> {
+  const cacheKey = `${locationUuid}:${currentDate}`;
+  const entry = historicalCache.get(cacheKey);
+  if (entry && Date.now() - entry.ts < HISTORICAL_TTL_MS) {
+    return entry.data;
+  }
+
+  const data = await fetchHistoricalFromTipsee(locationUuid, currentDate);
+  historicalCache.set(cacheKey, { data, ts: Date.now() });
+
+  // Evict stale entries (prevent unbounded growth)
+  if (historicalCache.size > 100) {
+    const now = Date.now();
+    for (const [k, v] of historicalCache) {
+      if (now - v.ts > HISTORICAL_TTL_MS) historicalCache.delete(k);
+    }
+  }
+
+  return data;
+}
+
+async function fetchHistoricalFromTipsee(locationUuid: string, currentDate: string): Promise<HistoricalData> {
   const { getTipseePool } = await import('@/lib/database/tipsee');
   const pool = getTipseePool();
 
@@ -273,19 +338,14 @@ async function fetchHistoricalCompData(
     const avgCompTotal = parseFloat(data?.avg_comp_total || '0');
     const totalComps = parseFloat(data?.total_comps || '0');
     const totalRevenue = parseFloat(data?.total_revenue || '0');
-    const previousWeekCompPct = totalRevenue > 0 ? (totalComps / totalRevenue) * 100 : 0;
 
     return {
       avg_daily_comp_pct: avgCompPct,
       avg_daily_comp_total: avgCompTotal,
-      previous_week_comp_pct: previousWeekCompPct,
+      previous_week_comp_pct: totalRevenue > 0 ? (totalComps / totalRevenue) * 100 : 0,
     };
   } catch (error) {
     console.error('Error fetching historical comp data:', error);
-    return {
-      avg_daily_comp_pct: 0,
-      avg_daily_comp_total: 0,
-      previous_week_comp_pct: 0,
-    };
+    return { avg_daily_comp_pct: 0, avg_daily_comp_total: 0, previous_week_comp_pct: 0 };
   }
 }
