@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * OpsOS Inventory Counts Page
  */

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Purchase Order Detail Page
  * View PO lines, receipts, variances, and manage lifecycle

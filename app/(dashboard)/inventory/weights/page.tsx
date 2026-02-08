@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Product Weights Management
  * CSV import/export for bottle tare weights

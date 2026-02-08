@@ -2,6 +2,8 @@
  * Admin: Organization Detail
  */
 
+export const dynamic = 'force-dynamic';
+
 import { createAdminClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';

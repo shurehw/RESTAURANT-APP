@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Labor Requirements Page
  * View ML-calculated staffing needs by date/shift

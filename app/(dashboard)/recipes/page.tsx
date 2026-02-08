@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Recipe Management Page
  * List all recipes with search and filter

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Vendor Statement Reconciliation Dashboard
  * Shows all vendor statements with match statistics

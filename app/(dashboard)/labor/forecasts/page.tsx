@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Demand Forecasts Dashboard
  * Shows AI predictions for BOTH covers AND sales (revenue)

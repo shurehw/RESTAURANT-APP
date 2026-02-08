@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * app/vendor/dashboard/page.tsx
  * Vendor portal dashboard - view and manage invoices
