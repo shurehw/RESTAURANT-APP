@@ -303,6 +303,8 @@ export default function NightlyReportPage() {
   const [report, setReport] = useState<NightlyReportData | null>(null);
   const [factsSummary, setFactsSummary] = useState<FactsSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingFacts, setLoadingFacts] = useState(false);
+  const [factsError, setFactsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mappings, setMappings] = useState<VenueMapping[]>([]);
   const [compNotes, setCompNotes] = useState<Record<string, string>>({});
@@ -442,8 +444,15 @@ export default function NightlyReportPage() {
         }
 
         // NON-BLOCKING: Fetch facts asynchronously (14 Supabase queries, can take time)
+        setLoadingFacts(true);
+        setFactsError(null);
         fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
-          .then(res => res.ok ? res.json() : null)
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`Facts API returned ${res.status}`);
+            }
+            return res.json();
+          })
           .then(factsData => {
             if (factsData?.has_data) {
               setFactsSummary({
@@ -454,11 +463,18 @@ export default function NightlyReportPage() {
                 servers_wtd: factsData.servers_wtd,
                 servers_ptd: factsData.servers_ptd,
               });
+              setFactsError(null);
             } else {
               setFactsSummary(null);
+              setFactsError('No fact data available for this date');
             }
           })
-          .catch(err => console.error('Facts fetch error:', err));
+          .catch(err => {
+            console.error('Facts fetch error:', err);
+            setFactsError(err.message || 'Failed to load analytics data');
+            setFactsSummary(null);
+          })
+          .finally(() => setLoadingFacts(false));
 
         // Fetch comp exceptions AFTER liveData is available, then trigger AI review
         if (liveData) {
@@ -1340,6 +1356,25 @@ export default function NightlyReportPage() {
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 {(() => {
+                  // Show loading state for WTD/PTD when facts are loading
+                  if (serverPerfTab !== 'nightly' && loadingFacts) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">Loading {serverPerfTab.toUpperCase()} data...</p>
+                      </div>
+                    );
+                  }
+
+                  // Show error state for WTD/PTD if facts failed
+                  if (serverPerfTab !== 'nightly' && factsError) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-destructive text-sm">{factsError}</p>
+                        <p className="text-muted-foreground text-xs mt-2">Try refreshing the page</p>
+                      </div>
+                    );
+                  }
+
                   const serverData = serverPerfTab === 'nightly'
                     ? report.servers
                     : serverPerfTab === 'wtd'
