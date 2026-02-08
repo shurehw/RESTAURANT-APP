@@ -15,9 +15,13 @@ const chatSchema = z.object({
   })).optional().default([]),
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 /**
  * Fetch relevant context from Supabase based on user question
@@ -230,7 +234,7 @@ export async function POST(req: NextRequest) {
     messages.push({ role: 'user', content: question });
 
     // Call OpenAI
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
       model: 'gpt-4o-mini', // Use mini for cost efficiency
       messages,
       temperature: 0.3, // Lower temp for more factual responses
