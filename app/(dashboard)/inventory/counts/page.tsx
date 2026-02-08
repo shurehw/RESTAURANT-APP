@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Inventory Counts List
  * Shows all inventory count sessions

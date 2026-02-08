@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Demand Forecasts Dashboard
  * Shows AI predictions for covers AND sales with 4-layer bias corrections

@@ -295,7 +295,11 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 
 export default function NightlyReportPage() {
   const { selectedVenue } = useVenue();
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().split('T')[0];
+  });
   const [report, setReport] = useState<NightlyReportData | null>(null);
   const [factsSummary, setFactsSummary] = useState<FactsSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -361,12 +365,7 @@ export default function NightlyReportPage() {
   // Attestation hook — lifted to page level so inline modules share state
   const att = useAttestation(selectedVenue?.id, date, attestationReportData);
 
-  // Set initial date on client only (avoids hydration mismatch)
-  useEffect(() => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    setDate(yesterday.toISOString().split('T')[0]);
-  }, []);
+  // Note: date is initialized to yesterday via useState initializer
 
   // Fetch venue mappings on mount
   useEffect(() => {
@@ -403,12 +402,17 @@ export default function NightlyReportPage() {
         return;
       }
 
-      // Handle missing TipSee mapping
-      if (!locationUuid) {
+      // Handle missing TipSee mapping (but only after mappings have loaded)
+      if (!locationUuid && mappings.length > 0) {
         setError(`No TipSee mapping found for ${selectedVenue.name}. Configure venue mappings to view this report.`);
         setReport(null);
         setFactsSummary(null);
         setLoading(false);
+        return;
+      }
+
+      // Still waiting for mappings to load
+      if (!locationUuid) {
         return;
       }
 
@@ -482,7 +486,7 @@ export default function NightlyReportPage() {
       }
     }
     fetchReport();
-  }, [date, locationUuid, selectedVenue?.id, selectedVenue?.name, isAllVenues]);
+  }, [date, locationUuid, selectedVenue?.id, selectedVenue?.name, isAllVenues, mappings.length]);
 
   function changeDate(days: number) {
     const d = new Date(date);
@@ -580,7 +584,7 @@ export default function NightlyReportPage() {
       )}
 
       {/* Error State */}
-      {error && (
+      {error && !loading && (
         <Card className="border-error">
           <CardContent className="p-6">
             <p className="text-error">{error}</p>

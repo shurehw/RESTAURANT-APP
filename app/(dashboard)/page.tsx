@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * app/page.tsx
  * Dashboard home page with key metrics.
