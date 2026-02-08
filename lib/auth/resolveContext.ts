@@ -95,10 +95,17 @@ export async function resolveContext(): Promise<TenantContext | null> {
 
   // Look up auth.users ID by email (via admin client, since we need cross-table lookup)
   const adminClient = createAdminClient();
-  const { data: authUsers } = await adminClient.auth.admin.listUsers();
-  const matchingAuthUser = authUsers?.users?.find(
-    u => u.email?.toLowerCase() === customUser.email.toLowerCase()
-  );
+  let matchingAuthUser: { id: string; email?: string } | undefined;
+  let page = 1;
+  while (!matchingAuthUser) {
+    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
+    if (!authUsers?.users?.length) break;
+    matchingAuthUser = authUsers.users.find(
+      u => u.email?.toLowerCase() === customUser.email.toLowerCase()
+    );
+    if (authUsers.users.length < 1000) break; // last page
+    page++;
+  }
 
   if (!matchingAuthUser) {
     // User exists in custom table but not in auth.users
