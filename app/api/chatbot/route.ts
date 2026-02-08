@@ -28,9 +28,57 @@ function getAnthropic(): Anthropic {
   return _anthropic;
 }
 
-const SYSTEM_PROMPT = `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
+function buildSystemPrompt(venueNames: string[]): string {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Calculate 4-4-5 fiscal calendar (fiscal year starts first Monday of January)
+  const now = new Date();
+  const year = now.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  const firstMonday = new Date(jan1);
+  firstMonday.setDate(jan1.getDate() + ((8 - jan1.getDay()) % 7));
+  const fyStart = firstMonday;
+  const pattern = [4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5]; // weeks per period
+  let periodStart = new Date(fyStart);
+  let currentPeriod = 1;
+  for (let i = 0; i < 12; i++) {
+    const periodDays = pattern[i] * 7;
+    const periodEnd = new Date(periodStart.getTime() + periodDays * 86400000 - 86400000);
+    if (now >= periodStart && now <= periodEnd) {
+      currentPeriod = i + 1;
+      break;
+    }
+    periodStart = new Date(periodEnd.getTime() + 86400000);
+    currentPeriod = i + 2;
+  }
+  // Recalculate current period start/end for display
+  let pStart = new Date(fyStart);
+  for (let i = 0; i < currentPeriod - 1; i++) {
+    pStart = new Date(pStart.getTime() + pattern[i] * 7 * 86400000);
+  }
+  const pEnd = new Date(pStart.getTime() + pattern[currentPeriod - 1] * 7 * 86400000 - 86400000);
+  const periodStartStr = pStart.toISOString().split('T')[0];
+  const periodEndStr = pEnd.toISOString().split('T')[0];
+  const quarter = Math.ceil(currentPeriod / 3);
+
+  return `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
 
 Your job is to answer questions about restaurant operations using real POS (point-of-sale) data. You have access to tools that query the restaurant's TipSee POS database directly.
+
+VENUES (the user has access to these locations):
+${venueNames.map(n => `- ${n}`).join('\n')}
+
+When the user asks about a specific venue (e.g. "Miami", "Nice Guy", "Dallas"), use the "venue" parameter on tool calls to filter to that location. Use partial matching — "miami" matches "Delilah Miami", "nice guy" matches "Nice Guy LA", etc.
+When the user doesn't specify a venue, query ALL venues (omit the venue parameter) and show per-venue breakdowns when relevant.
+
+FISCAL CALENDAR:
+- The company runs a 4-4-5 fiscal calendar (4 weeks, 4 weeks, 5 weeks per quarter)
+- Fiscal year ${year} starts: ${fyStart.toISOString().split('T')[0]}
+- Current period: P${currentPeriod} (${periodStartStr} to ${periodEndStr}), Q${quarter}
+- Today: ${today}
+- "PTD" = period-to-date (${periodStartStr} to ${today})
+- "QTD" = quarter-to-date
+- When the user says "current period", "PTD", or "period to date", use ${periodStartStr} to ${today}
 
 AVAILABLE DATA (via tools):
 
@@ -53,10 +101,10 @@ Internal Operations Data:
 - Inventory: current on-hand quantities, costs, values
 
 WORKFLOW:
-1. When the user asks a data question, ALWAYS call the appropriate tool(s) first
+1. When the user asks a data question, ALWAYS call the appropriate tool(s) IMMEDIATELY — do not ask the user to clarify dates or venues if you can reasonably infer them
 2. Use the data returned to provide a precise, data-backed answer
 3. For comparison questions, call tools multiple times with different date ranges
-4. Today's date is ${new Date().toISOString().split('T')[0]}
+4. If the user mentions a venue name, use the venue parameter to filter
 
 ANALYSIS GUIDELINES:
 - Be numerically precise — show calculations when helpful
@@ -73,7 +121,9 @@ GUARDRAILS:
 TONE:
 - Professional but conversational
 - Focus on actionable insights
-- Use restaurant industry terminology`;
+- Use restaurant industry terminology
+- Be direct — pull data first, ask questions later`;
+}
 
 const MAX_TOOL_ITERATIONS = 5;
 
@@ -99,21 +149,32 @@ export async function POST(req: NextRequest) {
 
     console.log('[chatbot] Auth OK:', { userId: ctx.authUserId, orgId: ctx.orgId });
 
-    // Get venues for the user's organization
+    // Get venues for the user's organization (with names for AI context)
     const supabase = getServiceClient();
     const { data: venues } = await (supabase as any)
       .from('venues')
-      .select('id')
+      .select('id, name')
       .eq('organization_id', ctx.orgId);
     const venueIds: string[] = (venues || []).map((v: any) => v.id);
     const { data: mappings } = await (supabase as any)
       .from('venue_tipsee_mapping')
-      .select('tipsee_location_uuid')
+      .select('venue_id, tipsee_location_uuid')
       .in('venue_id', venueIds);
 
-    const locationUuids: string[] = (mappings || [])
-      .map((m: any) => m.tipsee_location_uuid)
-      .filter(Boolean);
+    // Build venue name → location UUID mapping for per-venue filtering
+    const venueMap: Record<string, { venueId: string; locationUuid: string }> = {};
+    const locationUuids: string[] = [];
+    for (const m of mappings || []) {
+      if (!m.tipsee_location_uuid) continue;
+      locationUuids.push(m.tipsee_location_uuid);
+      const venue = (venues || []).find((v: any) => v.id === m.venue_id);
+      if (venue?.name) {
+        venueMap[venue.name.toLowerCase()] = {
+          venueId: m.venue_id,
+          locationUuid: m.tipsee_location_uuid,
+        };
+      }
+    }
 
     if (locationUuids.length === 0) {
       return NextResponse.json({
@@ -121,6 +182,11 @@ export async function POST(req: NextRequest) {
         context_used: false,
       });
     }
+
+    // Build venue list for AI context
+    const venueNames = (venues || [])
+      .filter((v: any) => venueMap[v.name?.toLowerCase()])
+      .map((v: any) => v.name);
 
     const body = await req.json();
     const { question, history } = chatSchema.parse(body);
@@ -133,12 +199,13 @@ export async function POST(req: NextRequest) {
     messages.push({ role: 'user', content: question });
 
     const pool = getTipseePool();
-    const toolCtx = { locationUuids, venueIds, pool, supabase };
+    const toolCtx = { locationUuids, venueIds, venueMap, pool, supabase };
+    const systemPrompt = buildSystemPrompt(venueNames);
 
     // Tool-use loop
     let response = await getAnthropic().messages.create({
       model: 'claude-haiku-4-5-20251001',
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages,
       tools: CHATBOT_TOOLS,
       max_tokens: 1500,
@@ -170,7 +237,7 @@ export async function POST(req: NextRequest) {
 
       response = await getAnthropic().messages.create({
         model: 'claude-haiku-4-5-20251001',
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages,
         tools: CHATBOT_TOOLS,
         max_tokens: 1500,
