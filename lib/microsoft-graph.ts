@@ -6,19 +6,23 @@
 import { Client } from '@microsoft/microsoft-graph-client';
 import { ClientSecretCredential } from '@azure/identity';
 
-const clientId = process.env.MICROSOFT_CLIENT_ID!;
-const clientSecret = process.env.MICROSOFT_CLIENT_SECRET!;
-const tenantId = process.env.MICROSOFT_TENANT_ID!;
 const apEmail = process.env.AP_EMAIL || 'ap@hwoodgroup.com';
 
-if (!clientId || !clientSecret || !tenantId) {
-  throw new Error('Missing Microsoft Graph credentials. Please set MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, and MICROSOFT_TENANT_ID');
+function getCredentials() {
+  const clientId = process.env.MICROSOFT_CLIENT_ID;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET;
+  const tenantId = process.env.MICROSOFT_TENANT_ID;
+  if (!clientId || !clientSecret || !tenantId) {
+    throw new Error('Missing Microsoft Graph credentials. Please set MICROSOFT_CLIENT_ID, MICROSOFT_CLIENT_SECRET, and MICROSOFT_TENANT_ID');
+  }
+  return { clientId, clientSecret, tenantId };
 }
 
 /**
  * Create authenticated Microsoft Graph client
  */
 export function createGraphClient() {
+  const { clientId, clientSecret, tenantId } = getCredentials();
   const credential = new ClientSecretCredential(
     tenantId,
     clientId,
