@@ -35,6 +35,10 @@ unmapped-vendor-codes-*.tsv
 # Vercel
 .vercel
 
+# Sentry
+.sentryclirc
+.sentry-*
+
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
