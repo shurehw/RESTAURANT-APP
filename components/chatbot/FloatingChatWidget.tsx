@@ -17,7 +17,7 @@ export function FloatingChatWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hi! Ask me about your sales, labor, inventory, or budgets.',
+      content: 'Hi! I can query your POS data directly — ask about sales, servers, comps, menu items, and more.',
     },
   ]);
   const [input, setInput] = useState('');

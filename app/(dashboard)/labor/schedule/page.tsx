@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Weekly Schedule Page
  * View and manage auto-generated schedules

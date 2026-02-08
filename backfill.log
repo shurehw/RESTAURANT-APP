@@ -1,0 +1,28 @@
+node:internal/modules/cjs/loader:1421
+  const err = new Error(message);
+              ^
+
+Error: Cannot find module 'pg'
+Require stack:
+- H:\My Drive\Development\RESTAURANT-APP\lib\database\tipsee.ts
+- H:\My Drive\Development\RESTAURANT-APP\lib\etl\tipsee-sync.ts
+- H:\My Drive\Development\RESTAURANT-APP\scripts\backfill-fact-tables.ts
+    at node:internal/modules/cjs/loader:1421:15
+    at nextResolveSimple (C:\Users\Jacob Shrue\AppData\Local\npm-cache\_npx\fd45a72a545557e9\node_modules\tsx\dist\register-D46fvsV_.cjs:4:1004)
+    at C:\Users\Jacob Shrue\AppData\Local\npm-cache\_npx\fd45a72a545557e9\node_modules\tsx\dist\register-D46fvsV_.cjs:3:2630
+    at C:\Users\Jacob Shrue\AppData\Local\npm-cache\_npx\fd45a72a545557e9\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1542
+    at resolveTsPaths (C:\Users\Jacob Shrue\AppData\Local\npm-cache\_npx\fd45a72a545557e9\node_modules\tsx\dist\register-D46fvsV_.cjs:4:760)
+    at C:\Users\Jacob Shrue\AppData\Local\npm-cache\_npx\fd45a72a545557e9\node_modules\tsx\dist\register-D46fvsV_.cjs:4:1102
+    at m._resolveFilename (file:///C:/Users/Jacob%20Shrue/AppData/Local/npm-cache/_npx/fd45a72a545557e9/node_modules/tsx/dist/register-B7jrtLTO.mjs:1:789)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1059:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1064:22)
+    at Module._load (node:internal/modules/cjs/loader:1227:37) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    'H:\\My Drive\\Development\\RESTAURANT-APP\\lib\\database\\tipsee.ts',
+    'H:\\My Drive\\Development\\RESTAURANT-APP\\lib\\etl\\tipsee-sync.ts',
+    'H:\\My Drive\\Development\\RESTAURANT-APP\\scripts\\backfill-fact-tables.ts'
+  ]
+}
+
+Node.js v24.13.0

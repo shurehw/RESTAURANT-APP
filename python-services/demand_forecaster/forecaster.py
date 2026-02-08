@@ -1,484 +1,979 @@
 """
-AI Labor OS - Demand Forecasting Engine
-Predicts BOTH covers AND revenue (sales) using Prophet ML models
+Prophet Demand Forecaster v3
+Hybrid model with 5 improvements over v2:
+  1. Venue coords from DB (not hardcoded)
+  2. Weather as Prophet regressors (precip + temp)
+  3. Learned reservation elasticity per venue/DOW (not hardcoded)
+  4. Revenue = covers × avg_check_per_dow (not separate Prophet)
+  5. Outlier removal from training data
+
+Usage:
+    python forecaster.py                    # All venues
+    python forecaster.py --venue-id UUID    # Single venue
+    python forecaster.py --dry-run          # Don't save to DB
 """
 
 import os
+import sys
+import json
+import argparse
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Optional, List, Dict, Tuple
 import pandas as pd
 import numpy as np
-from prophet import Prophet
+import psycopg2
+import requests
+from sklearn.linear_model import Ridge
 from supabase import create_client, Client
+from prophet import Prophet
 from dotenv import load_dotenv
 
 load_dotenv()
 
-class DemandForecaster:
+# Configuration
+FORECAST_DAYS = int(os.getenv("FORECAST_DAYS", "42"))
+MODEL_VERSION = "prophet_v4_gated"
+MIN_COVERS_THRESHOLD = 10
+
+# Reso elasticity bounds
+RESO_BETA_MIN = 0.0
+RESO_BETA_MAX = 1.5
+
+# Outlier removal
+OUTLIER_PERCENTILE_LOW = 1    # bottom 1%
+OUTLIER_PERCENTILE_HIGH = 99  # top 1%
+
+# Model tier thresholds (training days)
+TIER_A_MIN = 80    # Full: Prophet + continuous weather + learned reso
+TIER_B_MIN = 45    # Moderate: Prophet + binary weather flags + reso
+TIER_C_MIN = 30    # Basic: Prophet baseline (no weather, no reso)
+                    # Below TIER_C_MIN = Tier D: naive rolling average
+
+# Venue classes where weather impact is weak/indirect
+WEATHER_WEAK_CLASSES = {"nightclub", "late_night"}
+
+
+# ============================================================================
+# MODEL ROUTER
+# ============================================================================
+
+class ModelConfig:
+    """Configuration returned by the model router for a specific venue."""
+    def __init__(self, tier: str, use_weather: str, use_reso: bool,
+                 use_outlier_removal: bool, use_prophet: bool, label: str):
+        self.tier = tier                    # A, B, C, D
+        self.use_weather = use_weather      # "continuous", "binary", "off"
+        self.use_reso = use_reso
+        self.use_outlier_removal = use_outlier_removal
+        self.use_prophet = use_prophet      # False = naive fallback
+        self.label = label
+
+    def __repr__(self):
+        return f"Tier {self.tier}: {self.label}"
+
+
+def model_router(training_days: int, venue_class: Optional[str] = None,
+                 has_coords: bool = True) -> ModelConfig:
     """
-    Dual-model forecasting engine:
-    - Model 1: Predicts covers
-    - Model 2: Predicts revenue
-    - Derives: Avg check, party size, hour-by-hour breakdown
+    Route a venue to the right model tier based on data quantity and venue type.
+
+    Tier A (80+ days): Prophet + continuous weather + learned reso elasticity
+    Tier B (45-80):    Prophet + binary weather flags + reso
+    Tier C (30-45):    Prophet baseline (no weather, no reso)
+    Tier D (<30):      Naive DOW rolling average (no Prophet)
+
+    Nightclubs/late-night: weather downgraded one level (A->binary, B->off)
     """
+    is_weather_weak = venue_class in WEATHER_WEAK_CLASSES
 
-    def __init__(self, venue_id: str):
-        self.venue_id = venue_id
+    if training_days >= TIER_A_MIN:
+        if is_weather_weak:
+            # Nightclubs: weather less predictive, use binary flags instead
+            weather = "binary" if has_coords else "off"
+            return ModelConfig("A-", weather, True, True, True,
+                               f"Prophet + binary weather + reso (nightclub, {training_days}d)")
+        weather = "continuous" if has_coords else "off"
+        return ModelConfig("A", weather, True, True, True,
+                           f"Prophet + weather + reso ({training_days}d)")
 
-        # Supabase client
-        self.supabase: Client = create_client(
-            os.getenv('SUPABASE_URL'),
-            os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-        )
+    elif training_days >= TIER_B_MIN:
+        if is_weather_weak:
+            # Nightclub with moderate data: skip weather entirely
+            return ModelConfig("B-", "off", True, True, True,
+                               f"Prophet + reso only (nightclub, {training_days}d)")
+        weather = "binary" if has_coords else "off"
+        return ModelConfig("B", weather, True, True, True,
+                           f"Prophet + binary weather + reso ({training_days}d)")
 
-        # Models
-        self.covers_model: Optional[Prophet] = None
-        self.revenue_model: Optional[Prophet] = None
+    elif training_days >= TIER_C_MIN:
+        return ModelConfig("C", "off", False, True, True,
+                           f"Prophet baseline ({training_days}d)")
 
-        # Accuracy tracking
-        self.model_version = f"v1.0_{datetime.now().strftime('%Y%m%d')}"
+    else:
+        return ModelConfig("D", "off", False, False, False,
+                           f"Naive rolling avg ({training_days}d)")
 
-    def load_historical_data(self, lookback_months: int = 18) -> pd.DataFrame:
-        """
-        Load historical covers and revenue data for training
-        """
 
-        cutoff_date = (datetime.now() - timedelta(days=lookback_months * 30)).date()
+# ============================================================================
+# DATABASE CONNECTIONS
+# ============================================================================
 
-        response = self.supabase.table('demand_history') \
-            .select('*') \
-            .eq('venue_id', self.venue_id) \
-            .gte('business_date', str(cutoff_date)) \
-            .order('business_date') \
-            .execute()
+def get_tipsee_conn():
+    """Get connection to TipSee PostgreSQL."""
+    return psycopg2.connect(
+        host=os.environ["TIPSEE_DB_HOST"],
+        port=int(os.getenv("TIPSEE_DB_PORT", "5432")),
+        dbname=os.environ["TIPSEE_DB_NAME"],
+        user=os.environ["TIPSEE_DB_USER"],
+        password=os.environ["TIPSEE_DB_PASSWORD"],
+        sslmode="require",
+        connect_timeout=30,
+    )
 
-        if not response.data:
-            raise ValueError(f"No historical data found for venue {self.venue_id}")
 
-        df = pd.DataFrame(response.data)
+def get_supabase() -> Client:
+    """Get Supabase client."""
+    url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    return create_client(url, key)
 
-        # Convert dates
-        df['business_date'] = pd.to_datetime(df['business_date'])
 
-        # Calculate derived metrics
-        df['avg_check'] = df['revenue'] / df['covers']
-        df['walkin_covers'] = df['covers'] - df['reservation_covers']
+# ============================================================================
+# IMPROVEMENT #1: VENUE COORDS FROM DB
+# ============================================================================
 
-        print(f"✓ Loaded {len(df)} historical records ({df['business_date'].min()} to {df['business_date'].max()})")
+def get_venue_coords(supabase: Client) -> Dict[str, Dict]:
+    """
+    Load venue coordinates from DB instead of hardcoded dict.
+    Fails loudly if a venue is missing coords.
+    """
+    response = supabase.table("venues").select(
+        "id, name, latitude, longitude, timezone"
+    ).eq("is_active", True).not_.is_("latitude", "null").execute()
 
-        return df
+    coords = {}
+    for v in response.data or []:
+        coords[v["id"]] = {
+            "lat": float(v["latitude"]),
+            "lon": float(v["longitude"]),
+            "tz": v.get("timezone", "America/Los_Angeles"),
+            "name": v["name"],
+        }
 
-    def train_covers_model(self, df: pd.DataFrame) -> Prophet:
-        """
-        Train Prophet model to forecast COVERS
-        """
+    return coords
 
-        print("\n📊 Training COVERS forecasting model...")
 
-        # Prepare data for Prophet (requires 'ds' and 'y' columns)
-        prophet_df = pd.DataFrame({
-            'ds': df['business_date'],
-            'y': df['covers'],
+# ============================================================================
+# DATA RETRIEVAL
+# ============================================================================
 
-            # Regressors (external factors)
-            'temp_high': df['weather_temp_high'].fillna(df['weather_temp_high'].mean()),
-            'precipitation': df['weather_precipitation'].fillna(0),
-            'has_event': df['has_nearby_event'].astype(int),
-            'reservation_count': df['reservation_count'].fillna(0),
-            'is_holiday': df['is_holiday'].astype(int),
-            'day_of_week': df['day_of_week']
-        })
+def get_historical_data(conn, location_uuid: str) -> pd.DataFrame:
+    """Get daily covers + revenue + reservation data from TipSee."""
+    sql = """
+    WITH pos_data AS (
+        SELECT
+            trading_day::date AS ds,
+            SUM(guest_count)::int AS covers,
+            SUM(revenue_total)::numeric(14,2) AS net_sales
+        FROM public.tipsee_checks
+        WHERE location_uuid = %s
+        GROUP BY trading_day::date
+    ),
+    reso_data AS (
+        SELECT
+            date AS ds,
+            COUNT(*) AS reso_count,
+            SUM(max_guests)::int AS reso_covers
+        FROM public.full_reservations
+        WHERE location_uuid = %s
+          AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'CONFIRMED')
+        GROUP BY date
+    )
+    SELECT
+        p.ds,
+        p.covers,
+        p.net_sales,
+        COALESCE(r.reso_count, 0) AS reso_count,
+        COALESCE(r.reso_covers, 0) AS reso_covers
+    FROM pos_data p
+    LEFT JOIN reso_data r ON r.ds = p.ds
+    WHERE p.covers > %s
+    ORDER BY p.ds
+    """
+    return pd.read_sql(sql, conn, params=(location_uuid, location_uuid, MIN_COVERS_THRESHOLD))
 
-        # Initialize Prophet
-        model = Prophet(
-            yearly_seasonality=True,
-            weekly_seasonality=True,
-            daily_seasonality=False,
-            seasonality_mode='multiplicative',
-            changepoint_prior_scale=0.05  # Flexibility for trend changes
-        )
 
-        # Add custom seasonalities
-        model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+def get_future_reservations(conn, location_uuid: str, days: int = FORECAST_DAYS) -> pd.DataFrame:
+    """Get reservation counts for future dates."""
+    today = datetime.now().date()
+    end_date = today + timedelta(days=days)
 
-        # Add regressors
-        model.add_regressor('temp_high')
-        model.add_regressor('precipitation')
-        model.add_regressor('has_event')
-        model.add_regressor('reservation_count')
-        model.add_regressor('is_holiday')
+    sql = """
+    SELECT
+        date AS ds,
+        COUNT(*) AS reso_count,
+        COALESCE(SUM(max_guests), 0)::int AS reso_covers
+    FROM public.full_reservations
+    WHERE location_uuid = %s
+      AND date >= %s
+      AND date <= %s
+      AND status IN ('CONFIRMED', 'BOOKED')
+    GROUP BY date
+    """
+    return pd.read_sql(sql, conn, params=(location_uuid, str(today), str(end_date)))
 
-        # Fit model
-        model.fit(prophet_df)
 
-        print(f"✓ Covers model trained on {len(prophet_df)} data points")
+# ============================================================================
+# IMPROVEMENT #2: WEATHER AS PROPHET REGRESSOR
+# ============================================================================
 
-        return model
+def get_weather_forecast(lat: float, lon: float, tz: str, days: int = 14) -> Optional[pd.DataFrame]:
+    """Fetch weather forecast from Open-Meteo (free, no API key)."""
+    try:
+        url = "https://api.open-meteo.com/v1/forecast"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "daily": "temperature_2m_max,precipitation_sum",
+            "temperature_unit": "fahrenheit",
+            "precipitation_unit": "inch",
+            "timezone": tz,
+            "forecast_days": min(days, 16),
+        }
+        resp = requests.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
 
-    def train_revenue_model(self, df: pd.DataFrame) -> Prophet:
-        """
-        Train Prophet model to forecast REVENUE (sales)
-        """
+        daily = data.get("daily", {})
+        dates = daily.get("time", [])
+        temp_highs = daily.get("temperature_2m_max", [])
+        precip = daily.get("precipitation_sum", [])
 
-        print("\n💰 Training REVENUE forecasting model...")
-
-        # Prepare data for Prophet
-        prophet_df = pd.DataFrame({
-            'ds': df['business_date'],
-            'y': df['revenue'],
-
-            # Regressors
-            'temp_high': df['weather_temp_high'].fillna(df['weather_temp_high'].mean()),
-            'precipitation': df['weather_precipitation'].fillna(0),
-            'has_event': df['has_nearby_event'].astype(int),
-            'reservation_count': df['reservation_count'].fillna(0),
-            'reservation_covers': df['reservation_covers'].fillna(0),
-            'is_holiday': df['is_holiday'].astype(int),
-            'day_of_week': df['day_of_week']
-        })
-
-        # Initialize Prophet
-        model = Prophet(
-            yearly_seasonality=True,
-            weekly_seasonality=True,
-            daily_seasonality=False,
-            seasonality_mode='multiplicative',
-            changepoint_prior_scale=0.05
-        )
-
-        # Add custom seasonalities
-        model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-
-        # Add regressors
-        model.add_regressor('temp_high')
-        model.add_regressor('precipitation')
-        model.add_regressor('has_event')
-        model.add_regressor('reservation_count')
-        model.add_regressor('reservation_covers')
-        model.add_regressor('is_holiday')
-
-        # Fit model
-        model.fit(prophet_df)
-
-        print(f"✓ Revenue model trained on {len(prophet_df)} data points")
-
-        return model
-
-    def train_models(self):
-        """
-        Train both covers and revenue models
-        """
-
-        print(f"\n🤖 Training demand forecasting models for venue: {self.venue_id}")
-        print("=" * 60)
-
-        # Load historical data
-        df = self.load_historical_data(lookback_months=18)
-
-        # Train covers model
-        self.covers_model = self.train_covers_model(df)
-
-        # Train revenue model
-        self.revenue_model = self.train_revenue_model(df)
-
-        # Calculate model accuracy on recent data
-        accuracy = self.calculate_model_accuracy(df)
-
-        print("\n✅ Model training complete!")
-        print(f"   Covers accuracy: {accuracy['covers_accuracy']:.1%}")
-        print(f"   Revenue accuracy: {accuracy['revenue_accuracy']:.1%}")
-        print("=" * 60)
-
-        return accuracy
-
-    def calculate_model_accuracy(self, df: pd.DataFrame, test_days: int = 30) -> Dict:
-        """
-        Calculate model accuracy on recent historical data
-        """
-
-        # Use last 30 days as test set
-        test_df = df.tail(test_days).copy()
-
-        # Generate predictions for test period
-        test_predictions = []
-
-        for _, row in test_df.iterrows():
-            pred = self.generate_forecast_internal(
-                target_date=row['business_date'].date(),
-                weather_forecast={
-                    'high_temp': row['weather_temp_high'],
-                    'precipitation': row['weather_precipitation']
-                },
-                reservation_count=int(row['reservation_count']),
-                reservation_covers=int(row['reservation_covers']),
-                has_event=bool(row['has_nearby_event'])
-            )
-
-            test_predictions.append({
-                'actual_covers': row['covers'],
-                'pred_covers': pred['covers_predicted'],
-                'actual_revenue': row['revenue'],
-                'pred_revenue': pred['revenue_predicted']
+        rows = []
+        for i, date in enumerate(dates):
+            rows.append({
+                "ds": pd.to_datetime(date),
+                "temp_high": temp_highs[i] if i < len(temp_highs) else None,
+                "precip_inch": precip[i] if i < len(precip) else 0,
             })
 
-        pred_df = pd.DataFrame(test_predictions)
+        return pd.DataFrame(rows)
+    except Exception as e:
+        print(f"  [WARN] Weather forecast API error: {e}")
+        return None
 
-        # Calculate MAPE (Mean Absolute Percentage Error)
-        covers_mape = np.mean(np.abs((pred_df['actual_covers'] - pred_df['pred_covers']) / pred_df['actual_covers']))
-        revenue_mape = np.mean(np.abs((pred_df['actual_revenue'] - pred_df['pred_revenue']) / pred_df['actual_revenue']))
 
-        return {
-            'covers_accuracy': 1 - covers_mape,
-            'revenue_accuracy': 1 - revenue_mape,
-            'test_days': test_days
+def get_historical_weather(lat: float, lon: float, tz: str,
+                           start_date: str, end_date: str) -> Optional[pd.DataFrame]:
+    """
+    Fetch historical weather from Open-Meteo Archive API.
+    Required to use weather as a Prophet regressor (needs training data too).
+    """
+    try:
+        url = "https://archive-api.open-meteo.com/v1/archive"
+        params = {
+            "latitude": lat,
+            "longitude": lon,
+            "daily": "temperature_2m_max,precipitation_sum",
+            "temperature_unit": "fahrenheit",
+            "precipitation_unit": "inch",
+            "timezone": tz,
+            "start_date": start_date,
+            "end_date": end_date,
         }
+        resp = requests.get(url, params=params, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
 
-    def generate_forecast(
-        self,
-        target_date: datetime.date,
-        shift_type: str = 'dinner'
-    ) -> Dict:
-        """
-        Generate forecast for specific date
-        Fetches external data automatically
-        """
+        daily = data.get("daily", {})
+        dates = daily.get("time", [])
+        temp_highs = daily.get("temperature_2m_max", [])
+        precip = daily.get("precipitation_sum", [])
 
-        # Get weather forecast
-        weather = self.get_weather_forecast(target_date)
+        rows = []
+        for i, date in enumerate(dates):
+            rows.append({
+                "ds": pd.to_datetime(date),
+                "temp_high": temp_highs[i] if i < len(temp_highs) else None,
+                "precip_inch": precip[i] if i < len(precip) else 0,
+            })
 
-        # Get events
-        events = self.get_local_events(target_date)
+        df = pd.DataFrame(rows)
+        # Fill any None values
+        df["temp_high"] = df["temp_high"].fillna(df["temp_high"].median())
+        df["precip_inch"] = df["precip_inch"].fillna(0)
+        return df
+    except Exception as e:
+        print(f"  [WARN] Historical weather API error: {e}")
+        return None
 
-        # Get reservations
-        reservations = self.get_current_reservations(target_date, shift_type)
 
-        # Generate prediction
-        forecast = self.generate_forecast_internal(
-            target_date=target_date,
-            weather_forecast=weather,
-            reservation_count=len(reservations),
-            reservation_covers=sum(r['party_size'] for r in reservations),
-            has_event=len(events) > 0
-        )
+# ============================================================================
+# BINARY WEATHER FLAGS (Tier B)
+# ============================================================================
 
-        # Add context
-        forecast['factors'] = {
-            'weather': weather,
-            'events': events,
-            'reservations': {
-                'count': len(reservations),
-                'covers': sum(r['party_size'] for r in reservations)
-            },
-            'day_of_week': target_date.strftime('%A'),
-            'historical_avg': self.get_historical_avg(target_date.weekday(), shift_type)
-        }
+def convert_weather_to_binary(weather_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Convert continuous weather to binary flags for Tier B venues.
+    More stable on small samples than continuous regressors.
 
-        # Save to database
-        self.save_forecast(forecast, target_date, shift_type)
+    is_rainy:        precip_inch > 0.1
+    is_extreme_heat: temp_high > 95F
+    """
+    if weather_df is None or weather_df.empty:
+        return weather_df
 
-        return forecast
+    result = weather_df.copy()
+    result["is_rainy"] = (result["precip_inch"] > 0.1).astype(float)
+    result["is_extreme_heat"] = (result["temp_high"] > 95).astype(float)
+    return result
 
-    def generate_forecast_internal(
-        self,
-        target_date: datetime.date,
-        weather_forecast: Dict,
-        reservation_count: int,
-        reservation_covers: int,
-        has_event: bool
-    ) -> Dict:
-        """
-        Internal forecast generation with provided external factors
-        """
 
-        if not self.covers_model or not self.revenue_model:
-            raise ValueError("Models not trained. Call train_models() first.")
+# ============================================================================
+# NAIVE FORECAST (Tier D)
+# ============================================================================
 
-        # Prepare future dataframe
-        future = pd.DataFrame({
-            'ds': [pd.to_datetime(target_date)],
-            'temp_high': [weather_forecast.get('high_temp', 70)],
-            'precipitation': [weather_forecast.get('precipitation', 0)],
-            'has_event': [1 if has_event else 0],
-            'reservation_count': [reservation_count],
-            'reservation_covers': [reservation_covers],
-            'is_holiday': [self.is_holiday(target_date)],
-            'day_of_week': [target_date.weekday()]
+def naive_dow_forecast(df: pd.DataFrame, forecast_days: int) -> pd.DataFrame:
+    """
+    Tier D fallback: simple DOW rolling average.
+    Uses last 4 weeks of covers per DOW. No Prophet, no weather.
+    """
+    df = df.copy()
+    df["ds"] = pd.to_datetime(df["ds"])
+    df["covers"] = pd.to_numeric(df["covers"], errors="coerce").fillna(0)
+    df["dow"] = df["ds"].dt.dayofweek
+
+    # Use last 4 weeks
+    cutoff = df["ds"].max() - timedelta(weeks=4)
+    recent = df[df["ds"] >= cutoff]
+
+    dow_avg = recent.groupby("dow")["covers"].mean()
+    dow_std = recent.groupby("dow")["covers"].std().fillna(0)
+    overall_avg = recent["covers"].mean() if len(recent) > 0 else 50
+
+    # Generate future dates
+    last_date = df["ds"].max()
+    rows = []
+    for i in range(1, forecast_days + 1):
+        future_date = last_date + timedelta(days=i)
+        dow = future_date.dayofweek
+        avg = dow_avg.get(dow, overall_avg)
+        std = dow_std.get(dow, avg * 0.3)
+        rows.append({
+            "ds": future_date,
+            "business_date": future_date.date(),
+            "yhat": round(max(0, avg)),
+            "yhat_lower": round(max(0, avg - 1.28 * std)),  # ~80% CI
+            "yhat_upper": round(avg + 1.28 * std),
+            "trend": avg,
         })
 
-        # Generate COVERS prediction
-        covers_forecast = self.covers_model.predict(future)
-        covers_pred = max(0, round(covers_forecast['yhat'].iloc[0]))
-        covers_lower = max(0, round(covers_forecast['yhat_lower'].iloc[0]))
-        covers_upper = round(covers_forecast['yhat_upper'].iloc[0])
+    return pd.DataFrame(rows)
 
-        # Generate REVENUE prediction
-        revenue_forecast = self.revenue_model.predict(future)
-        revenue_pred = max(0, revenue_forecast['yhat'].iloc[0])
-        revenue_lower = max(0, revenue_forecast['yhat_lower'].iloc[0])
-        revenue_upper = revenue_forecast['yhat_upper'].iloc[0]
 
-        # Calculate derived metrics
-        avg_check = revenue_pred / covers_pred if covers_pred > 0 else 0
+# ============================================================================
+# IMPROVEMENT #3: LEARNED RESERVATION ELASTICITY
+# ============================================================================
 
-        # Estimate walkins
-        walkin_covers_pred = max(0, covers_pred - reservation_covers)
+def learn_reso_elasticity(df: pd.DataFrame) -> Dict[int, float]:
+    """
+    Learn per-DOW reservation elasticity from historical data.
 
-        # Calculate confidence (based on prediction interval width)
-        covers_interval_width = (covers_upper - covers_lower) / covers_pred if covers_pred > 0 else 1
-        confidence = max(0.5, min(0.95, 1 - (covers_interval_width / 2)))
+    For each DOW, fit: covers_ratio ~ 1 + beta * (resos_ratio - 1)
+    Where ratio = value / avg_for_that_dow
 
-        return {
-            'date': str(target_date),
-            'day_of_week': target_date.strftime('%A'),
+    Returns dict of {dow: beta} clamped to [RESO_BETA_MIN, RESO_BETA_MAX].
+    """
+    df = df.copy()
+    df["ds"] = pd.to_datetime(df["ds"])
+    df["dow"] = df["ds"].dt.dayofweek
+    df["covers"] = pd.to_numeric(df["covers"], errors="coerce").fillna(0)
+    df["reso_covers"] = pd.to_numeric(df["reso_covers"], errors="coerce").fillna(0)
 
-            # COVERS forecast
-            'covers_predicted': int(covers_pred),
-            'covers_lower': int(covers_lower),
-            'covers_upper': int(covers_upper),
+    # Compute DOW averages
+    dow_avg_covers = df.groupby("dow")["covers"].mean()
+    dow_avg_resos = df.groupby("dow")["reso_covers"].mean()
 
-            # REVENUE forecast
-            'revenue_predicted': round(revenue_pred, 2),
-            'revenue_lower': round(revenue_lower, 2),
-            'revenue_upper': round(revenue_upper, 2),
+    betas = {}
+    for dow in range(7):
+        subset = df[df["dow"] == dow].copy()
+        avg_c = dow_avg_covers.get(dow, 0)
+        avg_r = dow_avg_resos.get(dow, 0)
 
-            # Derived metrics
-            'avg_check_predicted': round(avg_check, 2),
-            'confidence_level': round(confidence, 3),
+        if avg_c <= 0 or avg_r <= 0 or len(subset) < 8:
+            betas[dow] = 0.0
+            continue
 
-            # Breakdown
-            'breakdown': {
-                'reservation_covers': reservation_covers,
-                'predicted_walkins': int(walkin_covers_pred),
-                'walkin_percentage': round(walkin_covers_pred / covers_pred * 100, 1) if covers_pred > 0 else 0
-            }
-        }
+        # Compute ratios
+        subset["covers_ratio"] = subset["covers"] / avg_c
+        subset["resos_ratio"] = subset["reso_covers"] / avg_r
 
-    def save_forecast(self, forecast: Dict, target_date: datetime.date, shift_type: str):
-        """
-        Save forecast to database
-        """
+        # Target: covers_ratio - 1 (excess covers)
+        # Feature: resos_ratio - 1 (excess resos)
+        y = (subset["covers_ratio"] - 1).values.reshape(-1, 1)
+        X = (subset["resos_ratio"] - 1).values.reshape(-1, 1)
 
-        data = {
-            'venue_id': self.venue_id,
-            'forecast_date': str(datetime.now().date()),
-            'business_date': str(target_date),
-            'shift_type': shift_type,
+        # Ridge regression with light regularization
+        model = Ridge(alpha=1.0, fit_intercept=False)
+        model.fit(X, y)
 
-            # Covers
-            'covers_predicted': forecast['covers_predicted'],
-            'covers_lower': forecast['covers_lower'],
-            'covers_upper': forecast['covers_upper'],
+        beta = float(np.clip(model.coef_[0][0], RESO_BETA_MIN, RESO_BETA_MAX))
+        betas[dow] = round(beta, 3)
 
-            # Revenue
-            'revenue_predicted': forecast['revenue_predicted'],
+    return betas
 
-            # Breakdown
-            'reservation_covers_predicted': forecast['breakdown']['reservation_covers'],
-            'walkin_covers_predicted': forecast['breakdown']['predicted_walkins'],
 
-            # Metadata
-            'model_version': self.model_version,
-            'confidence_level': forecast['confidence_level'],
+# ============================================================================
+# IMPROVEMENT #5: OUTLIER REMOVAL
+# ============================================================================
 
-            # External factors
-            'weather_forecast': forecast.get('factors', {}).get('weather', {}),
-            'events': forecast.get('factors', {}).get('events', {})
-        }
+def clean_training_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove outliers from training data:
+    - Zero-cover days (closures)
+    - Top/bottom 1% of covers per venue (anomalies)
+    """
+    df = df.copy()
+    original_len = len(df)
 
-        # Upsert (update if exists, insert if new)
-        self.supabase.table('demand_forecasts').upsert(data).execute()
+    # Remove zero-cover days
+    df = df[df["covers"] > 0]
 
-    def get_weather_forecast(self, target_date: datetime.date) -> Dict:
-        """
-        Fetch weather forecast from API
-        """
-        # TODO: Integrate with OpenWeatherMap or similar
-        # For now, return placeholder
-        return {
-            'high_temp': 72,
-            'low_temp': 58,
-            'precipitation': 0,
-            'conditions': 'clear'
-        }
+    # Winsorize: clip top/bottom percentiles
+    if len(df) > 20:
+        low = df["covers"].quantile(OUTLIER_PERCENTILE_LOW / 100)
+        high = df["covers"].quantile(OUTLIER_PERCENTILE_HIGH / 100)
+        df = df[(df["covers"] >= low) & (df["covers"] <= high)]
 
-    def get_local_events(self, target_date: datetime.date) -> List[Dict]:
-        """
-        Fetch local events from API
-        """
-        # TODO: Integrate with events API (Ticketmaster, SeatGeek, etc)
-        return []
+    removed = original_len - len(df)
+    if removed > 0:
+        print(f"  Outlier removal: dropped {removed} days ({original_len} -> {len(df)})")
 
-    def get_current_reservations(self, target_date: datetime.date, shift_type: str) -> List[Dict]:
-        """
-        Fetch current reservations from OpenTable/Resy
-        """
-        # TODO: Integrate with reservation system
-        # For now, query from database if you're storing them
-        return []
+    return df
 
-    def get_historical_avg(self, day_of_week: int, shift_type: str) -> float:
-        """
-        Get historical average for this day of week
-        """
 
-        response = self.supabase.table('demand_history') \
-            .select('covers') \
-            .eq('venue_id', self.venue_id) \
-            .eq('day_of_week', day_of_week) \
-            .eq('shift_type', shift_type) \
-            .execute()
+# ============================================================================
+# PROPHET MODEL
+# ============================================================================
 
-        if response.data:
-            return np.mean([r['covers'] for r in response.data])
+def build_prophet_model(weather_mode: str = "off") -> Prophet:
+    """
+    Build Prophet model with weather config based on tier.
 
-        return 0
+    weather_mode: "continuous" | "binary" | "off"
+    """
+    m = Prophet(
+        yearly_seasonality=True,
+        weekly_seasonality=True,
+        daily_seasonality=False,
+        seasonality_mode="multiplicative",
+        interval_width=0.80,
+        changepoint_prior_scale=0.05,
+    )
+    m.add_country_holidays(country_name="US")
 
-    def is_holiday(self, date: datetime.date) -> int:
-        """
-        Check if date is a holiday
-        """
-        # TODO: Implement holiday calendar
-        # For now, just check common US holidays
-        holidays = [
-            (1, 1),   # New Year's
-            (7, 4),   # Independence Day
-            (12, 25), # Christmas
-        ]
+    if weather_mode == "continuous":
+        m.add_regressor("temp_high", standardize=True)
+        m.add_regressor("precip_inch", standardize=True)
+    elif weather_mode == "binary":
+        m.add_regressor("is_rainy", standardize=False)
+        m.add_regressor("is_extreme_heat", standardize=False)
 
-        return 1 if (date.month, date.day) in holidays else 0
+    return m
+
+
+def _get_weather_columns(weather_mode: str) -> List[str]:
+    """Return the weather column names for the given mode."""
+    if weather_mode == "continuous":
+        return ["temp_high", "precip_inch"]
+    elif weather_mode == "binary":
+        return ["is_rainy", "is_extreme_heat"]
+    return []
+
+
+def fit_and_forecast(
+    df: pd.DataFrame,
+    future_resos: pd.DataFrame,
+    reso_betas: Dict[int, float],
+    config: ModelConfig,
+    forecast_days: int = FORECAST_DAYS,
+    historical_weather: Optional[pd.DataFrame] = None,
+    forecast_weather: Optional[pd.DataFrame] = None,
+) -> Tuple[pd.DataFrame, int]:
+    """
+    Fit Prophet + optional reso adjustment + optional weather regressors.
+    Model behavior controlled by config (from model_router).
+
+    Returns: (forecast_df, training_days)
+    """
+    weather_mode = config.use_weather
+    weather_cols = _get_weather_columns(weather_mode)
+    has_weather = (weather_mode != "off"
+                   and historical_weather is not None and forecast_weather is not None
+                   and not historical_weather.empty and not forecast_weather.empty)
+
+    # Convert to binary flags if needed
+    if has_weather and weather_mode == "binary":
+        historical_weather = convert_weather_to_binary(historical_weather)
+        forecast_weather = convert_weather_to_binary(forecast_weather)
+
+    # Prepare training data
+    prophet_df = df[["ds", "covers"]].rename(columns={"covers": "y"}).copy()
+    prophet_df["ds"] = pd.to_datetime(prophet_df["ds"])
+    prophet_df["y"] = pd.to_numeric(prophet_df["y"], errors="coerce").fillna(0)
+
+    # Merge weather into training data if available
+    if has_weather:
+        merge_cols = ["ds"] + weather_cols
+        prophet_df = prophet_df.merge(
+            historical_weather[merge_cols],
+            on="ds", how="left"
+        )
+        for col in weather_cols:
+            if col in ["temp_high"]:
+                prophet_df[col] = prophet_df[col].fillna(prophet_df[col].median())
+            else:
+                prophet_df[col] = prophet_df[col].fillna(0)
+
+    training_days = prophet_df["ds"].nunique()
+    if training_days < TIER_C_MIN:
+        raise ValueError(f"Insufficient history: {training_days} days (need >= {TIER_C_MIN})")
+
+    # DOW average reservations for elasticity adjustment
+    reso_df = df[["ds", "reso_covers"]].copy()
+    reso_df["ds"] = pd.to_datetime(reso_df["ds"])
+    reso_df["reso_covers"] = pd.to_numeric(reso_df["reso_covers"], errors="coerce").fillna(0)
+    dow_avg_reso = reso_df.groupby(reso_df["ds"].dt.dayofweek)["reso_covers"].mean()
+
+    # Build and fit
+    model = build_prophet_model(weather_mode=weather_mode if has_weather else "off")
+    model.fit(prophet_df)
+
+    # Create future dataframe
+    future = model.make_future_dataframe(periods=forecast_days, freq="D")
+
+    # Add weather regressors to future
+    if has_weather:
+        all_weather = pd.concat([historical_weather, forecast_weather], ignore_index=True)
+        all_weather = all_weather.drop_duplicates(subset=["ds"], keep="last")
+        merge_cols = ["ds"] + weather_cols
+        future = future.merge(
+            all_weather[merge_cols],
+            on="ds", how="left"
+        )
+        for col in weather_cols:
+            if col in ["temp_high"]:
+                future[col] = future[col].fillna(historical_weather[col].median())
+            else:
+                future[col] = future[col].fillna(0)
+
+    fc = model.predict(future)
+
+    # Apply learned reservation adjustment (only if config enables it)
+    if config.use_reso:
+        future_resos = future_resos.copy()
+        future_resos["ds"] = pd.to_datetime(future_resos["ds"])
+        reso_lookup = dict(zip(future_resos["ds"], future_resos["reso_covers"]))
+
+        adjustments = []
+        for _, row in fc.iterrows():
+            adjustment = 0
+            if row["ds"] in reso_lookup:
+                dow = row["ds"].dayofweek
+                actual_resos = reso_lookup[row["ds"]]
+                avg_resos = dow_avg_reso.get(dow, 0)
+                if avg_resos > 0:
+                    reso_delta = actual_resos - avg_resos
+                    beta = reso_betas.get(dow, 0.0)
+                    adjustment = reso_delta * beta
+            adjustments.append(adjustment)
+
+        fc["reso_adjustment"] = adjustments
+        fc["yhat"] = fc["yhat"] + fc["reso_adjustment"]
+        fc["yhat_lower"] = fc["yhat_lower"] + fc["reso_adjustment"]
+        fc["yhat_upper"] = fc["yhat_upper"] + fc["reso_adjustment"]
+
+    # Clip negatives and round
+    for col in ["yhat", "yhat_lower", "yhat_upper"]:
+        fc[col] = fc[col].clip(lower=0).round(0)
+
+    result = fc[["ds", "yhat", "yhat_lower", "yhat_upper", "trend"]].copy()
+    result["business_date"] = result["ds"].dt.date
+
+    return result, training_days
+
+
+# ============================================================================
+# IMPROVEMENT #4: REVENUE = COVERS × AVG CHECK
+# ============================================================================
+
+def compute_avg_check_per_dow(df: pd.DataFrame, window_weeks: int = 10) -> Dict[int, float]:
+    """
+    Compute average check per DOW from recent history.
+    Uses trailing window with winsorization to handle comps/events.
+    """
+    df = df.copy()
+    df["ds"] = pd.to_datetime(df["ds"])
+    df["covers"] = pd.to_numeric(df["covers"], errors="coerce")
+    df["net_sales"] = pd.to_numeric(df["net_sales"], errors="coerce")
+
+    # Use last N weeks only
+    cutoff = df["ds"].max() - timedelta(weeks=window_weeks)
+    recent = df[df["ds"] >= cutoff].copy()
+
+    # Compute per-day avg check
+    recent = recent[recent["covers"] > 0].copy()
+    recent["avg_check"] = recent["net_sales"] / recent["covers"]
+    recent["dow"] = recent["ds"].dt.dayofweek
+
+    # Winsorize avg_check: clip extreme values (comps, buyouts)
+    if len(recent) > 10:
+        low = recent["avg_check"].quantile(0.05)
+        high = recent["avg_check"].quantile(0.95)
+        recent["avg_check"] = recent["avg_check"].clip(low, high)
+
+    # Group by DOW
+    avg_checks = recent.groupby("dow")["avg_check"].mean().to_dict()
+
+    # Fill missing DOWs with overall median
+    overall = recent["avg_check"].median() if len(recent) > 0 else 80.0
+    for dow in range(7):
+        if dow not in avg_checks or pd.isna(avg_checks[dow]):
+            avg_checks[dow] = overall
+
+    return avg_checks
+
+
+def forecast_revenue(covers_forecast: pd.DataFrame, avg_check_per_dow: Dict[int, float]) -> pd.DataFrame:
+    """Revenue = covers × avg_check for that DOW."""
+    result = covers_forecast.copy()
+    result["dow"] = result["ds"].dt.dayofweek
+    result["avg_check"] = result["dow"].map(avg_check_per_dow)
+    result["revenue"] = (result["yhat"] * result["avg_check"]).round(2)
+    return result
+
+
+# ============================================================================
+# VENUE MAPPINGS + SAVE
+# ============================================================================
+
+def get_venue_mappings(supabase: Client, venue_id: Optional[str] = None) -> List[Dict]:
+    """Get venue to TipSee location mappings with venue_class."""
+    query = supabase.table("venue_tipsee_mapping").select(
+        "venue_id, tipsee_location_uuid, tipsee_location_name, venues(venue_class)"
+    ).eq("is_active", True)
+
+    if venue_id:
+        query = query.eq("venue_id", venue_id)
+
+    response = query.execute()
+    # Flatten venue_class from joined venues table
+    mappings = []
+    for m in response.data or []:
+        venue_class = None
+        if m.get("venues") and isinstance(m["venues"], dict):
+            venue_class = m["venues"].get("venue_class")
+        mappings.append({
+            "venue_id": m["venue_id"],
+            "tipsee_location_uuid": m["tipsee_location_uuid"],
+            "tipsee_location_name": m["tipsee_location_name"],
+            "venue_class": venue_class,
+        })
+    return mappings
+
+
+def save_forecasts(forecasts: list, supabase: Client):
+    """Save forecasts to demand_forecasts table."""
+    if not forecasts:
+        return
+
+    batch_size = 500
+    today = str(datetime.now().date())
+    demand_records = []
+
+    for f in forecasts:
+        covers_pred = int(f.get("covers_predicted", 0))
+        covers_lower = int(f.get("covers_lower", 0))
+        covers_upper = int(f.get("covers_upper", 0))
+        reso_covers = f.get("reso_covers", 0) or 0
+        walkin_pred = max(0, covers_pred - reso_covers) if reso_covers else covers_pred
+
+        # Confidence from interval width
+        interval_width = covers_upper - covers_lower
+        confidence = max(0.5, min(0.95, 1 - (interval_width / max(covers_pred, 1) / 2))) if covers_pred > 0 else 0.5
+
+        weather_json = None
+        if f.get("weather"):
+            weather_json = json.dumps(f["weather"]) if isinstance(f["weather"], dict) else f["weather"]
+
+        demand_records.append({
+            "venue_id": f["venue_id"],
+            "forecast_date": today,
+            "business_date": f["business_date"],
+            "shift_type": "dinner",
+            "covers_predicted": covers_pred,
+            "covers_lower": covers_lower,
+            "covers_upper": covers_upper,
+            "confidence_level": round(confidence, 3),
+            "revenue_predicted": f.get("revenue_predicted"),
+            "reservation_covers_predicted": reso_covers if reso_covers else None,
+            "walkin_covers_predicted": walkin_pred,
+            "model_version": MODEL_VERSION,
+            "model_accuracy": None,
+            "weather_forecast": weather_json,
+            "events": None,
+        })
+
+    for i in range(0, len(demand_records), batch_size):
+        batch = demand_records[i:i + batch_size]
+        supabase.table("demand_forecasts").upsert(
+            batch,
+            on_conflict="venue_id,forecast_date,business_date,shift_type"
+        ).execute()
+
+    print(f"[OK] Saved {len(demand_records)} forecasts to demand_forecasts")
+
+
+# ============================================================================
+# MAIN FORECASTER
+# ============================================================================
+
+def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST_DAYS, dry_run: bool = False):
+    """Main forecaster with tier-based model routing."""
+    print("\n" + "=" * 70)
+    print(f"PROPHET FORECASTER v4 ({MODEL_VERSION})")
+    print(f"Tier-gated: A(80+d) B(45+d) C(30+d) D(<30d)")
+    print(f"Forecast horizon: {forecast_days} days")
+    print("=" * 70 + "\n")
+
+    supabase = get_supabase()
+    tipsee_conn = get_tipsee_conn()
+
+    venue_coords = get_venue_coords(supabase)
+    print(f"[INFO] Venues with coordinates: {len(venue_coords)}")
+
+    mappings = get_venue_mappings(supabase, venue_id)
+    print(f"[INFO] Venues to forecast: {len(mappings)}")
+
+    if not mappings:
+        print("[ERROR] No venue mappings found")
+        return
+
+    weather_attached = 0
+    weather_total = 0
+    forecasts_to_save = []
+    venues_ok = 0
+    venues_skipped = 0
+    tier_counts = {"A": 0, "A-": 0, "B": 0, "B-": 0, "C": 0, "D": 0}
+
+    for mapping in mappings:
+        vid = mapping["venue_id"]
+        location_uuid = mapping["tipsee_location_uuid"]
+        location_name = mapping["tipsee_location_name"]
+        venue_class = mapping.get("venue_class")
+        coords = venue_coords.get(vid)
+
+        print(f"\n{'-' * 50}")
+        print(f"[VENUE] {location_name}")
+        print(f"  venue_id: {vid}")
+        if venue_class:
+            print(f"  class: {venue_class}")
+        if coords:
+            print(f"  coords: {coords['lat']}, {coords['lon']} ({coords['tz']})")
+
+        try:
+            # Get historical data
+            df = get_historical_data(tipsee_conn, location_uuid)
+            training_days_raw = len(df)
+            print(f"  History: {training_days_raw} days ({df['ds'].min()} to {df['ds'].max()})")
+
+            # Route to appropriate model tier
+            config = model_router(training_days_raw, venue_class, has_coords=coords is not None)
+            print(f"  -> {config}")
+            tier_counts[config.tier] = tier_counts.get(config.tier, 0) + 1
+
+            # --- TIER D: Naive fallback ---
+            if not config.use_prophet:
+                fc_covers = naive_dow_forecast(df, forecast_days)
+                avg_checks = compute_avg_check_per_dow(df)
+                fc_with_revenue = forecast_revenue(fc_covers, avg_checks)
+
+                future_fc = fc_with_revenue[fc_with_revenue["ds"] > pd.Timestamp.today()]
+                for _, row in future_fc.iterrows():
+                    bdate = str(row["business_date"])
+                    weather_total += 1
+                    forecasts_to_save.append({
+                        "venue_id": vid,
+                        "business_date": bdate,
+                        "covers_predicted": int(row["yhat"]),
+                        "covers_lower": int(row["yhat_lower"]),
+                        "covers_upper": int(row["yhat_upper"]),
+                        "revenue_predicted": round(float(row["revenue"]), 2),
+                        "reso_covers": 0,
+                        "weather": None,
+                    })
+
+                if not future_fc.empty:
+                    print(f"  Next 7 days (naive DOW avg):")
+                    for _, r in future_fc.head(7).iterrows():
+                        dow = r["ds"].strftime("%a")
+                        rev = f"${r['revenue']:,.0f}" if pd.notna(r["revenue"]) else "?"
+                        print(f"    {dow} {r['ds'].strftime('%m/%d')}: "
+                              f"{int(r['yhat'])} covers ({int(r['yhat_lower'])}-{int(r['yhat_upper'])}) "
+                              f"rev {rev}")
+
+                venues_ok += 1
+                continue
+
+            # --- TIERS A/B/C: Prophet-based ---
+
+            # Clean training data (Tiers A/B/C all get outlier removal)
+            df_clean = clean_training_data(df) if config.use_outlier_removal else df
+
+            # Learn reso elasticity (Tiers A/B only)
+            reso_betas = {}
+            if config.use_reso:
+                reso_betas = learn_reso_elasticity(df_clean)
+                active_betas = {k: v for k, v in reso_betas.items() if v > 0}
+                print(f"  Learned reso betas: {active_betas}")
+
+            # Get future reservations
+            future_resos = get_future_reservations(tipsee_conn, location_uuid, forecast_days)
+            print(f"  Future resos: {len(future_resos)} days with bookings")
+
+            # Get weather if tier needs it (A or B, not C)
+            hist_weather = None
+            fcast_weather = None
+            if config.use_weather != "off" and coords:
+                start_date = str(df_clean["ds"].min())
+                end_date = str((datetime.now() - timedelta(days=1)).date())
+                print(f"  Fetching weather ({start_date} to {end_date})...")
+                hist_weather = get_historical_weather(
+                    coords["lat"], coords["lon"], coords["tz"], start_date, end_date
+                )
+                if hist_weather is not None:
+                    print(f"  Historical weather: {len(hist_weather)} days")
+
+                fcast_weather = get_weather_forecast(
+                    coords["lat"], coords["lon"], coords["tz"], min(forecast_days, 14)
+                )
+                if fcast_weather is not None:
+                    print(f"  Forecast weather: {len(fcast_weather)} days")
+
+            print(f"  Weather mode: {config.use_weather}")
+
+            # Fit covers model
+            print("  Training covers model...")
+            fc_covers, training_days = fit_and_forecast(
+                df_clean, future_resos, reso_betas, config, forecast_days,
+                historical_weather=hist_weather,
+                forecast_weather=fcast_weather,
+            )
+
+            # Revenue = covers x avg check
+            avg_checks = compute_avg_check_per_dow(df_clean)
+            print(f"  Avg check by DOW: " + ", ".join(
+                f"{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]}=${v:.0f}"
+                for d, v in sorted(avg_checks.items()) if v > 0
+            ))
+            fc_with_revenue = forecast_revenue(fc_covers, avg_checks)
+
+            # Build reso lookup for metadata
+            reso_lookup = {}
+            if not future_resos.empty:
+                for _, r in future_resos.iterrows():
+                    key = str(r["ds"].date() if hasattr(r["ds"], "date") else r["ds"])
+                    reso_lookup[key] = int(r["reso_covers"])
+
+            # Build weather lookup for metadata
+            weather_lookup = {}
+            if fcast_weather is not None and not fcast_weather.empty:
+                for _, w in fcast_weather.iterrows():
+                    key = str(w["ds"].date() if hasattr(w["ds"], "date") else w["ds"])
+                    weather_lookup[key] = {
+                        "high": w["temp_high"],
+                        "precip": w["precip_inch"],
+                    }
+
+            # Collect forecasts
+            future_fc = fc_with_revenue[fc_with_revenue["ds"] > pd.Timestamp.today()]
+            for _, row in future_fc.iterrows():
+                bdate = str(row["business_date"])
+                weather_total += 1
+                if bdate in weather_lookup:
+                    weather_attached += 1
+
+                forecasts_to_save.append({
+                    "venue_id": vid,
+                    "business_date": bdate,
+                    "covers_predicted": int(row["yhat"]),
+                    "covers_lower": int(row["yhat_lower"]),
+                    "covers_upper": int(row["yhat_upper"]),
+                    "revenue_predicted": round(float(row["revenue"]), 2),
+                    "reso_covers": reso_lookup.get(bdate, 0),
+                    "weather": weather_lookup.get(bdate),
+                })
+
+            # Preview
+            if not future_fc.empty:
+                print(f"  Next 7 days forecast:")
+                for _, r in future_fc.head(7).iterrows():
+                    dow = r["ds"].strftime("%a")
+                    rev = f"${r['revenue']:,.0f}" if pd.notna(r["revenue"]) else "?"
+                    print(f"    {dow} {r['ds'].strftime('%m/%d')}: "
+                          f"{int(r['yhat'])} covers ({int(r['yhat_lower'])}-{int(r['yhat_upper'])}) "
+                          f"rev {rev}")
+
+            venues_ok += 1
+
+        except Exception as e:
+            print(f"  [SKIP] {e}")
+            import traceback
+            traceback.print_exc()
+            venues_skipped += 1
+            continue
+
+    tipsee_conn.close()
+
+    # Metrics
+    if weather_total > 0:
+        weather_pct = weather_attached / weather_total * 100
+        print(f"\n[METRIC] Weather coverage: {weather_attached}/{weather_total} forecast rows ({weather_pct:.0f}%)")
+
+    if not dry_run and forecasts_to_save:
+        save_forecasts(forecasts_to_save, supabase)
+
+    print("\n" + "=" * 70)
+    print("SUMMARY")
+    print(f"  Model: {MODEL_VERSION}")
+    print(f"  Venues processed: {venues_ok}")
+    print(f"  Venues skipped: {venues_skipped}")
+    print(f"  Total forecast days: {len(forecasts_to_save)}")
+    tier_str = ", ".join(f"{t}={c}" for t, c in sorted(tier_counts.items()) if c > 0)
+    print(f"  Tier distribution: {tier_str}")
+    if weather_total > 0:
+        print(f"  Weather attached: {weather_attached}/{weather_total} ({weather_attached/weather_total*100:.0f}%)")
+    if dry_run:
+        print("  Mode: DRY RUN (no data saved)")
+    print("=" * 70 + "\n")
 
 
 def main():
-    """
-    Example usage
-    """
+    parser = argparse.ArgumentParser(description="Prophet forecaster v3")
+    parser.add_argument("--venue-id", type=str, help="Single venue UUID")
+    parser.add_argument("--days", type=int, default=FORECAST_DAYS, help="Forecast days")
+    parser.add_argument("--dry-run", action="store_true", help="Don't save to DB")
 
-    venue_id = "11111111-1111-1111-1111-111111111111"  # Replace with actual venue ID
+    args = parser.parse_args()
 
-    # Initialize forecaster
-    forecaster = DemandForecaster(venue_id)
-
-    # Train models
-    accuracy = forecaster.train_models()
-
-    # Generate forecasts for next 7 days
-    print("\n📅 Generating 7-day forecasts...")
-    print("=" * 80)
-
-    for days_ahead in range(1, 8):
-        target_date = (datetime.now() + timedelta(days=days_ahead)).date()
-
-        forecast = forecaster.generate_forecast(target_date, shift_type='dinner')
-
-        print(f"\n{forecast['day_of_week']}, {target_date}:")
-        print(f"  Covers: {forecast['covers_predicted']} ({forecast['covers_lower']}-{forecast['covers_upper']})")
-        print(f"  Revenue: ${forecast['revenue_predicted']:,.0f} (${forecast['revenue_lower']:,.0f}-${forecast['revenue_upper']:,.0f})")
-        print(f"  Avg Check: ${forecast['avg_check_predicted']:.2f}")
-        print(f"  Confidence: {forecast['confidence_level']:.1%}")
-
-    print("\n" + "=" * 80)
-    print("✅ Forecasts saved to database!")
+    try:
+        run_forecaster(venue_id=args.venue_id, forecast_days=args.days, dry_run=args.dry_run)
+    except Exception as e:
+        print(f"\n[ERROR] {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

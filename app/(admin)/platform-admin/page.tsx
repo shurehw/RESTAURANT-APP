@@ -3,6 +3,8 @@
  * Overview of platform stats
  */
 
+export const dynamic = 'force-dynamic';
+
 import { createAdminClient } from '@/lib/supabase/server';
 import Link from 'next/link';
 

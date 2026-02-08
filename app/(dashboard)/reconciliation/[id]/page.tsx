@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Vendor Statement Reconciliation Detail
  * Three-way match review: PO → Receipt → Invoice
