@@ -80,7 +80,17 @@ const MAX_TOOL_ITERATIONS = 5;
 export async function POST(req: NextRequest) {
   return guard(async () => {
     rateLimit(req, ':chatbot');
-    const ctx = await requireContext();
+
+    let ctx;
+    try {
+      ctx = await requireContext();
+    } catch {
+      // Session expired or not authenticated — return helpful message
+      return NextResponse.json({
+        answer: 'Your session has expired. Please refresh the page and log in again.',
+        context_used: false,
+      });
+    }
 
     // Get venues for the user's organization
     const supabase = getServiceClient();

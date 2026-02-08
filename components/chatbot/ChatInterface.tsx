@@ -48,11 +48,12 @@ export function ChatInterface() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
+      const data = await response.json();
+
+      if (!response.ok && !data.answer) {
+        throw new Error(data.message || 'Failed to get response');
       }
 
-      const data = await response.json();
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.answer || 'Sorry, I couldn\'t process that request.',
@@ -61,11 +62,14 @@ export function ChatInterface() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Chat error:', error);
+      const msg = error instanceof Error ? error.message : 'Unknown error';
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: msg.includes('session') || msg.includes('authenticated')
+            ? msg
+            : 'Sorry, I encountered an error. Please try again.',
         },
       ]);
     } finally {
