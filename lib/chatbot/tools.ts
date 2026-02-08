@@ -5,6 +5,12 @@
 
 import type Anthropic from '@anthropic-ai/sdk';
 
+const VENUE_PARAM = {
+  type: 'string',
+  description:
+    'Venue name to filter results (e.g. "Delilah Miami", "Nice Guy LA"). Omit to include all venues.',
+} as const;
+
 export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_daily_sales',
@@ -22,6 +28,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           description:
             'End date in YYYY-MM-DD format. Defaults to start_date for single-day queries.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -41,6 +48,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -60,6 +68,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -84,6 +93,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           enum: ['revenue', 'quantity'],
           description: 'Sort by revenue (default) or quantity sold',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -103,6 +113,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -122,6 +133,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -141,6 +153,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -160,6 +173,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -179,6 +193,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -201,6 +216,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -211,7 +227,9 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
       'Get current operational issues requiring attention: labor overages, high COGS, low sales, pending invoice approvals, low stock alerts. Returns only items flagged as warning or critical in the last 7 days. Use for "what needs my attention?" or "any issues today?"',
     input_schema: {
       type: 'object' as const,
-      properties: {},
+      properties: {
+        venue: VENUE_PARAM,
+      },
     },
   },
   {
@@ -229,6 +247,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -253,6 +272,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           enum: ['draft', 'pending_approval', 'approved', 'exported'],
           description: 'Filter by invoice status. Omit to show all statuses.',
         },
+        venue: VENUE_PARAM,
       },
       required: ['start_date'],
     },
@@ -272,6 +292,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'Search for items by name (e.g. "flour", "salmon"). Partial match.',
         },
+        venue: VENUE_PARAM,
       },
     },
   },
