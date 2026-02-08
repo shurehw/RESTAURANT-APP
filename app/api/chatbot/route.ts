@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/route-guard';
-import { requireContext } from '@/lib/auth/resolveContext';
+import { resolveContext } from '@/lib/auth/resolveContext';
 import { rateLimit } from '@/lib/rate-limit';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getTipseePool } from '@/lib/database/tipsee';
@@ -81,16 +81,23 @@ export async function POST(req: NextRequest) {
   return guard(async () => {
     rateLimit(req, ':chatbot');
 
-    let ctx;
-    try {
-      ctx = await requireContext();
-    } catch {
-      // Session expired or not authenticated — return helpful message
+    const ctx = await resolveContext();
+
+    if (!ctx || !ctx.isAuthenticated) {
       return NextResponse.json({
         answer: 'Your session has expired. Please refresh the page and log in again.',
         context_used: false,
       });
     }
+
+    if (!ctx.orgId) {
+      return NextResponse.json({
+        answer: 'Your account is not linked to an organization. Please contact your administrator.',
+        context_used: false,
+      });
+    }
+
+    console.log('[chatbot] Auth OK:', { userId: ctx.authUserId, orgId: ctx.orgId });
 
     // Get venues for the user's organization
     const supabase = getServiceClient();
