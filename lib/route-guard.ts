@@ -21,8 +21,10 @@ export async function guard(
     });
 
     const status = Number(e?.status) || 500;
+    // e.code can be a numeric process exit code (e.g. 1) — use name/string codes only
+    const errorCode = (typeof e?.code === 'string' ? e.code : null) || e?.name || 'ERROR';
     const payload = {
-      error: e?.code || e?.name || 'ERROR',
+      error: errorCode,
       message: e?.message || 'Internal error',
       details: e?.details ?? undefined,
       hint: e?.hint ?? undefined,

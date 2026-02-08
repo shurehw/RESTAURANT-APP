@@ -107,7 +107,7 @@ export function RequirementsDisplay({ requirements, venueId, laborTarget }: Prop
         // Reload page to show new data
         window.location.reload();
       } else {
-        alert(`Error: ${data.error}`);
+        alert(data.message || data.error || 'Operation failed');
       }
     } catch (error) {
       console.error('Calculation error:', error);

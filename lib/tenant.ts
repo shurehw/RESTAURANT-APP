@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type UserTenantContext = {
@@ -17,11 +17,16 @@ export async function getUserOrgAndVenues(
 ): Promise<UserTenantContext> {
   const client = supabase || (await createClient());
 
-  // Get user's organization membership (RLS-protected)
-  const { data: orgs, error } = await client
+  // Get user's organization membership - use admin client directly
+  // to avoid RLS circular dependency issues
+  const admin = createAdminClient();
+  const { data: orgs, error } = await admin
     .from('organization_users')
     .select('organization_id, role')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  console.log('[tenant] getUserOrgAndVenues for', userId, '→', orgs?.length, 'orgs, error:', error?.message);
 
   if (error || !orgs || orgs.length === 0) {
     throw {
