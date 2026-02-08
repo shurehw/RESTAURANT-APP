@@ -44,13 +44,95 @@ export interface CompSettings {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// IN-MEMORY CACHE
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * In-memory cache for comp settings (prevents duplicate Supabase queries).
+ * Settings are configuration data that change infrequently - safe to cache.
+ */
+const settingsCache = new Map<string, { data: CompSettings; ts: number }>();
+const pendingFetches = new Map<string, Promise<CompSettings | null>>();
+const SETTINGS_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_CACHE_SIZE = 100;
+
+/**
+ * Invalidate cached settings for an org (call after updates)
+ */
+function invalidateCache(orgId: string): void {
+  settingsCache.delete(orgId);
+  pendingFetches.delete(orgId);
+}
+
+/**
+ * Evict expired/oldest entries when cache is too large
+ */
+function evictStaleEntries(): void {
+  if (settingsCache.size <= MAX_CACHE_SIZE) return;
+
+  const now = Date.now();
+
+  // First try to evict expired entries
+  for (const [key, value] of settingsCache) {
+    if (now - value.ts > SETTINGS_TTL_MS) {
+      settingsCache.delete(key);
+    }
+  }
+
+  // If still over limit, evict oldest entries (LRU-style)
+  if (settingsCache.size > MAX_CACHE_SIZE) {
+    const sorted = Array.from(settingsCache.entries())
+      .sort((a, b) => a[1].ts - b[1].ts);
+    const toDelete = sorted.slice(0, settingsCache.size - MAX_CACHE_SIZE);
+    toDelete.forEach(([key]) => settingsCache.delete(key));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // DATABASE FUNCTIONS
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Get active comp settings for an organization
+ * Get active comp settings for an organization (with in-memory cache)
  */
 export async function getActiveCompSettings(
+  orgId: string
+): Promise<CompSettings | null> {
+  // Check cache first
+  const cached = settingsCache.get(orgId);
+  if (cached && Date.now() - cached.ts < SETTINGS_TTL_MS) {
+    return cached.data;
+  }
+
+  // Check if fetch is already in progress (prevent duplicate queries)
+  const pending = pendingFetches.get(orgId);
+  if (pending) {
+    return pending;
+  }
+
+  // Start new fetch and track it
+  const fetchPromise = fetchSettingsFromDatabase(orgId)
+    .then((settings) => {
+      if (settings) {
+        settingsCache.set(orgId, { data: settings, ts: Date.now() });
+        evictStaleEntries();
+      }
+      pendingFetches.delete(orgId);
+      return settings;
+    })
+    .catch((err) => {
+      pendingFetches.delete(orgId);
+      throw err;
+    });
+
+  pendingFetches.set(orgId, fetchPromise);
+  return fetchPromise;
+}
+
+/**
+ * Internal: Fetch settings from Supabase (bypasses cache)
+ */
+async function fetchSettingsFromDatabase(
   orgId: string
 ): Promise<CompSettings | null> {
   const supabase = getServiceClient();
@@ -182,6 +264,9 @@ export async function updateCompSettings(
       console.error('Error inserting new comp settings version:', insertError);
       return { success: false, error: insertError.message };
     }
+
+    // Invalidate cache so next fetch gets fresh settings
+    invalidateCache(orgId);
 
     return { success: true, version: nextVersion };
   } catch (error: any) {
