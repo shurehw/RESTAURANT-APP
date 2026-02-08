@@ -422,12 +422,11 @@ export default function NightlyReportPage() {
       setCompExceptions(null);
       setCompNotes({});
       try {
-        // Fire ALL independent fetches in parallel — don't block on comp data
-        const [liveRes, factsRes, notesRes, exceptionsRes] = await Promise.all([
+        // Fire initial fetches in parallel (exclude exceptions to avoid duplicate TipSee query)
+        const [liveRes, factsRes, notesRes] = await Promise.all([
           fetch(`/api/nightly?date=${date}&location=${locationUuid}`),
           fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`),
           fetch(`/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`, { credentials: 'include' }),
-          fetch(`/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' }),
         ]);
 
         if (!liveRes.ok) {
@@ -460,36 +459,37 @@ export default function NightlyReportPage() {
           setCompNotes(notesData.notes || {});
         }
 
-        // Process comp exceptions (non-blocking)
-        let parsedExceptions = null;
-        if (exceptionsRes.ok) {
-          const exceptionsData = await exceptionsRes.json();
-          if (exceptionsData.success) {
-            parsedExceptions = exceptionsData.data;
-            setCompExceptions(exceptionsData.data);
-          }
-        }
-
-        // AI comp review fires AFTER page is visible (non-blocking)
-        // Uses POST with pre-fetched data to avoid duplicate TipSee round-trip
-        if (liveData?.summary?.total_comps > 0) {
-          setLoadingCompReview(true);
-          fetch('/api/ai/comp-review', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              date,
-              venue_id: selectedVenue.id,
-              venue_name: selectedVenue.name,
-              detailedComps: liveData.detailedComps,
-              exceptions: parsedExceptions,
-              summary: liveData.summary,
-            }),
-          })
+        // Fetch comp exceptions AFTER liveData is available, then trigger AI review
+        if (liveData) {
+          fetch(`/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
             .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              const parsedExceptions = data?.success ? data.data : null;
+              if (parsedExceptions) {
+                setCompExceptions(parsedExceptions);
+              }
+
+              // AI comp review fires AFTER exceptions are loaded (uses pre-fetched data)
+              if (liveData.summary?.total_comps > 0) {
+                setLoadingCompReview(true);
+                return fetch('/api/ai/comp-review', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    date,
+                    venue_id: selectedVenue.id,
+                    venue_name: selectedVenue.name,
+                    detailedComps: liveData.detailedComps,
+                    exceptions: parsedExceptions,
+                    summary: liveData.summary,
+                  }),
+                });
+              }
+            })
+            .then(res => res && res.ok ? res.json() : null)
             .then(data => { if (data?.success) setCompReview(data.data); })
-            .catch(err => console.error('AI comp review error:', err))
+            .catch(err => console.error('Comp exceptions/AI review error:', err))
             .finally(() => setLoadingCompReview(false));
         }
       } catch (err: any) {
