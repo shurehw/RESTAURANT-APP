@@ -56,8 +56,9 @@ CREATE POLICY "Users can view their venue's labor exceptions"
     USING (
         venue_id IN (
             SELECT v.id FROM venues v
-            INNER JOIN user_profiles up ON up.organization_id = v.organization_id
-            WHERE up.user_id = auth.uid()
+            INNER JOIN organization_users ou ON ou.organization_id = v.organization_id
+            WHERE ou.user_id = auth.uid()
+            AND ou.is_active = TRUE
         )
     );
 

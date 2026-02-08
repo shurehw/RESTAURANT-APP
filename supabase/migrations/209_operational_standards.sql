@@ -110,8 +110,9 @@ CREATE POLICY "Users can view their organization's operational standards"
     TO authenticated
     USING (
         org_id IN (
-            SELECT organization_id FROM user_profiles
+            SELECT organization_id FROM organization_users
             WHERE user_id = auth.uid()
+            AND is_active = TRUE
         )
     );
 
@@ -122,15 +123,17 @@ CREATE POLICY "Org admins can manage operational standards"
     TO authenticated
     USING (
         org_id IN (
-            SELECT organization_id FROM user_profiles
+            SELECT organization_id FROM organization_users
             WHERE user_id = auth.uid()
+            AND is_active = TRUE
             AND role IN ('admin', 'owner')
         )
     )
     WITH CHECK (
         org_id IN (
-            SELECT organization_id FROM user_profiles
+            SELECT organization_id FROM organization_users
             WHERE user_id = auth.uid()
+            AND is_active = TRUE
             AND role IN ('admin', 'owner')
         )
     );
