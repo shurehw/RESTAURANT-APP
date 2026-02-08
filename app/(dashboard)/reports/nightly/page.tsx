@@ -594,7 +594,8 @@ export default function NightlyReportPage() {
               }
 
               // AI comp review fires AFTER exceptions are loaded (uses pre-fetched data)
-              if (liveData.summary?.total_comps > 0) {
+              // Only run in nightly mode - period views don't have check-level detail
+              if (viewMode === 'nightly' && liveData.summary?.total_comps > 0) {
                 setLoadingCompReview(true);
                 return fetch('/api/ai/comp-review', {
                   method: 'POST',
@@ -703,11 +704,30 @@ export default function NightlyReportPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Global View Mode Switcher */}
+          <Tabs value={viewMode} onValueChange={(v) => handleViewChange(v as 'nightly' | 'wtd' | 'ptd')}>
+            <TabsList className="grid grid-cols-3 w-full max-w-md">
+              <TabsTrigger value="nightly">Nightly</TabsTrigger>
+              <TabsTrigger value="wtd">Week to Date</TabsTrigger>
+              <TabsTrigger value="ptd">Period to Date</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
       {/* Quick Venue Switcher */}
       <VenueQuickSwitcher />
+
+      {/* Period Date Range Banner */}
+      {viewMode !== 'nightly' && factsSummary && (
+        <Card className="p-4 mb-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            {viewMode === 'wtd' ? 'Week to Date' : 'Period to Date'}:
+            {' '}{formatDateDisplay(getPeriodStart(date, viewMode))} → {formatDateDisplay(date)}
+          </p>
+        </Card>
+      )}
 
       {/* Date Banner */}
       <div className="flex items-center gap-2 text-muted-foreground">
@@ -747,8 +767,17 @@ export default function NightlyReportPage() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {/* Net Sales with variance - recalculate using live TipSee data */}
                   {(() => {
-                    const liveNetSales = report.summary.net_sales || 0;
-                    const liveCovers = report.summary.total_covers || 0;
+                    // Select data source based on view mode
+                    const liveNetSales = viewMode === 'nightly'
+                      ? (report.summary.net_sales || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance.wtd_net_sales || 0)
+                        : (factsSummary?.variance.ptd_net_sales || 0);
+                    const liveCovers = viewMode === 'nightly'
+                      ? (report.summary.total_covers || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance.wtd_covers || 0)
+                        : (factsSummary?.variance.ptd_covers || 0);
                     const calcVar = (actual: number, comparison: number | null | undefined) => {
                       if (!comparison || comparison === 0) return null;
                       return ((actual - comparison) / comparison) * 100;
@@ -841,17 +870,27 @@ export default function NightlyReportPage() {
                     </div>
                   )}
                   {/* Labor efficiency preview */}
-                  {factsSummary.labor && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums">
-                        {(factsSummary.labor.labor_pct || 0).toFixed(1)}%
+                  {(() => {
+                    const laborPreview = viewMode === 'nightly'
+                      ? factsSummary.labor
+                      : viewMode === 'wtd'
+                        ? factsSummary?.labor_wtd
+                        : factsSummary?.labor_ptd;
+
+                    if (!laborPreview) return null;
+
+                    return (
+                      <div className="space-y-1">
+                        <div className="text-2xl font-bold tabular-nums">
+                          {(laborPreview.labor_pct || 0).toFixed(1)}%
+                        </div>
+                        <div className="text-xs text-muted-foreground uppercase">Labor %</div>
+                        <div className="text-xs text-muted-foreground">
+                          SPLH: {formatCurrency(laborPreview.splh || 0)}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground uppercase">Labor %</div>
-                      <div className="text-xs text-muted-foreground">
-                        SPLH: {formatCurrency(factsSummary.labor.splh || 0)}
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -887,15 +926,20 @@ export default function NightlyReportPage() {
             />
             {/* Food/Bev calculated from salesByCategory (live TipSee data) */}
             {(() => {
-              // Calculate Food/Bev split from category data, then apply to actual net sales
-              // Item-level gross doesn't match check-level net, so we use the ratio
-              const categories = report.salesByCategory || [];
+              // Select category data based on view mode
+              const categories = viewMode === 'nightly'
+                ? (report.salesByCategory || [])
+                : viewMode === 'wtd'
+                  ? (factsSummary?.categories_wtd || [])
+                  : (factsSummary?.categories_ptd || []);
+
               const isBevCategory = (cat: string) => {
                 const lower = (cat || '').toLowerCase();
                 return lower.includes('bev') || lower.includes('wine') ||
                        lower.includes('beer') || lower.includes('liquor') ||
                        lower.includes('cocktail');
               };
+
               const foodGross = categories
                 .filter((c: { category: string; net_sales: number }) => !isBevCategory(c.category))
                 .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
@@ -908,8 +952,12 @@ export default function NightlyReportPage() {
               const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
               const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
 
-              // Apply percentages to actual check-level net sales
-              const actualNetSales = report.summary.net_sales || 0;
+              // Use period-appropriate net sales
+              const actualNetSales = viewMode === 'nightly'
+                ? (report.summary.net_sales || 0)
+                : viewMode === 'wtd'
+                  ? (factsSummary?.variance.wtd_net_sales || 0)
+                  : (factsSummary?.variance.ptd_net_sales || 0);
               const foodSales = actualNetSales * (foodPct / 100);
               const bevSales = actualNetSales * (bevPct / 100);
 
@@ -951,14 +999,27 @@ export default function NightlyReportPage() {
           </div>
 
           {/* Labor & Productivity */}
-          {factsSummary?.labor && (() => {
-            const labor = factsSummary.labor!;
+          {(() => {
+            // Select labor data based on view mode
+            const labor = viewMode === 'nightly'
+              ? factsSummary?.labor
+              : viewMode === 'wtd'
+                ? factsSummary?.labor_wtd
+                : factsSummary?.labor_ptd;
+
+            if (!labor) return null;
+
             const otPct = labor.total_hours > 0 ? (labor.ot_hours / labor.total_hours) * 100 : 0;
             const avgRate = labor.total_hours > 0 ? labor.labor_cost / labor.total_hours : 0;
             const otCost = labor.ot_hours * avgRate * 1.5;
-            const costPerCover = (report.summary.total_covers > 0)
-              ? labor.labor_cost / report.summary.total_covers
-              : 0;
+
+            // Use period-appropriate covers for cost per cover calculation
+            const periodCovers = viewMode === 'nightly'
+              ? report.summary.total_covers
+              : viewMode === 'wtd'
+                ? (factsSummary?.variance.wtd_covers || 0)
+                : (factsSummary?.variance.ptd_covers || 0);
+            const costPerCover = periodCovers > 0 ? labor.labor_cost / periodCovers : 0;
             const hasOT = labor.ot_hours > 0;
 
             return (
@@ -1050,7 +1111,12 @@ export default function NightlyReportPage() {
                     const fohCost = labor.foh?.cost || 0;
                     const bohCost = labor.boh?.cost || 0;
                     const otherCost = labor.other?.cost || 0;
-                    const netSales = report.summary.net_sales || 0;
+                    // Use period-appropriate net sales
+                    const netSales = viewMode === 'nightly'
+                      ? (report.summary.net_sales || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance.wtd_net_sales || 0)
+                        : (factsSummary?.variance.ptd_net_sales || 0);
                     // % of sales labels
                     const fohPct = netSales > 0 ? (fohCost / netSales) * 100 : 0;
                     const bohPct = netSales > 0 ? (bohCost / netSales) * 100 : 0;
@@ -1448,32 +1514,25 @@ export default function NightlyReportPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
             <Card>
-              <CardHeader className="border-b border-brass/20 pb-0">
-                <CardTitle className="text-lg flex items-center gap-2 mb-3">
+              <CardHeader className="border-b border-brass/20">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-sage" />
                   Server Performance
                 </CardTitle>
-                <Tabs value={serverPerfTab} onValueChange={(v) => setServerPerfTab(v as 'nightly' | 'wtd' | 'ptd')}>
-                  <TabsList className="w-full grid grid-cols-3">
-                    <TabsTrigger value="nightly">Nightly</TabsTrigger>
-                    <TabsTrigger value="wtd">WTD</TabsTrigger>
-                    <TabsTrigger value="ptd">PTD</TabsTrigger>
-                  </TabsList>
-                </Tabs>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 {(() => {
                   // Show loading state for WTD/PTD when facts are loading
-                  if (serverPerfTab !== 'nightly' && loadingFacts) {
+                  if (viewMode !== 'nightly' && loadingFacts) {
                     return (
                       <div className="empty-state py-8">
-                        <p className="text-muted-foreground">Loading {serverPerfTab.toUpperCase()} data...</p>
+                        <p className="text-muted-foreground">Loading {viewMode.toUpperCase()} data...</p>
                       </div>
                     );
                   }
 
                   // Show error state for WTD/PTD if facts failed
-                  if (serverPerfTab !== 'nightly' && factsError) {
+                  if (viewMode !== 'nightly' && factsError) {
                     return (
                       <div className="empty-state py-8">
                         <p className="text-destructive text-sm">{factsError}</p>
@@ -1482,18 +1541,18 @@ export default function NightlyReportPage() {
                     );
                   }
 
-                  const serverData = serverPerfTab === 'nightly'
+                  const serverData = viewMode === 'nightly'
                     ? report.servers
-                    : serverPerfTab === 'wtd'
+                    : viewMode === 'wtd'
                       ? factsSummary?.servers_wtd || []
                       : factsSummary?.servers_ptd || [];
-                  const showDays = serverPerfTab !== 'nightly';
+                  const showDays = viewMode !== 'nightly';
 
                   if (serverData.length === 0) {
                     return (
                       <div className="empty-state py-8">
                         <p className="text-muted-foreground">
-                          {serverPerfTab === 'nightly' ? 'No server data' : `No ${serverPerfTab.toUpperCase()} data available`}
+                          {viewMode === 'nightly' ? 'No server data' : `No ${viewMode.toUpperCase()} data available`}
                         </p>
                       </div>
                     );
@@ -1556,16 +1615,36 @@ export default function NightlyReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {report.menuItems.length > 0 ? (
-                  (() => {
-                    const isBeverage = (cat: string) => {
-                      const lower = cat.toLowerCase();
-                      return lower.includes('bev') || lower.includes('wine') ||
-                             lower.includes('beer') || lower.includes('liquor') ||
-                             lower.includes('cocktail');
-                    };
-                    const foodItems = report.menuItems.filter(item => !isBeverage(item.parent_category || ''));
-                    const bevItems = report.menuItems.filter(item => isBeverage(item.parent_category || ''));
+                {(() => {
+                  // Select data source based on view mode
+                  const menuItems = viewMode === 'nightly'
+                    ? report.menuItems
+                    : viewMode === 'wtd'
+                      ? (factsSummary?.items_wtd || [])
+                      : (factsSummary?.items_ptd || []);
+
+                  if (menuItems.length === 0) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">No menu items</p>
+                      </div>
+                    );
+                  }
+
+                  const isBeverage = (cat: string) => {
+                    const lower = cat.toLowerCase();
+                    return lower.includes('bev') || lower.includes('wine') ||
+                           lower.includes('beer') || lower.includes('liquor') ||
+                           lower.includes('cocktail');
+                  };
+
+                  // Handle both TipSee data (parent_category) and facts data (category)
+                  const foodItems = menuItems.filter(item =>
+                    !isBeverage((item as any).parent_category || item.category || '')
+                  );
+                  const bevItems = menuItems.filter(item =>
+                    isBeverage((item as any).parent_category || item.category || '')
+                  );
 
                     return (
                       <table className="table-opsos">
@@ -1612,12 +1691,7 @@ export default function NightlyReportPage() {
                         </tbody>
                       </table>
                     );
-                  })()
-                ) : (
-                  <div className="empty-state py-8">
-                    <p className="text-muted-foreground">No menu items</p>
-                  </div>
-                )}
+                })()}
               </CardContent>
             </Card>
 
@@ -1635,7 +1709,27 @@ export default function NightlyReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {(report.discounts.length > 0 || report.detailedComps.length > 0) ? (
+                {viewMode !== 'nightly' ? (
+                  // Period view: Show summary only
+                  <div className="p-6 text-center">
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold text-error mb-2">
+                        {formatCurrency(report.summary.total_comps || 0)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Total Comps & Discounts
+                      </div>
+                      {report.summary.net_sales > 0 && (
+                        <div className="mt-2 text-lg font-semibold text-error/80">
+                          {((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1)}% of Net Sales
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground border-t pt-4">
+                      Detailed comp data is only available in Nightly view
+                    </div>
+                  </div>
+                ) : (report.discounts.length > 0 || report.detailedComps.length > 0) ? (
                   <Tabs defaultValue="by-reason" className="w-full">
                     <div className="px-4 pt-3">
                       <TabsList className="w-full grid grid-cols-2">
@@ -1750,15 +1844,16 @@ export default function NightlyReportPage() {
           </div>
 
           {/* VIP Activity */}
-          <Card>
-            <CardHeader className="border-b border-brass/20">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Star className="h-5 w-5 text-brass" />
-                VIP Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {(report.notableGuests.length > 0 || report.peopleWeKnow.length > 0) ? (
+          {viewMode === 'nightly' ? (
+            <Card>
+              <CardHeader className="border-b border-brass/20">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="h-5 w-5 text-brass" />
+                  VIP Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {(report.notableGuests.length > 0 || report.peopleWeKnow.length > 0) ? (
                 <Tabs defaultValue="top-spenders" className="w-full">
                   <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
                     <TabsTrigger
@@ -1874,9 +1969,21 @@ export default function NightlyReportPage() {
                 <div className="empty-state py-8">
                   <p className="text-muted-foreground">No VIP activity</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            // Period view: VIP activity not available
+            <Card className="border-dashed">
+              <CardContent className="p-8 text-center">
+                <Star className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                <p className="font-semibold mb-2">VIP Activity</p>
+                <p className="text-sm text-muted-foreground">
+                  Guest-level data is only available in Nightly view
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Attestation Footer — Incidents, Coaching & Submit */}
           <AttestationFooter
