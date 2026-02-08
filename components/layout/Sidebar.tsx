@@ -43,6 +43,8 @@ export function Sidebar({ user }: SidebarProps) {
         </NavSection>
         <NavSection title="System Admin">
           <NavLink href="/admin">Admin</NavLink>
+          <NavLink href="/admin/operational-standards">Operational Standards</NavLink>
+          <NavLink href="/admin/comp-settings">Comp Settings</NavLink>
         </NavSection>
       </nav>
 
