@@ -183,4 +183,96 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
       required: ['start_date'],
     },
   },
+
+  // --- SUPABASE INTERNAL TABLES ---
+
+  {
+    name: 'get_budget_variance',
+    description:
+      'Get budget vs actual performance: actual sales vs sales budget, labor cost vs labor budget, COGS % vs target. Includes variance amounts, percentages, and severity status (normal/warning/critical). Use for "are we on budget?" or "how are we doing vs target?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+      },
+      required: ['start_date'],
+    },
+  },
+  {
+    name: 'get_operational_exceptions',
+    description:
+      'Get current operational issues requiring attention: labor overages, high COGS, low sales, pending invoice approvals, low stock alerts. Returns only items flagged as warning or critical in the last 7 days. Use for "what needs my attention?" or "any issues today?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {},
+    },
+  },
+  {
+    name: 'get_demand_forecasts',
+    description:
+      'Get demand forecasts: predicted covers, revenue, and confidence levels by date and shift type (lunch/dinner). Use for "how busy will we be tomorrow?" or "what covers are predicted for Saturday dinner?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+      },
+      required: ['start_date'],
+    },
+  },
+  {
+    name: 'get_invoices',
+    description:
+      'Get invoices with vendor name, amounts, dates, and approval status. Can filter by status (draft, pending_approval, approved, exported). Use for "show me pending invoices" or "what did we spend on vendors this week?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+        status: {
+          type: 'string',
+          enum: ['draft', 'pending_approval', 'approved', 'exported'],
+          description: 'Filter by invoice status. Omit to show all statuses.',
+        },
+      },
+      required: ['start_date'],
+    },
+  },
+  {
+    name: 'get_current_inventory',
+    description:
+      'Get current inventory on hand: item names, categories, quantities, unit costs, and total values. Can filter by category or search for specific items. Use for "what inventory do we have?" or "how much flour is on hand?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        category: {
+          type: 'string',
+          description: 'Filter by category (e.g. "produce", "dairy", "meat"). Partial match.',
+        },
+        search: {
+          type: 'string',
+          description: 'Search for items by name (e.g. "flour", "salmon"). Partial match.',
+        },
+      },
+    },
+  },
 ];

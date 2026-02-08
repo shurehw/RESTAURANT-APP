@@ -5,6 +5,7 @@
  */
 
 import type { Pool } from 'pg';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   getDailySales,
   getSalesByCategory,
@@ -16,6 +17,13 @@ import {
   getPaymentDetails,
   getLogbook,
 } from './queries';
+import {
+  getBudgetVariance,
+  getOperationalExceptions,
+  getDemandForecasts,
+  getInvoices,
+  getCurrentInventory,
+} from './supabase-queries';
 
 const MAX_DATE_RANGE_DAYS = 90;
 const MAX_DISPLAY_ROWS = 30;
@@ -79,39 +87,63 @@ function formatResults(rows: Record<string, any>[], toolName: string): string {
 
 /**
  * Execute a chatbot tool call securely.
- * locationUuids are injected server-side — the AI never controls which locations are queried.
+ * locationUuids/venueIds are injected server-side — the AI never controls which locations are queried.
  */
 export async function executeTool(
   toolName: string,
   toolInput: Record<string, any>,
-  locationUuids: string[],
-  pool: Pool
+  ctx: {
+    locationUuids: string[];
+    venueIds: string[];
+    pool: Pool;
+    supabase: SupabaseClient;
+  }
 ): Promise<string> {
   try {
+    // Supabase tools (no dates required for some)
+    switch (toolName) {
+      case 'get_operational_exceptions':
+        return formatResults(
+          await getOperationalExceptions(ctx.supabase, ctx.venueIds),
+          toolName
+        );
+
+      case 'get_current_inventory':
+        return formatResults(
+          await getCurrentInventory(ctx.supabase, ctx.venueIds, {
+            category: toolInput.category,
+            search: toolInput.search,
+          }),
+          toolName
+        );
+    }
+
+    // All remaining tools require dates
     const dates = parseDates(toolInput);
 
     switch (toolName) {
+      // --- TipSee POS tools ---
       case 'get_daily_sales':
         return formatResults(
-          await getDailySales(pool, locationUuids, dates),
+          await getDailySales(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_sales_by_category':
         return formatResults(
-          await getSalesByCategory(pool, locationUuids, dates),
+          await getSalesByCategory(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_server_performance':
         return formatResults(
-          await getServerPerformance(pool, locationUuids, dates),
+          await getServerPerformance(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_top_menu_items':
         return formatResults(
-          await getTopMenuItems(pool, locationUuids, {
+          await getTopMenuItems(ctx.pool, ctx.locationUuids, {
             ...dates,
             sortBy: toolInput.sort_by === 'quantity' ? 'quantity' : 'revenue',
           }),
@@ -120,36 +152,58 @@ export async function executeTool(
 
       case 'get_comp_summary':
         return formatResults(
-          await getCompSummary(pool, locationUuids, dates),
+          await getCompSummary(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_labor_summary':
         return formatResults(
-          await getLaborSummary(pool, locationUuids, dates),
+          await getLaborSummary(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_reservations':
         return formatResults(
-          await getReservations(pool, locationUuids, dates),
+          await getReservations(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_payment_details':
         return formatResults(
-          await getPaymentDetails(pool, locationUuids, dates),
+          await getPaymentDetails(ctx.pool, ctx.locationUuids, dates),
           toolName
         );
 
       case 'get_logbook':
         return formatResults(
-          await getLogbook(pool, locationUuids, dates),
+          await getLogbook(ctx.pool, ctx.locationUuids, dates),
+          toolName
+        );
+
+      // --- Supabase internal tools ---
+      case 'get_budget_variance':
+        return formatResults(
+          await getBudgetVariance(ctx.supabase, ctx.venueIds, dates),
+          toolName
+        );
+
+      case 'get_demand_forecasts':
+        return formatResults(
+          await getDemandForecasts(ctx.supabase, ctx.venueIds, dates),
+          toolName
+        );
+
+      case 'get_invoices':
+        return formatResults(
+          await getInvoices(ctx.supabase, ctx.venueIds, {
+            ...dates,
+            status: toolInput.status,
+          }),
           toolName
         );
 
       default:
-        return `Unknown tool: ${toolName}. Available tools: get_daily_sales, get_sales_by_category, get_server_performance, get_top_menu_items, get_comp_summary, get_labor_summary, get_reservations, get_payment_details, get_logbook.`;
+        return `Unknown tool: ${toolName}.`;
     }
   } catch (error) {
     if (typeof error === 'string') {
