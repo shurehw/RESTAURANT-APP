@@ -154,7 +154,7 @@ export function CompSettingsManager({ organizations }: Props) {
             {activeTab === 'reasons' && (
               <ApprovedReasonsManager
                 reasons={settings.approved_reasons || []}
-                onSave={(reasons) => handleSaveSettings({ approved_reasons: reasons })}
+                onSave={(reasons: any) => handleSaveSettings({ approved_reasons: reasons })}
                 loading={loading}
               />
             )}
