@@ -39,7 +39,7 @@ export async function closeTipseePool(): Promise<void> {
 }
 
 // Type for cleaning database rows - converts bigints and numeric strings to numbers
-function cleanRow(row: Record<string, any>): Record<string, any> {
+export function cleanRow(row: Record<string, any>): Record<string, any> {
   const clean: Record<string, any> = {};
   for (const [k, v] of Object.entries(row)) {
     if (typeof v === 'bigint') {

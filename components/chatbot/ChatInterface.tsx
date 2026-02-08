@@ -14,7 +14,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m your OpsOS assistant. I can help you analyze sales, labor, inventory, budgets, and forecasts. What would you like to know?',
+      content: 'Hello! I\'m your OpsOS assistant. I can query your POS data directly — ask me about sales, servers, menu items, comps, labor, reservations, and more.',
     },
   ]);
   const [input, setInput] = useState('');
@@ -145,32 +145,32 @@ export function ChatInterface() {
         {/* Example Queries */}
         <div className="mt-3 flex flex-wrap gap-2">
           <button
-            onClick={() => setInput('What were my sales yesterday?')}
+            onClick={() => setInput('What were last night\'s sales?')}
             className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
             disabled={loading}
           >
-            Sales yesterday
+            Last night's sales
           </button>
           <button
-            onClick={() => setInput('What is my labor cost % this week?')}
+            onClick={() => setInput('Who was my top server last night?')}
             className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
             disabled={loading}
           >
-            Labor cost %
+            Top server
           </button>
           <button
-            onClick={() => setInput('Show me upcoming demand forecast')}
+            onClick={() => setInput('Show me comps from last night')}
             className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
             disabled={loading}
           >
-            Forecast
+            Comp summary
           </button>
           <button
-            onClick={() => setInput('Am I over budget this month?')}
+            onClick={() => setInput('What were my top selling items this week?')}
             className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
             disabled={loading}
           >
-            Budget status
+            Top menu items
           </button>
         </div>
       </div>
