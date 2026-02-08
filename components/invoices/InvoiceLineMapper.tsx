@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Check, Sparkles, FileText } from 'lucide-react';
+import { Search, Plus, Check, Sparkles, FileText, Package, AlertTriangle } from 'lucide-react';
 import { PackConfigurationManager, PackConfig } from './PackConfigurationManager';
 import { InvoicePDFViewer } from './InvoicePDFViewer';
 
@@ -877,7 +877,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           {/* Product Specifications */}
           {(line.catch_weight || line.piece_count || line.nominal_case_weight || line.product_specs) && (
             <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
-              <div className="font-semibold text-green-900 mb-1">📦 Product Specs (OCR Extracted):</div>
+              <div className="font-semibold text-green-900 mb-1 flex items-center gap-1"><Package className="w-4 h-4" /> Product Specs (OCR Extracted):</div>
               <div className="flex flex-wrap gap-2">
                 {line.catch_weight && (
                   <Badge variant="outline" className="bg-white border-green-300 text-green-900">
@@ -1146,8 +1146,8 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             {/* Mapping Unit Selection */}
             {packSizeNumber && (
               <div className="p-3 border border-orange-200 bg-orange-50 rounded-md">
-                <div className="text-xs font-semibold text-orange-900 mb-2">
-                  ⚠️ Pack Size Detected: {packSizeNumber}/Cs
+                <div className="text-xs font-semibold text-orange-900 mb-2 flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4" /> Pack Size Detected: {packSizeNumber}/Cs
                 </div>
                 <div className="text-xs text-orange-700 mb-2">
                   OCR shows qty={line.qty}. Is this {line.qty} cases or {line.qty} bottles?
@@ -1391,7 +1391,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                       <p className="text-xs text-sage mt-1">✓ AI suggested best match selected</p>
                     )}
                     {glSuggestions.length === 0 && allGlAccounts.length === 0 && !isNormalizing && (
-                      <p className="text-xs text-orange-600 mt-1">⚠️ GL accounts failed to load. Check console for errors.</p>
+                      <p className="text-xs text-orange-600 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> GL accounts failed to load. Check console for errors.</p>
                     )}
                   </div>
 
@@ -1484,7 +1484,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     {isCreating ? 'Creating...' : 'Create & Map Item'}
                   </Button>
                   {!glAccountId && newItemName.trim() && (
-                    <p className="text-xs text-red-600 mt-1">⚠️ GL Account is required</p>
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> GL Account is required</p>
                   )}
                   </div>
                 )}

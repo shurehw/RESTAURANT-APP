@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Food Cost Variance Report
  * Shows theoretical vs actual food cost analysis

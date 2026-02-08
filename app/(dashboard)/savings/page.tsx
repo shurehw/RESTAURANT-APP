@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Monthly/Annual Savings Dashboard
  * Shows cost savings from inventory par optimization

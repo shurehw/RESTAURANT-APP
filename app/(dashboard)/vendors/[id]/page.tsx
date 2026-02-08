@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Vendor Detail & Profile Page
  * View and manage vendor information, ACH forms, and documents

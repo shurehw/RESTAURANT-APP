@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * New Order Page
  */

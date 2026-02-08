@@ -1,10 +1,11 @@
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
 const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login'];
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Allow public routes
@@ -12,30 +13,60 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow API routes (they handle their own auth)
-  if (pathname.startsWith('/api/')) {
-    return NextResponse.next();
-  }
+  // ========================================================================
+  // Supabase session refresh (standard SSR pattern)
+  // Calling getUser() refreshes expired access tokens using the refresh token.
+  // Refreshed cookies are forwarded to both the browser (response) and
+  // downstream route handlers (updated request).
+  // ========================================================================
+  let supabaseResponse = NextResponse.next({ request });
 
-  // ========================================================================
-  // Check for authentication: Supabase session OR legacy user_id cookie
-  // This supports both the new auth flow and existing users during migration
-  // ========================================================================
-  
-  // Check for legacy user_id cookie
-  const legacyUserId = request.cookies.get('user_id');
-  
-  // Check for Supabase auth cookies (sb-*-auth-token pattern)
-  const hasSupabaseSession = Array.from(request.cookies.getAll()).some(
+  const hasSupabaseSession = request.cookies.getAll().some(
     cookie => cookie.name.includes('-auth-token')
   );
 
-  // Allow access if either auth method is present
-  if (legacyUserId || hasSupabaseSession) {
-    return NextResponse.next();
+  let supabaseUser = null;
+
+  if (hasSupabaseSession) {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            // Update request cookies so downstream route handlers see refreshed tokens
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+            supabaseResponse = NextResponse.next({ request });
+            // Update response cookies so the browser stores refreshed tokens
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    supabaseUser = user;
   }
 
-  // No authentication found - redirect to login
+  // API routes handle their own auth — pass through with refreshed cookies
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse;
+  }
+
+  // Check for legacy user_id cookie (migration support)
+  const legacyUserId = request.cookies.get('user_id');
+
+  // Allow access if either auth method is present
+  if (supabaseUser || legacyUserId) {
+    return supabaseResponse;
+  }
+
+  // No authentication found — redirect to login
   const loginUrl = new URL('/login', request.url);
   loginUrl.searchParams.set('redirect', pathname);
   return NextResponse.redirect(loginUrl);

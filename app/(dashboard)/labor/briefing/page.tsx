@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Daily Forecast Briefing Page
  * AI-powered morning briefing for managers

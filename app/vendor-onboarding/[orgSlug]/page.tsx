@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Organization-specific Vendor Onboarding Landing Page
  * Each organization has their own branded vendor onboarding page

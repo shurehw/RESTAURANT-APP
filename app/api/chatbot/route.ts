@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
-import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues } from '@/lib/tenant';
+import { resolveContext } from '@/lib/auth/resolveContext';
 import { rateLimit } from '@/lib/rate-limit';
+import { getServiceClient } from '@/lib/supabase/service';
+import { getTipseePool } from '@/lib/database/tipsee';
 import { z } from 'zod';
-import OpenAI from 'openai';
+import Anthropic from '@anthropic-ai/sdk';
+import { CHATBOT_TOOLS } from '@/lib/chatbot/tools';
+import { executeTool } from '@/lib/chatbot/executor';
+
+// Tool-use loop can make multiple API calls; allow up to 60s on Vercel
+export const maxDuration = 60;
 
 const chatSchema = z.object({
   question: z.string().min(1),
@@ -15,182 +20,54 @@ const chatSchema = z.object({
   })).optional().default([]),
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-/**
- * Fetch relevant context from Supabase based on user question
- */
-async function getRelevantContext(
-  question: string,
-  venueIds: string[],
-  supabase: any
-): Promise<string> {
-  const contextParts: string[] = [];
-
-  // Detect what the question is about
-  const lowerQ = question.toLowerCase();
-
-  // Sales/Revenue queries
-  if (lowerQ.includes('sales') || lowerQ.includes('revenue')) {
-    const { data: posData } = await supabase
-      .from('pos_daily_sales')
-      .select('*')
-      .in('venue_id', venueIds)
-      .order('business_date', { ascending: false })
-      .limit(30);
-
-    if (posData && posData.length > 0) {
-      contextParts.push('=== SALES DATA ===');
-      posData.forEach((row: any) => {
-        contextParts.push(
-          `Date: ${row.business_date}; Venue: ${row.venue_id}; Net Sales: ${row.net_sales}; ` +
-          `Gross Sales: ${row.gross_sales}; Guests: ${row.guest_count}; Tax: ${row.sales_tax}`
-        );
-      });
-    }
+let _anthropic: Anthropic | null = null;
+function getAnthropic(): Anthropic {
+  if (!_anthropic) {
+    _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   }
-
-  // Labor queries
-  if (lowerQ.includes('labor') || lowerQ.includes('schedule') || lowerQ.includes('shift')) {
-    const { data: laborData } = await supabase
-      .from('shift_assignments')
-      .select(`
-        *,
-        employee:employees(first_name, last_name),
-        position:positions(name, category, base_hourly_rate)
-      `)
-      .in('venue_id', venueIds)
-      .order('business_date', { ascending: false })
-      .limit(50);
-
-    if (laborData && laborData.length > 0) {
-      contextParts.push('=== LABOR DATA ===');
-      laborData.forEach((row: any) => {
-        contextParts.push(
-          `Date: ${row.business_date}; Employee: ${row.employee?.first_name} ${row.employee?.last_name}; ` +
-          `Position: ${row.position?.name}; Hours: ${row.scheduled_hours}; ` +
-          `Rate: $${row.position?.base_hourly_rate}/hr; Status: ${row.status}`
-        );
-      });
-    }
-  }
-
-  // Inventory/COGS queries
-  if (lowerQ.includes('inventory') || lowerQ.includes('stock') || lowerQ.includes('cogs') || lowerQ.includes('cost')) {
-    const { data: invoiceData } = await supabase
-      .from('invoices')
-      .select(`
-        *,
-        vendor:vendors(name),
-        lines:invoice_lines(quantity, unit_cost, total_cost, product:products(name, category))
-      `)
-      .in('venue_id', venueIds)
-      .order('invoice_date', { ascending: false })
-      .limit(20);
-
-    if (invoiceData && invoiceData.length > 0) {
-      contextParts.push('=== INVOICE/COGS DATA ===');
-      invoiceData.forEach((inv: any) => {
-        const total = inv.lines?.reduce((sum: number, line: any) => sum + (line.total_cost || 0), 0) || 0;
-        contextParts.push(
-          `Date: ${inv.invoice_date}; Vendor: ${inv.vendor?.name}; ` +
-          `Invoice #: ${inv.invoice_number}; Total: $${total.toFixed(2)}; Status: ${inv.status}`
-        );
-      });
-    }
-  }
-
-  // Budget queries
-  if (lowerQ.includes('budget')) {
-    const { data: budgetData } = await supabase
-      .from('budgets')
-      .select('*')
-      .in('venue_id', venueIds)
-      .order('period_start', { ascending: false })
-      .limit(10);
-
-    if (budgetData && budgetData.length > 0) {
-      contextParts.push('=== BUDGET DATA ===');
-      budgetData.forEach((row: any) => {
-        contextParts.push(
-          `Period: ${row.period_start} to ${row.period_end}; Category: ${row.category}; ` +
-          `Budget: $${row.amount}; Spent: $${row.actual_amount || 0}; ` +
-          `Remaining: $${row.amount - (row.actual_amount || 0)}`
-        );
-      });
-    }
-  }
-
-  // Forecasts
-  if (lowerQ.includes('forecast') || lowerQ.includes('predict')) {
-    const { data: forecastData } = await supabase
-      .from('demand_forecasts')
-      .select('*')
-      .in('venue_id', venueIds)
-      .gte('business_date', new Date().toISOString().split('T')[0])
-      .order('business_date')
-      .limit(30);
-
-    if (forecastData && forecastData.length > 0) {
-      contextParts.push('=== DEMAND FORECASTS ===');
-      forecastData.forEach((row: any) => {
-        contextParts.push(
-          `Date: ${row.business_date}; Shift: ${row.shift_type}; ` +
-          `Predicted Covers: ${row.covers_predicted}; Predicted Revenue: $${row.revenue_predicted}; ` +
-          `Confidence: ${(row.confidence_level * 100).toFixed(0)}%`
-        );
-      });
-    }
-  }
-
-  return contextParts.join('\n');
+  return _anthropic;
 }
 
-/**
- * System prompt for OpsOS chatbot
- */
 const SYSTEM_PROMPT = `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
 
-Your job is to analyze operational data (sales, labor, inventory, budgets) and provide clear, actionable insights to restaurant managers.
+Your job is to answer questions about restaurant operations using real POS (point-of-sale) data. You have access to tools that query the restaurant's TipSee POS database directly.
 
-DATA SOURCES:
-You have access to row-level operational data from multiple restaurants including:
-- Daily POS sales (net sales, gross sales, guest count, taxes)
-- Labor schedules and shifts (employees, positions, hours, rates)
-- Invoices and COGS (vendor purchases, product costs)
-- Budgets (planned vs actual spend by category)
-- Demand forecasts (predicted covers and revenue)
+AVAILABLE DATA (via tools):
 
-DATA FORMAT:
-- Each data section starts with "=== [TYPE] DATA ==="
-- Rows are semicolon-separated key-value pairs
-- All monetary values are in USD
-- Dates are in YYYY-MM-DD format
+POS Data (TipSee):
+- Daily sales: revenue, checks, covers, comps, voids, tax
+- Sales by category: food vs beverage breakdown
+- Server performance: tickets, covers, sales, tips, turn times
+- Top menu items: best sellers by revenue or quantity
+- Comp summary: comps grouped by reason code
+- Labor: hours worked, labor cost, employee count
+- Reservations: guest names, VIP status, party sizes
+- Payment details: check totals, tips, cardholder names
+- Manager logbook: daily notes and observations
+
+Internal Operations Data:
+- Budget vs actual: sales/labor/COGS targets vs actuals with variance severity
+- Operational exceptions: issues needing attention (labor overages, high COGS, etc.)
+- Demand forecasts: predicted covers and revenue by shift
+- Invoices: vendor invoices, amounts, approval status
+- Inventory: current on-hand quantities, costs, values
+
+WORKFLOW:
+1. When the user asks a data question, ALWAYS call the appropriate tool(s) first
+2. Use the data returned to provide a precise, data-backed answer
+3. For comparison questions, call tools multiple times with different date ranges
+4. Today's date is ${new Date().toISOString().split('T')[0]}
 
 ANALYSIS GUIDELINES:
-1. Be numerically precise - show calculations when helpful
-2. Compare time periods (day-over-day, week-over-week, month-over-month)
-3. Calculate key metrics:
-   - Labor cost % (labor cost / sales * 100)
-   - Average check (sales / guest count)
-   - Cost per guest (total costs / guest count)
-   - Budget variance (actual - budget) and % variance
-   - Forecast accuracy (actual - predicted) and % error
-4. Identify trends, outliers, and anomalies
-5. Provide actionable recommendations
-
-OUTPUT FORMAT:
-1. Direct answer (1-2 sentences)
-2. Key calculations (bullets or table)
-3. Insights and recommendations
-4. Data sources used
+- Be numerically precise — show calculations when helpful
+- Calculate key metrics: labor cost %, average check, SPLH (sales per labor hour)
+- Identify trends, outliers, and anomalies
+- Provide actionable recommendations
 
 GUARDRAILS:
-- Never fabricate data
-- If data is missing, state what's needed
-- Always cite date ranges and venues used
+- Never fabricate data — only reference data returned by tools
+- If a tool returns no data, say so clearly
+- Always cite the date range used
 - Flag assumptions clearly
 
 TONE:
@@ -198,50 +75,116 @@ TONE:
 - Focus on actionable insights
 - Use restaurant industry terminology`;
 
+const MAX_TOOL_ITERATIONS = 5;
+
 export async function POST(req: NextRequest) {
   return guard(async () => {
     rateLimit(req, ':chatbot');
-    const user = await requireUser();
-    const { venueIds } = await getUserOrgAndVenues(user.id);
+
+    const ctx = await resolveContext();
+
+    if (!ctx || !ctx.isAuthenticated) {
+      return NextResponse.json({
+        answer: 'Your session has expired. Please refresh the page and log in again.',
+        context_used: false,
+      });
+    }
+
+    if (!ctx.orgId) {
+      return NextResponse.json({
+        answer: 'Your account is not linked to an organization. Please contact your administrator.',
+        context_used: false,
+      });
+    }
+
+    console.log('[chatbot] Auth OK:', { userId: ctx.authUserId, orgId: ctx.orgId });
+
+    // Get venues for the user's organization
+    const supabase = getServiceClient();
+    const { data: venues } = await (supabase as any)
+      .from('venues')
+      .select('id')
+      .eq('organization_id', ctx.orgId);
+    const venueIds: string[] = (venues || []).map((v: any) => v.id);
+    const { data: mappings } = await (supabase as any)
+      .from('venue_tipsee_mapping')
+      .select('tipsee_location_uuid')
+      .in('venue_id', venueIds);
+
+    const locationUuids: string[] = (mappings || [])
+      .map((m: any) => m.tipsee_location_uuid)
+      .filter(Boolean);
+
+    if (locationUuids.length === 0) {
+      return NextResponse.json({
+        answer: 'No POS locations are linked to your account. Please contact your administrator to set up TipSee venue mapping.',
+        context_used: false,
+      });
+    }
 
     const body = await req.json();
     const { question, history } = chatSchema.parse(body);
 
-    // Get relevant context from database
-    const supabase = await createClient();
-    const context = await getRelevantContext(question, venueIds, supabase);
+    // Build messages
+    const messages: Anthropic.MessageParam[] = [];
+    for (const msg of history) {
+      messages.push({ role: msg.role, content: msg.content });
+    }
+    messages.push({ role: 'user', content: question });
 
-    // Build messages for OpenAI
-    const messages: any[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
-    ];
+    const pool = getTipseePool();
+    const toolCtx = { locationUuids, venueIds, pool, supabase };
 
-    if (context) {
-      messages.push({
-        role: 'system',
-        content: `Relevant operational data:\n\n${context}`,
+    // Tool-use loop
+    let response = await getAnthropic().messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      system: SYSTEM_PROMPT,
+      messages,
+      tools: CHATBOT_TOOLS,
+      max_tokens: 1500,
+      temperature: 0.3,
+    });
+
+    for (let i = 0; i < MAX_TOOL_ITERATIONS && response.stop_reason === 'tool_use'; i++) {
+      const toolBlocks = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
+      );
+
+      // Append assistant's response (includes tool_use blocks)
+      messages.push({ role: 'assistant', content: response.content });
+
+      // Execute all tool calls in parallel
+      const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+        toolBlocks.map(async (block) => ({
+          type: 'tool_result' as const,
+          tool_use_id: block.id,
+          content: await executeTool(
+            block.name,
+            block.input as Record<string, any>,
+            toolCtx
+          ),
+        }))
+      );
+
+      messages.push({ role: 'user', content: toolResults });
+
+      response = await getAnthropic().messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        system: SYSTEM_PROMPT,
+        messages,
+        tools: CHATBOT_TOOLS,
+        max_tokens: 1500,
+        temperature: 0.3,
       });
     }
 
-    // Add conversation history
-    messages.push(...history);
-
-    // Add current question
-    messages.push({ role: 'user', content: question });
-
-    // Call OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini', // Use mini for cost efficiency
-      messages,
-      temperature: 0.3, // Lower temp for more factual responses
-      max_tokens: 1000,
-    });
-
-    const answer = completion.choices[0].message.content;
+    // Extract final text answer
+    const textBlock = response.content.find((b) => b.type === 'text');
+    const answer = textBlock?.type === 'text' ? textBlock.text : '';
 
     return NextResponse.json({
       answer,
-      context_used: context ? true : false,
+      context_used: true,
     });
   });
 }

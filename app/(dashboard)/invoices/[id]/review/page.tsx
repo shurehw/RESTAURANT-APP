@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Invoice Review & Mapping Page
  * Review OCR-extracted invoice and map unmapped items

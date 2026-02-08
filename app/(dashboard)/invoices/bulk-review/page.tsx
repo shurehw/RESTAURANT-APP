@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 /**
  * Bulk Item Mapping Page
  * Map unmapped items from all invoices in one place
