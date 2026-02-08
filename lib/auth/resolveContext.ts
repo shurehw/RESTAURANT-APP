@@ -81,8 +81,9 @@ export async function resolveContext(): Promise<TenantContext | null> {
 
   const customUserId = userIdCookie.value;
 
-  // Get email from custom users table
-  const { data: customUser } = await supabase
+  // Get email from custom users table (use admin client to bypass RLS)
+  const adminClientForLookup = createAdminClient();
+  const { data: customUser } = await adminClientForLookup
     .from('users')
     .select('email')
     .eq('id', customUserId)
