@@ -324,7 +324,7 @@ export default function NightlyReportPage() {
         : factsSummary?.servers_ptd;
     if (!servers?.length) return null;
     const count = servers.length;
-    const withTips = servers.filter((s) => s.tip_pct != null);
+    const withTips = servers.filter((s) => s.tip_pct != null && s.tip_pct !== undefined);
     return {
       avg_covers: servers.reduce((sum, s) => sum + s.covers, 0) / count,
       avg_net_sales: servers.reduce((sum, s) => sum + s.net_sales, 0) / count,
@@ -332,7 +332,7 @@ export default function NightlyReportPage() {
       avg_turn_mins: servers.reduce((sum, s) => sum + (s.avg_turn_mins || 0), 0) / count,
       avg_per_cover: servers.reduce((sum, s) => sum + s.avg_per_cover, 0) / count,
       avg_tip_pct: withTips.length > 0
-        ? withTips.reduce((sum, s) => sum + (s.tip_pct || 0), 0) / withTips.length
+        ? withTips.reduce((sum, s) => sum + s.tip_pct!, 0) / withTips.length
         : null,
       server_count: count,
     };
@@ -1391,7 +1391,9 @@ export default function NightlyReportPage() {
                               {server.tip_pct != null ? `${server.tip_pct}%` : '---'}
                             </td>
                             {showDays && (
-                              <td className="text-right">{'days_worked' in server ? (server as any).days_worked : '---'}</td>
+                              <td className="text-right">
+                                {(server as any).days_worked ?? '---'}
+                              </td>
                             )}
                           </tr>
                         ))}

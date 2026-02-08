@@ -61,12 +61,16 @@ export function getFiscalPeriod(
   let fiscalYear = fyStart.getFullYear() + 1; // FY named for year it ends in
 
   // Adjust to find the correct fiscal year
+  // Use full year increments instead of 52-week approximations to avoid drift
   while (targetDate < fyStart) {
-    fyStart.setDate(fyStart.getDate() - 364); // Go back 52 weeks
+    fyStart.setFullYear(fyStart.getFullYear() - 1);
     fiscalYear--;
   }
-  while (targetDate >= new Date(fyStart.getTime() + 364 * 24 * 60 * 60 * 1000)) {
-    fyStart.setDate(fyStart.getDate() + 364); // Go forward 52 weeks
+  const nextYearStart = new Date(fyStart);
+  nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
+  while (targetDate >= nextYearStart) {
+    fyStart.setFullYear(fyStart.getFullYear() + 1);
+    nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
     fiscalYear++;
   }
 
@@ -127,10 +131,10 @@ export function getSamePeriodLastYear(
   fyStartDate: string | null
 ): { startDate: string; endDate: string } {
   if (calendarType === 'standard' || !fyStartDate) {
-    // Standard: just go back 52 weeks for the same day of week
+    // Standard: go back 1 year
     const targetDate = typeof date === 'string' ? new Date(date) : date;
     const lastYear = new Date(targetDate);
-    lastYear.setDate(lastYear.getDate() - 364); // 52 weeks
+    lastYear.setFullYear(lastYear.getFullYear() - 1);
 
     const dayOfWeek = lastYear.getDay();
     const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -148,7 +152,7 @@ export function getSamePeriodLastYear(
 
   // Calculate last year's FY start
   const lyFyStart = new Date(fyStartDate);
-  lyFyStart.setDate(lyFyStart.getDate() - 364); // 52 weeks earlier
+  lyFyStart.setFullYear(lyFyStart.getFullYear() - 1);
 
   // Find the same period in last year
   const lastYearPeriod = getFiscalPeriod(

@@ -5,6 +5,8 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { CompException, CompExceptionsResult } from '@/lib/database/tipsee';
+import type { CompSettings } from '@/lib/database/comp-settings';
+import { getDefaultCompSettings } from '@/lib/database/comp-settings';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -65,14 +67,22 @@ export interface CompReviewOutput {
  * Review all comp activity and generate recommendations
  */
 export async function reviewComps(
-  input: CompReviewInput
+  input: CompReviewInput,
+  settings?: CompSettings
 ): Promise<CompReviewOutput> {
-  const prompt = buildCompReviewPrompt(input);
+  // Use provided settings or fallback to defaults
+  const compSettings = settings || {
+    ...getDefaultCompSettings(),
+    org_id: '',
+    version: 1,
+  };
+
+  const prompt = buildCompReviewPrompt(input, compSettings);
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250929',
-    max_tokens: 4000,
-    temperature: 0.3, // Lower temperature for more consistent, analytical output
+    model: compSettings.ai_model,
+    max_tokens: compSettings.ai_max_tokens,
+    temperature: compSettings.ai_temperature,
     messages: [
       {
         role: 'user',
@@ -91,32 +101,32 @@ export async function reviewComps(
   return response as CompReviewOutput;
 }
 
-function buildCompReviewPrompt(input: CompReviewInput): string {
+function buildCompReviewPrompt(input: CompReviewInput, settings: CompSettings): string {
+  // Build approved reasons list from settings
+  const approvedReasonsList = settings.approved_reasons
+    .map(reason => {
+      let line = `- ${reason.name}`;
+      if (reason.max_amount !== null) {
+        line += ` (max $${reason.max_amount})`;
+      }
+      if (reason.requires_manager_approval) {
+        line += ` [requires manager approval]`;
+      }
+      return line;
+    })
+    .join('\n');
+
   return `You are an AI operations consultant reviewing comp activity for ${input.venueName} on ${input.date}.
 
 Your role is to analyze ALL comp activity (not just violations) and provide actionable recommendations to management.
 
-## APPROVED COMP REASONS (from h.wood Group SOP)
-- Drink Tickets
-- Promoter / Customer Development
-- Guest Recovery
-- Black Card
-- Staff discounts (10%, 20%, 25%, 30%, 50%)
-- Executive/Partner Comps
-- Goodwill
-- DNL (Did Not Like)
-- Spill / Broken items
-- FOH Mistake
-- BOH Mistake / Wrong Temp
-- Barbuy
-- Performer / Band / DJ
-- Media / PR / Celebrity
-- Manager Meal
+## APPROVED COMP REASONS
+${approvedReasonsList}
 
 ## THRESHOLDS
-- High value comp: $200+
-- High comp % of check: >50%
-- Daily comp % budget: 2% warning, 3% critical
+- High value comp: $${settings.high_value_comp_threshold}+
+- High comp % of check: >${settings.high_comp_pct_threshold}%
+- Daily comp % budget: ${settings.daily_comp_pct_warning}% warning, ${settings.daily_comp_pct_critical}% critical
 
 ## DATA TO ANALYZE
 
@@ -221,8 +231,8 @@ Analyze ALL comps (not just exceptions) and provide:
 
 Pay special attention to:
 - **Authority levels**: Are employees comping amounts appropriate to their role?
-  - Servers typically shouldn't comp >$50 without manager approval
-  - High-value comps ($200+) should be from managers
+  - Servers typically shouldn't comp >${settings.server_max_comp_amount} without manager approval
+  - High-value comps ($${settings.manager_min_for_high_value}+) should be from managers (${settings.manager_roles.join(', ')})
   - Identify if servers are overstepping authority
 - **Manager oversight**: Which managers need to review their team's comp activity?
 - **Manager comp patterns**: Track managers who comp frequently
