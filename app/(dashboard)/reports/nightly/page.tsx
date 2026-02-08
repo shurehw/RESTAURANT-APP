@@ -43,6 +43,7 @@ import { RevenueAttestation } from '@/components/attestation/RevenueAttestation'
 import { LaborAttestation } from '@/components/attestation/LaborAttestation';
 import { CompResolutionPanel } from '@/components/attestation/CompResolutionPanel';
 import { AttestationFooter } from '@/components/attestation/AttestationFooter';
+import { ServerDetailModal } from '@/components/reports/ServerDetailModal';
 import type { NightlyReportPayload } from '@/lib/attestation/types';
 
 interface NightlyReportData {
@@ -73,6 +74,8 @@ interface NightlyReportData {
     avg_ticket: number;
     avg_turn_mins: number;
     avg_per_cover: number;
+    tip_pct: number | null;
+    total_tips: number;
   }>;
   menuItems: Array<{
     name: string;
@@ -277,6 +280,27 @@ export default function NightlyReportPage() {
   const [compReview, setCompReview] = useState<CompReviewData | null>(null);
   const [loadingCompReview, setLoadingCompReview] = useState<boolean>(false);
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
+  const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
+  const [serverModalOpen, setServerModalOpen] = useState(false);
+
+  // Compute team averages for server comparison
+  const serverTeamAverages = React.useMemo(() => {
+    if (!report?.servers?.length) return null;
+    const servers = report.servers;
+    const count = servers.length;
+    const withTips = servers.filter((s) => s.tip_pct != null);
+    return {
+      avg_covers: servers.reduce((sum, s) => sum + s.covers, 0) / count,
+      avg_net_sales: servers.reduce((sum, s) => sum + s.net_sales, 0) / count,
+      avg_ticket: servers.reduce((sum, s) => sum + s.avg_ticket, 0) / count,
+      avg_turn_mins: servers.reduce((sum, s) => sum + (s.avg_turn_mins || 0), 0) / count,
+      avg_per_cover: servers.reduce((sum, s) => sum + s.avg_per_cover, 0) / count,
+      avg_tip_pct: withTips.length > 0
+        ? withTips.reduce((sum, s) => sum + (s.tip_pct || 0), 0) / withTips.length
+        : null,
+      server_count: count,
+    };
+  }, [report?.servers]);
 
   // Build attestation report payload (memoised to avoid re-triggering hook)
   const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
@@ -1262,11 +1286,19 @@ export default function NightlyReportPage() {
                         <th className="text-right">Covers</th>
                         <th className="text-right">Sales</th>
                         <th className="text-right">Avg/Cover</th>
+                        <th className="text-right">Tip %</th>
                       </tr>
                     </thead>
                     <tbody>
                       {report.servers.slice(0, 10).map((server, i) => (
-                        <tr key={i}>
+                        <tr
+                          key={i}
+                          className="cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => {
+                            setSelectedServer(server);
+                            setServerModalOpen(true);
+                          }}
+                        >
                           <td>
                             <div className="font-medium">{server.employee_name}</div>
                             <div className="text-xs text-muted-foreground">
@@ -1276,6 +1308,9 @@ export default function NightlyReportPage() {
                           <td className="text-right">{server.covers}</td>
                           <td className="text-right">{formatCurrency(server.net_sales || 0)}</td>
                           <td className="text-right">{formatCurrency(server.avg_per_cover || 0)}</td>
+                          <td className="text-right">
+                            {server.tip_pct != null ? `${server.tip_pct}%` : '---'}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -1635,6 +1670,22 @@ export default function NightlyReportPage() {
             onAddIncident={att.addIncident}
             onAddCoaching={att.addCoaching}
             onSubmit={att.submitAttestation}
+          />
+
+          {/* Server Detail Modal */}
+          <ServerDetailModal
+            server={selectedServer}
+            teamAverages={serverTeamAverages || {
+              avg_covers: 0, avg_net_sales: 0, avg_ticket: 0,
+              avg_turn_mins: 0, avg_per_cover: 0, avg_tip_pct: null, server_count: 0,
+            }}
+            date={date}
+            venueName={selectedVenue?.name || ''}
+            isOpen={serverModalOpen}
+            onClose={() => {
+              setServerModalOpen(false);
+              setSelectedServer(null);
+            }}
           />
 
         </>
