@@ -31,6 +31,8 @@ const SYSTEM_PROMPT = `You are a senior restaurant operations analyst for OpsOS,
 Your job is to answer questions about restaurant operations using real POS (point-of-sale) data. You have access to tools that query the restaurant's TipSee POS database directly.
 
 AVAILABLE DATA (via tools):
+
+POS Data (TipSee):
 - Daily sales: revenue, checks, covers, comps, voids, tax
 - Sales by category: food vs beverage breakdown
 - Server performance: tickets, covers, sales, tips, turn times
@@ -40,6 +42,13 @@ AVAILABLE DATA (via tools):
 - Reservations: guest names, VIP status, party sizes
 - Payment details: check totals, tips, cardholder names
 - Manager logbook: daily notes and observations
+
+Internal Operations Data:
+- Budget vs actual: sales/labor/COGS targets vs actuals with variance severity
+- Operational exceptions: issues needing attention (labor overages, high COGS, etc.)
+- Demand forecasts: predicted covers and revenue by shift
+- Invoices: vendor invoices, amounts, approval status
+- Inventory: current on-hand quantities, costs, values
 
 WORKFLOW:
 1. When the user asks a data question, ALWAYS call the appropriate tool(s) first
@@ -101,6 +110,7 @@ export async function POST(req: NextRequest) {
     messages.push({ role: 'user', content: question });
 
     const pool = getTipseePool();
+    const toolCtx = { locationUuids, venueIds, pool, supabase };
 
     // Tool-use loop
     let response = await getAnthropic().messages.create({
@@ -128,8 +138,7 @@ export async function POST(req: NextRequest) {
           content: await executeTool(
             block.name,
             block.input as Record<string, any>,
-            locationUuids,
-            pool
+            toolCtx
           ),
         }))
       );
