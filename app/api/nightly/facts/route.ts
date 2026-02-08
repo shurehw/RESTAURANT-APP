@@ -62,12 +62,23 @@ export async function GET(request: NextRequest) {
     sdlyDate.setFullYear(sdlyDate.getFullYear() - 1);
     const sdlyDateStr = sdlyDate.toISOString().split('T')[0];
 
-    // Fetch fiscal calendar settings for the venue's organization
-    const { data: venueData } = await (supabase as any)
-      .from('venues')
-      .select('organization_id')
-      .eq('id', venueId)
-      .single();
+    // Fetch venue org, fiscal settings, and TipSee mapping in parallel
+    const [venueOrgResult, mappingResult] = await Promise.all([
+      (supabase as any)
+        .from('venues')
+        .select('organization_id')
+        .eq('id', venueId)
+        .single(),
+      (supabase as any)
+        .from('venue_tipsee_mapping')
+        .select('tipsee_location_uuid')
+        .eq('venue_id', venueId)
+        .eq('is_active', true)
+        .maybeSingle(),
+    ]);
+
+    const venueData = venueOrgResult.data;
+    const tipseeLocationUuid = mappingResult.data?.tipsee_location_uuid || null;
 
     let fiscalCalendarType: FiscalCalendarType = 'standard';
     let fiscalYearStartDate: string | null = null;
@@ -92,14 +103,8 @@ export async function GET(request: NextRequest) {
     const periodStartStr = fiscalPeriod.periodStartDate;
 
     // For PTD comparison: same relative days into PREVIOUS period
-    // Use the fiscal library to get previous period info
     const prevPeriodDate = new Date(date);
-    // Go back to get into the previous period (use the period length from current period position)
-    const periodPosition = ((fiscalPeriod.fiscalPeriod - 1) % 3); // 0, 1, or 2
-    // For 4-4-5: position 0=4wks, 1=4wks, 2=5wks. Previous period lengths:
-    // If position 0, prev was position 2 (5 weeks)
-    // If position 1, prev was position 0 (4 weeks)
-    // If position 2, prev was position 1 (4 weeks)
+    const periodPosition = ((fiscalPeriod.fiscalPeriod - 1) % 3);
     const prevPeriodWeeks = fiscalCalendarType === 'standard' ? 4 :
       (periodPosition === 0 ? 5 : 4);
     prevPeriodDate.setDate(prevPeriodDate.getDate() - (prevPeriodWeeks * 7));
@@ -120,9 +125,8 @@ export async function GET(request: NextRequest) {
     const prevPeriodEndStr = prevPeriodEndDate.toISOString().split('T')[0];
 
     // WTD (Week-to-Date): Monday → selected date (calendar week, not fiscal)
-    // Use UTC to avoid timezone issues
     const dateForWeek = new Date(Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]));
-    const dayOfWeek = dateForWeek.getUTCDay(); // 0=Sun, 1=Mon, ...
+    const dayOfWeek = dateForWeek.getUTCDay();
     const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const weekStartMs = dateMs - (daysFromMonday * 24 * 60 * 60 * 1000);
     const weekStartDate = new Date(weekStartMs);
@@ -131,17 +135,7 @@ export async function GET(request: NextRequest) {
     // WTD Last Week: Same Mon→Day range but 7 days earlier
     const lastWeekWeekStartMs = weekStartMs - (7 * 24 * 60 * 60 * 1000);
     const lastWeekWeekStartStr = new Date(lastWeekWeekStartMs).toISOString().split('T')[0];
-    const lastWeekSameDayStr = sdlwDateStr; // Already calculated above
-
-    // Look up TipSee location UUID for this venue (for labor data)
-    const { data: mappingData } = await (supabase as any)
-      .from('venue_tipsee_mapping')
-      .select('tipsee_location_uuid')
-      .eq('venue_id', venueId)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    const tipseeLocationUuid = mappingData?.tipsee_location_uuid || null;
+    const lastWeekSameDayStr = sdlwDateStr;
 
     // Fetch all fact data in parallel
     const [

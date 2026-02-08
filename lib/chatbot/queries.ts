@@ -75,7 +75,6 @@ export async function getServerPerformance(
   const result = await pool.query(
     `SELECT
       c.employee_name,
-      c.location as location_name,
       SUM(c.revenue_total) as net_sales,
       COUNT(*) as check_count,
       SUM(c.guest_count) as guest_count,
@@ -91,7 +90,7 @@ export async function getServerPerformance(
     ) pt ON true
     WHERE c.location_uuid = ANY($1::text[])
       AND c.trading_day >= $2 AND c.trading_day <= $3
-    GROUP BY c.employee_name, c.location
+    GROUP BY c.employee_name
     ORDER BY net_sales DESC
     LIMIT $4`,
     [locationUuids, params.startDate, params.endDate, MAX_ROWS]
