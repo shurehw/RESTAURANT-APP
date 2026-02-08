@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/route-guard';
 import { resolveContext } from '@/lib/auth/resolveContext';
 import { rateLimit } from '@/lib/rate-limit';
+import { cookies } from 'next/headers';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getTipseePool } from '@/lib/database/tipsee';
 import { z } from 'zod';
@@ -84,8 +85,16 @@ export async function POST(req: NextRequest) {
     const ctx = await resolveContext();
 
     if (!ctx || !ctx.isAuthenticated) {
+      // Diagnostic: figure out WHY auth failed
+      const cookieStore = await cookies();
+      const allCookies = cookieStore.getAll().map(c => c.name);
+      const hasUserId = allCookies.some(n => n === 'user_id');
+      const hasSupabase = allCookies.some(n => n.includes('-auth-token'));
+      const debugInfo = `ctx=${ctx ? JSON.stringify({ isAuth: ctx.isAuthenticated, hasOrg: !!ctx.orgId, email: ctx.email }) : 'null'}, cookies=[userId=${hasUserId}, supabase=${hasSupabase}], names=${allCookies.join(',')}`;
+      console.error('[chatbot] Auth FAILED:', debugInfo);
+
       return NextResponse.json({
-        answer: 'Your session has expired. Please refresh the page and log in again.',
+        answer: `Auth diagnostic: ${debugInfo}`,
         context_used: false,
       });
     }
