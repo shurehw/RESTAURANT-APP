@@ -12,6 +12,7 @@ const anthropic = new Anthropic({
 export interface ServerReviewInput {
   date: string;
   venueName: string;
+  periodLabel?: string; // 'Tonight' | 'Week to Date' | 'Period to Date'
   server: {
     employee_name: string;
     employee_role_name: string;
@@ -81,11 +82,17 @@ function buildServerReviewPrompt(input: ServerReviewInput): string {
     return diff >= 0 ? `+${diff.toFixed(0)}%` : `${diff.toFixed(0)}%`;
   };
 
-  return `You are a restaurant operations coach reviewing a server's nightly performance at ${input.venueName} on ${input.date}.
+  const period = input.periodLabel || 'Tonight';
+  const isAggregated = period !== 'Tonight';
+  const periodContext = isAggregated
+    ? `This is a ${period} review — metrics are aggregated across multiple shifts. Focus on trends and consistency, not single-night anomalies.`
+    : '';
 
+  return `You are a restaurant operations coach reviewing a server's ${isAggregated ? period.toLowerCase() : 'nightly'} performance at ${input.venueName} on ${input.date}.
+${periodContext ? `\n${periodContext}\n` : ''}
 ## SERVER: ${server.employee_name} (${server.employee_role_name})
 
-### Tonight's Metrics vs Team Average (${teamAverages.server_count} servers)
+### ${period} Metrics vs Team Average (${teamAverages.server_count} servers)
 
 | Metric | ${server.employee_name} | Team Avg | vs Avg |
 |--------|------------------------|----------|--------|
@@ -123,7 +130,7 @@ Provide a concise, actionable performance review for this server. Consider:
 
 {
   "overallRating": "excellent" | "strong" | "average" | "needs_improvement",
-  "summary": "<2-3 sentences summarizing tonight's performance>",
+  "summary": "<2-3 sentences summarizing ${period.toLowerCase()} performance>",
   "strengths": ["<specific strength 1>", "<specific strength 2>"],
   "improvements": ["<specific improvement 1>", "<specific improvement 2>"],
   "coachingTip": "<One actionable thing the manager should tell this server for next shift>"

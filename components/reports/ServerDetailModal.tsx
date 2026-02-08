@@ -61,6 +61,8 @@ interface ServerDetailModalProps {
   teamAverages: TeamAverages;
   date: string;
   venueName: string;
+  venueId: string;
+  periodLabel?: string;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -95,6 +97,8 @@ export function ServerDetailModal({
   teamAverages,
   date,
   venueName,
+  venueId,
+  periodLabel = 'Tonight',
   isOpen,
   onClose,
 }: ServerDetailModalProps) {
@@ -106,7 +110,7 @@ export function ServerDetailModal({
   useEffect(() => {
     if (!isOpen || !server) return;
 
-    const cacheKey = `${date}-${server.employee_name}`;
+    const cacheKey = `${date}-${server.employee_name}-${periodLabel}`;
     const cached = cacheRef.current.get(cacheKey);
     if (cached) {
       setAiReview(cached);
@@ -121,7 +125,7 @@ export function ServerDetailModal({
     fetch('/api/ai/server-review', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ date, venueName, server, teamAverages }),
+      body: JSON.stringify({ date, venueName, venueId, server, teamAverages, periodLabel }),
     })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to generate feedback');
@@ -134,7 +138,7 @@ export function ServerDetailModal({
       })
       .catch(() => setAiError('Unable to generate AI feedback'))
       .finally(() => setLoadingAI(false));
-  }, [isOpen, server?.employee_name, date, venueName]);
+  }, [isOpen, server?.employee_name, date, venueName, venueId, periodLabel]);
 
   if (!server) return null;
 
@@ -221,7 +225,14 @@ export function ServerDetailModal({
           <DialogTitle className="flex items-center gap-3">
             <Users className="h-5 w-5 text-sage" />
             <div>
-              <div className="text-lg">{server.employee_name}</div>
+              <div className="text-lg flex items-center gap-2">
+                {server.employee_name}
+                {periodLabel !== 'Tonight' && (
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {periodLabel}
+                  </Badge>
+                )}
+              </div>
               <div className="text-sm font-normal text-muted-foreground">
                 {server.employee_role_name}
               </div>

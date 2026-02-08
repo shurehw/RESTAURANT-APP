@@ -157,6 +157,8 @@ export async function GET(request: NextRequest) {
       ptdLastWeekResult,
       wtdThisWeekResult,
       wtdLastWeekResult,
+      serverWtdResult,
+      serverPtdResult,
     ] = await Promise.all([
       // Venue day facts (summary)
       (supabase as any)
@@ -254,6 +256,22 @@ export async function GET(request: NextRequest) {
         .eq('venue_id', venueId)
         .gte('business_date', lastWeekWeekStartStr)
         .lte('business_date', lastWeekSameDayStr),
+
+      // Server WTD (aggregated server performance for the week)
+      (supabase as any)
+        .from('server_day_facts')
+        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // Server PTD (aggregated server performance for the fiscal period)
+      (supabase as any)
+        .from('server_day_facts')
+        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
     ]);
 
     // Check if we have data
@@ -373,6 +391,61 @@ export async function GET(request: NextRequest) {
     const actualNetSales = summary.net_sales || 0;
     const actualCovers = summary.covers_count || 0;
 
+    // Aggregate server data across date ranges (WTD and PTD)
+    function aggregateServerData(rows: any[]): any[] {
+      const byServer = new Map<string, {
+        employee_name: string;
+        employee_role: string;
+        gross_sales: number;
+        checks_count: number;
+        covers_count: number;
+        tips_total: number;
+        turn_mins_sum: number;
+        turn_mins_count: number;
+        days: Set<string>;
+      }>();
+
+      for (const row of rows) {
+        const key = row.employee_name;
+        const existing = byServer.get(key) || {
+          employee_name: row.employee_name,
+          employee_role: row.employee_role || '',
+          gross_sales: 0, checks_count: 0, covers_count: 0,
+          tips_total: 0, turn_mins_sum: 0, turn_mins_count: 0,
+          days: new Set<string>(),
+        };
+        existing.gross_sales += row.gross_sales || 0;
+        existing.checks_count += row.checks_count || 0;
+        existing.covers_count += row.covers_count || 0;
+        existing.tips_total += row.tips_total || 0;
+        if (row.avg_turn_mins > 0) {
+          existing.turn_mins_sum += row.avg_turn_mins;
+          existing.turn_mins_count++;
+        }
+        existing.days.add(row.business_date);
+        byServer.set(key, existing);
+      }
+
+      return Array.from(byServer.values())
+        .map((s) => ({
+          employee_name: s.employee_name,
+          employee_role_name: s.employee_role,
+          tickets: s.checks_count,
+          covers: s.covers_count,
+          net_sales: s.gross_sales,
+          avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
+          avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
+          avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
+          tip_pct: s.gross_sales > 0 ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null,
+          total_tips: s.tips_total,
+          days_worked: s.days.size,
+        }))
+        .sort((a, b) => b.net_sales - a.net_sales);
+    }
+
+    const serversWtd = aggregateServerData(serverWtdResult.data || []);
+    const serversPtd = aggregateServerData(serverPtdResult.data || []);
+
     // Format response to match existing NightlyReportData structure
     const response = {
       date,
@@ -491,6 +564,10 @@ export async function GET(request: NextRequest) {
         period_end_date: fiscalPeriod.periodEndDate,
         week_in_period: fiscalPeriod.weekInPeriod,
       },
+
+      // Aggregated server performance for WTD and PTD
+      servers_wtd: serversWtd,
+      servers_ptd: serversPtd,
     };
 
     return NextResponse.json(response);

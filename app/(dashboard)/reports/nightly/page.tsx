@@ -233,6 +233,33 @@ interface FactsSummary {
     vs_wtd_pct: number | null;
     vs_wtd_covers_pct: number | null;
   };
+  // Aggregated server performance
+  servers_wtd?: Array<{
+    employee_name: string;
+    employee_role_name: string;
+    tickets: number;
+    covers: number;
+    net_sales: number;
+    avg_ticket: number;
+    avg_turn_mins: number;
+    avg_per_cover: number;
+    tip_pct: number | null;
+    total_tips: number;
+    days_worked: number;
+  }>;
+  servers_ptd?: Array<{
+    employee_name: string;
+    employee_role_name: string;
+    tickets: number;
+    covers: number;
+    net_sales: number;
+    avg_ticket: number;
+    avg_turn_mins: number;
+    avg_per_cover: number;
+    tip_pct: number | null;
+    total_tips: number;
+    days_worked: number;
+  }>;
 }
 
 function formatCurrency(value: number): string {
@@ -282,11 +309,16 @@ export default function NightlyReportPage() {
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
   const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
+  const [serverPerfTab, setServerPerfTab] = useState<'nightly' | 'wtd' | 'ptd'>('nightly');
 
-  // Compute team averages for server comparison
+  // Compute team averages for server comparison (based on active tab)
   const serverTeamAverages = React.useMemo(() => {
-    if (!report?.servers?.length) return null;
-    const servers = report.servers;
+    const servers = serverPerfTab === 'nightly'
+      ? report?.servers
+      : serverPerfTab === 'wtd'
+        ? factsSummary?.servers_wtd
+        : factsSummary?.servers_ptd;
+    if (!servers?.length) return null;
     const count = servers.length;
     const withTips = servers.filter((s) => s.tip_pct != null);
     return {
@@ -300,7 +332,7 @@ export default function NightlyReportPage() {
         : null,
       server_count: count,
     };
-  }, [report?.servers]);
+  }, [report?.servers, factsSummary?.servers_wtd, factsSummary?.servers_ptd, serverPerfTab]);
 
   // Build attestation report payload (memoised to avoid re-triggering hook)
   const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
@@ -410,6 +442,8 @@ export default function NightlyReportPage() {
               labor: factsData.labor,
               forecast: factsData.forecast,
               variance: factsData.variance,
+              servers_wtd: factsData.servers_wtd,
+              servers_ptd: factsData.servers_ptd,
             });
           } else {
             setFactsSummary(null);
@@ -1271,55 +1305,81 @@ export default function NightlyReportPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
             <Card>
-              <CardHeader className="border-b border-brass/20">
-                <CardTitle className="text-lg flex items-center gap-2">
+              <CardHeader className="border-b border-brass/20 pb-0">
+                <CardTitle className="text-lg flex items-center gap-2 mb-3">
                   <Users className="h-5 w-5 text-sage" />
                   Server Performance
                 </CardTitle>
+                <Tabs value={serverPerfTab} onValueChange={(v) => setServerPerfTab(v as 'nightly' | 'wtd' | 'ptd')}>
+                  <TabsList className="w-full grid grid-cols-3">
+                    <TabsTrigger value="nightly">Nightly</TabsTrigger>
+                    <TabsTrigger value="wtd">WTD</TabsTrigger>
+                    <TabsTrigger value="ptd">PTD</TabsTrigger>
+                  </TabsList>
+                </Tabs>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
-                {report.servers.length > 0 ? (
-                  <table className="table-opsos">
-                    <thead>
-                      <tr>
-                        <th>Server</th>
-                        <th className="text-right">Covers</th>
-                        <th className="text-right">Sales</th>
-                        <th className="text-right">Avg/Cover</th>
-                        <th className="text-right">Tip %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {report.servers.slice(0, 10).map((server, i) => (
-                        <tr
-                          key={i}
-                          className="cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => {
-                            setSelectedServer(server);
-                            setServerModalOpen(true);
-                          }}
-                        >
-                          <td>
-                            <div className="font-medium">{server.employee_name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {server.employee_role_name}
-                            </div>
-                          </td>
-                          <td className="text-right">{server.covers}</td>
-                          <td className="text-right">{formatCurrency(server.net_sales || 0)}</td>
-                          <td className="text-right">{formatCurrency(server.avg_per_cover || 0)}</td>
-                          <td className="text-right">
-                            {server.tip_pct != null ? `${server.tip_pct}%` : '---'}
-                          </td>
+                {(() => {
+                  const serverData = serverPerfTab === 'nightly'
+                    ? report.servers
+                    : serverPerfTab === 'wtd'
+                      ? factsSummary?.servers_wtd || []
+                      : factsSummary?.servers_ptd || [];
+                  const showDays = serverPerfTab !== 'nightly';
+
+                  if (serverData.length === 0) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">
+                          {serverPerfTab === 'nightly' ? 'No server data' : `No ${serverPerfTab.toUpperCase()} data available`}
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <table className="table-opsos">
+                      <thead>
+                        <tr>
+                          <th>Server</th>
+                          <th className="text-right">Covers</th>
+                          <th className="text-right">Sales</th>
+                          <th className="text-right">Avg/Cover</th>
+                          <th className="text-right">Tip %</th>
+                          {showDays && <th className="text-right">Days</th>}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-state py-8">
-                    <p className="text-muted-foreground">No server data</p>
-                  </div>
-                )}
+                      </thead>
+                      <tbody>
+                        {serverData.slice(0, 15).map((server, i) => (
+                          <tr
+                            key={i}
+                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                            onClick={() => {
+                              setSelectedServer(server);
+                              setServerModalOpen(true);
+                            }}
+                          >
+                            <td>
+                              <div className="font-medium">{server.employee_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {server.employee_role_name}
+                              </div>
+                            </td>
+                            <td className="text-right">{server.covers}</td>
+                            <td className="text-right">{formatCurrency(server.net_sales || 0)}</td>
+                            <td className="text-right">{formatCurrency(server.avg_per_cover || 0)}</td>
+                            <td className="text-right">
+                              {server.tip_pct != null ? `${server.tip_pct}%` : '---'}
+                            </td>
+                            {showDays && (
+                              <td className="text-right">{'days_worked' in server ? (server as any).days_worked : '---'}</td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  );
+                })()}
               </CardContent>
             </Card>
 
@@ -1681,6 +1741,8 @@ export default function NightlyReportPage() {
             }}
             date={date}
             venueName={selectedVenue?.name || ''}
+            venueId={selectedVenue?.id || ''}
+            periodLabel={serverPerfTab === 'nightly' ? 'Tonight' : serverPerfTab === 'wtd' ? 'Week to Date' : 'Period to Date'}
             isOpen={serverModalOpen}
             onClose={() => {
               setServerModalOpen(false);
