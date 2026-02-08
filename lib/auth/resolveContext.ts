@@ -93,21 +93,19 @@ export async function resolveContext(): Promise<TenantContext | null> {
     return null; // Invalid custom user
   }
 
-  // Look up auth.users ID by email (via admin client, since we need cross-table lookup)
+  // Look up auth.users ID by email via database function
+  // (auth.admin.listUsers() API is broken on this project)
   const adminClient = createAdminClient();
-  let matchingAuthUser: { id: string; email?: string } | undefined;
-  let page = 1;
-  while (!matchingAuthUser) {
-    const { data: authUsers } = await adminClient.auth.admin.listUsers({ page, perPage: 1000 });
-    if (!authUsers?.users?.length) break;
-    matchingAuthUser = authUsers.users.find(
-      u => u.email?.toLowerCase() === customUser.email.toLowerCase()
-    );
-    if (authUsers.users.length < 1000) break; // last page
-    page++;
+  const { data: authUid, error: rpcError } = await adminClient
+    .rpc('get_auth_uid_by_email', { lookup_email: customUser.email });
+
+  if (rpcError) {
+    console.error('[resolveContext] RPC get_auth_uid_by_email error:', rpcError.message);
   }
 
-  if (!matchingAuthUser) {
+  const matchingAuthUserId: string | null = authUid || null;
+
+  if (!matchingAuthUserId) {
     // User exists in custom table but not in auth.users
     // This shouldn't happen after login sync, but handle gracefully
     console.warn(`[resolveContext] No auth.users entry for ${customUser.email}`);
@@ -126,22 +124,22 @@ export async function resolveContext(): Promise<TenantContext | null> {
   const { data: platformAdmin } = await adminClient
     .from('platform_admins')
     .select('id')
-    .eq('user_id', matchingAuthUser.id)
+    .eq('user_id', matchingAuthUserId)
     .eq('is_active', true)
     .single();
-  
+
   const isPlatformAdmin = !!platformAdmin;
 
   // Get organization membership using auth user ID
   const { data: orgMembership } = await adminClient
     .from('organization_users')
     .select('organization_id, role')
-    .eq('user_id', matchingAuthUser.id)
+    .eq('user_id', matchingAuthUserId)
     .eq('is_active', true)
     .single();
 
   return {
-    authUserId: matchingAuthUser.id,
+    authUserId: matchingAuthUserId,
     customUserId,
     email: customUser.email,
     orgId: orgMembership?.organization_id || null,
