@@ -7,6 +7,7 @@
 
 import * as React from 'react';
 import { useState, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -177,6 +178,21 @@ interface CompReviewData {
   insights: string[];
 }
 
+interface VenueHealthData {
+  health_score: number;
+  status: 'GREEN' | 'YELLOW' | 'ORANGE' | 'RED';
+  confidence: number;
+  signal_count: number;
+  top_drivers: Array<{
+    signal: string;
+    risk: number;
+    weight: number;
+    impact: number;
+    reason: string;
+  }> | null;
+  open_actions: number;
+}
+
 interface FactsSummary {
   food_sales?: number;
   beverage_sales?: number;
@@ -260,6 +276,72 @@ interface FactsSummary {
     total_tips: number;
     days_worked: number;
   }>;
+  // Period aggregations for categories
+  categories_wtd?: Array<{
+    category: string;
+    gross_sales: number;
+    comps: number;
+    voids: number;
+    net_sales: number;
+    quantity: number;
+  }>;
+  categories_ptd?: Array<{
+    category: string;
+    gross_sales: number;
+    comps: number;
+    voids: number;
+    net_sales: number;
+    quantity: number;
+  }>;
+  // Period aggregations for menu items
+  items_wtd?: Array<{
+    name: string;
+    qty: number;
+    net_total: number;
+    category: string;
+  }>;
+  items_ptd?: Array<{
+    name: string;
+    qty: number;
+    net_total: number;
+    category: string;
+  }>;
+  // Period aggregations for labor
+  labor_wtd?: {
+    total_hours: number;
+    labor_cost: number;
+    labor_pct: number;
+    splh: number;
+    ot_hours: number;
+    covers_per_labor_hour: number | null;
+    employee_count: number;
+    foh: { hours: number; cost: number; employee_count: number } | null;
+    boh: { hours: number; cost: number; employee_count: number } | null;
+    other: { hours: number; cost: number; employee_count: number } | null;
+  } | null;
+  labor_ptd?: {
+    total_hours: number;
+    labor_cost: number;
+    labor_pct: number;
+    splh: number;
+    ot_hours: number;
+    covers_per_labor_hour: number | null;
+    employee_count: number;
+    foh: { hours: number; cost: number; employee_count: number } | null;
+    boh: { hours: number; cost: number; employee_count: number } | null;
+    other: { hours: number; cost: number; employee_count: number } | null;
+  } | null;
+  // Fiscal calendar info
+  fiscal?: {
+    calendar_type: string;
+    fy_start_date: string | null;
+    fiscal_year: number;
+    fiscal_quarter: number;
+    fiscal_period: number;
+    period_start_date: string;
+    period_end_date: string;
+    week_in_period: number;
+  };
 }
 
 function formatCurrency(value: number): string {
@@ -295,6 +377,14 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 
 export default function NightlyReportPage() {
   const { selectedVenue } = useVenue();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Global view mode state (synchronized with URL)
+  const [viewMode, setViewMode] = useState<'nightly' | 'wtd' | 'ptd'>(
+    (searchParams.get('view') as 'nightly' | 'wtd' | 'ptd') || 'nightly'
+  );
+
   const [date, setDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -303,6 +393,8 @@ export default function NightlyReportPage() {
   const [report, setReport] = useState<NightlyReportData | null>(null);
   const [factsSummary, setFactsSummary] = useState<FactsSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingFacts, setLoadingFacts] = useState(false);
+  const [factsError, setFactsError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mappings, setMappings] = useState<VenueMapping[]>([]);
   const [compNotes, setCompNotes] = useState<Record<string, string>>({});
@@ -313,18 +405,54 @@ export default function NightlyReportPage() {
   const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
   const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
-  const [serverPerfTab, setServerPerfTab] = useState<'nightly' | 'wtd' | 'ptd'>('nightly');
+  const [laborExceptions, setLaborExceptions] = useState<any | null>(null);
+  const [loadingLaborExceptions, setLoadingLaborExceptions] = useState<boolean>(false);
+  const [healthData, setHealthData] = useState<VenueHealthData | null>(null);
+  const [loadingHealth, setLoadingHealth] = useState<boolean>(false);
 
-  // Compute team averages for server comparison (based on active tab)
+  // Handler for view mode changes (updates URL)
+  function handleViewChange(newView: 'nightly' | 'wtd' | 'ptd') {
+    setViewMode(newView);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', newView);
+    router.push(`?${params.toString()}`, { scroll: false });
+  }
+
+  // Helper: Get period start date for WTD/PTD
+  function getPeriodStart(endDate: string, mode: 'wtd' | 'ptd'): string {
+    if (mode === 'wtd') {
+      // Calculate Monday of current week
+      const dateObj = new Date(endDate + 'T00:00:00');
+      const dayOfWeek = dateObj.getDay();
+      const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(dateObj);
+      monday.setDate(monday.getDate() - daysFromMonday);
+      return monday.toISOString().split('T')[0];
+    } else {
+      // PTD: Use fiscal period start from factsSummary
+      return factsSummary?.fiscal?.period_start_date || endDate;
+    }
+  }
+
+  // Helper: Format date for display
+  function formatDateDisplay(dateStr: string): string {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
+  // Compute team averages for server comparison (based on active view mode)
   const serverTeamAverages = React.useMemo(() => {
-    const servers = serverPerfTab === 'nightly'
+    const servers = viewMode === 'nightly'
       ? report?.servers
-      : serverPerfTab === 'wtd'
+      : viewMode === 'wtd'
         ? factsSummary?.servers_wtd
         : factsSummary?.servers_ptd;
     if (!servers?.length) return null;
     const count = servers.length;
-    const withTips = servers.filter((s) => s.tip_pct != null);
+    const withTips = servers.filter((s) => s.tip_pct != null && s.tip_pct !== undefined);
     return {
       avg_covers: servers.reduce((sum, s) => sum + s.covers, 0) / count,
       avg_net_sales: servers.reduce((sum, s) => sum + s.net_sales, 0) / count,
@@ -332,11 +460,11 @@ export default function NightlyReportPage() {
       avg_turn_mins: servers.reduce((sum, s) => sum + (s.avg_turn_mins || 0), 0) / count,
       avg_per_cover: servers.reduce((sum, s) => sum + s.avg_per_cover, 0) / count,
       avg_tip_pct: withTips.length > 0
-        ? withTips.reduce((sum, s) => sum + (s.tip_pct || 0), 0) / withTips.length
+        ? withTips.reduce((sum, s) => sum + s.tip_pct!, 0) / withTips.length
         : null,
       server_count: count,
     };
-  }, [report?.servers, factsSummary?.servers_wtd, factsSummary?.servers_ptd, serverPerfTab]);
+  }, [report?.servers, factsSummary?.servers_wtd, factsSummary?.servers_ptd, viewMode]);
 
   // Build attestation report payload (memoised to avoid re-triggering hook)
   const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
@@ -422,12 +550,10 @@ export default function NightlyReportPage() {
       setCompExceptions(null);
       setCompNotes({});
       try {
-        // Fire ALL independent fetches in parallel — don't block on comp data
-        const [liveRes, factsRes, notesRes, exceptionsRes] = await Promise.all([
+        // CRITICAL PATH: Only block on essential TipSee report data and comp notes
+        const [liveRes, notesRes] = await Promise.all([
           fetch(`/api/nightly?date=${date}&location=${locationUuid}`),
-          fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`),
           fetch(`/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`, { credentials: 'include' }),
-          fetch(`/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' }),
         ]);
 
         if (!liveRes.ok) {
@@ -437,46 +563,128 @@ export default function NightlyReportPage() {
         const liveData = await liveRes.json();
         setReport(liveData);
 
-        // Process facts (Supabase — fast)
-        if (factsRes.ok) {
-          const factsData = await factsRes.json();
-          if (factsData.has_data) {
-            setFactsSummary({
-              ...factsData.summary,
-              labor: factsData.labor,
-              forecast: factsData.forecast,
-              variance: factsData.variance,
-              servers_wtd: factsData.servers_wtd,
-              servers_ptd: factsData.servers_ptd,
-            });
-          } else {
-            setFactsSummary(null);
-          }
-        }
-
-        // Process comp notes (non-blocking)
+        // Process comp notes
         if (notesRes.ok) {
           const notesData = await notesRes.json();
           setCompNotes(notesData.notes || {});
         }
 
-        // Process comp exceptions (non-blocking)
-        if (exceptionsRes.ok) {
-          const exceptionsData = await exceptionsRes.json();
-          if (exceptionsData.success) {
-            setCompExceptions(exceptionsData.data);
-          }
-        }
+        // NON-BLOCKING: Fetch facts asynchronously (14 Supabase queries, can take time)
+        setLoadingFacts(true);
+        setFactsError(null);
+        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+          .then(res => {
+            if (!res.ok) {
+              throw new Error(`Facts API returned ${res.status}`);
+            }
+            return res.json();
+          })
+          .then(factsData => {
+            if (factsData?.has_data) {
+              setFactsSummary({
+                ...factsData.summary,
+                labor: factsData.labor,
+                forecast: factsData.forecast,
+                variance: factsData.variance,
+                servers_wtd: factsData.servers_wtd,
+                servers_ptd: factsData.servers_ptd,
+              });
+              setFactsError(null);
+            } else {
+              setFactsSummary(null);
+              setFactsError('No fact data available for this date');
+            }
+          })
+          .catch(err => {
+            console.error('Facts fetch error:', err);
+            setFactsError(err.message || 'Failed to load analytics data');
+            setFactsSummary(null);
+          })
+          .finally(() => setLoadingFacts(false));
 
-        // AI comp review fires AFTER page is visible (non-blocking)
-        if (liveData?.summary?.total_comps > 0) {
-          setLoadingCompReview(true);
-          fetch(`/api/ai/comp-review?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+        // Fetch comp exceptions AFTER liveData is available, then trigger AI review
+        if (liveData) {
+          fetch(`/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
             .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              const parsedExceptions = data?.success ? data.data : null;
+              if (parsedExceptions) {
+                setCompExceptions(parsedExceptions);
+              }
+
+              // AI comp review fires AFTER exceptions are loaded (uses pre-fetched data)
+              // Only run in nightly mode - period views don't have check-level detail
+              if (viewMode === 'nightly' && liveData.summary?.total_comps > 0) {
+                setLoadingCompReview(true);
+                return fetch('/api/ai/comp-review', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    date,
+                    venue_id: selectedVenue.id,
+                    venue_name: selectedVenue.name,
+                    detailedComps: liveData.detailedComps,
+                    exceptions: parsedExceptions,
+                    summary: liveData.summary,
+                  }),
+                });
+              }
+            })
+            .then(res => res && res.ok ? res.json() : null)
             .then(data => { if (data?.success) setCompReview(data.data); })
-            .catch(err => console.error('AI comp review error:', err))
+            .catch(err => console.error('Comp exceptions/AI review error:', err))
             .finally(() => setLoadingCompReview(false));
         }
+
+        // Fetch labor exceptions (non-blocking, only for nightly view)
+        if (viewMode === 'nightly') {
+          setLoadingLaborExceptions(true);
+          fetch(`/api/labor/exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              if (data?.success && data?.data?.has_data) {
+                setLaborExceptions(data.data);
+              } else {
+                setLaborExceptions(null);
+              }
+            })
+            .catch(err => {
+              console.error('Labor exceptions fetch error:', err);
+              setLaborExceptions(null);
+            })
+            .finally(() => setLoadingLaborExceptions(false));
+        }
+
+        // Fetch venue health score (non-blocking, all view modes)
+        setLoadingHealth(true);
+        fetch(`/api/health?view=daily&date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+          .then(res => {
+            if (!res.ok) throw new Error(`Health API returned ${res.status}`);
+            return res.json();
+          })
+          .then(healthResponse => {
+            // Extract single venue health from response
+            if (healthResponse?.venues && healthResponse.venues.length > 0) {
+              const venueHealth = healthResponse.venues[0];
+              setHealthData({
+                health_score: venueHealth.latest_score || 0,
+                status: venueHealth.status || 'YELLOW',
+                confidence: venueHealth.daily?.[0]?.confidence || 0,
+                signal_count: venueHealth.daily?.[0]?.signal_count || 0,
+                top_drivers: venueHealth.latest_drivers || null,
+                open_actions: 0, // TODO: fetch from health actions if needed
+              });
+            } else {
+              setHealthData(null);
+            }
+          })
+          .catch(err => {
+            console.error('[nightly] Health fetch failed:', err);
+            setHealthData(null); // Graceful degradation - health is nice-to-have
+          })
+          .finally(() => setLoadingHealth(false));
+
       } catch (err: any) {
         setError(err.message);
         setReport(null);
@@ -564,11 +772,30 @@ export default function NightlyReportPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Global View Mode Switcher */}
+          <Tabs value={viewMode} onValueChange={(v) => handleViewChange(v as 'nightly' | 'wtd' | 'ptd')}>
+            <TabsList className="grid grid-cols-3 w-full max-w-md">
+              <TabsTrigger value="nightly">Nightly</TabsTrigger>
+              <TabsTrigger value="wtd">Week to Date</TabsTrigger>
+              <TabsTrigger value="ptd">Period to Date</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </div>
 
       {/* Quick Venue Switcher */}
       <VenueQuickSwitcher />
+
+      {/* Period Date Range Banner */}
+      {viewMode !== 'nightly' && factsSummary && (
+        <Card className="p-4 mb-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            {viewMode === 'wtd' ? 'Week to Date' : 'Period to Date'}:
+            {' '}{formatDateDisplay(getPeriodStart(date, viewMode))} → {formatDateDisplay(date)}
+          </p>
+        </Card>
+      )}
 
       {/* Date Banner */}
       <div className="flex items-center gap-2 text-muted-foreground">
@@ -599,17 +826,73 @@ export default function NightlyReportPage() {
           {factsSummary?.variance && (
             <Card className="bg-muted/30 border-brass/20">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Target className="h-4 w-4 text-brass" />
-                  <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Performance vs Benchmarks
-                  </span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-brass" />
+                    <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                      Performance vs Benchmarks
+                    </span>
+                  </div>
+                  {/* Venue Health Score Badge */}
+                  {healthData && (
+                    <a
+                      href="/reports/health"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                      style={{
+                        backgroundColor:
+                          healthData.status === 'GREEN' ? '#10b98120' :
+                          healthData.status === 'YELLOW' ? '#f5970620' :
+                          healthData.status === 'ORANGE' ? '#f97316
+
+20' :
+                          '#ef444420',
+                        border: `1.5px solid ${
+                          healthData.status === 'GREEN' ? '#10b981' :
+                          healthData.status === 'YELLOW' ? '#f59706' :
+                          healthData.status === 'ORANGE' ? '#f97316' :
+                          '#ef4444'
+                        }`,
+                      }}
+                    >
+                      <Activity className="h-4 w-4" style={{
+                        color:
+                          healthData.status === 'GREEN' ? '#10b981' :
+                          healthData.status === 'YELLOW' ? '#f59706' :
+                          healthData.status === 'ORANGE' ? '#f97316' :
+                          '#ef4444'
+                      }} />
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-sm font-semibold" style={{
+                          color:
+                            healthData.status === 'GREEN' ? '#10b981' :
+                            healthData.status === 'YELLOW' ? '#f59706' :
+                            healthData.status === 'ORANGE' ? '#f97316' :
+                            '#ef4444'
+                        }}>
+                          Health: {Math.round(healthData.health_score)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {healthData.status}
+                        </span>
+                      </div>
+                      <ArrowUpRight className="h-3 w-3 opacity-50" />
+                    </a>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {/* Net Sales with variance - recalculate using live TipSee data */}
                   {(() => {
-                    const liveNetSales = report.summary.net_sales || 0;
-                    const liveCovers = report.summary.total_covers || 0;
+                    // Select data source based on view mode
+                    const liveNetSales = viewMode === 'nightly'
+                      ? (report.summary.net_sales || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance.wtd_net_sales || 0)
+                        : (factsSummary?.variance.ptd_net_sales || 0);
+                    const liveCovers = viewMode === 'nightly'
+                      ? (report.summary.total_covers || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance.wtd_covers || 0)
+                        : (factsSummary?.variance.ptd_covers || 0);
                     const calcVar = (actual: number, comparison: number | null | undefined) => {
                       if (!comparison || comparison === 0) return null;
                       return ((actual - comparison) / comparison) * 100;
@@ -702,17 +985,27 @@ export default function NightlyReportPage() {
                     </div>
                   )}
                   {/* Labor efficiency preview */}
-                  {factsSummary.labor && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums">
-                        {(factsSummary.labor.labor_pct || 0).toFixed(1)}%
+                  {(() => {
+                    const laborPreview = viewMode === 'nightly'
+                      ? factsSummary.labor
+                      : viewMode === 'wtd'
+                        ? factsSummary?.labor_wtd
+                        : factsSummary?.labor_ptd;
+
+                    if (!laborPreview) return null;
+
+                    return (
+                      <div className="space-y-1">
+                        <div className="text-2xl font-bold tabular-nums">
+                          {(laborPreview.labor_pct || 0).toFixed(1)}%
+                        </div>
+                        <div className="text-xs text-muted-foreground uppercase">Labor %</div>
+                        <div className="text-xs text-muted-foreground">
+                          SPLH: {formatCurrency(laborPreview.splh || 0)}
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground uppercase">Labor %</div>
-                      <div className="text-xs text-muted-foreground">
-                        SPLH: {formatCurrency(factsSummary.labor.splh || 0)}
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -748,15 +1041,20 @@ export default function NightlyReportPage() {
             />
             {/* Food/Bev calculated from salesByCategory (live TipSee data) */}
             {(() => {
-              // Calculate Food/Bev split from category data, then apply to actual net sales
-              // Item-level gross doesn't match check-level net, so we use the ratio
-              const categories = report.salesByCategory || [];
+              // Select category data based on view mode
+              const categories = viewMode === 'nightly'
+                ? (report.salesByCategory || [])
+                : viewMode === 'wtd'
+                  ? (factsSummary?.categories_wtd || [])
+                  : (factsSummary?.categories_ptd || []);
+
               const isBevCategory = (cat: string) => {
                 const lower = (cat || '').toLowerCase();
                 return lower.includes('bev') || lower.includes('wine') ||
                        lower.includes('beer') || lower.includes('liquor') ||
                        lower.includes('cocktail');
               };
+
               const foodGross = categories
                 .filter((c: { category: string; net_sales: number }) => !isBevCategory(c.category))
                 .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
@@ -769,8 +1067,12 @@ export default function NightlyReportPage() {
               const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
               const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
 
-              // Apply percentages to actual check-level net sales
-              const actualNetSales = report.summary.net_sales || 0;
+              // Use period-appropriate net sales
+              const actualNetSales = viewMode === 'nightly'
+                ? (report.summary.net_sales || 0)
+                : viewMode === 'wtd'
+                  ? (factsSummary?.variance.wtd_net_sales || 0)
+                  : (factsSummary?.variance.ptd_net_sales || 0);
               const foodSales = actualNetSales * (foodPct / 100);
               const bevSales = actualNetSales * (bevPct / 100);
 
@@ -812,14 +1114,27 @@ export default function NightlyReportPage() {
           </div>
 
           {/* Labor & Productivity */}
-          {factsSummary?.labor && (() => {
-            const labor = factsSummary.labor!;
+          {(() => {
+            // Select labor data based on view mode
+            const labor = viewMode === 'nightly'
+              ? factsSummary?.labor
+              : viewMode === 'wtd'
+                ? factsSummary?.labor_wtd
+                : factsSummary?.labor_ptd;
+
+            if (!labor) return null;
+
             const otPct = labor.total_hours > 0 ? (labor.ot_hours / labor.total_hours) * 100 : 0;
             const avgRate = labor.total_hours > 0 ? labor.labor_cost / labor.total_hours : 0;
             const otCost = labor.ot_hours * avgRate * 1.5;
-            const costPerCover = (report.summary.total_covers > 0)
-              ? labor.labor_cost / report.summary.total_covers
-              : 0;
+
+            // Use period-appropriate covers for cost per cover calculation
+            const periodCovers = viewMode === 'nightly'
+              ? report.summary.total_covers
+              : viewMode === 'wtd'
+                ? (factsSummary?.variance.wtd_covers || 0)
+                : (factsSummary?.variance.ptd_covers || 0);
+            const costPerCover = periodCovers > 0 ? labor.labor_cost / periodCovers : 0;
             const hasOT = labor.ot_hours > 0;
 
             return (
@@ -911,7 +1226,12 @@ export default function NightlyReportPage() {
                     const fohCost = labor.foh?.cost || 0;
                     const bohCost = labor.boh?.cost || 0;
                     const otherCost = labor.other?.cost || 0;
-                    const netSales = report.summary.net_sales || 0;
+                    // Use period-appropriate net sales
+                    const netSales = viewMode === 'nightly'
+                      ? (report.summary.net_sales || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance.wtd_net_sales || 0)
+                        : (factsSummary?.variance.ptd_net_sales || 0);
                     // % of sales labels
                     const fohPct = netSales > 0 ? (fohCost / netSales) * 100 : 0;
                     const bohPct = netSales > 0 ? (bohCost / netSales) * 100 : 0;
@@ -990,6 +1310,73 @@ export default function NightlyReportPage() {
                       </div>
                     );
                   })()}
+
+                  {/* Labor Exceptions & Diagnostics (Nightly only) */}
+                  {viewMode === 'nightly' && laborExceptions && laborExceptions.exceptions && laborExceptions.exceptions.length > 0 && (
+                    <div className="mt-4 space-y-3 p-3 rounded-lg border border-error/20 bg-error/5">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-muted-foreground uppercase font-semibold tracking-wide">
+                          Labor Efficiency Exceptions
+                        </div>
+                        {laborExceptions.requires_structural_review && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold bg-error text-white">
+                            STRUCTURAL REVIEW REQUIRED
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Diagnostic Badge */}
+                      <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold ${
+                          laborExceptions.diagnostic === 'overstaffed_slow'
+                            ? 'bg-error text-white'
+                            : laborExceptions.diagnostic === 'overstaffed_busy'
+                              ? 'bg-yellow-500 text-white'
+                              : laborExceptions.diagnostic === 'understaffed_or_pacing'
+                                ? 'bg-orange-500 text-white'
+                                : 'bg-sage text-white'
+                        }`}>
+                          {laborExceptions.diagnostic === 'overstaffed_slow' && '⚠️ Overstaffed + Slow'}
+                          {laborExceptions.diagnostic === 'overstaffed_busy' && '⚡ Overstaffed (Busy)'}
+                          {laborExceptions.diagnostic === 'understaffed_or_pacing' && '🔄 Understaffed/Pacing'}
+                          {laborExceptions.diagnostic === 'efficient' && '✓ Efficient'}
+                        </span>
+                        <div className="text-xs text-muted-foreground">
+                          SPLH: ${laborExceptions.splh?.toFixed(0) || '—'} ·
+                          CPLH: {laborExceptions.cplh?.toFixed(1) || '—'} ·
+                          Labor %: {laborExceptions.labor_pct?.toFixed(1) || '—'}%
+                        </div>
+                      </div>
+
+                      {/* Exception List */}
+                      <div className="space-y-2">
+                        {laborExceptions.exceptions.map((ex: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className={`flex items-start gap-2 p-2 rounded-md text-sm ${
+                              ex.severity === 'critical' || ex.severity === 'structural'
+                                ? 'bg-error/10'
+                                : 'bg-yellow-500/10'
+                            }`}
+                          >
+                            <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-bold flex-shrink-0 ${
+                              ex.severity === 'critical' || ex.severity === 'structural'
+                                ? 'bg-error text-white'
+                                : 'bg-yellow-500 text-white'
+                            }`}>
+                              {ex.severity === 'critical' || ex.severity === 'structural' ? '!' : '⚠'}
+                            </span>
+                            <div className="flex-1">
+                              <div className="font-semibold text-xs uppercase text-muted-foreground mb-0.5">
+                                {ex.type.replace(/_/g, ' ')}
+                              </div>
+                              <div className="text-sm">{ex.message}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -1309,33 +1696,45 @@ export default function NightlyReportPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
             <Card>
-              <CardHeader className="border-b border-brass/20 pb-0">
-                <CardTitle className="text-lg flex items-center gap-2 mb-3">
+              <CardHeader className="border-b border-brass/20">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-sage" />
                   Server Performance
                 </CardTitle>
-                <Tabs value={serverPerfTab} onValueChange={(v) => setServerPerfTab(v as 'nightly' | 'wtd' | 'ptd')}>
-                  <TabsList className="w-full grid grid-cols-3">
-                    <TabsTrigger value="nightly">Nightly</TabsTrigger>
-                    <TabsTrigger value="wtd">WTD</TabsTrigger>
-                    <TabsTrigger value="ptd">PTD</TabsTrigger>
-                  </TabsList>
-                </Tabs>
               </CardHeader>
               <CardContent className="p-0 overflow-x-auto">
                 {(() => {
-                  const serverData = serverPerfTab === 'nightly'
+                  // Show loading state for WTD/PTD when facts are loading
+                  if (viewMode !== 'nightly' && loadingFacts) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">Loading {viewMode.toUpperCase()} data...</p>
+                      </div>
+                    );
+                  }
+
+                  // Show error state for WTD/PTD if facts failed
+                  if (viewMode !== 'nightly' && factsError) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-destructive text-sm">{factsError}</p>
+                        <p className="text-muted-foreground text-xs mt-2">Try refreshing the page</p>
+                      </div>
+                    );
+                  }
+
+                  const serverData = viewMode === 'nightly'
                     ? report.servers
-                    : serverPerfTab === 'wtd'
+                    : viewMode === 'wtd'
                       ? factsSummary?.servers_wtd || []
                       : factsSummary?.servers_ptd || [];
-                  const showDays = serverPerfTab !== 'nightly';
+                  const showDays = viewMode !== 'nightly';
 
                   if (serverData.length === 0) {
                     return (
                       <div className="empty-state py-8">
                         <p className="text-muted-foreground">
-                          {serverPerfTab === 'nightly' ? 'No server data' : `No ${serverPerfTab.toUpperCase()} data available`}
+                          {viewMode === 'nightly' ? 'No server data' : `No ${viewMode.toUpperCase()} data available`}
                         </p>
                       </div>
                     );
@@ -1376,7 +1775,9 @@ export default function NightlyReportPage() {
                               {server.tip_pct != null ? `${server.tip_pct}%` : '---'}
                             </td>
                             {showDays && (
-                              <td className="text-right">{'days_worked' in server ? (server as any).days_worked : '---'}</td>
+                              <td className="text-right">
+                                {(server as any).days_worked ?? '---'}
+                              </td>
                             )}
                           </tr>
                         ))}
@@ -1396,16 +1797,36 @@ export default function NightlyReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {report.menuItems.length > 0 ? (
-                  (() => {
-                    const isBeverage = (cat: string) => {
-                      const lower = cat.toLowerCase();
-                      return lower.includes('bev') || lower.includes('wine') ||
-                             lower.includes('beer') || lower.includes('liquor') ||
-                             lower.includes('cocktail');
-                    };
-                    const foodItems = report.menuItems.filter(item => !isBeverage(item.parent_category || ''));
-                    const bevItems = report.menuItems.filter(item => isBeverage(item.parent_category || ''));
+                {(() => {
+                  // Select data source based on view mode
+                  const menuItems = viewMode === 'nightly'
+                    ? report.menuItems
+                    : viewMode === 'wtd'
+                      ? (factsSummary?.items_wtd || [])
+                      : (factsSummary?.items_ptd || []);
+
+                  if (menuItems.length === 0) {
+                    return (
+                      <div className="empty-state py-8">
+                        <p className="text-muted-foreground">No menu items</p>
+                      </div>
+                    );
+                  }
+
+                  const isBeverage = (cat: string) => {
+                    const lower = cat.toLowerCase();
+                    return lower.includes('bev') || lower.includes('wine') ||
+                           lower.includes('beer') || lower.includes('liquor') ||
+                           lower.includes('cocktail');
+                  };
+
+                  // Handle both TipSee data (parent_category) and facts data (category)
+                  const foodItems = menuItems.filter(item =>
+                    !isBeverage((item as any).parent_category || item.category || '')
+                  );
+                  const bevItems = menuItems.filter(item =>
+                    isBeverage((item as any).parent_category || item.category || '')
+                  );
 
                     return (
                       <table className="table-opsos">
@@ -1452,12 +1873,7 @@ export default function NightlyReportPage() {
                         </tbody>
                       </table>
                     );
-                  })()
-                ) : (
-                  <div className="empty-state py-8">
-                    <p className="text-muted-foreground">No menu items</p>
-                  </div>
-                )}
+                })()}
               </CardContent>
             </Card>
 
@@ -1475,7 +1891,27 @@ export default function NightlyReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {(report.discounts.length > 0 || report.detailedComps.length > 0) ? (
+                {viewMode !== 'nightly' ? (
+                  // Period view: Show summary only
+                  <div className="p-6 text-center">
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold text-error mb-2">
+                        {formatCurrency(report.summary.total_comps || 0)}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Total Comps & Discounts
+                      </div>
+                      {report.summary.net_sales > 0 && (
+                        <div className="mt-2 text-lg font-semibold text-error/80">
+                          {((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1)}% of Net Sales
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground border-t pt-4">
+                      Detailed comp data is only available in Nightly view
+                    </div>
+                  </div>
+                ) : (report.discounts.length > 0 || report.detailedComps.length > 0) ? (
                   <Tabs defaultValue="by-reason" className="w-full">
                     <div className="px-4 pt-3">
                       <TabsList className="w-full grid grid-cols-2">
@@ -1590,15 +2026,16 @@ export default function NightlyReportPage() {
           </div>
 
           {/* VIP Activity */}
-          <Card>
-            <CardHeader className="border-b border-brass/20">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Star className="h-5 w-5 text-brass" />
-                VIP Activity
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {(report.notableGuests.length > 0 || report.peopleWeKnow.length > 0) ? (
+          {viewMode === 'nightly' ? (
+            <Card>
+              <CardHeader className="border-b border-brass/20">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Star className="h-5 w-5 text-brass" />
+                  VIP Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {(report.notableGuests.length > 0 || report.peopleWeKnow.length > 0) ? (
                 <Tabs defaultValue="top-spenders" className="w-full">
                   <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
                     <TabsTrigger
@@ -1714,9 +2151,21 @@ export default function NightlyReportPage() {
                 <div className="empty-state py-8">
                   <p className="text-muted-foreground">No VIP activity</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            // Period view: VIP activity not available
+            <Card className="border-dashed">
+              <CardContent className="p-8 text-center">
+                <Star className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                <p className="font-semibold mb-2">VIP Activity</p>
+                <p className="text-sm text-muted-foreground">
+                  Guest-level data is only available in Nightly view
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Attestation Footer — Incidents, Coaching & Submit */}
           <AttestationFooter

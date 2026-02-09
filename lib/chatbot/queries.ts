@@ -75,14 +75,12 @@ export async function getServerPerformance(
   const result = await pool.query(
     `SELECT
       c.employee_name,
-      c.employee_role_name,
-      COUNT(*) as tickets,
-      SUM(c.guest_count) as covers,
       SUM(c.revenue_total) as net_sales,
-      ROUND(AVG(c.revenue_total)::numeric, 2) as avg_ticket,
-      ROUND(AVG(CASE WHEN c.close_time > c.open_time
-        THEN EXTRACT(EPOCH FROM (c.close_time - c.open_time))/60 END)::numeric, 0) as avg_turn_mins,
-      ROUND((SUM(c.revenue_total) / NULLIF(SUM(c.guest_count), 0))::numeric, 2) as avg_per_cover,
+      COUNT(*) as check_count,
+      SUM(c.guest_count) as guest_count,
+      ROUND((SUM(c.revenue_total) / NULLIF(SUM(c.guest_count), 0))::numeric, 2) as avg_spend_per_guest,
+      COUNT(DISTINCT c.table_name || '-' || c.trading_day) as table_turns,
+      ROUND((SUM(c.revenue_total) / NULLIF(COUNT(*), 0))::numeric, 2) as avg_check,
       ROUND((SUM(COALESCE(pt.total_tips, 0)) / NULLIF(SUM(c.revenue_total), 0) * 100)::numeric, 1) as tip_pct,
       SUM(COALESCE(pt.total_tips, 0)) as total_tips
     FROM public.tipsee_checks c
@@ -92,7 +90,7 @@ export async function getServerPerformance(
     ) pt ON true
     WHERE c.location_uuid = ANY($1::text[])
       AND c.trading_day >= $2 AND c.trading_day <= $3
-    GROUP BY c.employee_name, c.employee_role_name
+    GROUP BY c.employee_name
     ORDER BY net_sales DESC
     LIMIT $4`,
     [locationUuids, params.startDate, params.endDate, MAX_ROWS]

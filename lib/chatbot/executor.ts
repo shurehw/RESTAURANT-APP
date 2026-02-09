@@ -25,6 +25,8 @@ import {
   getCurrentInventory,
 } from './supabase-queries';
 
+type VenueMapEntry = { venueId: string; locationUuid: string };
+
 const MAX_DATE_RANGE_DAYS = 90;
 const MAX_DISPLAY_ROWS = 30;
 
@@ -86,31 +88,70 @@ function formatResults(rows: Record<string, any>[], toolName: string): string {
 }
 
 /**
- * Execute a chatbot tool call securely.
- * locationUuids/venueIds are injected server-side — the AI never controls which locations are queried.
+ * Resolve venue filter: if the AI passed a "venue" param, narrow
+ * locationUuids/venueIds to just that venue using fuzzy matching.
  */
+function resolveVenueFilter(
+  venueInput: string | undefined,
+  allLocationUuids: string[],
+  allVenueIds: string[],
+  venueMap: Record<string, VenueMapEntry>
+): { locationUuids: string[]; venueIds: string[] } {
+  if (!venueInput || typeof venueInput !== 'string') {
+    return { locationUuids: allLocationUuids, venueIds: allVenueIds };
+  }
+
+  const search = venueInput.toLowerCase().trim();
+
+  // Try exact match first, then partial match
+  let match = venueMap[search];
+  if (!match) {
+    const key = Object.keys(venueMap).find(k => k.includes(search) || search.includes(k));
+    if (key) match = venueMap[key];
+  }
+
+  if (match) {
+    return {
+      locationUuids: [match.locationUuid],
+      venueIds: [match.venueId],
+    };
+  }
+
+  // No match — return all (AI will get all-venue data)
+  return { locationUuids: allLocationUuids, venueIds: allVenueIds };
+}
+
 export async function executeTool(
   toolName: string,
   toolInput: Record<string, any>,
   ctx: {
     locationUuids: string[];
     venueIds: string[];
+    venueMap: Record<string, VenueMapEntry>;
     pool: Pool;
     supabase: SupabaseClient;
   }
 ): Promise<string> {
   try {
+    // Resolve venue filter for this tool call
+    const filtered = resolveVenueFilter(
+      toolInput.venue,
+      ctx.locationUuids,
+      ctx.venueIds,
+      ctx.venueMap
+    );
+
     // Supabase tools (no dates required for some)
     switch (toolName) {
       case 'get_operational_exceptions':
         return formatResults(
-          await getOperationalExceptions(ctx.supabase, ctx.venueIds),
+          await getOperationalExceptions(ctx.supabase, filtered.venueIds),
           toolName
         );
 
       case 'get_current_inventory':
         return formatResults(
-          await getCurrentInventory(ctx.supabase, ctx.venueIds, {
+          await getCurrentInventory(ctx.supabase, filtered.venueIds, {
             category: toolInput.category,
             search: toolInput.search,
           }),
@@ -125,25 +166,25 @@ export async function executeTool(
       // --- TipSee POS tools ---
       case 'get_daily_sales':
         return formatResults(
-          await getDailySales(ctx.pool, ctx.locationUuids, dates),
+          await getDailySales(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_sales_by_category':
         return formatResults(
-          await getSalesByCategory(ctx.pool, ctx.locationUuids, dates),
+          await getSalesByCategory(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_server_performance':
         return formatResults(
-          await getServerPerformance(ctx.pool, ctx.locationUuids, dates),
+          await getServerPerformance(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_top_menu_items':
         return formatResults(
-          await getTopMenuItems(ctx.pool, ctx.locationUuids, {
+          await getTopMenuItems(ctx.pool, filtered.locationUuids, {
             ...dates,
             sortBy: toolInput.sort_by === 'quantity' ? 'quantity' : 'revenue',
           }),
@@ -152,50 +193,50 @@ export async function executeTool(
 
       case 'get_comp_summary':
         return formatResults(
-          await getCompSummary(ctx.pool, ctx.locationUuids, dates),
+          await getCompSummary(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_labor_summary':
         return formatResults(
-          await getLaborSummary(ctx.pool, ctx.locationUuids, dates),
+          await getLaborSummary(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_reservations':
         return formatResults(
-          await getReservations(ctx.pool, ctx.locationUuids, dates),
+          await getReservations(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_payment_details':
         return formatResults(
-          await getPaymentDetails(ctx.pool, ctx.locationUuids, dates),
+          await getPaymentDetails(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       case 'get_logbook':
         return formatResults(
-          await getLogbook(ctx.pool, ctx.locationUuids, dates),
+          await getLogbook(ctx.pool, filtered.locationUuids, dates),
           toolName
         );
 
       // --- Supabase internal tools ---
       case 'get_budget_variance':
         return formatResults(
-          await getBudgetVariance(ctx.supabase, ctx.venueIds, dates),
+          await getBudgetVariance(ctx.supabase, filtered.venueIds, dates),
           toolName
         );
 
       case 'get_demand_forecasts':
         return formatResults(
-          await getDemandForecasts(ctx.supabase, ctx.venueIds, dates),
+          await getDemandForecasts(ctx.supabase, filtered.venueIds, dates),
           toolName
         );
 
       case 'get_invoices':
         return formatResults(
-          await getInvoices(ctx.supabase, ctx.venueIds, {
+          await getInvoices(ctx.supabase, filtered.venueIds, {
             ...dates,
             status: toolInput.status,
           }),

@@ -97,8 +97,8 @@ function Sidebar() {
 
       {/* Navigation */}
       <nav className="p-4 space-y-1">
-        <NavLink href="/" icon={<LayoutDashboard className="w-5 h-5" />}>
-          Dashboard
+        <NavLink href="/" icon={<Moon className="w-5 h-5" />}>
+          Home
         </NavLink>
 
         <NavSection title="COGS">
@@ -136,7 +136,10 @@ function Sidebar() {
             Venue Health
           </NavLink>
           <NavLink href="/control-plane" icon={<ShieldCheck className="w-5 h-5" />}>
-            Control Plane
+            Action Items
+          </NavLink>
+          <NavLink href="/control-plane/attestations" icon={<CheckSquare className="w-5 h-5" />}>
+            Attestations
           </NavLink>
           <NavLink href="/entertainment" icon={<Music2 className="w-5 h-5" />}>
             Entertainment

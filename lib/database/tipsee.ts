@@ -13,9 +13,9 @@ const TIPSEE_CONFIG = {
   database: process.env.TIPSEE_DB_NAME || 'postgres',
   password: process.env.TIPSEE_DB_PASSWORD || 'TIPSEE_PASSWORD_REDACTED',
   ssl: { rejectUnauthorized: false },
-  max: 5,
+  max: 15, // Increased from 5 to handle 10 parallel queries + headroom for concurrent users
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 20000, // Increased from 10s to 20s for slow Azure connections
 };
 
 // Singleton pool
@@ -445,7 +445,7 @@ export async function fetchNightlyReport(
   const notableGuests = notableGuestsResult.rows.map((guest) => {
     const guestData = cleanRow(guest);
 
-    if (guestData.payment && guestData.tip_amount) {
+    if (guestData.payment != null && guestData.tip_amount != null) {
       const baseAmount = guestData.payment - guestData.tip_amount;
       guestData.tip_percent = baseAmount > 0 ? Math.round((guestData.tip_amount / baseAmount) * 100) : 0;
     } else {
@@ -591,9 +591,13 @@ const COMP_THRESHOLDS = {
   DAILY_COMP_PCT_CRITICAL: 0.03, // 3% of net sales
 };
 
-function isApprovedReason(reason: string): boolean {
+function isApprovedReason(reason: string, approvedReasons?: Array<{ name: string }>): boolean {
   const normalized = reason.toLowerCase().trim();
-  return APPROVED_COMP_REASONS.some(approved =>
+  const reasonList = approvedReasons
+    ? approvedReasons.map(r => r.name.toLowerCase())
+    : APPROVED_COMP_REASONS;
+
+  return reasonList.some(approved =>
     normalized.includes(approved) || approved.includes(normalized)
   );
 }
@@ -614,47 +618,84 @@ function hasPromoterItems(items: Array<{ name: string }>): boolean {
 
 export async function fetchCompExceptions(
   date: string,
-  locationUuid: string
+  locationUuid: string,
+  settings?: {
+    approved_reasons?: Array<{ name: string }>;
+    high_value_comp_threshold?: number;
+    high_comp_pct_threshold?: number;
+    daily_comp_pct_warning?: number;
+    daily_comp_pct_critical?: number;
+  }
 ): Promise<CompExceptionsResult> {
   const pool = getTipseePool();
   const exceptions: CompException[] = [];
 
-  // Get daily summary for comp % calculation
-  const summaryResult = await pool.query(
-    `SELECT
-      SUM(revenue_total) as net_sales,
-      SUM(comp_total) as total_comps
-    FROM public.tipsee_checks
-    WHERE location_uuid = $1 AND trading_day = $2`,
-    [locationUuid, date]
-  );
+  // Use settings or fallback to defaults
+  const thresholds = {
+    highValue: settings?.high_value_comp_threshold ?? COMP_THRESHOLDS.HIGH_VALUE_COMP,
+    highCompPct: settings?.high_comp_pct_threshold ?? COMP_THRESHOLDS.HIGH_COMP_PCT_OF_CHECK,
+    dailyWarning: settings?.daily_comp_pct_warning ?? COMP_THRESHOLDS.DAILY_COMP_PCT_WARNING,
+    dailyCritical: settings?.daily_comp_pct_critical ?? COMP_THRESHOLDS.DAILY_COMP_PCT_CRITICAL,
+  };
+
+  // Get daily summary AND all comps in parallel
+  const [summaryResult, compsResult] = await Promise.all([
+    pool.query(
+      `SELECT
+        SUM(revenue_total) as net_sales,
+        SUM(comp_total) as total_comps
+      FROM public.tipsee_checks
+      WHERE location_uuid = $1 AND trading_day = $2`,
+      [locationUuid, date]
+    ),
+    pool.query(
+      `SELECT DISTINCT
+        c.id as check_id,
+        c.table_name,
+        c.employee_name as server,
+        c.guest_count as covers,
+        GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
+        c.revenue_total as check_total,
+        COALESCE(NULLIF(c.voidcomp_reason_text, ''), '') as reason
+      FROM public.tipsee_checks c
+      LEFT JOIN LATERAL (
+        SELECT SUM(comp_total) as total
+        FROM public.tipsee_check_items
+        WHERE check_id = c.id AND comp_total > 0
+      ) item_comps ON true
+      WHERE c.location_uuid = $1 AND c.trading_day = $2
+        AND (c.comp_total > 0 OR item_comps.total > 0)
+      ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
+      [locationUuid, date]
+    ),
+  ]);
 
   const dailySummary = summaryResult.rows[0] || { net_sales: 0, total_comps: 0 };
   const netSales = parseFloat(dailySummary.net_sales) || 0;
   const totalComps = parseFloat(dailySummary.total_comps) || 0;
   const compPct = netSales > 0 ? totalComps / netSales : 0;
 
-  // Get all comps with their items
-  const compsResult = await pool.query(
-    `SELECT DISTINCT
-      c.id as check_id,
-      c.table_name,
-      c.employee_name as server,
-      c.guest_count as covers,
-      GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
-      c.revenue_total as check_total,
-      COALESCE(NULLIF(c.voidcomp_reason_text, ''), '') as reason
-    FROM public.tipsee_checks c
-    LEFT JOIN LATERAL (
-      SELECT SUM(comp_total) as total
-      FROM public.tipsee_check_items
-      WHERE check_id = c.id AND comp_total > 0
-    ) item_comps ON true
-    WHERE c.location_uuid = $1 AND c.trading_day = $2
-      AND (c.comp_total > 0 OR item_comps.total > 0)
-    ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
-    [locationUuid, date]
-  );
+  // Batch fetch ALL comp items in 1 query (eliminates N+1)
+  const compCheckIds = compsResult.rows.map((r: any) => r.check_id);
+  const compItemsMap = new Map<string, Array<{ name: string; quantity: number; amount: number }>>();
+  if (compCheckIds.length > 0) {
+    const itemsResult = await pool.query(
+      `SELECT check_id, name, quantity, comp_total as amount
+       FROM public.tipsee_check_items
+       WHERE check_id = ANY($1::text[]) AND comp_total > 0
+       ORDER BY check_id, comp_total DESC`,
+      [compCheckIds]
+    );
+    for (const item of itemsResult.rows) {
+      const arr = compItemsMap.get(item.check_id) || [];
+      arr.push({
+        name: item.name,
+        quantity: parseFloat(item.quantity) || 1,
+        amount: parseFloat(item.amount) || 0,
+      });
+      compItemsMap.set(item.check_id, arr);
+    }
+  }
 
   for (const comp of compsResult.rows) {
     const checkId = comp.check_id;
@@ -662,20 +703,7 @@ export async function fetchCompExceptions(
     const checkTotal = parseFloat(comp.check_total) || 0;
     const reason = comp.reason || '';
 
-    // Get comped items for this check
-    const itemsResult = await pool.query(
-      `SELECT name, quantity, comp_total as amount
-       FROM public.tipsee_check_items
-       WHERE check_id = $1 AND comp_total > 0
-       ORDER BY comp_total DESC`,
-      [checkId]
-    );
-
-    const compedItems = itemsResult.rows.map(item => ({
-      name: item.name,
-      quantity: parseFloat(item.quantity) || 1,
-      amount: parseFloat(item.amount) || 0,
-    }));
+    const compedItems = compItemsMap.get(checkId) || [];
 
     const baseException = {
       check_id: checkId,
@@ -700,7 +728,7 @@ export async function fetchCompExceptions(
     }
 
     // Check 2: Unapproved reason
-    if (!isApprovedReason(reason)) {
+    if (!isApprovedReason(reason, settings?.approved_reasons)) {
       exceptions.push({
         ...baseException,
         type: 'unapproved_reason',
@@ -722,7 +750,7 @@ export async function fetchCompExceptions(
     }
 
     // Check 4: High value comp
-    if (compTotal >= COMP_THRESHOLDS.HIGH_VALUE_COMP) {
+    if (compTotal >= thresholds.highValue) {
       // Don't double-flag if already flagged for unapproved reason
       const alreadyFlagged = exceptions.some(
         e => e.check_id === checkId && (e.type === 'unapproved_reason' || e.type === 'missing_reason')
@@ -733,7 +761,7 @@ export async function fetchCompExceptions(
           type: 'high_value',
           severity: 'warning',
           message: `High-value comp: $${compTotal.toFixed(2)}`,
-          details: `Exceeds $${COMP_THRESHOLDS.HIGH_VALUE_COMP} threshold - manager review recommended`,
+          details: `Exceeds $${thresholds.highValue} threshold - manager review recommended`,
         });
       }
     }
@@ -741,7 +769,7 @@ export async function fetchCompExceptions(
     // Check 5: High comp % of check (near-full comp)
     // Only flag if over threshold percentage AND above minimum amount (avoids small split-check false positives)
     if (checkTotal > 0 &&
-        compTotal / checkTotal > COMP_THRESHOLDS.HIGH_COMP_PCT_OF_CHECK &&
+        compTotal / checkTotal > thresholds.highCompPct &&
         compTotal >= COMP_THRESHOLDS.HIGH_COMP_PCT_MIN_AMOUNT) {
       const compPctOfCheck = (compTotal / checkTotal * 100).toFixed(0);
       // Don't double-flag if already flagged for other reasons
@@ -763,9 +791,9 @@ export async function fetchCompExceptions(
 
   // Determine daily comp % status
   let compPctStatus: 'ok' | 'warning' | 'critical' = 'ok';
-  if (compPct >= COMP_THRESHOLDS.DAILY_COMP_PCT_CRITICAL) {
+  if (compPct >= thresholds.dailyCritical) {
     compPctStatus = 'critical';
-  } else if (compPct >= COMP_THRESHOLDS.DAILY_COMP_PCT_WARNING) {
+  } else if (compPct >= thresholds.dailyWarning) {
     compPctStatus = 'warning';
   }
 

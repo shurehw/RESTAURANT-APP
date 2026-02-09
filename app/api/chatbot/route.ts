@@ -8,6 +8,7 @@ import { z } from 'zod';
 import Anthropic from '@anthropic-ai/sdk';
 import { CHATBOT_TOOLS } from '@/lib/chatbot/tools';
 import { executeTool } from '@/lib/chatbot/executor';
+import { getFiscalPeriod, type FiscalCalendarType } from '@/lib/fiscal-calendar';
 
 // Tool-use loop can make multiple API calls; allow up to 60s on Vercel
 export const maxDuration = 60;
@@ -28,9 +29,33 @@ function getAnthropic(): Anthropic {
   return _anthropic;
 }
 
-const SYSTEM_PROMPT = `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
+function buildSystemPrompt(
+  venueNames: string[],
+  fiscal: { calendarType: FiscalCalendarType; periodInfo: ReturnType<typeof getFiscalPeriod> }
+): string {
+  const today = new Date().toISOString().split('T')[0];
+  const { calendarType, periodInfo } = fiscal;
+  const { fiscalYear, fiscalQuarter, fiscalPeriod, periodStartDate, periodEndDate } = periodInfo;
+
+  const calendarLabel = calendarType === 'standard' ? 'standard monthly' : calendarType;
+
+  return `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
 
 Your job is to answer questions about restaurant operations using real POS (point-of-sale) data. You have access to tools that query the restaurant's TipSee POS database directly.
+
+VENUES (the user has access to these locations):
+${venueNames.map(n => `- ${n}`).join('\n')}
+
+When the user asks about a specific venue (e.g. "Miami", "Nice Guy", "Dallas"), use the "venue" parameter on tool calls to filter to that location. Use partial matching — "miami" matches "Delilah Miami", "nice guy" matches "Nice Guy LA", etc.
+When the user doesn't specify a venue, query ALL venues (omit the venue parameter) and show per-venue breakdowns when relevant.
+
+FISCAL CALENDAR:
+- Calendar type: ${calendarLabel}
+- Current period: P${fiscalPeriod} (${periodStartDate} to ${periodEndDate}), Q${fiscalQuarter}, FY${fiscalYear}
+- Today: ${today}
+- "PTD" = period-to-date (${periodStartDate} to ${today})
+- "QTD" = quarter-to-date
+- When the user says "current period", "PTD", or "period to date", use ${periodStartDate} to ${today}
 
 AVAILABLE DATA (via tools):
 
@@ -53,10 +78,10 @@ Internal Operations Data:
 - Inventory: current on-hand quantities, costs, values
 
 WORKFLOW:
-1. When the user asks a data question, ALWAYS call the appropriate tool(s) first
+1. When the user asks a data question, ALWAYS call the appropriate tool(s) IMMEDIATELY — do not ask the user to clarify dates or venues if you can reasonably infer them
 2. Use the data returned to provide a precise, data-backed answer
 3. For comparison questions, call tools multiple times with different date ranges
-4. Today's date is ${new Date().toISOString().split('T')[0]}
+4. If the user mentions a venue name, use the venue parameter to filter
 
 ANALYSIS GUIDELINES:
 - Be numerically precise — show calculations when helpful
@@ -73,7 +98,9 @@ GUARDRAILS:
 TONE:
 - Professional but conversational
 - Focus on actionable insights
-- Use restaurant industry terminology`;
+- Use restaurant industry terminology
+- Be direct — pull data first, ask questions later`;
+}
 
 const MAX_TOOL_ITERATIONS = 5;
 
@@ -99,21 +126,32 @@ export async function POST(req: NextRequest) {
 
     console.log('[chatbot] Auth OK:', { userId: ctx.authUserId, orgId: ctx.orgId });
 
-    // Get venues for the user's organization
+    // Get venues for the user's organization (with names for AI context)
     const supabase = getServiceClient();
     const { data: venues } = await (supabase as any)
       .from('venues')
-      .select('id')
+      .select('id, name')
       .eq('organization_id', ctx.orgId);
     const venueIds: string[] = (venues || []).map((v: any) => v.id);
     const { data: mappings } = await (supabase as any)
       .from('venue_tipsee_mapping')
-      .select('tipsee_location_uuid')
+      .select('venue_id, tipsee_location_uuid')
       .in('venue_id', venueIds);
 
-    const locationUuids: string[] = (mappings || [])
-      .map((m: any) => m.tipsee_location_uuid)
-      .filter(Boolean);
+    // Build venue name → location UUID mapping for per-venue filtering
+    const venueMap: Record<string, { venueId: string; locationUuid: string }> = {};
+    const locationUuids: string[] = [];
+    for (const m of mappings || []) {
+      if (!m.tipsee_location_uuid) continue;
+      locationUuids.push(m.tipsee_location_uuid);
+      const venue = (venues || []).find((v: any) => v.id === m.venue_id);
+      if (venue?.name) {
+        venueMap[venue.name.toLowerCase()] = {
+          venueId: m.venue_id,
+          locationUuid: m.tipsee_location_uuid,
+        };
+      }
+    }
 
     if (locationUuids.length === 0) {
       return NextResponse.json({
@@ -121,6 +159,22 @@ export async function POST(req: NextRequest) {
         context_used: false,
       });
     }
+
+    // Build venue list for AI context
+    const venueNames = (venues || [])
+      .filter((v: any) => venueMap[v.name?.toLowerCase()])
+      .map((v: any) => v.name);
+
+    // Fetch org fiscal calendar settings
+    const { data: orgSettings } = await (supabase as any)
+      .from('organization_settings')
+      .select('fiscal_calendar_type, fiscal_year_start_date')
+      .eq('organization_id', ctx.orgId)
+      .single();
+
+    const calendarType: FiscalCalendarType = orgSettings?.fiscal_calendar_type || '4-4-5';
+    const fyStartDate: string | null = orgSettings?.fiscal_year_start_date || null;
+    const periodInfo = getFiscalPeriod(new Date(), calendarType, fyStartDate);
 
     const body = await req.json();
     const { question, history } = chatSchema.parse(body);
@@ -133,12 +187,13 @@ export async function POST(req: NextRequest) {
     messages.push({ role: 'user', content: question });
 
     const pool = getTipseePool();
-    const toolCtx = { locationUuids, venueIds, pool, supabase };
+    const toolCtx = { locationUuids, venueIds, venueMap, pool, supabase };
+    const systemPrompt = buildSystemPrompt(venueNames, { calendarType, periodInfo });
 
     // Tool-use loop
     let response = await getAnthropic().messages.create({
       model: 'claude-haiku-4-5-20251001',
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages,
       tools: CHATBOT_TOOLS,
       max_tokens: 1500,
@@ -170,7 +225,7 @@ export async function POST(req: NextRequest) {
 
       response = await getAnthropic().messages.create({
         model: 'claude-haiku-4-5-20251001',
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages,
         tools: CHATBOT_TOOLS,
         max_tokens: 1500,
