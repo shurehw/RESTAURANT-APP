@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,8 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon, Save } from 'lucide-react';
 
-// OpsOS Layer 1 Bounds (non-negotiable)
-const LABOR_BOUNDS = {
+// OpsOS Layer 0 Bounds (fetched from database, super admin configurable)
+interface LaborBounds {
+  LABOR_PCT_MIN: number;
+  LABOR_PCT_MAX: number;
+  LABOR_PCT_TOLERANCE_MIN: number;
+  LABOR_PCT_TOLERANCE_MAX: number;
+  SPLH_MIN: number;
+  SPLH_MAX: number;
+  CPLH_MIN: number;
+  CPLH_MAX: number;
+}
+
+// Default bounds (fallback if API fails)
+const DEFAULT_laborBounds: LaborBounds = {
   LABOR_PCT_MIN: 18,
   LABOR_PCT_MAX: 28,
   LABOR_PCT_TOLERANCE_MIN: 1.5,
@@ -41,6 +53,27 @@ interface Props {
 export function LaborStandardsForm({ standards, onSave, loading }: Props) {
   const [formData, setFormData] = useState<LaborStandards>(standards);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [laborBounds, setLaborBounds] = useState<LaborBounds>(DEFAULT_laborBounds);
+  const [boundsLoading, setBoundsLoading] = useState(true);
+
+  // Fetch system bounds from API on mount
+  useEffect(() => {
+    async function fetchBounds() {
+      try {
+        const res = await fetch('/api/system-bounds/client');
+        if (res.ok) {
+          const { data } = await res.json();
+          setLaborBounds(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch system bounds:', error);
+        // Keep default bounds on error
+      } finally {
+        setBoundsLoading(false);
+      }
+    }
+    fetchBounds();
+  }, []);
 
   function handleChange(field: keyof LaborStandards, value: any) {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -56,22 +89,22 @@ export function LaborStandardsForm({ standards, onSave, loading }: Props) {
     const errors: Record<string, string> = {};
 
     // Labor % validation
-    if (formData.target_labor_pct < LABOR_BOUNDS.LABOR_PCT_MIN || formData.target_labor_pct > LABOR_BOUNDS.LABOR_PCT_MAX) {
-      errors.target_labor_pct = `Must be between ${LABOR_BOUNDS.LABOR_PCT_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_MAX}% (Layer 1 bound)`;
+    if (formData.target_labor_pct < laborBounds.LABOR_PCT_MIN || formData.target_labor_pct > laborBounds.LABOR_PCT_MAX) {
+      errors.target_labor_pct = `Must be between ${laborBounds.LABOR_PCT_MIN}% and ${laborBounds.LABOR_PCT_MAX}% (Layer 0 bound)`;
     }
 
-    if (formData.labor_pct_tolerance < LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN || formData.labor_pct_tolerance > LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX) {
-      errors.labor_pct_tolerance = `Must be between ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX}% (Layer 1 bound)`;
+    if (formData.labor_pct_tolerance < laborBounds.LABOR_PCT_TOLERANCE_MIN || formData.labor_pct_tolerance > laborBounds.LABOR_PCT_TOLERANCE_MAX) {
+      errors.labor_pct_tolerance = `Must be between ${laborBounds.LABOR_PCT_TOLERANCE_MIN}% and ${laborBounds.LABOR_PCT_TOLERANCE_MAX}% (Layer 0 bound)`;
     }
 
     // SPLH validation
-    if (formData.splh_floor < LABOR_BOUNDS.SPLH_MIN || formData.splh_floor > LABOR_BOUNDS.SPLH_MAX) {
-      errors.splh_floor = `Must be between $${LABOR_BOUNDS.SPLH_MIN} and $${LABOR_BOUNDS.SPLH_MAX} (Layer 1 bound)`;
+    if (formData.splh_floor < laborBounds.SPLH_MIN || formData.splh_floor > laborBounds.SPLH_MAX) {
+      errors.splh_floor = `Must be between $${laborBounds.SPLH_MIN} and $${laborBounds.SPLH_MAX} (Layer 0 bound)`;
     }
 
     // CPLH validation
-    if (formData.cplh_target < LABOR_BOUNDS.CPLH_MIN || formData.cplh_target > LABOR_BOUNDS.CPLH_MAX) {
-      errors.cplh_target = `Must be between ${LABOR_BOUNDS.CPLH_MIN} and ${LABOR_BOUNDS.CPLH_MAX} (Layer 1 bound)`;
+    if (formData.cplh_target < laborBounds.CPLH_MIN || formData.cplh_target > laborBounds.CPLH_MAX) {
+      errors.cplh_target = `Must be between ${laborBounds.CPLH_MIN} and ${laborBounds.CPLH_MAX} (Layer 0 bound)`;
     }
 
     if (formData.cplh_tolerance <= 0 || formData.cplh_tolerance > 2) {
@@ -99,6 +132,14 @@ export function LaborStandardsForm({ standards, onSave, loading }: Props) {
     await onSave(formData);
   }
 
+  if (boundsLoading) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Loading system bounds...</p>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Labor Percentage */}
@@ -115,15 +156,15 @@ export function LaborStandardsForm({ standards, onSave, loading }: Props) {
               <Label htmlFor="target_labor_pct">
                 Target Labor %
                 <Badge variant="outline" className="ml-2">
-                  {LABOR_BOUNDS.LABOR_PCT_MIN}% - {LABOR_BOUNDS.LABOR_PCT_MAX}%
+                  {laborBounds.LABOR_PCT_MIN}% - {laborBounds.LABOR_PCT_MAX}%
                 </Badge>
               </Label>
               <Input
                 id="target_labor_pct"
                 type="number"
                 step="0.1"
-                min={LABOR_BOUNDS.LABOR_PCT_MIN}
-                max={LABOR_BOUNDS.LABOR_PCT_MAX}
+                min={laborBounds.LABOR_PCT_MIN}
+                max={laborBounds.LABOR_PCT_MAX}
                 value={formData.target_labor_pct}
                 onChange={(e) => handleChange('target_labor_pct', parseFloat(e.target.value))}
                 className={validationErrors.target_labor_pct ? 'border-red-500' : ''}
@@ -137,15 +178,15 @@ export function LaborStandardsForm({ standards, onSave, loading }: Props) {
               <Label htmlFor="labor_pct_tolerance">
                 Tolerance ±%
                 <Badge variant="outline" className="ml-2">
-                  {LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN}% - {LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX}%
+                  {laborBounds.LABOR_PCT_TOLERANCE_MIN}% - {laborBounds.LABOR_PCT_TOLERANCE_MAX}%
                 </Badge>
               </Label>
               <Input
                 id="labor_pct_tolerance"
                 type="number"
                 step="0.1"
-                min={LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN}
-                max={LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX}
+                min={laborBounds.LABOR_PCT_TOLERANCE_MIN}
+                max={laborBounds.LABOR_PCT_TOLERANCE_MAX}
                 value={formData.labor_pct_tolerance}
                 onChange={(e) => handleChange('labor_pct_tolerance', parseFloat(e.target.value))}
                 className={validationErrors.labor_pct_tolerance ? 'border-red-500' : ''}
@@ -178,15 +219,15 @@ export function LaborStandardsForm({ standards, onSave, loading }: Props) {
             <Label htmlFor="splh_floor">
               SPLH Floor
               <Badge variant="outline" className="ml-2">
-                ${LABOR_BOUNDS.SPLH_MIN} - ${LABOR_BOUNDS.SPLH_MAX}
+                ${laborBounds.SPLH_MIN} - ${laborBounds.SPLH_MAX}
               </Badge>
             </Label>
             <Input
               id="splh_floor"
               type="number"
               step="1"
-              min={LABOR_BOUNDS.SPLH_MIN}
-              max={LABOR_BOUNDS.SPLH_MAX}
+              min={laborBounds.SPLH_MIN}
+              max={laborBounds.SPLH_MAX}
               value={formData.splh_floor}
               onChange={(e) => handleChange('splh_floor', parseFloat(e.target.value))}
               className={validationErrors.splh_floor ? 'border-red-500' : ''}
@@ -219,15 +260,15 @@ export function LaborStandardsForm({ standards, onSave, loading }: Props) {
               <Label htmlFor="cplh_target">
                 CPLH Target
                 <Badge variant="outline" className="ml-2">
-                  {LABOR_BOUNDS.CPLH_MIN} - {LABOR_BOUNDS.CPLH_MAX}
+                  {laborBounds.CPLH_MIN} - {laborBounds.CPLH_MAX}
                 </Badge>
               </Label>
               <Input
                 id="cplh_target"
                 type="number"
                 step="0.1"
-                min={LABOR_BOUNDS.CPLH_MIN}
-                max={LABOR_BOUNDS.CPLH_MAX}
+                min={laborBounds.CPLH_MIN}
+                max={laborBounds.CPLH_MAX}
                 value={formData.cplh_target}
                 onChange={(e) => handleChange('cplh_target', parseFloat(e.target.value))}
                 className={validationErrors.cplh_target ? 'border-red-500' : ''}

@@ -14,8 +14,8 @@ import {
   LaborExceptionSeverity,
   LaborExceptionType,
   LaborDiagnostic,
-  LABOR_BOUNDS,
 } from './operational-standards.types';
+import type { LaborBounds } from './system-bounds';
 
 // ══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -62,14 +62,15 @@ export interface LaborExceptionResult {
  * ENFORCEMENT LOGIC:
  * 1. Calculate all three canonical metrics (Labor %, SPLH, CPLH)
  * 2. Run integrated diagnostic matrix (SPLH + CPLH)
- * 3. Check Layer 1 violations (non-negotiable)
- * 4. Check Layer 2 violations (org-calibrated)
+ * 3. Check Layer 0 violations (non-negotiable system bounds)
+ * 4. Check Layer 1 violations (org-calibrated standards)
  * 5. Apply severity multipliers
  */
 export function detectLaborExceptions(
   metrics: LaborMetrics,
   standards: LaborStandards,
   date: string,
+  laborBounds: LaborBounds,
   recentExceptions?: { date: string; critical: boolean }[]
 ): LaborExceptionResult {
   const exceptions: LaborException[] = [];
@@ -90,20 +91,20 @@ export function detectLaborExceptions(
   // ── Step 3: Check Layer 1 violations (LOCKED, non-negotiable) ──
 
   // Labor % > 30% → Absolute escalation
-  if (laborPct > LABOR_BOUNDS.LABOR_PCT_ABSOLUTE_ESCALATION) {
+  if (laborPct > laborBounds.LABOR_PCT_ABSOLUTE_ESCALATION) {
     exceptions.push({
       type: LaborExceptionType.LABOR_PCT_CRITICAL,
       severity: LaborExceptionSeverity.CRITICAL,
       diagnostic,
-      message: `Labor % (${laborPct.toFixed(1)}%) exceeds absolute limit (${LABOR_BOUNDS.LABOR_PCT_ABSOLUTE_ESCALATION}%)`,
+      message: `Labor % (${laborPct.toFixed(1)}%) exceeds absolute limit (${laborBounds.LABOR_PCT_ABSOLUTE_ESCALATION}%)`,
       actual_value: laborPct,
-      expected_value: LABOR_BOUNDS.LABOR_PCT_ABSOLUTE_ESCALATION,
-      variance_pct: ((laborPct - LABOR_BOUNDS.LABOR_PCT_ABSOLUTE_ESCALATION) / LABOR_BOUNDS.LABOR_PCT_ABSOLUTE_ESCALATION) * 100,
+      expected_value: laborBounds.LABOR_PCT_ABSOLUTE_ESCALATION,
+      variance_pct: ((laborPct - laborBounds.LABOR_PCT_ABSOLUTE_ESCALATION) / laborBounds.LABOR_PCT_ABSOLUTE_ESCALATION) * 100,
     });
   }
 
   // SPLH < floor × 0.85 → Critical
-  const splhCritical = standards.splh_floor * LABOR_BOUNDS.SPLH_CRITICAL_MULTIPLIER;
+  const splhCritical = standards.splh_floor * laborBounds.SPLH_CRITICAL_MULTIPLIER;
   if (splh < splhCritical && splh > 0) {
     exceptions.push({
       type: LaborExceptionType.SPLH_CRITICAL,
@@ -117,7 +118,7 @@ export function detectLaborExceptions(
   }
 
   // CPLH < target - 0.8 → Critical
-  const cplhCritical = standards.cplh_target - LABOR_BOUNDS.CPLH_CRITICAL_TOLERANCE;
+  const cplhCritical = standards.cplh_target - laborBounds.CPLH_CRITICAL_TOLERANCE;
   if (cplh < cplhCritical && cplh > 0) {
     exceptions.push({
       type: LaborExceptionType.CPLH_CRITICAL,
@@ -136,7 +137,7 @@ export function detectLaborExceptions(
   const laborPctThreshold = standards.target_labor_pct + standards.labor_pct_tolerance;
   if (
     laborPct > laborPctThreshold &&
-    laborPct <= LABOR_BOUNDS.LABOR_PCT_ABSOLUTE_ESCALATION
+    laborPct <= laborBounds.LABOR_PCT_ABSOLUTE_ESCALATION
   ) {
     exceptions.push({
       type: LaborExceptionType.LABOR_PCT_HIGH,
@@ -326,9 +327,9 @@ function checkStructuralTriggers(
 
   // Check triggers
   return (
-    exceptionsIn7Days >= LABOR_BOUNDS.STRUCTURAL_EXCEPTIONS_7D ||
-    exceptionsIn14Days >= LABOR_BOUNDS.STRUCTURAL_EXCEPTIONS_14D ||
-    criticalIn7Days >= LABOR_BOUNDS.STRUCTURAL_CRITICAL_7D
+    exceptionsIn7Days >= laborBounds.STRUCTURAL_EXCEPTIONS_7D ||
+    exceptionsIn14Days >= laborBounds.STRUCTURAL_EXCEPTIONS_14D ||
+    criticalIn7Days >= laborBounds.STRUCTURAL_CRITICAL_7D
   );
 }
 
@@ -356,7 +357,10 @@ function daysBetween(date1: string, date2: string): number {
  * - Patterns escalate
  * - History is immutable
  */
-export function validateLaborStandards(standards: LaborStandards): {
+export function validateLaborStandards(
+  standards: LaborStandards,
+  laborBounds: LaborBounds
+): {
   valid: boolean;
   errors: string[];
 } {
@@ -364,40 +368,40 @@ export function validateLaborStandards(standards: LaborStandards): {
 
   // Labor % bounds
   if (
-    standards.target_labor_pct < LABOR_BOUNDS.LABOR_PCT_MIN ||
-    standards.target_labor_pct > LABOR_BOUNDS.LABOR_PCT_MAX
+    standards.target_labor_pct < laborBounds.LABOR_PCT_MIN ||
+    standards.target_labor_pct > laborBounds.LABOR_PCT_MAX
   ) {
     errors.push(
-      `Labor % target (${standards.target_labor_pct}%) must be between ${LABOR_BOUNDS.LABOR_PCT_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_MAX}%`
+      `Labor % target (${standards.target_labor_pct}%) must be between ${laborBounds.LABOR_PCT_MIN}% and ${laborBounds.LABOR_PCT_MAX}%`
     );
   }
 
   if (
-    standards.labor_pct_tolerance < LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN ||
-    standards.labor_pct_tolerance > LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX
+    standards.labor_pct_tolerance < laborBounds.LABOR_PCT_TOLERANCE_MIN ||
+    standards.labor_pct_tolerance > laborBounds.LABOR_PCT_TOLERANCE_MAX
   ) {
     errors.push(
-      `Labor % tolerance (${standards.labor_pct_tolerance}%) must be between ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX}%`
+      `Labor % tolerance (${standards.labor_pct_tolerance}%) must be between ${laborBounds.LABOR_PCT_TOLERANCE_MIN}% and ${laborBounds.LABOR_PCT_TOLERANCE_MAX}%`
     );
   }
 
   // SPLH bounds
   if (
-    standards.splh_floor < LABOR_BOUNDS.SPLH_MIN ||
-    standards.splh_floor > LABOR_BOUNDS.SPLH_MAX
+    standards.splh_floor < laborBounds.SPLH_MIN ||
+    standards.splh_floor > laborBounds.SPLH_MAX
   ) {
     errors.push(
-      `SPLH floor ($${standards.splh_floor}) must be between $${LABOR_BOUNDS.SPLH_MIN} and $${LABOR_BOUNDS.SPLH_MAX}`
+      `SPLH floor ($${standards.splh_floor}) must be between $${laborBounds.SPLH_MIN} and $${laborBounds.SPLH_MAX}`
     );
   }
 
   // CPLH bounds
   if (
-    standards.cplh_target < LABOR_BOUNDS.CPLH_MIN ||
-    standards.cplh_target > LABOR_BOUNDS.CPLH_MAX
+    standards.cplh_target < laborBounds.CPLH_MIN ||
+    standards.cplh_target > laborBounds.CPLH_MAX
   ) {
     errors.push(
-      `CPLH target (${standards.cplh_target}) must be between ${LABOR_BOUNDS.CPLH_MIN} and ${LABOR_BOUNDS.CPLH_MAX}`
+      `CPLH target (${standards.cplh_target}) must be between ${laborBounds.CPLH_MIN} and ${laborBounds.CPLH_MAX}`
     );
   }
 
