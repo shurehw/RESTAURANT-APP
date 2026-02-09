@@ -571,10 +571,10 @@ export default function NightlyReportPage() {
           setCompNotes(notesData.notes || {});
         }
 
-        // NON-BLOCKING: Fetch facts asynchronously (14 Supabase queries, can take time)
+        // NON-BLOCKING: Fetch facts asynchronously (optimized: 12-20 queries depending on view mode)
         setLoadingFacts(true);
         setFactsError(null);
-        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}&view=${viewMode}`, { credentials: 'include' })
           .then(res => {
             if (!res.ok) {
               throw new Error(`Facts API returned ${res.status}`);
@@ -697,6 +697,48 @@ export default function NightlyReportPage() {
     }
     fetchReport();
   }, [date, locationUuid, selectedVenue?.id, selectedVenue?.name, isAllVenues, mappings.length]);
+
+  // Refetch facts when view mode changes (WTD/PTD need different aggregations)
+  useEffect(() => {
+    if (!selectedVenue?.id || !date || !report) return;
+
+    setLoadingFacts(true);
+    setFactsError(null);
+    fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}&view=${viewMode}`, { credentials: 'include' })
+      .then(res => {
+        if (!res.ok) throw new Error(`Facts API returned ${res.status}`);
+        return res.json();
+      })
+      .then(factsData => {
+        if (factsData?.has_data) {
+          setFactsSummary({
+            ...factsData.summary,
+            labor: factsData.labor,
+            forecast: factsData.forecast,
+            variance: factsData.variance,
+            servers_wtd: factsData.servers_wtd,
+            servers_ptd: factsData.servers_ptd,
+            categories_wtd: factsData.categories_wtd,
+            categories_ptd: factsData.categories_ptd,
+            items_wtd: factsData.items_wtd,
+            items_ptd: factsData.items_ptd,
+            labor_wtd: factsData.labor_wtd,
+            labor_ptd: factsData.labor_ptd,
+            fiscal: factsData.fiscal,
+          });
+          setFactsError(null);
+        } else {
+          setFactsSummary(null);
+          setFactsError('No fact data available for this date');
+        }
+      })
+      .catch(err => {
+        console.error('Facts fetch error:', err);
+        setFactsError(err.message || 'Failed to load analytics data');
+        setFactsSummary(null);
+      })
+      .finally(() => setLoadingFacts(false));
+  }, [viewMode, selectedVenue?.id, date, report]);
 
   function changeDate(days: number) {
     const d = new Date(date);
