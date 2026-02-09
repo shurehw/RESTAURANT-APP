@@ -1822,10 +1822,10 @@ export default function NightlyReportPage() {
 
                   // Handle both TipSee data (parent_category) and facts data (category)
                   const foodItems = menuItems.filter(item =>
-                    !isBeverage((item as any).parent_category || item.category || '')
+                    !isBeverage((item as any).parent_category || (item as any).category || '')
                   );
                   const bevItems = menuItems.filter(item =>
-                    isBeverage((item as any).parent_category || item.category || '')
+                    isBeverage((item as any).parent_category || (item as any).category || '')
                   );
 
                     return (
