@@ -45,6 +45,7 @@ export function Sidebar({ user }: SidebarProps) {
           <NavLink href="/admin">Admin</NavLink>
           <NavLink href="/admin/operational-standards">Operational Standards</NavLink>
           <NavLink href="/admin/comp-settings">Comp Settings</NavLink>
+          <NavLink href="/admin/system-bounds">System Bounds</NavLink>
         </NavSection>
       </nav>
 
