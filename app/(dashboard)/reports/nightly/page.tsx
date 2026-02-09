@@ -1071,8 +1071,8 @@ export default function NightlyReportPage() {
               const actualNetSales = viewMode === 'nightly'
                 ? (report.summary.net_sales || 0)
                 : viewMode === 'wtd'
-                  ? (factsSummary?.variance.wtd_net_sales || 0)
-                  : (factsSummary?.variance.ptd_net_sales || 0);
+                  ? (factsSummary?.variance?.wtd_net_sales || 0)
+                  : (factsSummary?.variance?.ptd_net_sales || 0);
               const foodSales = actualNetSales * (foodPct / 100);
               const bevSales = actualNetSales * (bevPct / 100);
 
