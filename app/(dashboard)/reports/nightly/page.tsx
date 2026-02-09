@@ -178,6 +178,21 @@ interface CompReviewData {
   insights: string[];
 }
 
+interface VenueHealthData {
+  health_score: number;
+  status: 'GREEN' | 'YELLOW' | 'ORANGE' | 'RED';
+  confidence: number;
+  signal_count: number;
+  top_drivers: Array<{
+    signal: string;
+    risk: number;
+    weight: number;
+    impact: number;
+    reason: string;
+  }> | null;
+  open_actions: number;
+}
+
 interface FactsSummary {
   food_sales?: number;
   beverage_sales?: number;
@@ -392,6 +407,8 @@ export default function NightlyReportPage() {
   const [serverModalOpen, setServerModalOpen] = useState(false);
   const [laborExceptions, setLaborExceptions] = useState<any | null>(null);
   const [loadingLaborExceptions, setLoadingLaborExceptions] = useState<boolean>(false);
+  const [healthData, setHealthData] = useState<VenueHealthData | null>(null);
+  const [loadingHealth, setLoadingHealth] = useState<boolean>(false);
 
   // Handler for view mode changes (updates URL)
   function handleViewChange(newView: 'nightly' | 'wtd' | 'ptd') {
@@ -638,6 +655,36 @@ export default function NightlyReportPage() {
             })
             .finally(() => setLoadingLaborExceptions(false));
         }
+
+        // Fetch venue health score (non-blocking, all view modes)
+        setLoadingHealth(true);
+        fetch(`/api/health?view=daily&date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+          .then(res => {
+            if (!res.ok) throw new Error(`Health API returned ${res.status}`);
+            return res.json();
+          })
+          .then(healthResponse => {
+            // Extract single venue health from response
+            if (healthResponse?.venues && healthResponse.venues.length > 0) {
+              const venueHealth = healthResponse.venues[0];
+              setHealthData({
+                health_score: venueHealth.latest_score || 0,
+                status: venueHealth.status || 'YELLOW',
+                confidence: venueHealth.daily?.[0]?.confidence || 0,
+                signal_count: venueHealth.daily?.[0]?.signal_count || 0,
+                top_drivers: venueHealth.latest_drivers || null,
+                open_actions: 0, // TODO: fetch from health actions if needed
+              });
+            } else {
+              setHealthData(null);
+            }
+          })
+          .catch(err => {
+            console.error('[nightly] Health fetch failed:', err);
+            setHealthData(null); // Graceful degradation - health is nice-to-have
+          })
+          .finally(() => setLoadingHealth(false));
+
       } catch (err: any) {
         setError(err.message);
         setReport(null);
@@ -779,11 +826,58 @@ export default function NightlyReportPage() {
           {factsSummary?.variance && (
             <Card className="bg-muted/30 border-brass/20">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Target className="h-4 w-4 text-brass" />
-                  <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    Performance vs Benchmarks
-                  </span>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-brass" />
+                    <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                      Performance vs Benchmarks
+                    </span>
+                  </div>
+                  {/* Venue Health Score Badge */}
+                  {healthData && (
+                    <a
+                      href="/reports/health"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                      style={{
+                        backgroundColor:
+                          healthData.status === 'GREEN' ? '#10b98120' :
+                          healthData.status === 'YELLOW' ? '#f5970620' :
+                          healthData.status === 'ORANGE' ? '#f97316
+
+20' :
+                          '#ef444420',
+                        border: `1.5px solid ${
+                          healthData.status === 'GREEN' ? '#10b981' :
+                          healthData.status === 'YELLOW' ? '#f59706' :
+                          healthData.status === 'ORANGE' ? '#f97316' :
+                          '#ef4444'
+                        }`,
+                      }}
+                    >
+                      <Activity className="h-4 w-4" style={{
+                        color:
+                          healthData.status === 'GREEN' ? '#10b981' :
+                          healthData.status === 'YELLOW' ? '#f59706' :
+                          healthData.status === 'ORANGE' ? '#f97316' :
+                          '#ef4444'
+                      }} />
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-sm font-semibold" style={{
+                          color:
+                            healthData.status === 'GREEN' ? '#10b981' :
+                            healthData.status === 'YELLOW' ? '#f59706' :
+                            healthData.status === 'ORANGE' ? '#f97316' :
+                            '#ef4444'
+                        }}>
+                          Health: {Math.round(healthData.health_score)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {healthData.status}
+                        </span>
+                      </div>
+                      <ArrowUpRight className="h-3 w-3 opacity-50" />
+                    </a>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {/* Net Sales with variance - recalculate using live TipSee data */}
