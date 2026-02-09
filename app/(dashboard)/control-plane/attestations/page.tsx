@@ -11,6 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   CheckCircle2,
   Clock,
   AlertTriangle,
@@ -18,6 +25,8 @@ import {
   Loader2,
   Calendar,
   TrendingUp,
+  ExternalLink,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -64,6 +73,11 @@ export default function AttestationsDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Drill-down drawer state
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedAttestation, setSelectedAttestation] = useState<any>(null);
+  const [loadingDrawer, setLoadingDrawer] = useState(false);
+
   // Date range state (default: last 7 days)
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [daysBack, setDaysBack] = useState(7);
@@ -98,6 +112,36 @@ export default function AttestationsDashboardPage() {
       setError(err.message || 'Failed to load dashboard');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function openAttestationDrawer(attestationId: string, venueId: string, businessDate: string) {
+    setDrawerOpen(true);
+    setLoadingDrawer(true);
+    setSelectedAttestation(null);
+
+    try {
+      const res = await fetch(`/api/attestations/${attestationId}`, {
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch attestation details');
+      }
+
+      const { data: attestationData } = await res.json();
+      setSelectedAttestation({
+        ...attestationData,
+        venue_id: venueId,
+        business_date: businessDate,
+      });
+    } catch (err: any) {
+      console.error('Failed to load attestation:', err);
+      setSelectedAttestation({
+        error: err.message || 'Failed to load attestation details',
+      });
+    } finally {
+      setLoadingDrawer(false);
     }
   }
 
@@ -233,7 +277,7 @@ export default function AttestationsDashboardPage() {
                       <td className="p-2 font-medium">{row.venue_name}</td>
                       {row.days.map((day) => (
                         <td key={day.date} className="text-center p-2">
-                          <StatusCell day={day} venueId={row.venue_id} />
+                          <StatusCell day={day} venueId={row.venue_id} onOpenDrawer={openAttestationDrawer} />
                         </td>
                       ))}
                     </tr>
@@ -373,6 +417,23 @@ export default function AttestationsDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Attestation Detail Drawer */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          {loadingDrawer ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          ) : selectedAttestation?.error ? (
+            <div className="p-6">
+              <p className="text-red-600">{selectedAttestation.error}</p>
+            </div>
+          ) : selectedAttestation ? (
+            <AttestationDrawerContent attestation={selectedAttestation} onClose={() => setDrawerOpen(false)} />
+          ) : null}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -381,7 +442,7 @@ export default function AttestationsDashboardPage() {
 // COMPONENTS
 // ══════════════════════════════════════════════════════════════════════════
 
-function StatusCell({ day, venueId }: {
+function StatusCell({ day, venueId, onOpenDrawer }: {
   day: {
     date: string;
     state: 'submitted' | 'pending' | 'late' | 'not_applicable';
@@ -390,6 +451,7 @@ function StatusCell({ day, venueId }: {
     violation_count?: number;
   };
   venueId: string;
+  onOpenDrawer: (attestationId: string, venueId: string, businessDate: string) => void;
 }) {
   if (day.state === 'not_applicable') {
     return <span className="text-gray-300">—</span>;
@@ -403,17 +465,295 @@ function StatusCell({ day, venueId }: {
     <Clock className="h-5 w-5 text-yellow-500" />
   );
 
-  return (
-    <Link href={`/reports/nightly?date=${day.date}&venue=${venueId}`}>
-      <div className="inline-flex items-center gap-1 cursor-pointer hover:opacity-70">
+  // If attestation exists (submitted or draft), open drawer
+  // Otherwise, link to nightly report to create it
+  if (day.attestation_id) {
+    return (
+      <button
+        onClick={() => onOpenDrawer(day.attestation_id!, venueId, day.date)}
+        className="inline-flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity"
+      >
         {icon}
         {day.has_violations && day.violation_count && (
           <Badge variant="destructive" className="text-xs">
             {day.violation_count}
           </Badge>
         )}
+      </button>
+    );
+  }
+
+  // No attestation yet - link to nightly report
+  return (
+    <Link href={`/reports/nightly?date=${day.date}&venue=${venueId}`}>
+      <div className="inline-flex items-center gap-1 cursor-pointer hover:opacity-70">
+        {icon}
       </div>
     </Link>
+  );
+}
+
+function AttestationDrawerContent({ attestation, onClose }: {
+  attestation: any;
+  onClose: () => void;
+}) {
+  const att = attestation.attestation;
+  const compResolutions = attestation.comp_resolutions || [];
+  const incidents = attestation.incidents || [];
+  const coachingActions = attestation.coaching_actions || [];
+
+  const statusColor =
+    att.status === 'submitted' ? 'text-green-600' :
+    att.status === 'amended' ? 'text-blue-600' :
+    'text-yellow-600';
+
+  return (
+    <div className="space-y-6">
+      <SheetHeader>
+        <SheetTitle>Attestation Details</SheetTitle>
+        <SheetDescription>
+          {att.venue_name} · {att.business_date}
+        </SheetDescription>
+      </SheetHeader>
+
+      {/* Status & Submission Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Status</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Status</span>
+            <Badge variant="outline" className={statusColor}>
+              {att.status.toUpperCase()}
+            </Badge>
+          </div>
+          {att.submitted_at && (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Submitted</span>
+                <span className="text-sm">{new Date(att.submitted_at).toLocaleString()}</span>
+              </div>
+              {att.submitted_by_user && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Submitted By</span>
+                  <span className="text-sm flex items-center gap-1">
+                    <User className="h-3 w-3" />
+                    {att.submitted_by_user.first_name} {att.submitted_by_user.last_name}
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Violations</span>
+            <Badge variant={att.has_violations ? 'destructive' : 'secondary'}>
+              {att.violation_count || 0}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Revenue Attestation */}
+      {att.revenue_confirmed !== null && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Revenue Attestation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Accuracy Confirmed</span>
+              {att.revenue_confirmed ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-600" />
+              )}
+            </div>
+            {att.revenue_variance_reason && (
+              <div>
+                <span className="text-xs text-muted-foreground">Variance Reason:</span>
+                <Badge variant="secondary" className="ml-2">
+                  {att.revenue_variance_reason.replace(/_/g, ' ')}
+                </Badge>
+              </div>
+            )}
+            {att.revenue_notes && (
+              <div className="pt-2 border-t">
+                <span className="text-xs text-muted-foreground block mb-1">Notes:</span>
+                <p className="text-sm">{att.revenue_notes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Labor Attestation */}
+      {att.labor_confirmed !== null && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Labor Attestation</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Accuracy Confirmed</span>
+              {att.labor_confirmed ? (
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+              ) : (
+                <XCircle className="h-5 w-5 text-red-600" />
+              )}
+            </div>
+            {att.labor_variance_reason && (
+              <div>
+                <span className="text-xs text-muted-foreground">Variance Reason:</span>
+                <Badge variant="secondary" className="ml-2">
+                  {att.labor_variance_reason.replace(/_/g, ' ')}
+                </Badge>
+              </div>
+            )}
+            {att.labor_notes && (
+              <div className="pt-2 border-t">
+                <span className="text-xs text-muted-foreground block mb-1">Notes:</span>
+                <p className="text-sm">{att.labor_notes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Comp Resolutions */}
+      {compResolutions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Comp Resolutions ({compResolutions.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {compResolutions.map((res: any) => (
+                <div key={res.id} className="p-3 border rounded-lg space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium text-sm">Check {res.check_id || 'N/A'}</div>
+                      <div className="text-xs text-muted-foreground">{res.employee_name}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">${res.comp_amount?.toFixed(2)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        of ${res.check_amount?.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={res.is_policy_violation ? 'destructive' : 'secondary'}>
+                      {res.resolution_code.replace(/_/g, ' ')}
+                    </Badge>
+                    {res.requires_follow_up && (
+                      <Badge variant="outline">Follow-up required</Badge>
+                    )}
+                  </div>
+                  {res.resolution_notes && (
+                    <p className="text-xs text-muted-foreground">{res.resolution_notes}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Incidents */}
+      {incidents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Incidents ({incidents.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {incidents.map((inc: any) => (
+                <div key={inc.id} className="p-3 border rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Badge variant={
+                      inc.severity === 'critical' ? 'destructive' :
+                      inc.severity === 'high' ? 'destructive' :
+                      inc.severity === 'medium' ? 'secondary' :
+                      'outline'
+                    }>
+                      {inc.incident_type.replace(/_/g, ' ')}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground uppercase">
+                      {inc.severity}
+                    </span>
+                  </div>
+                  <p className="text-sm">{inc.description}</p>
+                  {inc.resolution && (
+                    <div className="pt-2 border-t">
+                      <span className="text-xs text-muted-foreground block mb-1">Resolution:</span>
+                      <p className="text-sm">{inc.resolution}</p>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    {inc.resolved ? (
+                      <Badge variant="secondary" className="text-xs">Resolved</Badge>
+                    ) : (
+                      <Badge variant="destructive" className="text-xs">Open</Badge>
+                    )}
+                    {inc.requires_escalation && (
+                      <Badge variant="destructive" className="text-xs">Escalation Required</Badge>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Coaching Actions */}
+      {coachingActions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Coaching Actions ({coachingActions.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {coachingActions.map((coaching: any) => (
+                <div key={coaching.id} className="p-3 border rounded-lg space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-sm">{coaching.employee_name}</div>
+                    <Badge variant={
+                      coaching.coaching_type === 'recognition' ? 'secondary' :
+                      coaching.coaching_type === 'correction' ? 'destructive' :
+                      'outline'
+                    }>
+                      {coaching.coaching_type}
+                    </Badge>
+                  </div>
+                  <p className="text-sm">{coaching.reason}</p>
+                  {coaching.action_taken && (
+                    <p className="text-xs text-muted-foreground">Action: {coaching.action_taken}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-4 border-t">
+        <Link
+          href={`/reports/nightly?date=${attestation.business_date}&venue=${attestation.venue_id}`}
+          className="flex-1"
+        >
+          <Button variant="outline" className="w-full">
+            <ExternalLink className="h-4 w-4 mr-2" />
+            View Full Report
+          </Button>
+        </Link>
+        <Button onClick={onClose} className="flex-1">
+          Close
+        </Button>
+      </div>
+    </div>
   );
 }
 
