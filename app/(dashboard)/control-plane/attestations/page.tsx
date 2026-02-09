@@ -317,7 +317,7 @@ export default function AttestationsDashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <Badge variant={item.state === 'late' ? 'destructive' : 'secondary'}>
+                      <Badge variant={item.state === 'late' ? 'error' : 'default'}>
                         {item.state === 'late' ? 'LATE' : 'Due today'}
                       </Badge>
                       <Link href={`/reports/nightly?date=${item.business_date}&venue=${item.venue_id}`}>
@@ -346,7 +346,7 @@ export default function AttestationsDashboardPage() {
                   {data.rollups.revenue_reasons.map((item) => (
                     <div key={item.reason} className="flex items-center justify-between">
                       <span className="text-sm capitalize">{item.reason.replace(/_/g, ' ')}</span>
-                      <Badge variant="secondary">{item.count}</Badge>
+                      <Badge variant="default">{item.count}</Badge>
                     </div>
                   ))}
                 </div>
@@ -365,7 +365,7 @@ export default function AttestationsDashboardPage() {
                   {data.rollups.labor_reasons.map((item) => (
                     <div key={item.reason} className="flex items-center justify-between">
                       <span className="text-sm capitalize">{item.reason.replace(/_/g, ' ')}</span>
-                      <Badge variant="secondary">{item.count}</Badge>
+                      <Badge variant="default">{item.count}</Badge>
                     </div>
                   ))}
                 </div>
@@ -384,7 +384,7 @@ export default function AttestationsDashboardPage() {
                   {data.rollups.comp_codes.map((item) => (
                     <div key={item.code} className="flex items-center justify-between">
                       <span className="text-sm capitalize">{item.code.replace(/_/g, ' ')}</span>
-                      <Badge variant="secondary">{item.count}</Badge>
+                      <Badge variant="default">{item.count}</Badge>
                     </div>
                   ))}
                 </div>
@@ -404,9 +404,9 @@ export default function AttestationsDashboardPage() {
                     <div key={item.type} className="flex items-center justify-between">
                       <span className="text-sm capitalize">{item.type.replace(/_/g, ' ')}</span>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{item.total} total</Badge>
+                        <Badge variant="default">{item.total} total</Badge>
                         {item.open > 0 && (
-                          <Badge variant="destructive">{item.open} open</Badge>
+                          <Badge variant="error">{item.open} open</Badge>
                         )}
                       </div>
                     </div>
@@ -475,7 +475,7 @@ function StatusCell({ day, venueId, onOpenDrawer }: {
       >
         {icon}
         {day.has_violations && day.violation_count && (
-          <Badge variant="destructive" className="text-xs">
+          <Badge variant="error" className="text-xs">
             {day.violation_count}
           </Badge>
         )}
@@ -547,7 +547,7 @@ function AttestationDrawerContent({ attestation, onClose }: {
           )}
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Violations</span>
-            <Badge variant={att.has_violations ? 'destructive' : 'secondary'}>
+            <Badge variant={att.has_violations ? 'error' : 'default'}>
               {att.violation_count || 0}
             </Badge>
           </div>
@@ -572,7 +572,7 @@ function AttestationDrawerContent({ attestation, onClose }: {
             {att.revenue_variance_reason && (
               <div>
                 <span className="text-xs text-muted-foreground">Variance Reason:</span>
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="default" className="ml-2">
                   {att.revenue_variance_reason.replace(/_/g, ' ')}
                 </Badge>
               </div>
@@ -605,7 +605,7 @@ function AttestationDrawerContent({ attestation, onClose }: {
             {att.labor_variance_reason && (
               <div>
                 <span className="text-xs text-muted-foreground">Variance Reason:</span>
-                <Badge variant="secondary" className="ml-2">
+                <Badge variant="default" className="ml-2">
                   {att.labor_variance_reason.replace(/_/g, ' ')}
                 </Badge>
               </div>
@@ -643,7 +643,7 @@ function AttestationDrawerContent({ attestation, onClose }: {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={res.is_policy_violation ? 'destructive' : 'secondary'}>
+                    <Badge variant={res.is_policy_violation ? 'error' : 'default'}>
                       {res.resolution_code.replace(/_/g, ' ')}
                     </Badge>
                     {res.requires_follow_up && (
@@ -672,9 +672,9 @@ function AttestationDrawerContent({ attestation, onClose }: {
                 <div key={inc.id} className="p-3 border rounded-lg space-y-2">
                   <div className="flex items-center justify-between">
                     <Badge variant={
-                      inc.severity === 'critical' ? 'destructive' :
-                      inc.severity === 'high' ? 'destructive' :
-                      inc.severity === 'medium' ? 'secondary' :
+                      inc.severity === 'critical' ? 'error' :
+                      inc.severity === 'high' ? 'error' :
+                      inc.severity === 'medium' ? 'default' :
                       'outline'
                     }>
                       {inc.incident_type.replace(/_/g, ' ')}
@@ -692,12 +692,12 @@ function AttestationDrawerContent({ attestation, onClose }: {
                   )}
                   <div className="flex items-center gap-2">
                     {inc.resolved ? (
-                      <Badge variant="secondary" className="text-xs">Resolved</Badge>
+                      <Badge variant="default" className="text-xs">Resolved</Badge>
                     ) : (
-                      <Badge variant="destructive" className="text-xs">Open</Badge>
+                      <Badge variant="error" className="text-xs">Open</Badge>
                     )}
                     {inc.requires_escalation && (
-                      <Badge variant="destructive" className="text-xs">Escalation Required</Badge>
+                      <Badge variant="error" className="text-xs">Escalation Required</Badge>
                     )}
                   </div>
                 </div>
@@ -720,8 +720,8 @@ function AttestationDrawerContent({ attestation, onClose }: {
                   <div className="flex items-center justify-between">
                     <div className="font-medium text-sm">{coaching.employee_name}</div>
                     <Badge variant={
-                      coaching.coaching_type === 'recognition' ? 'secondary' :
-                      coaching.coaching_type === 'correction' ? 'destructive' :
+                      coaching.coaching_type === 'recognition' ? 'default' :
+                      coaching.coaching_type === 'correction' ? 'error' :
                       'outline'
                     }>
                       {coaching.coaching_type}
