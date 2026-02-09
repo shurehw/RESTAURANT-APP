@@ -2,7 +2,7 @@
 Auto-Scheduler - Smart Demand-Driven Optimization
 Generates optimal weekly schedules using demand forecasts, CPLH targets,
 service quality standards, historical patterns, and manager feedback learning.
-Falls back to greedy defaults when data is unavailable.
+Position-specific shift times, demand-tier adjustments, and opener/closer staggering.
 """
 
 import os
@@ -73,7 +73,72 @@ class SupabaseREST:
 db = SupabaseREST(SUPABASE_URL, SUPABASE_KEY)
 
 
-# Shift time configurations
+# ═══════════════════════════════════════════════════════════════════
+# POSITION-SPECIFIC SHIFT CONFIGURATIONS
+# Each role has realistic start/end times per shift type
+# ═══════════════════════════════════════════════════════════════════
+
+POSITION_SHIFT_CONFIGS = {
+    'dinner': {
+        # Kitchen — arrive early for prep, leave after last ticket
+        'Prep Cook':         {'start': '14:00', 'end': '21:00', 'hours': 7.0},
+        'Line Cook':         {'start': '15:00', 'end': '23:00', 'hours': 8.0},
+        'Sous Chef':         {'start': '14:00', 'end': '23:00', 'hours': 9.0},
+        'Executive Chef':    {'start': '15:00', 'end': '23:00', 'hours': 8.0},
+        'Dishwasher':        {'start': '15:00', 'end': '23:30', 'hours': 8.5},
+        # Management — oversee full service window
+        'General Manager':   {'start': '14:00', 'end': '00:00', 'hours': 10.0},
+        'Assistant Manager': {'start': '15:00', 'end': '00:00', 'hours': 9.0},
+        'Shift Manager':     {'start': '16:00', 'end': '00:00', 'hours': 8.0},
+        'Manager':           {'start': '15:00', 'end': '00:00', 'hours': 9.0},
+        # Bar — opens before dining, stays late
+        'Bartender':         {'start': '16:00', 'end': '00:30', 'hours': 8.5},
+        'Barback':           {'start': '16:00', 'end': '00:30', 'hours': 8.5},
+        # FOH — service window
+        'Host':              {'start': '16:30', 'end': '22:30', 'hours': 6.0},
+        'Hostess':           {'start': '16:30', 'end': '22:30', 'hours': 6.0},
+        'Server':            {'start': '16:30', 'end': '23:00', 'hours': 6.5},
+        'Busser':            {'start': '16:30', 'end': '23:00', 'hours': 6.5},
+        'Food Runner':       {'start': '17:00', 'end': '23:00', 'hours': 6.0},
+        'Sommelier':         {'start': '17:00', 'end': '23:00', 'hours': 6.0},
+        'Expeditor':         {'start': '17:00', 'end': '23:00', 'hours': 6.0},
+    },
+    'lunch': {
+        'Prep Cook':         {'start': '08:00', 'end': '14:00', 'hours': 6.0},
+        'Line Cook':         {'start': '09:00', 'end': '15:30', 'hours': 6.5},
+        'Sous Chef':         {'start': '08:00', 'end': '15:30', 'hours': 7.5},
+        'Executive Chef':    {'start': '09:00', 'end': '15:30', 'hours': 6.5},
+        'Dishwasher':        {'start': '09:00', 'end': '16:00', 'hours': 7.0},
+        'Manager':           {'start': '09:00', 'end': '16:00', 'hours': 7.0},
+        'General Manager':   {'start': '09:00', 'end': '16:00', 'hours': 7.0},
+        'Assistant Manager': {'start': '09:00', 'end': '16:00', 'hours': 7.0},
+        'Bartender':         {'start': '10:30', 'end': '15:30', 'hours': 5.0},
+        'Host':              {'start': '10:30', 'end': '15:00', 'hours': 4.5},
+        'Hostess':           {'start': '10:30', 'end': '15:00', 'hours': 4.5},
+        'Server':            {'start': '10:30', 'end': '15:30', 'hours': 5.0},
+        'Busser':            {'start': '10:30', 'end': '15:30', 'hours': 5.0},
+        'Food Runner':       {'start': '11:00', 'end': '15:30', 'hours': 4.5},
+    },
+    'breakfast': {
+        'Prep Cook':         {'start': '05:00', 'end': '11:00', 'hours': 6.0},
+        'Line Cook':         {'start': '06:00', 'end': '13:00', 'hours': 7.0},
+        'Server':            {'start': '06:30', 'end': '13:30', 'hours': 7.0},
+        'Host':              {'start': '06:30', 'end': '13:00', 'hours': 6.5},
+        'Busser':            {'start': '06:30', 'end': '13:00', 'hours': 6.5},
+        'Dishwasher':        {'start': '06:00', 'end': '14:00', 'hours': 8.0},
+        'Manager':           {'start': '06:00', 'end': '14:00', 'hours': 8.0},
+    },
+    'late_night': {
+        'Bartender':         {'start': '21:00', 'end': '02:00', 'hours': 5.0},
+        'Barback':           {'start': '21:00', 'end': '02:00', 'hours': 5.0},
+        'Server':            {'start': '21:00', 'end': '01:30', 'hours': 4.5},
+        'Busser':            {'start': '21:00', 'end': '01:30', 'hours': 4.5},
+        'Dishwasher':        {'start': '22:00', 'end': '02:30', 'hours': 4.5},
+        'Manager':           {'start': '21:00', 'end': '02:30', 'hours': 5.5},
+    },
+}
+
+# Generic fallback (only used if position not in POSITION_SHIFT_CONFIGS)
 SHIFT_TIMES = {
     'breakfast': {'start': time(7, 0), 'end': time(14, 0), 'hours': 7},
     'lunch': {'start': time(11, 0), 'end': time(16, 0), 'hours': 5},
@@ -81,61 +146,91 @@ SHIFT_TIMES = {
     'late_night': {'start': time(22, 0), 'end': time(2, 0), 'hours': 4},
 }
 
-# Industry benchmarks for fine dining (covers per labor hour by position/shift)
-# Source: cplh_analyzer.py — fine dining standards
-INDUSTRY_BENCHMARKS = {
+
+# ═══════════════════════════════════════════════════════════════════
+# DEMAND TIERS — slow nights get shorter shifts, busy nights get staggered
+# ═══════════════════════════════════════════════════════════════════
+
+DEMAND_TIERS = [
+    ('light',    0,   150),
+    ('moderate', 150, 300),
+    ('busy',     300, 450),
+    ('peak',     450, 99999),
+]
+
+# On light nights (< 150 covers), FOH positions get cut early
+LIGHT_NIGHT_CUTS = {
+    'Server':      {'hours_delta': -1.5, 'end_delta_min': -90, 'note': 'Cut at 9:30 PM — slow night'},
+    'Busser':      {'hours_delta': -1.5, 'end_delta_min': -90, 'note': 'Cut at 9:30 PM'},
+    'Food Runner': {'hours_delta': -1.0, 'end_delta_min': -60, 'note': 'Cut at 10 PM'},
+    'Prep Cook':   {'hours_delta': -1.0, 'end_delta_min': -60, 'note': 'Early release — light prep'},
+    'Host':        {'hours_delta': -1.0, 'end_delta_min': -60, 'note': 'Cut at 9:30 PM — few walk-ins'},
+    'Hostess':     {'hours_delta': -1.0, 'end_delta_min': -60, 'note': 'Cut at 9:30 PM'},
+}
+
+# On busy/peak nights (300+ covers), stagger FOH into opener + closer shifts
+STAGGER_CONFIG = {
     'Server': {
-        'breakfast': {'min': 8.0, 'target': 10.0, 'optimal': 12.0, 'max': 14.0},
-        'lunch': {'min': 8.0, 'target': 10.0, 'optimal': 11.5, 'max': 13.0},
-        'dinner': {'min': 7.0, 'target': 9.0, 'optimal': 10.5, 'max': 12.0},
-        'late_night': {'min': 6.0, 'target': 8.0, 'optimal': 9.5, 'max': 11.0},
+        'threshold': 6,   # only stagger if 6+ servers needed
+        'open':  {'start': '16:00', 'end': '22:00', 'hours': 6.0, 'pct': 0.40, 'note': 'Opener — cut at 10 PM'},
+        'close': {'start': '18:00', 'end': '00:00', 'hours': 6.0, 'pct': 0.60, 'note': 'Closer — through last table'},
     },
     'Busser': {
-        'breakfast': {'min': 12.0, 'target': 14.0, 'optimal': 16.0, 'max': 18.0},
-        'lunch': {'min': 10.0, 'target': 12.0, 'optimal': 14.0, 'max': 16.0},
-        'dinner': {'min': 8.0, 'target': 10.0, 'optimal': 12.0, 'max': 14.0},
-        'late_night': {'min': 8.0, 'target': 10.0, 'optimal': 11.0, 'max': 13.0},
+        'threshold': 4,
+        'open':  {'start': '16:00', 'end': '22:00', 'hours': 6.0, 'pct': 0.40, 'note': 'Opener — cut at 10 PM'},
+        'close': {'start': '18:00', 'end': '23:30', 'hours': 5.5, 'pct': 0.60, 'note': 'Closer — breakdown'},
     },
     'Food Runner': {
-        'breakfast': {'min': 10.0, 'target': 12.0, 'optimal': 14.0, 'max': 16.0},
-        'lunch': {'min': 10.0, 'target': 12.0, 'optimal': 13.0, 'max': 15.0},
-        'dinner': {'min': 8.0, 'target': 10.0, 'optimal': 11.0, 'max': 13.0},
-        'late_night': {'min': 7.0, 'target': 9.0, 'optimal': 10.0, 'max': 12.0},
+        'threshold': 3,
+        'open':  {'start': '16:30', 'end': '21:30', 'hours': 5.0, 'pct': 0.35, 'note': 'Opener — cut after rush'},
+        'close': {'start': '18:00', 'end': '23:00', 'hours': 5.0, 'pct': 0.65, 'note': 'Closer'},
+    },
+}
+
+
+# ═══════════════════════════════════════════════════════════════════
+# INDUSTRY BENCHMARKS & DEFAULTS
+# ═══════════════════════════════════════════════════════════════════
+
+# ── CPLH Benchmarks (high-volume fine dining / nightclub) ─────────────
+# These represent covers-per-labor-hour: covers / (employees * shift_hours).
+# For a 700-cover Saturday with 6 servers working ~7h: actual CPLH = 700/(6*7) = 16.7
+# These targets reflect real-world staffing for h.wood Group venues.
+INDUSTRY_BENCHMARKS = {
+    'Server': {
+        'breakfast': {'target': 14.0}, 'lunch': {'target': 14.0},
+        'dinner': {'target': 18.0}, 'late_night': {'target': 16.0},
+    },
+    'Busser': {
+        'breakfast': {'target': 30.0}, 'lunch': {'target': 28.0},
+        'dinner': {'target': 35.0}, 'late_night': {'target': 30.0},
+    },
+    'Food Runner': {
+        'breakfast': {'target': 28.0}, 'lunch': {'target': 26.0},
+        'dinner': {'target': 30.0}, 'late_night': {'target': 25.0},
     },
     'Line Cook': {
-        'breakfast': {'min': 6.0, 'target': 8.0, 'optimal': 9.0, 'max': 10.0},
-        'lunch': {'min': 6.0, 'target': 8.0, 'optimal': 9.0, 'max': 10.0},
-        'dinner': {'min': 5.0, 'target': 7.0, 'optimal': 8.0, 'max': 9.0},
-        'late_night': {'min': 5.0, 'target': 6.0, 'optimal': 7.0, 'max': 8.0},
+        'breakfast': {'target': 18.0}, 'lunch': {'target': 18.0},
+        'dinner': {'target': 22.0}, 'late_night': {'target': 18.0},
     },
     'Prep Cook': {
-        'breakfast': {'min': 4.0, 'target': 6.0, 'optimal': 7.0, 'max': 8.0},
-        'lunch': {'min': 4.0, 'target': 6.0, 'optimal': 7.0, 'max': 8.0},
-        'dinner': {'min': 4.0, 'target': 5.0, 'optimal': 6.0, 'max': 7.0},
-        'late_night': {'min': 3.0, 'target': 5.0, 'optimal': 6.0, 'max': 7.0},
+        'breakfast': {'target': 35.0}, 'lunch': {'target': 35.0},
+        'dinner': {'target': 50.0}, 'late_night': {'target': 40.0},
     },
 }
 
-# Fallback CPLH for positions not in industry benchmarks
 DEFAULT_POSITION_CPLH = {
-    'Host': 15.0,        # 1 host per ~15 covers
-    'Hostess': 15.0,
-    'Dishwasher': 20.0,  # 1 dishwasher per ~20 covers
-    'Manager': 0,        # Fixed: always 1 per shift
-    'Bartender': 10.0,
-    'Barback': 15.0,
-    'Sommelier': 20.0,
-    'Expeditor': 25.0,
+    'Host': 50.0, 'Hostess': 50.0, 'Dishwasher': 50.0,
+    'Bartender': 30.0, 'Barback': 40.0, 'Sommelier': 50.0, 'Expeditor': 60.0,
+    'Manager': 0, 'General Manager': 0, 'Assistant Manager': 0, 'Shift Manager': 0,
 }
 
-# Default service quality standards (fine dining)
 DEFAULT_SERVICE_QUALITY = {
-    'max_covers_per_server': 12,
+    'max_covers_per_server': 20,
     'busser_to_server_ratio': 0.5,
     'runner_to_server_ratio': 0.33,
 }
 
-# Default optimization weights
 DEFAULT_OPTIMIZATION = {
     'cost_weight': 0.4,
     'quality_weight': 0.4,
@@ -143,15 +238,129 @@ DEFAULT_OPTIMIZATION = {
     'target_labor_pct': 27.5,
 }
 
-# Positions that always need exactly 1 per shift (no CPLH scaling)
-FIXED_STAFF_POSITIONS = {'Manager', 'Expeditor'}
+FIXED_STAFF_POSITIONS = {'Manager', 'General Manager', 'Assistant Manager', 'Shift Manager', 'Expeditor', 'Executive Chef', 'Sous Chef'}
+COVERS_RATIO_POSITIONS = {'Dishwasher': 200, 'Host': 250, 'Hostess': 250}
 
-# Positions that scale by covers but use simple ratio (not CPLH)
-COVERS_RATIO_POSITIONS = {
-    'Dishwasher': 60,   # 1 per 60 covers
-    'Host': 80,         # 1 per 80 covers
-    'Hostess': 80,
-}
+
+# ═══════════════════════════════════════════════════════════════════
+# HOURLY WAVE SCHEDULING
+# Converts hour-by-hour on-floor counts into staggered shift waves
+# ═══════════════════════════════════════════════════════════════════
+
+def _compute_shift_waves(hourly_counts: Dict[int, int],
+                         setup_min: int = 30,
+                         teardown_min: int = 45) -> List[Dict]:
+    """Convert hourly staffing levels to staggered shift waves.
+
+    Args:
+        hourly_counts: {hour: on_floor_count} e.g. {15: 5, 16: 7, ...}
+        setup_min:  minutes before the hour staff should arrive (setup)
+        teardown_min: minutes after cut hour staff stays (side work)
+
+    Returns list of waves:
+        [{'count': N, 'start': 'HH:MM', 'end': 'HH:MM', 'hours': float}, ...]
+    """
+    hours = sorted(hourly_counts.keys())
+    if not hours:
+        return []
+
+    # Build arrival/departure events from delta changes
+    arrivals = []      # [(hour, count)]
+    departures = []    # [(hour, count)]
+    prev = 0
+    for h in hours:
+        cur = hourly_counts[h]
+        if cur > prev:
+            arrivals.append((h, cur - prev))
+        elif cur < prev:
+            departures.append((h, prev - cur))
+        prev = cur
+    # Anyone still on floor at the end departs 1 hour after last data point
+    if prev > 0:
+        departures.append((hours[-1] + 1, prev))
+
+    # FIFO match: first arrivals get cut first (worked longest → go home first)
+    waves = []
+    queue = [[h, n] for h, n in arrivals]
+
+    for dep_h, dep_n in departures:
+        remaining = dep_n
+        while remaining > 0 and queue:
+            arr_h, avail = queue[0]
+            take = min(remaining, avail)
+
+            # Actual start = arrival hour minus setup time
+            s_total = arr_h * 60 - setup_min
+            # Actual end = departure hour plus teardown time
+            e_total = dep_h * 60 + teardown_min
+
+            s_h = (s_total // 60) % 24
+            s_m = s_total % 60
+            e_h = (e_total // 60) % 24
+            e_m = e_total % 60
+            shift_hours = round((e_total - s_total) / 60, 2)
+
+            waves.append({
+                'count': take,
+                'start': f"{s_h:02d}:{s_m:02d}",
+                'end': f"{e_h:02d}:{e_m:02d}",
+                'hours': shift_hours,
+            })
+
+            remaining -= take
+            queue[0][1] -= take
+            if queue[0][1] <= 0:
+                queue.pop(0)
+
+    return waves
+
+
+# ═══════════════════════════════════════════════════════════════════
+# HELPERS
+# ═══════════════════════════════════════════════════════════════════
+
+def _match_config_key(position_name: str, config: dict) -> Optional[str]:
+    """Find best matching key in a config dict for a position name (case-insensitive)"""
+    name_lower = position_name.lower()
+    # Exact match
+    for key in config:
+        if key.lower() == name_lower:
+            return key
+    # Substring match (prefer longer matches)
+    matches = [(key, len(key)) for key in config if key.lower() in name_lower]
+    if matches:
+        return max(matches, key=lambda x: x[1])[0]
+    return None
+
+
+def _get_demand_tier(covers: float) -> str:
+    for tier_name, low, high in DEMAND_TIERS:
+        if low <= covers < high:
+            return tier_name
+    return 'moderate'
+
+
+def _parse_time(time_str: str) -> Tuple[int, int]:
+    """Parse 'HH:MM' to (hour, minute)"""
+    parts = time_str.split(':')
+    return int(parts[0]), int(parts[1])
+
+
+def _build_datetime(date_str: str, time_str: str) -> datetime:
+    """Build datetime from date string and HH:MM time string, handling past-midnight"""
+    date = datetime.fromisoformat(date_str)
+    h, m = _parse_time(time_str)
+    result = date.replace(hour=h, minute=m, second=0, microsecond=0)
+    return result
+
+
+def _build_shift_datetimes(date_str: str, start_str: str, end_str: str) -> Tuple[datetime, datetime]:
+    """Build start/end datetimes, adding a day if end is before start (past midnight)"""
+    start_dt = _build_datetime(date_str, start_str)
+    end_dt = _build_datetime(date_str, end_str)
+    if end_dt <= start_dt:
+        end_dt += timedelta(days=1)
+    return start_dt, end_dt
 
 
 class AutoScheduler:
@@ -164,24 +373,24 @@ class AutoScheduler:
         self.positions = {}
 
         # Smart scheduling data
-        self.demand_forecasts = {}       # {date_str: {shift_type: {covers, revenue, confidence, forecast_id}}}
-        self.cplh_targets = {}           # {(position_id, shift_type): target_cplh}
-        self.service_quality = {}        # quality standards from DB or defaults
-        self.optimization_settings = {}  # weights and targets
-        self.manager_adjustments = {}    # {(position_name, shift_type, dow): delta}
-        self.staffing_patterns = []      # historical patterns for validation
-        self.optimization_mode = 'fallback'  # tracks which mode was used
+        self.demand_forecasts = {}
+        self.cplh_targets = {}
+        self.service_quality = {}
+        self.optimization_settings = {}
+        self.manager_adjustments = {}
+        self.staffing_patterns = []
+        self.optimization_mode = 'fallback'
+        self.hourly_forecast = {}   # {date_str: {hourly_servers: {...}, hourly_bartenders: {...}, covers, revenue}}
+        self.closed_weekdays = set()  # {0} = Monday closed
 
     # ── Data Loading ────────────────────────────────────────────────
 
     def load_data(self, week_start_date: str):
-        """Load all necessary data for scheduling"""
         week_start = datetime.fromisoformat(week_start_date).date()
         week_end = week_start + timedelta(days=6)
 
         print(f"[DATA] Loading data for week {week_start} to {week_end}...", flush=True)
 
-        # Load employees with their position info
         self.employees = db.select(
             'employees',
             '*, position:positions(id, name, base_hourly_rate, category)',
@@ -190,7 +399,6 @@ class AutoScheduler:
         )
         print(f"[DATA] Loaded {len(self.employees)} active employees", flush=True)
 
-        # Load positions
         positions_data = db.select(
             'positions', '*',
             venue_id=f'eq.{self.venue_id}',
@@ -198,14 +406,12 @@ class AutoScheduler:
         )
         self.positions = {p['id']: p for p in positions_data}
 
-        # Load labor requirements for the week
         self.requirements = db.select(
             'labor_requirements',
             '*, position:positions(*)',
             venue_id=f'eq.{self.venue_id}',
             business_date=f'gte.{week_start.isoformat()}',
         )
-        # Filter to the week range (PostgREST single-column filter limitation)
         self.requirements = [
             r for r in self.requirements
             if r['business_date'] <= week_end.isoformat()
@@ -215,7 +421,6 @@ class AutoScheduler:
     # ── Smart Data Fetching ─────────────────────────────────────────
 
     def _fetch_demand_forecasts(self, week_start: str, week_end: str):
-        """Fetch predicted covers/revenue from demand_forecasts table"""
         print(f"[SMART] Fetching demand forecasts...", flush=True)
         try:
             rows = db.select(
@@ -225,7 +430,6 @@ class AutoScheduler:
                 business_date=f'gte.{week_start}',
             )
             rows = [r for r in rows if r['business_date'] <= week_end]
-
             for r in rows:
                 date = r['business_date']
                 shift = r.get('shift_type', 'dinner')
@@ -235,17 +439,14 @@ class AutoScheduler:
                     'confidence': float(r.get('confidence_level') or 0.5),
                     'forecast_id': r['id'],
                 }
-
             print(f"[SMART] Found {len(rows)} forecast rows for {len(self.demand_forecasts)} days", flush=True)
         except Exception as e:
             print(f"[SMART] Could not fetch demand_forecasts: {e}", flush=True)
 
-        # Fallback: use demand_history if no forecasts
         if not self.demand_forecasts:
             self._fetch_demand_history_fallback(week_start)
 
     def _fetch_demand_history_fallback(self, week_start: str):
-        """Compute weighted day-of-week averages from historical demand_history"""
         print(f"[SMART] No forecasts found, computing from demand_history...", flush=True)
         try:
             cutoff = (datetime.fromisoformat(week_start).date() - timedelta(weeks=8)).isoformat()
@@ -256,57 +457,48 @@ class AutoScheduler:
                 business_date=f'gte.{cutoff}',
             )
             rows = [r for r in rows if r['business_date'] < week_start]
-
             if not rows:
                 print(f"[SMART] No demand_history found either", flush=True)
                 return
 
-            # Group by (day_of_week, shift_type) with recency weighting
             from collections import defaultdict
-            grouped = defaultdict(list)  # (dow, shift) -> [(covers, revenue, weight)]
-
+            grouped = defaultdict(list)
             ref_date = datetime.fromisoformat(week_start).date()
             for r in rows:
                 d = datetime.fromisoformat(r['business_date']).date()
-                dow = d.weekday()  # 0=Mon
+                dow = d.weekday()
                 shift = r.get('shift_type', 'dinner')
                 weeks_ago = max(1, (ref_date - d).days // 7)
-                weight = 1.0 / weeks_ago  # more recent = higher weight
+                weight = 1.0 / weeks_ago
                 covers = float(r.get('actual_covers') or 0)
                 revenue = float(r.get('actual_revenue') or 0)
                 grouped[(dow, shift)].append((covers, revenue, weight))
 
-            # Build synthetic forecasts for the target week
             ws = datetime.fromisoformat(week_start).date()
             for day_offset in range(7):
-                date = (ws + timedelta(days=day_offset))
+                date = ws + timedelta(days=day_offset)
                 dow = date.weekday()
                 date_str = date.isoformat()
-
                 for shift in ['breakfast', 'lunch', 'dinner', 'late_night']:
                     entries = grouped.get((dow, shift), [])
                     if not entries:
                         continue
                     total_w = sum(w for _, _, w in entries)
                     avg_covers = sum(c * w for c, _, w in entries) / total_w
-                    avg_revenue = sum(r * w for _, r, w in entries) / total_w
-
+                    avg_revenue = sum(rv * w for _, rv, w in entries) / total_w
                     if avg_covers < 1:
                         continue
-
                     self.demand_forecasts.setdefault(date_str, {})[shift] = {
                         'covers': round(avg_covers, 1),
                         'revenue': round(avg_revenue, 2),
-                        'confidence': min(0.7, len(entries) / 8.0),  # capped at 0.7 for historical
+                        'confidence': min(0.7, len(entries) / 8.0),
                         'forecast_id': None,
                     }
-
-            print(f"[SMART] Built historical forecasts for {len(self.demand_forecasts)} days from {len(rows)} history rows", flush=True)
+            print(f"[SMART] Built historical forecasts for {len(self.demand_forecasts)} days", flush=True)
         except Exception as e:
             print(f"[SMART] Could not fetch demand_history: {e}", flush=True)
 
     def _fetch_cplh_targets(self):
-        """Fetch venue-specific CPLH targets from covers_per_labor_hour_targets"""
         print(f"[SMART] Fetching CPLH targets...", flush=True)
         try:
             rows = db.select(
@@ -316,79 +508,60 @@ class AutoScheduler:
                 is_active='eq.true',
             )
             for r in rows:
-                # Use target_cplh if set, otherwise use p50 (median historical)
                 cplh = float(r.get('target_cplh') or r.get('p50_cplh') or 0)
                 if cplh > 0:
                     self.cplh_targets[(r['position_id'], r.get('shift_type', 'dinner'))] = cplh
-
             print(f"[SMART] Loaded {len(self.cplh_targets)} CPLH targets", flush=True)
         except Exception as e:
             print(f"[SMART] Could not fetch CPLH targets (using benchmarks): {e}", flush=True)
 
     def _fetch_service_quality_standards(self):
-        """Fetch service quality standards from DB"""
         print(f"[SMART] Fetching service quality standards...", flush=True)
         try:
             rows = db.select(
-                'service_quality_standards',
-                'metric_name,target_value',
-                venue_id=f'eq.{self.venue_id}',
-                is_active='eq.true',
+                'service_quality_standards', 'metric_name,target_value',
+                venue_id=f'eq.{self.venue_id}', is_active='eq.true',
             )
             for r in rows:
-                name = r.get('metric_name', '')
+                name = r.get('metric_name', '').lower()
                 val = float(r.get('target_value') or 0)
-                if 'covers_per_server' in name.lower() and val > 0:
+                if 'covers_per_server' in name and val > 0:
                     self.service_quality['max_covers_per_server'] = val
-                elif 'busser' in name.lower() and 'ratio' in name.lower() and val > 0:
+                elif 'busser' in name and 'ratio' in name and val > 0:
                     self.service_quality['busser_to_server_ratio'] = val
-                elif 'runner' in name.lower() and 'ratio' in name.lower() and val > 0:
+                elif 'runner' in name and 'ratio' in name and val > 0:
                     self.service_quality['runner_to_server_ratio'] = val
-
             if not self.service_quality:
                 self.service_quality = dict(DEFAULT_SERVICE_QUALITY)
-                print(f"[SMART] Using default service quality standards", flush=True)
             else:
-                # Fill in any missing keys from defaults
                 for k, v in DEFAULT_SERVICE_QUALITY.items():
                     self.service_quality.setdefault(k, v)
-                print(f"[SMART] Loaded {len(rows)} quality standards", flush=True)
         except Exception as e:
             self.service_quality = dict(DEFAULT_SERVICE_QUALITY)
-            print(f"[SMART] Could not fetch quality standards (using defaults): {e}", flush=True)
+            print(f"[SMART] Using default quality standards: {e}", flush=True)
 
     def _fetch_optimization_settings(self):
-        """Fetch optimization weights from labor_optimization_settings"""
         print(f"[SMART] Fetching optimization settings...", flush=True)
         try:
             rows = db.select(
-                'labor_optimization_settings',
-                'setting_name,setting_value',
-                venue_id=f'eq.{self.venue_id}',
-                is_active='eq.true',
+                'labor_optimization_settings', 'setting_name,setting_value',
+                venue_id=f'eq.{self.venue_id}', is_active='eq.true',
             )
             for r in rows:
-                name = r.get('setting_name', '')
-                val = r.get('setting_value')
-                if val is not None:
-                    try:
-                        self.optimization_settings[name] = float(val)
-                    except (ValueError, TypeError):
-                        self.optimization_settings[name] = val
-
+                try:
+                    self.optimization_settings[r['setting_name']] = float(r['setting_value'])
+                except (ValueError, TypeError, KeyError):
+                    pass
             if not self.optimization_settings:
                 self.optimization_settings = dict(DEFAULT_OPTIMIZATION)
-                print(f"[SMART] Using default optimization settings", flush=True)
             else:
                 for k, v in DEFAULT_OPTIMIZATION.items():
                     self.optimization_settings.setdefault(k, v)
-                print(f"[SMART] Loaded {len(rows)} optimization settings", flush=True)
         except Exception as e:
             self.optimization_settings = dict(DEFAULT_OPTIMIZATION)
-            print(f"[SMART] Could not fetch optimization settings (using defaults): {e}", flush=True)
+            print(f"[SMART] Using default optimization settings: {e}", flush=True)
 
     def _fetch_manager_feedback(self):
-        """Analyze manager overrides to learn staffing adjustments"""
         print(f"[SMART] Analyzing manager feedback...", flush=True)
         try:
             cutoff = (datetime.now().date() - timedelta(days=90)).isoformat()
@@ -399,44 +572,33 @@ class AutoScheduler:
                 feedback_type='eq.override',
                 business_date=f'gte.{cutoff}',
             )
-
             if not rows:
                 print(f"[SMART] No manager feedback found", flush=True)
                 return
 
-            # Count override directions per (position, shift_type, day_of_week)
             from collections import defaultdict
-            override_counts = defaultdict(lambda: {'added': 0, 'removed': 0, 'total': 0})
-
+            override_counts = defaultdict(lambda: {'added': 0, 'removed': 0})
             for r in rows:
                 try:
                     decision = json.loads(r.get('manager_decision') or '{}')
                     original = json.loads(r.get('original_recommendation') or '{}')
                 except (json.JSONDecodeError, TypeError):
                     continue
-
                 date_str = r.get('business_date')
                 if not date_str:
                     continue
                 dow = datetime.fromisoformat(date_str).weekday()
-
-                # Determine position and shift from original/decision
                 pos_name = original.get('position_name', '')
                 shift_type = decision.get('shift_type', original.get('shift_type', 'dinner'))
                 action = decision.get('action', '')
-
                 if not pos_name and not action:
                     continue
-
                 key = (pos_name, shift_type, dow)
-                override_counts[key]['total'] += 1
-
                 if action == 'added_shift':
                     override_counts[key]['added'] += 1
                 elif action == 'shift_removed':
                     override_counts[key]['removed'] += 1
 
-            # Only apply adjustments with 3+ overrides in same direction
             for key, counts in override_counts.items():
                 if counts['added'] >= 3 and counts['added'] > counts['removed']:
                     self.manager_adjustments[key] = +1
@@ -448,53 +610,193 @@ class AutoScheduler:
             print(f"[SMART] Could not analyze manager feedback: {e}", flush=True)
 
     def _fetch_staffing_patterns(self):
-        """Fetch ML-learned staffing patterns for validation"""
-        print(f"[SMART] Fetching staffing patterns...", flush=True)
         try:
             self.staffing_patterns = db.select(
                 'staffing_patterns',
                 'position_id,shift_type,covers_range_start,covers_range_end,employees_recommended',
+                venue_id=f'eq.{self.venue_id}', is_active='eq.true',
+            )
+        except Exception:
+            pass
+
+    def _load_hourly_forecast(self, forecast_path: Optional[str] = None):
+        """Load hourly staffing forecast from JSON file.
+
+        Overrides demand_forecasts with more accurate per-day covers/revenue
+        and provides hour-by-hour server/bartender counts for wave scheduling.
+        """
+        if not forecast_path:
+            # Auto-detect: look for hourly_forecast.json next to this script
+            forecast_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'hourly_forecast.json')
+
+        if not os.path.exists(forecast_path):
+            return
+
+        try:
+            with open(forecast_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            self.closed_weekdays = set(data.get('closed_weekdays', []))
+            days = data.get('days', {})
+
+            for date_str, day_data in days.items():
+                self.hourly_forecast[date_str] = day_data
+
+                # Override demand_forecasts with accurate covers/revenue from forecast file
+                covers = day_data.get('covers', 0)
+                revenue = day_data.get('revenue', 0)
+                if covers > 0:
+                    self.demand_forecasts[date_str] = {
+                        'dinner': {
+                            'covers': float(covers),
+                            'revenue': float(revenue),
+                            'confidence': 0.9,
+                            'forecast_id': None,
+                        }
+                    }
+
+            print(f"[FORECAST] Loaded hourly forecast for {len(days)} days "
+                  f"(closed weekdays: {self.closed_weekdays or 'none'})", flush=True)
+        except Exception as e:
+            print(f"[FORECAST] Could not load hourly forecast: {e}", flush=True)
+
+    def _load_active_covers_forecast(self, week_start_str: str, scenario: str = 'buffered'):
+        """Load hourly staffing forecast from daily_staffing_forecasts table (active covers engine).
+
+        Replaces file-based hourly_forecast.json with database-driven data from the
+        labor_optimizer pipeline. Falls back silently if no forecasts exist.
+        """
+        try:
+            week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+            week_end = week_start + timedelta(days=6)
+
+            # Query daily_staffing_forecasts for this week and scenario
+            forecasts = db.select(
+                'daily_staffing_forecasts',
+                'forecast_date,day_of_week,hourly_detail,estimated_covers,estimated_revenue,seasonal_note',
+                venue_id=f'eq.{self.venue_id}',
+                scenario=f'eq.{scenario}',
+                forecast_date=f'gte.{week_start.isoformat()}',
+            )
+
+            # Filter to just this week (PostgREST doesn't support lte + gte on same column easily)
+            forecasts = [f for f in forecasts if f['forecast_date'] <= week_end.isoformat()]
+
+            if not forecasts:
+                print(f"[ACTIVE-COVERS] No forecasts found for week {week_start_str} ({scenario})", flush=True)
+                return
+
+            # Also load location_config for closed_weekdays
+            configs = db.select(
+                'location_config',
+                'closed_weekdays',
                 venue_id=f'eq.{self.venue_id}',
                 is_active='eq.true',
             )
-            print(f"[SMART] Loaded {len(self.staffing_patterns)} staffing patterns", flush=True)
-        except Exception as e:
-            print(f"[SMART] Could not fetch staffing patterns: {e}", flush=True)
+            if configs and configs[0].get('closed_weekdays'):
+                self.closed_weekdays = set(configs[0]['closed_weekdays'])
 
-    # ── Smart Requirements ──────────────────────────────────────────
+            loaded = 0
+            for forecast in forecasts:
+                date_str = forecast['forecast_date']
+                hourly_detail = forecast['hourly_detail']
+                if isinstance(hourly_detail, str):
+                    hourly_detail = json.loads(hourly_detail)
+
+                # Convert hourly_detail array into the format expected by _calculate_smart_requirements:
+                # {hourly_servers: {hour: count}, hourly_bartenders: {hour: count}, covers, revenue}
+                hourly_servers = {}
+                hourly_bartenders = {}
+                for entry in hourly_detail:
+                    h = str(entry['hour'])
+                    hourly_servers[h] = entry.get('servers', 0)
+                    hourly_bartenders[h] = entry.get('bartenders', 0)
+
+                day_data = {
+                    'covers': forecast.get('estimated_covers', 0),
+                    'revenue': forecast.get('estimated_revenue', 0),
+                    'hourly_servers': hourly_servers,
+                    'hourly_bartenders': hourly_bartenders,
+                }
+
+                self.hourly_forecast[date_str] = day_data
+                loaded += 1
+
+                # Override demand_forecasts too
+                covers = day_data['covers']
+                revenue = day_data['revenue']
+                if covers > 0:
+                    self.demand_forecasts[date_str] = {
+                        'dinner': {
+                            'covers': float(covers),
+                            'revenue': float(revenue),
+                            'confidence': 0.9,
+                            'forecast_id': None,
+                        }
+                    }
+
+            seasonal_notes = [f['seasonal_note'] for f in forecasts if f.get('seasonal_note')]
+            notes_str = f" (events: {', '.join(set(seasonal_notes))})" if seasonal_notes else ""
+            print(f"[ACTIVE-COVERS] Loaded DB forecasts for {loaded} days, scenario={scenario}{notes_str}", flush=True)
+
+        except Exception as e:
+            print(f"[ACTIVE-COVERS] Could not load DB forecasts: {e}", flush=True)
+
+    # ── Position Shift Config Lookup ────────────────────────────────
+
+    def _get_position_shift_config(self, position_name: str, shift_type: str) -> Optional[Dict]:
+        """Get position-specific shift config (start, end, hours) for a given shift type"""
+        shift_configs = POSITION_SHIFT_CONFIGS.get(shift_type, {})
+        key = _match_config_key(position_name, shift_configs)
+        if key:
+            return dict(shift_configs[key])  # return copy
+        return None
 
     def _get_cplh_for_position(self, position_id: str, position_name: str, shift_type: str) -> float:
-        """Get CPLH target for a position: DB targets -> industry benchmark -> default"""
-        # 1. Check DB targets
         cplh = self.cplh_targets.get((position_id, shift_type))
         if cplh and cplh > 0:
             return cplh
-
-        # 2. Check industry benchmarks by position name
         for bench_name, shifts in INDUSTRY_BENCHMARKS.items():
             if bench_name.lower() in position_name.lower():
-                shift_data = shifts.get(shift_type, shifts.get('dinner', {}))
-                return shift_data.get('target', 8.0)
-
-        # 3. Check default position CPLH
+                return shifts.get(shift_type, shifts.get('dinner', {})).get('target', 8.0)
         for default_name, default_cplh in DEFAULT_POSITION_CPLH.items():
             if default_name.lower() in position_name.lower():
                 return default_cplh
-
-        # 4. Generic fallback
         return 10.0
 
+    # ── Smart Requirements ──────────────────────────────────────────
+
     def _calculate_smart_requirements(self, week_start_date: str) -> List[Dict]:
-        """Calculate staffing requirements from demand forecasts using CPLH targets"""
+        """Calculate staffing from demand forecasts with position-specific hours and staggering.
+        Uses hourly wave data for servers/bartenders when available."""
         print(f"\n[SMART] Calculating demand-driven requirements...", flush=True)
 
         ws = datetime.fromisoformat(week_start_date).date()
         requirements = []
 
+        # Find primary server/bartender positions for wave scheduling
+        server_pos = None   # (id, position_dict)
+        bartender_pos = None
+        for pid, p in self.positions.items():
+            pl = p['name'].lower()
+            if 'server' in pl and 'food' not in pl and not server_pos:
+                server_pos = (pid, p)
+            if 'bartender' in pl and not bartender_pos:
+                bartender_pos = (pid, p)
+
+        hourly_processed = set()  # track (date, 'server'/'bartender') to avoid duplicates
+
         for day_offset in range(7):
             date = ws + timedelta(days=day_offset)
             date_str = date.isoformat()
+
+            # Skip closed days
+            if date.weekday() in self.closed_weekdays:
+                print(f"  {date.strftime('%a')} {date_str}: CLOSED", flush=True)
+                continue
+
             day_forecasts = self.demand_forecasts.get(date_str, {})
+            hourly_day = self.hourly_forecast.get(date_str, {})
 
             if not day_forecasts:
                 continue
@@ -504,28 +806,180 @@ class AutoScheduler:
                 if covers < 1:
                     continue
 
-                shift_hours = SHIFT_TIMES.get(shift_type, SHIFT_TIMES['dinner'])['hours']
+                tier = _get_demand_tier(covers)
+                day_name = date.strftime('%a')
 
                 for pos_id, pos in self.positions.items():
                     pos_name = pos['name']
+                    pos_lower = pos_name.lower()
 
-                    # Fixed staff positions: always 1
-                    if any(fixed.lower() in pos_name.lower() for fixed in FIXED_STAFF_POSITIONS):
+                    # ── Hourly wave scheduling for servers ──────────────
+                    is_server = 'server' in pos_lower and 'food' not in pos_lower
+                    if is_server and 'hourly_servers' in hourly_day and server_pos:
+                        wave_key = (date_str, 'server')
+                        if wave_key not in hourly_processed:
+                            hourly_processed.add(wave_key)
+                            counts = {int(h): c for h, c in hourly_day['hourly_servers'].items() if int(c) > 0}
+                            waves = _compute_shift_waves(counts)
+                            sp_id, sp = server_pos
+                            for i, wave in enumerate(waves):
+                                label = 'Open' if i == 0 else ('Close' if i == len(waves) - 1 else f'Mid {i}')
+                                requirements.append({
+                                    'id': str(_uuid.uuid4()),
+                                    'venue_id': self.venue_id,
+                                    'business_date': date_str,
+                                    'shift_type': shift_type,
+                                    'position_id': sp_id,
+                                    'position': sp,
+                                    'employees_needed': wave['count'],
+                                    'hours_per_employee': wave['hours'],
+                                    'total_hours': wave['count'] * wave['hours'],
+                                    'total_cost': wave['count'] * wave['hours'] * float(sp['base_hourly_rate']),
+                                    'predicted_covers': covers,
+                                    'predicted_revenue': forecast.get('revenue', 0),
+                                    'shift_start': wave['start'],
+                                    'shift_end': wave['end'],
+                                    'shift_note': f"Server {label}",
+                                    'shift_label': f"Server ({label})",
+                                    'from_hourly': True,
+                                })
+                            total_s = sum(w['count'] for w in waves)
+                            print(f"  {day_name} {date_str} {shift_type}: Server = {total_s} "
+                                  f"across {len(waves)} staggered waves "
+                                  f"[{covers:.0f} covers, hourly forecast]", flush=True)
+                            for w in waves:
+                                print(f"      {w['count']}x  {w['start']} - {w['end']}  ({w['hours']}h)", flush=True)
+                        continue
+
+                    # ── Hourly wave scheduling for bartenders ──────────
+                    is_bartender = 'bartender' in pos_lower
+                    if is_bartender and 'hourly_bartenders' in hourly_day and bartender_pos:
+                        wave_key = (date_str, 'bartender')
+                        if wave_key not in hourly_processed:
+                            hourly_processed.add(wave_key)
+                            counts = {int(h): c for h, c in hourly_day['hourly_bartenders'].items() if int(c) > 0}
+                            waves = _compute_shift_waves(counts)
+                            bp_id, bp = bartender_pos
+                            for i, wave in enumerate(waves):
+                                label = 'Open' if i == 0 else ('Close' if i == len(waves) - 1 else f'Mid {i}')
+                                requirements.append({
+                                    'id': str(_uuid.uuid4()),
+                                    'venue_id': self.venue_id,
+                                    'business_date': date_str,
+                                    'shift_type': shift_type,
+                                    'position_id': bp_id,
+                                    'position': bp,
+                                    'employees_needed': wave['count'],
+                                    'hours_per_employee': wave['hours'],
+                                    'total_hours': wave['count'] * wave['hours'],
+                                    'total_cost': wave['count'] * wave['hours'] * float(bp['base_hourly_rate']),
+                                    'predicted_covers': covers,
+                                    'predicted_revenue': forecast.get('revenue', 0),
+                                    'shift_start': wave['start'],
+                                    'shift_end': wave['end'],
+                                    'shift_note': f"Bartender {label}",
+                                    'shift_label': f"Bartender ({label})",
+                                    'from_hourly': True,
+                                })
+                            total_bt = sum(w['count'] for w in waves)
+                            print(f"  {day_name} {date_str} {shift_type}: Bartender = {total_bt} "
+                                  f"across {len(waves)} staggered waves "
+                                  f"[{covers:.0f} covers, hourly forecast]", flush=True)
+                        continue
+
+                    # ── Standard CPLH-based scheduling for all other positions ──
+                    # Get position-specific shift config
+                    shift_cfg = self._get_position_shift_config(pos_name, shift_type)
+                    if not shift_cfg:
+                        # Position doesn't work this shift type (e.g., no Sommelier at breakfast)
+                        continue
+
+                    shift_hours = shift_cfg['hours']
+                    shift_start = shift_cfg['start']
+                    shift_end = shift_cfg['end']
+                    shift_note = ''
+
+                    # Calculate employees needed
+                    is_fixed = any(f.lower() in pos_name.lower() for f in FIXED_STAFF_POSITIONS)
+                    ratio_key = _match_config_key(pos_name, COVERS_RATIO_POSITIONS)
+
+                    if is_fixed:
                         needed = 1
-                    # Covers-ratio positions: simple division
-                    elif any(ratio_name.lower() in pos_name.lower() for ratio_name in COVERS_RATIO_POSITIONS):
-                        ratio = next(
-                            (r for n, r in COVERS_RATIO_POSITIONS.items() if n.lower() in pos_name.lower()),
-                            60
-                        )
+                    elif ratio_key:
+                        ratio = COVERS_RATIO_POSITIONS[ratio_key]
                         needed = max(1, math.ceil(covers / ratio))
                     else:
-                        # CPLH-driven calculation
                         target_cplh = self._get_cplh_for_position(pos_id, pos_name, shift_type)
                         if target_cplh <= 0:
                             needed = 1
                         else:
                             needed = max(1, math.ceil(covers / (target_cplh * shift_hours)))
+
+                    # ── Stagger check: busy/peak nights with many FOH staff ──
+                    stagger_key = _match_config_key(pos_name, STAGGER_CONFIG)
+                    if (stagger_key and tier in ('busy', 'peak') and
+                            needed >= STAGGER_CONFIG[stagger_key]['threshold']):
+
+                        stagger = STAGGER_CONFIG[stagger_key]
+                        open_count = max(1, round(needed * stagger['open']['pct']))
+                        close_count = max(1, needed - open_count)
+
+                        # Opener shift
+                        requirements.append({
+                            'id': str(_uuid.uuid4()),
+                            'venue_id': self.venue_id,
+                            'business_date': date_str,
+                            'shift_type': shift_type,
+                            'position_id': pos_id,
+                            'position': pos,
+                            'employees_needed': open_count,
+                            'hours_per_employee': stagger['open']['hours'],
+                            'total_hours': open_count * stagger['open']['hours'],
+                            'total_cost': open_count * stagger['open']['hours'] * float(pos['base_hourly_rate']),
+                            'predicted_covers': covers,
+                            'predicted_revenue': forecast.get('revenue', 0),
+                            'shift_start': stagger['open']['start'],
+                            'shift_end': stagger['open']['end'],
+                            'shift_note': stagger['open']['note'],
+                            'shift_label': f'{pos_name} (Open)',
+                        })
+                        # Closer shift
+                        requirements.append({
+                            'id': str(_uuid.uuid4()),
+                            'venue_id': self.venue_id,
+                            'business_date': date_str,
+                            'shift_type': shift_type,
+                            'position_id': pos_id,
+                            'position': pos,
+                            'employees_needed': close_count,
+                            'hours_per_employee': stagger['close']['hours'],
+                            'total_hours': close_count * stagger['close']['hours'],
+                            'total_cost': close_count * stagger['close']['hours'] * float(pos['base_hourly_rate']),
+                            'predicted_covers': covers,
+                            'predicted_revenue': forecast.get('revenue', 0),
+                            'shift_start': stagger['close']['start'],
+                            'shift_end': stagger['close']['end'],
+                            'shift_note': stagger['close']['note'],
+                            'shift_label': f'{pos_name} (Close)',
+                        })
+
+                        print(f"  {day_name} {date_str} {shift_type}: {pos_name} = "
+                              f"{open_count} openers ({stagger['open']['start']}-{stagger['open']['end']}) + "
+                              f"{close_count} closers ({stagger['close']['start']}-{stagger['close']['end']}) "
+                              f"[{tier}, {covers:.0f} covers]", flush=True)
+                        continue
+
+                    # ── Light night adjustments: cut FOH early ──
+                    if tier == 'light' and not is_fixed:
+                        cut_key = _match_config_key(pos_name, LIGHT_NIGHT_CUTS)
+                        if cut_key:
+                            cut = LIGHT_NIGHT_CUTS[cut_key]
+                            shift_hours = max(3.0, shift_hours + cut['hours_delta'])
+                            # Adjust end time
+                            end_h, end_m = _parse_time(shift_end)
+                            end_dt = datetime(2000, 1, 1, end_h, end_m) + timedelta(minutes=cut['end_delta_min'])
+                            shift_end = f"{end_dt.hour:02d}:{end_dt.minute:02d}"
+                            shift_note = cut['note']
 
                     requirements.append({
                         'id': str(_uuid.uuid4()),
@@ -535,28 +989,31 @@ class AutoScheduler:
                         'position_id': pos_id,
                         'position': pos,
                         'employees_needed': needed,
-                        'hours_per_employee': float(shift_hours),
-                        'total_hours': needed * float(shift_hours),
-                        'total_cost': needed * float(shift_hours) * float(pos['base_hourly_rate']),
+                        'hours_per_employee': shift_hours,
+                        'total_hours': needed * shift_hours,
+                        'total_cost': needed * shift_hours * float(pos['base_hourly_rate']),
                         'predicted_covers': covers,
                         'predicted_revenue': forecast.get('revenue', 0),
+                        'shift_start': shift_start,
+                        'shift_end': shift_end,
+                        'shift_note': shift_note,
+                        'shift_label': pos_name,
                     })
 
-                    print(f"  {date_str} {shift_type}: {pos_name} = {needed} employees "
-                          f"({covers:.0f} covers)", flush=True)
+                    print(f"  {day_name} {date_str} {shift_type}: {pos_name} = {needed} "
+                          f"({shift_start}-{shift_end}, {shift_hours}h) [{tier}, {covers:.0f} covers]"
+                          f"{' — ' + shift_note if shift_note else ''}", flush=True)
 
-        print(f"[SMART] Generated {len(requirements)} smart requirements", flush=True)
+        print(f"[SMART] Generated {len(requirements)} requirements", flush=True)
         return requirements
 
     def _apply_service_quality_constraints(self, requirements: List[Dict]) -> List[Dict]:
-        """Enforce service quality ratios (max covers/server, busser/runner ratios)"""
         print(f"\n[QUALITY] Applying service quality constraints...", flush=True)
 
         max_cps = self.service_quality.get('max_covers_per_server', 12)
         busser_ratio = self.service_quality.get('busser_to_server_ratio', 0.5)
         runner_ratio = self.service_quality.get('runner_to_server_ratio', 0.33)
 
-        # Group by (date, shift_type) to check ratios
         from collections import defaultdict
         groups = defaultdict(list)
         for req in requirements:
@@ -568,125 +1025,97 @@ class AutoScheduler:
             if covers < 1:
                 continue
 
-            # Find server, busser, runner requirements
-            server_req = None
-            busser_req = None
-            runner_req = None
-            for req in reqs:
-                name = req['position']['name'].lower()
-                if 'server' in name and 'food' not in name:
-                    server_req = req
-                elif 'busser' in name or 'bus' in name:
-                    busser_req = req
-                elif 'runner' in name or 'food runner' in name:
-                    runner_req = req
+            # Sum server/busser/runner counts across all sub-shifts (open+close)
+            server_reqs = [r for r in reqs if 'server' in r.get('shift_label', r['position']['name']).lower()
+                           and 'food' not in r.get('shift_label', '').lower()]
+            busser_reqs = [r for r in reqs if 'busser' in r.get('shift_label', r['position']['name']).lower()
+                           or 'bus' in r.get('shift_label', r['position']['name']).lower()]
+            runner_reqs = [r for r in reqs if 'runner' in r.get('shift_label', r['position']['name']).lower()
+                           or 'food runner' in r.get('shift_label', r['position']['name']).lower()]
 
-            # Enforce max covers per server
-            if server_req:
-                min_servers = math.ceil(covers / max_cps)
-                if server_req['employees_needed'] < min_servers:
-                    old = server_req['employees_needed']
-                    server_req['employees_needed'] = min_servers
-                    server_req['total_hours'] = min_servers * server_req['hours_per_employee']
-                    server_req['total_cost'] = server_req['total_hours'] * float(server_req['position']['base_hourly_rate'])
-                    print(f"  [QUALITY] {date} {shift}: Servers {old} -> {min_servers} "
-                          f"(max {max_cps} covers/server, {covers:.0f} covers)", flush=True)
-                    adjustments += 1
+            total_servers = sum(r['employees_needed'] for r in server_reqs)
+            total_bussers = sum(r['employees_needed'] for r in busser_reqs)
+            total_runners = sum(r['employees_needed'] for r in runner_reqs)
 
-                # Enforce busser ratio
-                if busser_req:
-                    min_bussers = math.ceil(server_req['employees_needed'] * busser_ratio)
-                    if busser_req['employees_needed'] < min_bussers:
-                        old = busser_req['employees_needed']
-                        busser_req['employees_needed'] = min_bussers
-                        busser_req['total_hours'] = min_bussers * busser_req['hours_per_employee']
-                        busser_req['total_cost'] = busser_req['total_hours'] * float(busser_req['position']['base_hourly_rate'])
-                        print(f"  [QUALITY] {date} {shift}: Bussers {old} -> {min_bussers} "
-                              f"(ratio {busser_ratio} of {server_req['employees_needed']} servers)", flush=True)
-                        adjustments += 1
+            # Check max covers per server — only when hourly data provides peak concurrent counts.
+            # Without hourly data, "covers" is total daily (e.g. 500), not simultaneous (~200).
+            # Using ceil(500/12) = 42 servers is wildly inflated. CPLH already handles throughput.
+            has_hourly_servers = any(r.get('from_hourly') for r in server_reqs)
+            if has_hourly_servers:
+                # Hourly data already sized for peak concurrent — just validate
+                pass
+            # For non-hourly days, trust the CPLH calculation (no inflation)
 
-                # Enforce runner ratio
-                if runner_req:
-                    min_runners = math.ceil(server_req['employees_needed'] * runner_ratio)
-                    if runner_req['employees_needed'] < min_runners:
-                        old = runner_req['employees_needed']
-                        runner_req['employees_needed'] = min_runners
-                        runner_req['total_hours'] = min_runners * runner_req['hours_per_employee']
-                        runner_req['total_cost'] = runner_req['total_hours'] * float(runner_req['position']['base_hourly_rate'])
-                        print(f"  [QUALITY] {date} {shift}: Runners {old} -> {min_runners} "
-                              f"(ratio {runner_ratio} of {server_req['employees_needed']} servers)", flush=True)
-                        adjustments += 1
+            # Check busser ratio
+            min_bussers = math.ceil(total_servers * busser_ratio)
+            if total_bussers < min_bussers and busser_reqs:
+                deficit = min_bussers - total_bussers
+                biggest = max(busser_reqs, key=lambda r: r['employees_needed'])
+                biggest['employees_needed'] += deficit
+                biggest['total_hours'] = biggest['employees_needed'] * biggest['hours_per_employee']
+                biggest['total_cost'] = biggest['total_hours'] * float(biggest['position']['base_hourly_rate'])
+                print(f"  [QUALITY] {date} {shift}: +{deficit} bussers (ratio {busser_ratio} of {total_servers} servers)", flush=True)
+                adjustments += 1
+
+            # Check runner ratio
+            min_runners = math.ceil(total_servers * runner_ratio)
+            if total_runners < min_runners and runner_reqs:
+                deficit = min_runners - total_runners
+                biggest = max(runner_reqs, key=lambda r: r['employees_needed'])
+                biggest['employees_needed'] += deficit
+                biggest['total_hours'] = biggest['employees_needed'] * biggest['hours_per_employee']
+                biggest['total_cost'] = biggest['total_hours'] * float(biggest['position']['base_hourly_rate'])
+                print(f"  [QUALITY] {date} {shift}: +{deficit} runners (ratio {runner_ratio} of {total_servers} servers)", flush=True)
+                adjustments += 1
 
         print(f"[QUALITY] Made {adjustments} quality adjustments", flush=True)
         return requirements
 
     def _apply_manager_feedback_adjustments(self, requirements: List[Dict]) -> List[Dict]:
-        """Apply learned adjustments from manager override patterns"""
         if not self.manager_adjustments:
             return requirements
-
         print(f"\n[FEEDBACK] Applying manager feedback adjustments...", flush=True)
         adjustments = 0
-
         for req in requirements:
             date = datetime.fromisoformat(req['business_date']).date()
             dow = date.weekday()
             pos_name = req['position']['name']
             shift_type = req['shift_type']
-
             key = (pos_name, shift_type, dow)
             delta = self.manager_adjustments.get(key, 0)
-
             if delta != 0:
                 old = req['employees_needed']
                 req['employees_needed'] = max(1, req['employees_needed'] + delta)
                 req['total_hours'] = req['employees_needed'] * req['hours_per_employee']
                 req['total_cost'] = req['total_hours'] * float(req['position']['base_hourly_rate'])
-                direction = '+1' if delta > 0 else '-1'
                 print(f"  [FEEDBACK] {req['business_date']} {shift_type}: {pos_name} "
-                      f"{old} -> {req['employees_needed']} ({direction} from override learning)", flush=True)
+                      f"{old} -> {req['employees_needed']}", flush=True)
                 adjustments += 1
-
-        print(f"[FEEDBACK] Applied {adjustments} feedback adjustments", flush=True)
+        print(f"[FEEDBACK] Applied {adjustments} adjustments", flush=True)
         return requirements
 
     def _validate_against_staffing_patterns(self, requirements: List[Dict]):
-        """Warning-only validation against ML-learned historical patterns"""
         if not self.staffing_patterns:
             return
-
-        print(f"\n[VALIDATE] Checking against historical staffing patterns...", flush=True)
         warnings = 0
-
         for req in requirements:
             covers = req.get('predicted_covers', 0)
-            pos_id = req['position_id']
-            shift_type = req['shift_type']
-
             for pattern in self.staffing_patterns:
-                if (pattern['position_id'] == pos_id and
-                    pattern.get('shift_type') == shift_type and
+                if (pattern['position_id'] == req['position_id'] and
+                    pattern.get('shift_type') == req['shift_type'] and
                     float(pattern.get('covers_range_start', 0)) <= covers <=
                     float(pattern.get('covers_range_end', 9999))):
-
                     historical = float(pattern.get('employees_recommended', 0))
-                    calculated = req['employees_needed']
-                    if historical > 0 and abs(calculated - historical) / historical > 0.3:
-                        print(f"  [WARN] {req['business_date']} {shift_type}: "
-                              f"{req['position']['name']} calculated={calculated} vs "
-                              f"historical={historical:.0f} ({covers:.0f} covers)", flush=True)
+                    if historical > 0 and abs(req['employees_needed'] - historical) / historical > 0.3:
+                        print(f"  [WARN] {req['business_date']}: {req['position']['name']} "
+                              f"calc={req['employees_needed']} vs hist={historical:.0f}", flush=True)
                         warnings += 1
                     break
 
-        if warnings:
-            print(f"[VALIDATE] {warnings} warnings (review recommended)", flush=True)
-        else:
-            print(f"[VALIDATE] All requirements consistent with historical patterns", flush=True)
+    # ── Enhanced Scoring ────────────────────────────────────────────
 
-    # ── Enhanced Assignment ─────────────────────────────────────────
-
-    def _score_employee(self, emp: Dict, weekly_hours: float) -> float:
-        """Multi-objective employee scoring: lower is better"""
+    def _score_employee(self, emp: Dict, weekly_hours: float, days_worked: int) -> float:
+        """Multi-objective scoring: lower is better. Penalizes overwork and consecutive days."""
         rate = float(emp['position']['base_hourly_rate'])
         max_hours = float(emp.get('max_hours_per_week') or 40)
         hours_pct = weekly_hours / max_hours if max_hours > 0 else 1.0
@@ -695,22 +1124,25 @@ class AutoScheduler:
         cost_w = float(w.get('cost_weight', 0.4))
         quality_w = float(w.get('quality_weight', 0.4))
 
-        # Cost score: normalized hourly rate (lower is cheaper)
         cost_score = rate / 35.0
-
-        # Balance score: how utilized the employee already is (lower = more available)
         balance_score = hours_pct
 
-        return cost_w * cost_score + quality_w * balance_score
+        score = cost_w * cost_score + quality_w * balance_score
+
+        # Penalize 6th+ working day to encourage days off
+        if days_worked >= 5:
+            score += 0.3
+        if days_worked >= 6:
+            score += 0.5
+
+        return score
 
     # ── Schedule Metrics ────────────────────────────────────────────
 
     def _compute_schedule_metrics(self, assignments: List[Dict], requirements: List[Dict]) -> Dict:
-        """Compute quality metrics for the generated schedule"""
         total_hours = sum(a['scheduled_hours'] for a in assignments)
         total_cost = sum(a['labor_cost'] for a in assignments)
 
-        # Total predicted covers and revenue
         total_covers = 0.0
         total_revenue = 0.0
         seen_day_shifts = set()
@@ -721,22 +1153,16 @@ class AutoScheduler:
                 total_covers += req.get('predicted_covers', 0)
                 total_revenue += req.get('predicted_revenue', 0)
 
-        # Overall CPLH
         overall_cplh = total_covers / total_hours if total_hours > 0 else 0
-
-        # Labor percentage
         labor_pct = (total_cost / total_revenue * 100) if total_revenue > 0 else 0
 
-        # Service quality score (check violations)
         violations = 0
         max_cps = self.service_quality.get('max_covers_per_server', 12)
-
         from collections import defaultdict
         day_shift_assignments = defaultdict(lambda: defaultdict(int))
         for a in assignments:
             key = (a['business_date'], a['shift_type'])
             day_shift_assignments[key][a['position_name'].lower()] += 1
-
         for (date, shift), pos_counts in day_shift_assignments.items():
             forecast = self.demand_forecasts.get(date, {}).get(shift, {})
             covers = forecast.get('covers', 0)
@@ -764,13 +1190,13 @@ class AutoScheduler:
 
         return metrics
 
-    # ── Default Requirements (unchanged fallback) ───────────────────
+    # ── Default Fallback ────────────────────────────────────────────
 
     def _generate_default_requirements(self, week_start_date: str) -> List[Dict]:
-        """Generate default requirements from positions & employees when no data exists"""
+        """Fallback: generate from positions & employees when no data exists.
+        Uses position-specific dinner hours instead of flat 6h for everyone."""
         week_start = datetime.fromisoformat(week_start_date).date()
 
-        # Group employees by position
         emps_by_pos: Dict[str, list] = {}
         for emp in self.employees:
             pid = emp['primary_position_id']
@@ -786,6 +1212,18 @@ class AutoScheduler:
                 pos = self.positions.get(pos_id)
                 if not pos:
                     continue
+
+                # Use position-specific dinner shift config
+                shift_cfg = self._get_position_shift_config(pos['name'], 'dinner')
+                if shift_cfg:
+                    hours = shift_cfg['hours']
+                    start = shift_cfg['start']
+                    end = shift_cfg['end']
+                else:
+                    hours = 6.0
+                    start = '17:00'
+                    end = '23:00'
+
                 needed = min(len(emps), 2) if len(emps) >= 2 else 1
                 requirements.append({
                     'id': str(_uuid.uuid4()),
@@ -795,25 +1233,21 @@ class AutoScheduler:
                     'position_id': pos_id,
                     'position': pos,
                     'employees_needed': needed,
-                    'hours_per_employee': 6.0,
-                    'total_hours': needed * 6.0,
-                    'total_cost': needed * 6.0 * float(pos['base_hourly_rate']),
+                    'hours_per_employee': hours,
+                    'total_hours': needed * hours,
+                    'total_cost': needed * hours * float(pos['base_hourly_rate']),
+                    'shift_start': start,
+                    'shift_end': end,
+                    'shift_note': '',
+                    'shift_label': pos['name'],
                 })
 
-        print(f"[FALLBACK] Generated {len(requirements)} default requirements for {len(emps_by_pos)} positions x 7 days", flush=True)
+        print(f"[FALLBACK] Generated {len(requirements)} default requirements", flush=True)
         return requirements
 
     # ── Main Scheduling Flow ────────────────────────────────────────
 
     def generate_schedule(self, week_start_date: str) -> Dict:
-        """
-        Smart scheduling flow:
-        1. Load base data (employees, positions, existing requirements)
-        2. Fetch demand forecasts, CPLH targets, quality standards, optimization settings, feedback
-        3. If no requirements in DB: generate smart requirements from forecasts (or fallback)
-        4. Greedy-assign with multi-objective scoring
-        5. Compute schedule metrics
-        """
         week_start = datetime.fromisoformat(week_start_date).date()
         week_end = week_start + timedelta(days=6)
 
@@ -821,22 +1255,22 @@ class AutoScheduler:
         print(f"[SCHEDULE] Smart schedule generation for {week_start} to {week_end}", flush=True)
         print(f"{'='*60}\n", flush=True)
 
-        # Step 1: Load base data
         self.load_data(week_start_date)
 
-        # Step 2: Fetch smart scheduling data (tolerant of missing tables)
         self._fetch_demand_forecasts(week_start.isoformat(), week_end.isoformat())
         self._fetch_cplh_targets()
         self._fetch_service_quality_standards()
         self._fetch_optimization_settings()
         self._fetch_manager_feedback()
         self._fetch_staffing_patterns()
+        # Load hourly forecasts: prefer active covers DB, fall back to JSON file
+        if getattr(self, '_use_active_covers', False):
+            self._load_active_covers_forecast(week_start_date, getattr(self, '_active_covers_scenario', 'buffered'))
+        self._load_hourly_forecast(getattr(self, '_forecast_path', None))
 
-        # Step 3: Build requirements
         if not self.requirements:
             if self.demand_forecasts:
                 self.optimization_mode = 'smart'
-                print(f"\n[SMART] Using demand-driven requirements...", flush=True)
                 self.requirements = self._calculate_smart_requirements(week_start_date)
                 self.requirements = self._apply_service_quality_constraints(self.requirements)
                 self.requirements = self._apply_manager_feedback_adjustments(self.requirements)
@@ -848,30 +1282,30 @@ class AutoScheduler:
 
             if not self.requirements:
                 if not self.employees:
-                    print("MISSING_EMPLOYEES: No active employees found for this venue. Add employees first.")
+                    print("MISSING_EMPLOYEES: No active employees found.")
                 elif not self.positions:
-                    print("MISSING_POSITIONS: No active positions found for this venue. Add positions first.")
+                    print("MISSING_POSITIONS: No active positions found.")
                 else:
-                    print("MISSING_DATA: Could not generate schedule -- check employees and positions.")
+                    print("MISSING_DATA: Could not generate schedule.")
                 return None
 
-        # Step 4: Greedy assignment with enhanced scoring
+        # ── Greedy Assignment ───────────────────────────────────────
         print(f"\n[ASSIGN] Running greedy assignment ({self.optimization_mode} mode)...", flush=True)
 
-        # Track employee weekly hours and daily shifts
         emp_weekly_hours: Dict[str, float] = {e['id']: 0.0 for e in self.employees}
         emp_daily_shifts: Dict[str, Dict[str, int]] = {e['id']: {} for e in self.employees}
 
-        # Index employees by position for fast lookup
         emps_by_position: Dict[str, List[Dict]] = {}
         for emp in self.employees:
             pid = emp['primary_position_id']
             emps_by_position.setdefault(pid, []).append(emp)
 
-        # Sort requirements: scarce positions first (fewer eligible employees = higher priority)
         def req_priority(req):
+            pos_name = req['position']['name']
+            is_fixed = any(f.lower() in pos_name.lower() for f in FIXED_STAFF_POSITIONS)
             eligible_count = len(emps_by_position.get(req['position_id'], []))
-            return (req['business_date'], eligible_count)
+            # Fixed staff first (0), then others (1). Within group: by date, then fewest-eligible
+            return (0 if is_fixed else 1, req['business_date'], eligible_count)
 
         sorted_reqs = sorted(self.requirements, key=req_priority)
 
@@ -886,15 +1320,26 @@ class AutoScheduler:
             shift_hours = req['hours_per_employee']
             date = req['business_date']
 
+            # Build shift start/end from requirement (position-specific)
+            req_start = req.get('shift_start', '17:00')
+            req_end = req.get('shift_end', '23:00')
+            shift_start_dt, shift_end_dt = _build_shift_datetimes(date, req_start, req_end)
+
             eligible = emps_by_position.get(position_id, [])
             if not eligible:
                 unfilled += employees_needed
                 continue
 
-            # Sort by multi-objective score (lower = better)
-            eligible_sorted = sorted(eligible, key=lambda e: self._score_employee(
-                e, emp_weekly_hours.get(e['id'], 0)
-            ))
+            # Sort by multi-objective score
+            def emp_sort_key(e):
+                days = len([d for d, c in emp_daily_shifts[e['id']].items() if c > 0])
+                return self._score_employee(e, emp_weekly_hours.get(e['id'], 0), days)
+
+            eligible_sorted = sorted(eligible, key=emp_sort_key)
+
+            # Check if this is a fixed-staff position (management, exec chef, etc.)
+            pos_name = req['position']['name']
+            is_fixed_req = any(f.lower() in pos_name.lower() for f in FIXED_STAFF_POSITIONS)
 
             assigned_count = 0
             for emp in eligible_sorted:
@@ -904,17 +1349,14 @@ class AutoScheduler:
                 emp_id = emp['id']
                 raw_max = emp.get('max_hours_per_week')
                 max_hours = float(raw_max) if raw_max is not None else 40.0
-
-                # Check weekly hours cap
-                if emp_weekly_hours[emp_id] + shift_hours > max_hours:
+                # Fixed staff (salaried management): no weekly hour cap
+                if not is_fixed_req and emp_weekly_hours[emp_id] + shift_hours > max_hours:
                     continue
 
-                # Check daily shift limit (max 1 per day)
                 daily = emp_daily_shifts[emp_id].get(date, 0)
                 if daily >= 1:
                     continue
 
-                # Assign this employee
                 hourly_rate = float(emp['position']['base_hourly_rate'])
                 shift_cost = shift_hours * hourly_rate
 
@@ -924,39 +1366,36 @@ class AutoScheduler:
                 total_cost += shift_cost
                 total_hours += shift_hours
 
-                shift_start, shift_end = self._get_shift_times(date, req['shift_type'])
-
                 schedule_assignments.append({
                     'employee_id': emp_id,
                     'employee_name': f"{emp['first_name']} {emp['last_name']}",
                     'position_id': position_id,
-                    'position_name': req['position']['name'],
+                    'position_name': req.get('shift_label', req['position']['name']),
                     'business_date': date,
                     'shift_type': req['shift_type'],
-                    'scheduled_start': shift_start.isoformat(),
-                    'scheduled_end': shift_end.isoformat(),
+                    'scheduled_start': shift_start_dt.isoformat(),
+                    'scheduled_end': shift_end_dt.isoformat(),
                     'scheduled_hours': shift_hours,
                     'hourly_rate': hourly_rate,
                     'labor_cost': shift_cost,
+                    'shift_note': req.get('shift_note', ''),
                 })
                 assigned_count += 1
 
             unfilled += (employees_needed - assigned_count)
 
         if not schedule_assignments:
-            print("Could not find optimal schedule -- no assignments made.")
-            print("   Check that employees exist and positions match.")
+            print("Could not generate schedule -- no assignments made.")
             return None
 
-        # Step 5: Compute metrics
         metrics = self._compute_schedule_metrics(schedule_assignments, self.requirements)
 
-        print(f"\n[OK] Schedule generated successfully! ({self.optimization_mode} mode)", flush=True)
+        print(f"\n[OK] Schedule generated ({self.optimization_mode} mode)", flush=True)
         print(f"   {len(schedule_assignments)} shifts assigned", flush=True)
         print(f"   {total_hours:.1f} total hours", flush=True)
         print(f"   ${total_cost:.2f} total labor cost", flush=True)
         if unfilled > 0:
-            print(f"   {unfilled} slots could not be filled (not enough staff)", flush=True)
+            print(f"   {unfilled} slots could not be filled", flush=True)
 
         return {
             'week_start_date': week_start_date,
@@ -970,27 +1409,22 @@ class AutoScheduler:
         }
 
     def _get_shift_times(self, business_date: str, shift_type: str) -> Tuple[datetime, datetime]:
-        """Calculate shift start and end times"""
+        """Fallback shift time builder (used when requirement doesn't have shift_start/shift_end)"""
         date = datetime.fromisoformat(business_date)
         shift_config = SHIFT_TIMES.get(shift_type, SHIFT_TIMES['dinner'])
-
         start = datetime.combine(date, shift_config['start'])
         end = datetime.combine(date, shift_config['end'])
-
         if shift_config['end'] < shift_config['start']:
             end += timedelta(days=1)
-
         return start, end
 
     def save_schedule(self, schedule_data: Dict) -> str:
-        """Save generated schedule to database with metrics"""
         if not schedule_data:
             return None
 
         week_start = datetime.fromisoformat(schedule_data['week_start_date']).date()
         week_end = week_start + timedelta(days=6)
 
-        # Delete existing schedule for this venue/week (allows regeneration)
         existing = db.select(
             'weekly_schedules', 'id',
             venue_id=f'eq.{self.venue_id}',
@@ -1016,7 +1450,6 @@ class AutoScheduler:
             'optimization_mode': schedule_data.get('optimization_mode', 'fallback'),
         }
 
-        # Add metrics if available (these columns may not exist in older schemas)
         if metrics:
             schedule_record['overall_cplh'] = metrics.get('overall_cplh')
             schedule_record['service_quality_score'] = metrics.get('service_quality_score')
@@ -1025,7 +1458,6 @@ class AutoScheduler:
         try:
             result = db.insert('weekly_schedules', schedule_record)
         except httpx.HTTPStatusError:
-            # If extra columns fail, retry without them
             for key in ['overall_cplh', 'service_quality_score', 'projected_revenue',
                          'auto_generated', 'requires_approval', 'optimization_mode']:
                 schedule_record.pop(key, None)
@@ -1035,56 +1467,63 @@ class AutoScheduler:
         print(f"\n[SAVE] Saving schedule {schedule_id}...", flush=True)
 
         shift_records = []
-        for assignment in schedule_data['assignments']:
+        for a in schedule_data['assignments']:
             record = {
                 'schedule_id': schedule_id,
                 'venue_id': self.venue_id,
-                'employee_id': assignment['employee_id'],
-                'position_id': assignment['position_id'],
-                'business_date': assignment['business_date'],
-                'shift_type': assignment['shift_type'],
-                'scheduled_start': assignment['scheduled_start'],
-                'scheduled_end': assignment['scheduled_end'],
-                'scheduled_hours': assignment['scheduled_hours'],
-                'hourly_rate': assignment.get('hourly_rate', 0),
-                'scheduled_cost': assignment.get('labor_cost', 0),
+                'employee_id': a['employee_id'],
+                'position_id': a['position_id'],
+                'business_date': a['business_date'],
+                'shift_type': a['shift_type'],
+                'scheduled_start': a['scheduled_start'],
+                'scheduled_end': a['scheduled_end'],
+                'scheduled_hours': a['scheduled_hours'],
+                'hourly_rate': a.get('hourly_rate', 0),
+                'scheduled_cost': a.get('labor_cost', 0),
                 'status': 'scheduled',
             }
+            # Store shift note in modification_reason for UI display
+            note = a.get('shift_note', '')
+            if note:
+                record['modification_reason'] = note
             shift_records.append(record)
 
         try:
             db.insert('shift_assignments', shift_records)
         except httpx.HTTPStatusError:
-            # If hourly_rate/scheduled_cost columns don't exist, retry without
             for rec in shift_records:
                 rec.pop('hourly_rate', None)
                 rec.pop('scheduled_cost', None)
+                rec.pop('modification_reason', None)
             db.insert('shift_assignments', shift_records)
 
         print(f"[OK] Schedule saved with {len(shift_records)} shifts", flush=True)
-
         return schedule_id
 
 
 def main():
-    """CLI entry point"""
     import argparse
 
     parser = argparse.ArgumentParser(description='Generate optimal weekly schedule')
     parser.add_argument('--venue-id', required=True, help='Venue ID')
     parser.add_argument('--week-start', required=True, help='Week start date (YYYY-MM-DD)')
     parser.add_argument('--save', action='store_true', help='Save schedule to database')
+    parser.add_argument('--forecast', default=None, help='Path to hourly forecast JSON file')
+    parser.add_argument('--use-active-covers', action='store_true', help='Load forecasts from active covers DB (labor_optimizer)')
+    parser.add_argument('--ac-scenario', default='buffered', choices=['lean', 'buffered', 'safe'], help='Active covers scenario')
 
     args = parser.parse_args()
 
     scheduler = AutoScheduler(args.venue_id)
+    scheduler._forecast_path = args.forecast  # Pass forecast path to generate_schedule
+    scheduler._use_active_covers = args.use_active_covers
+    scheduler._active_covers_scenario = args.ac_scenario
     schedule = scheduler.generate_schedule(args.week_start)
 
     if schedule and args.save:
         schedule_id = scheduler.save_schedule(schedule)
         print(f"\nSchedule {schedule_id} ready for review!")
     elif schedule:
-        # Output schedule as JSON so the API can parse it
         print("---JSON_START---")
         print(json.dumps(schedule, default=str))
         print("---JSON_END---")
