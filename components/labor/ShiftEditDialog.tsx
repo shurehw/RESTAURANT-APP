@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -73,20 +73,19 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Reset form when shift changes
-  const resetForm = () => {
-    if (shift) {
-      setEmployeeId(shift.employee_id);
+  // Initialize form when dialog opens or shift changes
+  useEffect(() => {
+    if (open && shift) {
+      setEmployeeId(shift.employee_id || '');
       setStartTime(extractUTCTime(shift.scheduled_start));
       setEndTime(extractUTCTime(shift.scheduled_end));
       setReason('');
       setReasonCategory('Other');
       setShowDeleteConfirm(false);
     }
-  };
+  }, [open, shift]);
 
   const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) resetForm();
     onOpenChange(isOpen);
   };
 
@@ -110,6 +109,10 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
 
   const handleSave = async () => {
     if (!shift) return;
+    if (!employeeId) {
+      toast.error('Please select an employee');
+      return;
+    }
     if (!reason.trim()) {
       toast.error('Please provide a reason for this change');
       return;
@@ -199,9 +202,9 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
     }
   };
 
-  // Filter employees to same position
+  // Filter employees to same position, always include currently assigned employee
   const eligibleEmployees = employees.filter(
-    e => e.primary_position_id === shift?.position_id
+    e => e.primary_position_id === shift?.position_id || e.id === shift?.employee_id
   );
 
   if (!shift) return null;
@@ -234,6 +237,9 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
             >
+              {!employeeId && (
+                <option value="">Select an employee...</option>
+              )}
               {eligibleEmployees.map(emp => (
                 <option key={emp.id} value={emp.id}>
                   {emp.first_name} {emp.last_name}
