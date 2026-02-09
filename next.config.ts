@@ -30,6 +30,13 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '150mb', // Increased for large multi-invoice PDFs
     },
+    // Disable prefetching for better initial page load performance
+    ppr: false, // Disable Partial Prerendering
+  },
+  // Reduce prefetch cache to prevent connection exhaustion
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
   },
   async headers() {
     return [
