@@ -2195,7 +2195,7 @@ export default function NightlyReportPage() {
             date={date}
             venueName={selectedVenue?.name || ''}
             venueId={selectedVenue?.id || ''}
-            periodLabel={serverPerfTab === 'nightly' ? 'Tonight' : serverPerfTab === 'wtd' ? 'Week to Date' : 'Period to Date'}
+            periodLabel={viewMode === 'nightly' ? 'Tonight' : viewMode === 'wtd' ? 'Week to Date' : 'Period to Date'}
             isOpen={serverModalOpen}
             onClose={() => {
               setServerModalOpen(false);
