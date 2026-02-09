@@ -97,8 +97,8 @@ function Sidebar() {
 
       {/* Navigation */}
       <nav className="p-4 space-y-1">
-        <NavLink href="/" icon={<LayoutDashboard className="w-5 h-5" />}>
-          Dashboard
+        <NavLink href="/" icon={<Moon className="w-5 h-5" />}>
+          Home
         </NavLink>
 
         <NavSection title="COGS">
