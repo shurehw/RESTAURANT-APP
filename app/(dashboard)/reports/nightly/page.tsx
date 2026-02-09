@@ -886,13 +886,13 @@ export default function NightlyReportPage() {
                     const liveNetSales = viewMode === 'nightly'
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
-                        ? (factsSummary?.variance.wtd_net_sales || 0)
-                        : (factsSummary?.variance.ptd_net_sales || 0);
+                        ? (factsSummary?.variance?.wtd_net_sales || 0)
+                        : (factsSummary?.variance?.ptd_net_sales || 0);
                     const liveCovers = viewMode === 'nightly'
                       ? (report.summary.total_covers || 0)
                       : viewMode === 'wtd'
-                        ? (factsSummary?.variance.wtd_covers || 0)
-                        : (factsSummary?.variance.ptd_covers || 0);
+                        ? (factsSummary?.variance?.wtd_covers || 0)
+                        : (factsSummary?.variance?.ptd_covers || 0);
                     const calcVar = (actual: number, comparison: number | null | undefined) => {
                       if (!comparison || comparison === 0) return null;
                       return ((actual - comparison) / comparison) * 100;
@@ -1230,8 +1230,8 @@ export default function NightlyReportPage() {
                     const netSales = viewMode === 'nightly'
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
-                        ? (factsSummary?.variance.wtd_net_sales || 0)
-                        : (factsSummary?.variance.ptd_net_sales || 0);
+                        ? (factsSummary?.variance?.wtd_net_sales || 0)
+                        : (factsSummary?.variance?.ptd_net_sales || 0);
                     // % of sales labels
                     const fohPct = netSales > 0 ? (fohCost / netSales) * 100 : 0;
                     const bohPct = netSales > 0 ? (bohCost / netSales) * 100 : 0;
