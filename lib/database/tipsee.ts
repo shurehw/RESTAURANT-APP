@@ -13,9 +13,9 @@ const TIPSEE_CONFIG = {
   database: process.env.TIPSEE_DB_NAME || 'postgres',
   password: process.env.TIPSEE_DB_PASSWORD || 'TIPSEE_PASSWORD_REDACTED',
   ssl: { rejectUnauthorized: false },
-  max: 5,
+  max: 15, // Increased from 5 to handle 10 parallel queries + headroom for concurrent users
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
+  connectionTimeoutMillis: 20000, // Increased from 10s to 20s for slow Azure connections
 };
 
 // Singleton pool
