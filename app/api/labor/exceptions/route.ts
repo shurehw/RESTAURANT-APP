@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getOperationalStandardsForVenue } from '@/lib/database/operational-standards';
 import { detectLaborExceptions, type LaborMetrics } from '@/lib/database/labor-exceptions';
+import { getLaborBounds } from '@/lib/database/system-bounds';
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,11 +110,15 @@ export async function GET(request: NextRequest) {
       critical: e.severity === 'critical' || e.severity === 'structural',
     }));
 
+    // Fetch system bounds (Layer 0)
+    const laborBounds = await getLaborBounds();
+
     // Run exception detection
     const result = detectLaborExceptions(
       metrics,
       standards.labor,
       date,
+      laborBounds,
       recentExceptions
     );
 

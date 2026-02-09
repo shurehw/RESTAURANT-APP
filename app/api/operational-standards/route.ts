@@ -13,7 +13,7 @@ import {
   updateOperationalStandards,
 } from '@/lib/database/operational-standards';
 import { validateLaborStandards } from '@/lib/database/labor-exceptions';
-import { LABOR_BOUNDS } from '@/lib/database/operational-standards.types';
+import { getLaborBounds } from '@/lib/database/system-bounds';
 import { getServiceClient } from '@/lib/supabase/service';
 
 /**
@@ -89,8 +89,11 @@ export async function PUT(request: NextRequest) {
     // Get user ID for audit trail
     const userId = await getUserId(request);
 
+    // Fetch system bounds for validation
+    const laborBounds = await getLaborBounds();
+
     // Validate updates
-    const validationError = validateUpdates(updates);
+    const validationError = validateUpdates(updates, laborBounds);
     if (validationError) {
       return NextResponse.json(
         { error: validationError },
@@ -213,7 +216,7 @@ async function getUserId(request: NextRequest): Promise<string | null> {
 /**
  * Validate settings updates
  */
-function validateUpdates(updates: any): string | null {
+function validateUpdates(updates: any, LABOR_BOUNDS: any): string | null {
   // ── Comp Settings Validation ──
 
   if (updates.high_value_comp_threshold !== undefined) {
