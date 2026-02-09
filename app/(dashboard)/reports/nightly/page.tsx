@@ -842,9 +842,7 @@ export default function NightlyReportPage() {
                         backgroundColor:
                           healthData.status === 'GREEN' ? '#10b98120' :
                           healthData.status === 'YELLOW' ? '#f5970620' :
-                          healthData.status === 'ORANGE' ? '#f97316
-
-20' :
+                          healthData.status === 'ORANGE' ? '#f9731620' :
                           '#ef444420',
                         border: `1.5px solid ${
                           healthData.status === 'GREEN' ? '#10b981' :
