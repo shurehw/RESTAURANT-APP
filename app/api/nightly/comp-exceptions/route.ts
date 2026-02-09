@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchCompExceptions } from '@/lib/database/tipsee';
 import { getServiceClient } from '@/lib/supabase/service';
+import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,22 +21,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get TipSee location UUID from venue mapping
+    // Get TipSee location UUID from venue mapping and org comp settings in parallel
     const supabase = getServiceClient();
-    const { data: mapping, error: mappingError } = await (supabase as any)
-      .from('venue_tipsee_mapping')
-      .select('tipsee_location_uuid')
-      .eq('venue_id', venueId)
-      .single();
+    const [mappingResult, compSettings] = await Promise.all([
+      (supabase as any)
+        .from('venue_tipsee_mapping')
+        .select('tipsee_location_uuid')
+        .eq('venue_id', venueId)
+        .single(),
+      getCompSettingsForVenue(venueId),
+    ]);
 
-    if (mappingError || !mapping?.tipsee_location_uuid) {
+    if (mappingResult.error || !mappingResult.data?.tipsee_location_uuid) {
       return NextResponse.json(
         { error: 'No TipSee mapping found for this venue' },
         { status: 404 }
       );
     }
 
-    const result = await fetchCompExceptions(date, mapping.tipsee_location_uuid);
+    const result = await fetchCompExceptions(
+      date,
+      mappingResult.data.tipsee_location_uuid,
+      compSettings ? {
+        approved_reasons: compSettings.approved_reasons,
+        high_value_comp_threshold: compSettings.high_value_comp_threshold,
+        high_comp_pct_threshold: compSettings.high_comp_pct_threshold,
+        daily_comp_pct_warning: compSettings.daily_comp_pct_warning,
+        daily_comp_pct_critical: compSettings.daily_comp_pct_critical,
+      } : undefined
+    );
 
     return NextResponse.json({
       success: true,
