@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
   const action = searchParams.get('action');
   const date = searchParams.get('date');
   const venueId = searchParams.get('venue_id');
+  const viewMode = searchParams.get('view') || 'nightly'; // 'nightly' | 'wtd' | 'ptd'
 
   const supabase = getServiceClient();
 
@@ -144,7 +145,187 @@ export async function GET(request: NextRequest) {
     const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
     const lastWeekSameDayStr = sdlwDateStr;
 
-    // Fetch all fact data in parallel
+    // ══════════════════════════════════════════════════════════════════════════
+    // CONDITIONAL QUERY FETCHING (Performance Optimization)
+    // ══════════════════════════════════════════════════════════════════════════
+    // Strategy: Always fetch core nightly data + variance comparisons (12 queries)
+    // Only fetch expensive period aggregations when WTD/PTD view is active (8 queries)
+    // Savings: ~60% fewer queries in nightly view (12 vs 20)
+
+    // Core queries (always needed - 12 queries)
+    const coreQueries = [
+      // 1. Venue day facts (summary)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .single(),
+
+      // 2. Category breakdown
+      (supabase as any)
+        .from('category_day_facts')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .order('gross_sales', { ascending: false }),
+
+      // 3. Server performance
+      (supabase as any)
+        .from('server_day_facts')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .order('gross_sales', { ascending: false }),
+
+      // 4. Menu items
+      (supabase as any)
+        .from('item_day_facts')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .order('gross_sales', { ascending: false })
+        .limit(15),
+
+      // 5. Labor day facts
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('*')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .maybeSingle(),
+
+      // 6. Demand forecasts
+      (supabase as any)
+        .from('forecasts_with_bias')
+        .select('covers_predicted, covers_lower, covers_upper, revenue_predicted, covers_raw, bias_corrected')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .maybeSingle(),
+
+      // 7. SDLW (Same Day Last Week)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count, beverage_pct')
+        .eq('venue_id', venueId)
+        .eq('business_date', sdlwDateStr)
+        .maybeSingle(),
+
+      // 8. SDLY (Same Day Last Year)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count, beverage_pct')
+        .eq('venue_id', venueId)
+        .eq('business_date', sdlyDateStr)
+        .maybeSingle(),
+
+      // 9. PTD This Period (for variance calculations)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // 10. PTD Last Period (for variance calculations)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', prevPeriodStartStr)
+        .lte('business_date', prevPeriodEndStr),
+
+      // 11. WTD This Week (for variance calculations)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // 12. WTD Last Week (for variance calculations)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', lastWeekWeekStartStr)
+        .lte('business_date', lastWeekSameDayStr),
+    ];
+
+    // Period aggregation queries (only when WTD/PTD view active - 8 queries)
+    const wtdQueries = viewMode === 'wtd' || viewMode === 'ptd' ? [
+      // 13. Server WTD
+      (supabase as any)
+        .from('server_day_facts')
+        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // 14. Category WTD
+      (supabase as any)
+        .from('category_day_facts')
+        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // 15. Items WTD
+      (supabase as any)
+        .from('item_day_facts')
+        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+
+      // 16. Labor WTD
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', weekStartStr)
+        .lte('business_date', date),
+    ] : [];
+
+    const ptdQueries = viewMode === 'ptd' ? [
+      // 17. Server PTD
+      (supabase as any)
+        .from('server_day_facts')
+        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // 18. Category PTD
+      (supabase as any)
+        .from('category_day_facts')
+        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // 19. Items PTD
+      (supabase as any)
+        .from('item_day_facts')
+        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+
+      // 20. Labor PTD
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date),
+    ] : [];
+
+    // Combine and execute all queries
+    const allQueries = [...coreQueries, ...wtdQueries, ...ptdQueries];
+    const results = await Promise.all(allQueries);
+
+    // Destructure results (always have 12 core, optionally 4 WTD, optionally 4 PTD)
     const [
       venueDayResult,
       categoryResult,
@@ -158,176 +339,19 @@ export async function GET(request: NextRequest) {
       ptdLastWeekResult,
       wtdThisWeekResult,
       wtdLastWeekResult,
-      serverWtdResult,
-      serverPtdResult,
-      categoryWtdResult,
-      categoryPtdResult,
-      itemWtdResult,
-      itemPtdResult,
-      laborWtdResult,
-      laborPtdResult,
-    ] = await Promise.all([
-      // Venue day facts (summary)
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .single(),
+    ] = results;
 
-      // Category breakdown
-      (supabase as any)
-        .from('category_day_facts')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .order('gross_sales', { ascending: false }),
+    // WTD results (if fetched)
+    const serverWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[12] : { data: [] };
+    const categoryWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[13] : { data: [] };
+    const itemWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[14] : { data: [] };
+    const laborWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[15] : { data: [] };
 
-      // Server performance
-      (supabase as any)
-        .from('server_day_facts')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .order('gross_sales', { ascending: false }),
-
-      // Menu items
-      (supabase as any)
-        .from('item_day_facts')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .order('gross_sales', { ascending: false })
-        .limit(15),
-
-      // Labor day facts
-      (supabase as any)
-        .from('labor_day_facts')
-        .select('*')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .maybeSingle(),
-
-      // Demand forecasts with bias correction (covers and revenue)
-      (supabase as any)
-        .from('forecasts_with_bias')
-        .select('covers_predicted, covers_lower, covers_upper, revenue_predicted, covers_raw, bias_corrected')
-        .eq('venue_id', venueId)
-        .eq('business_date', date)
-        .maybeSingle(),
-
-      // Same Day Last Week (SDLW) - 7 days ago
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('net_sales, covers_count, beverage_pct')
-        .eq('venue_id', venueId)
-        .eq('business_date', sdlwDateStr)
-        .maybeSingle(),
-
-      // Same Day Last Year (SDLY) - 1 year ago
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('net_sales, covers_count, beverage_pct')
-        .eq('venue_id', venueId)
-        .eq('business_date', sdlyDateStr)
-        .maybeSingle(),
-
-      // PTD This Period (fiscal period start → selected date)
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('net_sales, covers_count')
-        .eq('venue_id', venueId)
-        .gte('business_date', periodStartStr)
-        .lte('business_date', date),
-
-      // PTD Last Period (same # of days into previous period)
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('net_sales, covers_count')
-        .eq('venue_id', venueId)
-        .gte('business_date', prevPeriodStartStr)
-        .lte('business_date', prevPeriodEndStr),
-
-      // WTD This Week (Monday → selected date, calendar week)
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('net_sales, covers_count')
-        .eq('venue_id', venueId)
-        .gte('business_date', weekStartStr)
-        .lte('business_date', date),
-
-      // WTD Last Week (same Mon→Day range, 7 days earlier)
-      (supabase as any)
-        .from('venue_day_facts')
-        .select('net_sales, covers_count')
-        .eq('venue_id', venueId)
-        .gte('business_date', lastWeekWeekStartStr)
-        .lte('business_date', lastWeekSameDayStr),
-
-      // Server WTD (aggregated server performance for the week)
-      (supabase as any)
-        .from('server_day_facts')
-        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
-        .eq('venue_id', venueId)
-        .gte('business_date', weekStartStr)
-        .lte('business_date', date),
-
-      // Server PTD (aggregated server performance for the fiscal period)
-      (supabase as any)
-        .from('server_day_facts')
-        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
-        .eq('venue_id', venueId)
-        .gte('business_date', periodStartStr)
-        .lte('business_date', date),
-
-      // Category WTD (aggregated category breakdown for the week)
-      (supabase as any)
-        .from('category_day_facts')
-        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
-        .eq('venue_id', venueId)
-        .gte('business_date', weekStartStr)
-        .lte('business_date', date),
-
-      // Category PTD (aggregated category breakdown for the fiscal period)
-      (supabase as any)
-        .from('category_day_facts')
-        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
-        .eq('venue_id', venueId)
-        .gte('business_date', periodStartStr)
-        .lte('business_date', date),
-
-      // Items WTD (aggregated menu items for the week)
-      (supabase as any)
-        .from('item_day_facts')
-        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
-        .eq('venue_id', venueId)
-        .gte('business_date', weekStartStr)
-        .lte('business_date', date),
-
-      // Items PTD (aggregated menu items for the fiscal period)
-      (supabase as any)
-        .from('item_day_facts')
-        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
-        .eq('venue_id', venueId)
-        .gte('business_date', periodStartStr)
-        .lte('business_date', date),
-
-      // Labor WTD (aggregated labor metrics for the week)
-      (supabase as any)
-        .from('labor_day_facts')
-        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
-        .eq('venue_id', venueId)
-        .gte('business_date', weekStartStr)
-        .lte('business_date', date),
-
-      // Labor PTD (aggregated labor metrics for the fiscal period)
-      (supabase as any)
-        .from('labor_day_facts')
-        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
-        .eq('venue_id', venueId)
-        .gte('business_date', periodStartStr)
-        .lte('business_date', date),
-    ]);
+    // PTD results (if fetched)
+    const serverPtdResult = viewMode === 'ptd' ? results[16] : { data: [] };
+    const categoryPtdResult = viewMode === 'ptd' ? results[17] : { data: [] };
+    const itemPtdResult = viewMode === 'ptd' ? results[18] : { data: [] };
+    const laborPtdResult = viewMode === 'ptd' ? results[19] : { data: [] };
 
     // Check if we have data
     const summary = venueDayResult.data as any;
