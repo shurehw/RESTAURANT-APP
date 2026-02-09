@@ -39,6 +39,7 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
 import { RevenueAttestation } from '@/components/attestation/RevenueAttestation';
