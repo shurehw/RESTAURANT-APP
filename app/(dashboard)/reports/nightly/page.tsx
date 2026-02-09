@@ -1132,8 +1132,8 @@ export default function NightlyReportPage() {
             const periodCovers = viewMode === 'nightly'
               ? report.summary.total_covers
               : viewMode === 'wtd'
-                ? (factsSummary?.variance.wtd_covers || 0)
-                : (factsSummary?.variance.ptd_covers || 0);
+                ? (factsSummary?.variance?.wtd_covers || 0)
+                : (factsSummary?.variance?.ptd_covers || 0);
             const costPerCover = periodCovers > 0 ? labor.labor_cost / periodCovers : 0;
             const hasOT = labor.ot_hours > 0;
 
