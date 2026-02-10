@@ -28,7 +28,7 @@ export async function getDailySales(
       SUM(comp_total) as total_comps,
       SUM(void_total) as total_voids
     FROM public.tipsee_checks
-    WHERE location_uuid = ANY($1::text[])
+    WHERE location_uuid = ANY($1::uuid[])
       AND trading_day >= $2 AND trading_day <= $3
     GROUP BY trading_day
     ORDER BY trading_day DESC
@@ -54,7 +54,7 @@ export async function getSalesByCategory(
       SUM(void_value) as voids,
       SUM(price * quantity) - SUM(COALESCE(comp_total, 0)) - SUM(COALESCE(void_value, 0)) as net_sales
     FROM public.tipsee_check_items
-    WHERE location_uuid = ANY($1::text[])
+    WHERE location_uuid = ANY($1::uuid[])
       AND trading_day >= $2 AND trading_day <= $3
     GROUP BY parent_category
     ORDER BY net_sales DESC
@@ -88,7 +88,7 @@ export async function getServerPerformance(
       SELECT SUM(tip_amount) as total_tips
       FROM public.tipsee_payments WHERE check_id = c.id AND tip_amount > 0
     ) pt ON true
-    WHERE c.location_uuid = ANY($1::text[])
+    WHERE c.location_uuid = ANY($1::uuid[])
       AND c.trading_day >= $2 AND c.trading_day <= $3
     GROUP BY c.employee_name
     ORDER BY net_sales DESC
@@ -114,7 +114,7 @@ export async function getTopMenuItems(
       SUM(ci.quantity) as qty,
       SUM(ci.price * ci.quantity) as net_total
     FROM public.tipsee_check_items ci
-    WHERE ci.location_uuid = ANY($1::text[])
+    WHERE ci.location_uuid = ANY($1::uuid[])
       AND ci.trading_day >= $2 AND ci.trading_day <= $3
     GROUP BY ci.name, ci.parent_category
     ORDER BY ${orderCol} DESC
@@ -142,7 +142,7 @@ export async function getCompSummary(
         table_name,
         trading_day
       FROM public.tipsee_checks
-      WHERE location_uuid = ANY($1::text[])
+      WHERE location_uuid = ANY($1::uuid[])
         AND trading_day >= $2 AND trading_day <= $3
         AND comp_total > 0
     )
@@ -181,7 +181,7 @@ export async function getLaborSummary(
         COALESCE(hourly_wage, 0) / 100
       ), 0)::numeric, 2) as labor_cost
     FROM public.tipsee_7shifts_punches
-    WHERE location_uuid = ANY($1::text[])
+    WHERE location_uuid = ANY($1::uuid[])
       AND clocked_in::date >= $2::date AND clocked_in::date <= $3::date
       AND clocked_out IS NOT NULL
       AND deleted IS NOT TRUE
@@ -212,7 +212,7 @@ export async function getLaborSummary(
       WHERE user_id = p.user_id AND effective_date <= p.clocked_in::date
       ORDER BY effective_date DESC LIMIT 1
     ) w ON true
-    WHERE p.location_uuid = ANY($1::text[])
+    WHERE p.location_uuid = ANY($1::uuid[])
       AND p.clocked_in::date >= $2::date AND p.clocked_in::date <= $3::date
       AND p.clocked_out IS NOT NULL
       AND p.is_deleted IS NOT TRUE
@@ -243,7 +243,7 @@ export async function getReservations(
       status,
       date as reservation_date
     FROM public.full_reservations
-    WHERE location_uuid = ANY($1::text[])
+    WHERE location_uuid = ANY($1::uuid[])
       AND date >= $2 AND date <= $3
       AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'CONFIRMED', 'PENDING')
     ORDER BY is_vip DESC, total_payment DESC
@@ -280,7 +280,7 @@ export async function getPaymentDetails(
       ORDER BY (cc_name IS NOT NULL AND cc_name != '') DESC, tip_amount DESC NULLS LAST, amount DESC
       LIMIT 1
     ) p ON true
-    WHERE c.location_uuid = ANY($1::text[])
+    WHERE c.location_uuid = ANY($1::uuid[])
       AND c.trading_day >= $2 AND c.trading_day <= $3
       AND c.revenue_total > 0
     ORDER BY c.revenue_total DESC
@@ -301,7 +301,7 @@ export async function getLogbook(
   const result = await pool.query(
     `SELECT *
     FROM public.tipsee_daily_logbook
-    WHERE location_uuid = ANY($1::text[])
+    WHERE location_uuid = ANY($1::uuid[])
       AND logbook_date >= $2 AND logbook_date <= $3
     ORDER BY logbook_date DESC
     LIMIT $4`,
