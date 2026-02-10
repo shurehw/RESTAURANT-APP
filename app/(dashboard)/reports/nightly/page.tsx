@@ -571,10 +571,10 @@ export default function NightlyReportPage() {
           setCompNotes(notesData.notes || {});
         }
 
-        // NON-BLOCKING: Fetch facts asynchronously (14 Supabase queries, can take time)
+        // NON-BLOCKING: Fetch facts asynchronously (optimized: 12-20 queries depending on view mode)
         setLoadingFacts(true);
         setFactsError(null);
-        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}&view=${viewMode}`, { credentials: 'include' })
           .then(res => {
             if (!res.ok) {
               throw new Error(`Facts API returned ${res.status}`);
@@ -697,6 +697,48 @@ export default function NightlyReportPage() {
     }
     fetchReport();
   }, [date, locationUuid, selectedVenue?.id, selectedVenue?.name, isAllVenues, mappings.length]);
+
+  // Refetch facts when view mode changes (WTD/PTD need different aggregations)
+  useEffect(() => {
+    if (!selectedVenue?.id || !date || !report) return;
+
+    setLoadingFacts(true);
+    setFactsError(null);
+    fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}&view=${viewMode}`, { credentials: 'include' })
+      .then(res => {
+        if (!res.ok) throw new Error(`Facts API returned ${res.status}`);
+        return res.json();
+      })
+      .then(factsData => {
+        if (factsData?.has_data) {
+          setFactsSummary({
+            ...factsData.summary,
+            labor: factsData.labor,
+            forecast: factsData.forecast,
+            variance: factsData.variance,
+            servers_wtd: factsData.servers_wtd,
+            servers_ptd: factsData.servers_ptd,
+            categories_wtd: factsData.categories_wtd,
+            categories_ptd: factsData.categories_ptd,
+            items_wtd: factsData.items_wtd,
+            items_ptd: factsData.items_ptd,
+            labor_wtd: factsData.labor_wtd,
+            labor_ptd: factsData.labor_ptd,
+            fiscal: factsData.fiscal,
+          });
+          setFactsError(null);
+        } else {
+          setFactsSummary(null);
+          setFactsError('No fact data available for this date');
+        }
+      })
+      .catch(err => {
+        console.error('Facts fetch error:', err);
+        setFactsError(err.message || 'Failed to load analytics data');
+        setFactsSummary(null);
+      })
+      .finally(() => setLoadingFacts(false));
+  }, [viewMode, selectedVenue?.id, date, report]);
 
   function changeDate(days: number) {
     const d = new Date(date);
@@ -824,9 +866,8 @@ export default function NightlyReportPage() {
       {/* Report Content */}
       {!loading && !error && report && (
         <>
-          {/* Executive Summary - Variance Block */}
-          {factsSummary?.variance && (
-            <Card className="bg-muted/30 border-brass/20">
+          {/* Executive Summary - Always show, variance optional */}
+          <Card className="bg-muted/30 border-brass/20">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
@@ -897,10 +938,10 @@ export default function NightlyReportPage() {
                       if (!comparison || comparison === 0) return null;
                       return ((actual - comparison) / comparison) * 100;
                     };
-                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary.variance?.sdlw_net_sales);
-                    const sdlySalesPct = calcVar(liveNetSales, factsSummary.variance?.sdly_net_sales);
-                    const sdlwCoversPct = calcVar(liveCovers, factsSummary.variance?.sdlw_covers);
-                    const sdlyCoversPct = calcVar(liveCovers, factsSummary.variance?.sdly_covers);
+                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdlw_net_sales);
+                    const sdlySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdly_net_sales);
+                    const sdlwCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdlw_covers);
+                    const sdlyCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdly_covers);
 
                     return (
                       <>
@@ -929,65 +970,65 @@ export default function NightlyReportPage() {
                     );
                   })()}
                   {/* SDLW context */}
-                  {factsSummary.variance?.sdlw_net_sales && (
+                  {factsSummary?.variance?.sdlw_net_sales && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance?.sdlw_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.sdlw_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">SDLW</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary.variance?.sdlw_covers} covers
+                        {factsSummary?.variance?.sdlw_covers} covers
                       </div>
                     </div>
                   )}
                   {/* SDLY context */}
-                  {factsSummary.variance?.sdly_net_sales && (
+                  {factsSummary?.variance?.sdly_net_sales && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance?.sdly_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.sdly_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">SDLY</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary.variance?.sdly_covers} covers
+                        {factsSummary?.variance?.sdly_covers} covers
                       </div>
                     </div>
                   )}
                   {/* WTD (Week-to-Date) - Calendar week Mon→Today */}
-                  {factsSummary.variance?.wtd_net_sales != null && factsSummary.variance?.wtd_net_sales > 0 && (
+                  {factsSummary?.variance?.wtd_net_sales != null && factsSummary?.variance?.wtd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.variance?.wtd_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.wtd_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">WTD</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance?.wtd_covers || 0)} covers
+                        {formatNumber(factsSummary?.variance?.wtd_covers || 0)} covers
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance?.vs_wtd_pct} label="$" />
-                        <VarianceBadge value={factsSummary.variance?.vs_wtd_covers_pct} label="cvrs" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_wtd_pct} label="$" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_wtd_covers_pct} label="cvrs" />
                       </div>
                     </div>
                   )}
                   {/* PTD (Period-to-Date) - Fiscal period start→Today */}
-                  {factsSummary.variance?.ptd_net_sales != null && factsSummary.variance?.ptd_net_sales > 0 && (
+                  {factsSummary?.variance?.ptd_net_sales != null && factsSummary?.variance?.ptd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.variance?.ptd_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.ptd_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">PTD</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance?.ptd_covers || 0)} covers
+                        {formatNumber(factsSummary?.variance?.ptd_covers || 0)} covers
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance?.vs_ptd_pct} label="$" />
-                        <VarianceBadge value={factsSummary.variance?.vs_ptd_covers_pct} label="cvrs" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_ptd_pct} label="$" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_ptd_covers_pct} label="cvrs" />
                       </div>
                     </div>
                   )}
                   {/* Labor efficiency preview */}
                   {(() => {
                     const laborPreview = viewMode === 'nightly'
-                      ? factsSummary.labor
+                      ? factsSummary?.labor
                       : viewMode === 'wtd'
                         ? factsSummary?.labor_wtd
                         : factsSummary?.labor_ptd;
@@ -1006,10 +1047,67 @@ export default function NightlyReportPage() {
                       </div>
                     );
                   })()}
+                  {/* Food/Bev Split - moved from Summary Stats */}
+                  {(() => {
+                    const categories = viewMode === 'nightly'
+                      ? (report.salesByCategory || [])
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.categories_wtd || [])
+                        : (factsSummary?.categories_ptd || []);
+
+                    const isBevCategory = (cat: string) => {
+                      const lower = (cat || '').toLowerCase();
+                      return lower.includes('bev') || lower.includes('wine') ||
+                             lower.includes('beer') || lower.includes('liquor') ||
+                             lower.includes('cocktail');
+                    };
+
+                    const foodGross = categories
+                      .filter((c: any) => !isBevCategory(c.category))
+                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+                    const bevGross = categories
+                      .filter((c: any) => isBevCategory(c.category))
+                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+
+                    const totalCategoryGross = foodGross + bevGross;
+                    const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
+                    const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
+
+                    const actualNetSales = viewMode === 'nightly'
+                      ? (report.summary.net_sales || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance?.wtd_net_sales || 0)
+                        : (factsSummary?.variance?.ptd_net_sales || 0);
+
+                    const foodSales = actualNetSales * (foodPct / 100);
+                    const bevSales = actualNetSales * (bevPct / 100);
+
+                    return (
+                      <>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums">
+                            {formatCurrency(foodSales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Food Sales</div>
+                          <div className="text-xs text-muted-foreground">
+                            {foodPct.toFixed(1)}% mix
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums">
+                            {formatCurrency(bevSales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Bev Sales</div>
+                          <div className="text-xs text-muted-foreground">
+                            {bevPct.toFixed(1)}% mix
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
-          )}
 
           {/* Revenue Attestation — inline after revenue summary */}
           {att.attestation && (
@@ -1023,95 +1121,6 @@ export default function NightlyReportPage() {
             </div>
           )}
 
-          {/* Summary Stats - Single Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              label="Avg/Cover"
-              value={formatCurrency(
-                report.summary.total_covers > 0
-                  ? report.summary.net_sales / report.summary.total_covers
-                  : 0
-              )}
-              icon={<TrendingUp className="h-5 w-5 text-sage" />}
-            />
-            <StatCard
-              label="Comp %"
-              value={`${report.summary.net_sales > 0 ? ((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1) : '0.0'}%`}
-              icon={<Gift className="h-5 w-5 text-error" />}
-            />
-            {/* Food/Bev calculated from salesByCategory (live TipSee data) */}
-            {(() => {
-              // Select category data based on view mode
-              const categories = viewMode === 'nightly'
-                ? (report.salesByCategory || [])
-                : viewMode === 'wtd'
-                  ? (factsSummary?.categories_wtd || [])
-                  : (factsSummary?.categories_ptd || []);
-
-              const isBevCategory = (cat: string) => {
-                const lower = (cat || '').toLowerCase();
-                return lower.includes('bev') || lower.includes('wine') ||
-                       lower.includes('beer') || lower.includes('liquor') ||
-                       lower.includes('cocktail');
-              };
-
-              const foodGross = categories
-                .filter((c: { category: string; net_sales: number }) => !isBevCategory(c.category))
-                .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
-              const bevGross = categories
-                .filter((c: { category: string; net_sales: number }) => isBevCategory(c.category))
-                .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
-
-              // Calculate mix percentage (food vs bev)
-              const totalCategoryGross = foodGross + bevGross;
-              const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
-              const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
-
-              // Use period-appropriate net sales
-              const actualNetSales = viewMode === 'nightly'
-                ? (report.summary.net_sales || 0)
-                : viewMode === 'wtd'
-                  ? (factsSummary?.variance?.wtd_net_sales || 0)
-                  : (factsSummary?.variance?.ptd_net_sales || 0);
-              const foodSales = actualNetSales * (foodPct / 100);
-              const bevSales = actualNetSales * (bevPct / 100);
-
-              return (
-                <>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-md bg-muted">
-                        <UtensilsCrossed className="h-5 w-5 text-brass" />
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold tabular-nums">
-                          {formatCurrency(foodSales)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          FOOD · {foodPct.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-md bg-muted">
-                        <DollarSign className="h-5 w-5 text-sage" />
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold tabular-nums">
-                          {formatCurrency(bevSales)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          BEVERAGE · {bevPct.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </>
-              );
-            })()}
-          </div>
 
           {/* Labor & Productivity */}
           {(() => {
@@ -1820,13 +1829,28 @@ export default function NightlyReportPage() {
                            lower.includes('cocktail');
                   };
 
+                  const isExcludedCategory = (cat: string) => {
+                    const lower = cat.toLowerCase();
+                    return lower.includes('service charge') ||
+                           lower.includes('other') ||
+                           lower === 'other';
+                  };
+
                   // Handle both TipSee data (parent_category) and facts data (category)
-                  const foodItems = menuItems.filter(item =>
-                    !isBeverage((item as any).parent_category || (item as any).category || '')
-                  );
-                  const bevItems = menuItems.filter(item =>
-                    isBeverage((item as any).parent_category || (item as any).category || '')
-                  );
+                  // Filter out service charges and "other", then limit to top 5 of each
+                  const foodItems = menuItems
+                    .filter(item => {
+                      const category = (item as any).parent_category || (item as any).category || '';
+                      return !isBeverage(category) && !isExcludedCategory(category);
+                    })
+                    .slice(0, 5);
+
+                  const bevItems = menuItems
+                    .filter(item => {
+                      const category = (item as any).parent_category || (item as any).category || '';
+                      return isBeverage(category) && !isExcludedCategory(category);
+                    })
+                    .slice(0, 5);
 
                     return (
                       <table className="table-opsos">

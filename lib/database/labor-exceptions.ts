@@ -18,6 +18,19 @@ import {
 import type { LaborBounds } from './system-bounds';
 
 // ══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Structural trigger thresholds (from Layer 0 system bounds)
+ */
+const laborBounds = {
+  STRUCTURAL_EXCEPTIONS_7D: 3,
+  STRUCTURAL_EXCEPTIONS_14D: 5,
+  STRUCTURAL_CRITICAL_7D: 2,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // TYPES
 // ══════════════════════════════════════════════════════════════════════════
 

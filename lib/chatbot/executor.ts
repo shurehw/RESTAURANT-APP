@@ -250,7 +250,12 @@ export async function executeTool(
     if (typeof error === 'string') {
       return `Error: ${error}`;
     }
-    console.error(`[chatbot] Tool ${toolName} error:`, error);
-    return `Error executing ${toolName}. Please try a different query.`;
+    // Extract message from Error objects, Supabase errors ({ message }), or anything else
+    const msg = error instanceof Error
+      ? error.message
+      : (error as any)?.message || String(error);
+    console.error(`[chatbot] Tool ${toolName} error:`, msg, error);
+    // Surface the actual error to the AI so it can give useful diagnostics
+    return `Error executing ${toolName}: ${msg}`;
   }
 }
