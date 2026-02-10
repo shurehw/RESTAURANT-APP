@@ -33,12 +33,21 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 2. Determine Sync Date ──
+  // Allow manual date override via query param for backfilling
   // Default: yesterday (reports are available next day)
-  const syncDate = new Date();
-  syncDate.setDate(syncDate.getDate() - 1);
-  const businessDate = syncDate.toISOString().split('T')[0];
+  const searchParams = request.nextUrl?.searchParams;
+  const dateParam = searchParams?.get('date');
 
-  console.log(`[sync-tipsee] Starting sync for ${businessDate}`);
+  let businessDate: string;
+  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+    businessDate = dateParam;
+    console.log(`[sync-tipsee] Manual sync requested for ${businessDate}`);
+  } else {
+    const syncDate = new Date();
+    syncDate.setDate(syncDate.getDate() - 1);
+    businessDate = syncDate.toISOString().split('T')[0];
+    console.log(`[sync-tipsee] Starting automatic sync for ${businessDate}`);
+  }
 
   // ── 3. Create Sync Log Entry ──
   const supabase = getServiceClient();
