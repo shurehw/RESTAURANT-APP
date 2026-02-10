@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   try {
     // ── 4. Fetch Active Venue Mappings ──
     const { data: mappings, error: mappingsError } = await (supabase as any)
-      .from('venue_tipsee_mappings')
+      .from('venue_tipsee_mapping')
       .select(`
         venue_id,
         tipsee_location_uuid,
