@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Send, Bot, User, Loader2, X, Maximize2, Minimize2, MessageCircle } from 'lucide-react';
+import { Send, Bot, User, Loader2, X, Maximize2, Minimize2, MessageCircle, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
 interface Message {
@@ -11,15 +11,15 @@ interface Message {
   content: string;
 }
 
+const INITIAL_MESSAGE: Message = {
+  role: 'assistant',
+  content: 'Hi! I can query your POS data directly — ask about sales, servers, comps, menu items, and more.',
+};
+
 export function FloatingChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Hi! I can query your POS data directly — ask about sales, servers, comps, menu items, and more.',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -76,6 +76,11 @@ export function FloatingChatWidget() {
     }
   };
 
+  const handleNewChat = () => {
+    setMessages([INITIAL_MESSAGE]);
+    setInput('');
+  };
+
   if (!isOpen) {
     return (
       <button
@@ -104,6 +109,17 @@ export function FloatingChatWidget() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {messages.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleNewChat}
+                  disabled={loading}
+                  title="New Chat"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </Button>
+              )}
               <Link href="/assistant">
                 <Button variant="ghost" size="sm">
                   Open Full Page
@@ -212,6 +228,17 @@ export function FloatingChatWidget() {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          {messages.length > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNewChat}
+              disabled={loading}
+              title="New Chat"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
