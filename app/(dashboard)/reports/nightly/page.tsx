@@ -866,9 +866,8 @@ export default function NightlyReportPage() {
       {/* Report Content */}
       {!loading && !error && report && (
         <>
-          {/* Executive Summary - Variance Block */}
-          {factsSummary?.variance && (
-            <Card className="bg-muted/30 border-brass/20">
+          {/* Executive Summary - Always show, variance optional */}
+          <Card className="bg-muted/30 border-brass/20">
               <CardContent className="py-4">
                 <div className="flex items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
@@ -1051,7 +1050,6 @@ export default function NightlyReportPage() {
                 </div>
               </CardContent>
             </Card>
-          )}
 
           {/* Revenue Attestation — inline after revenue summary */}
           {att.attestation && (
