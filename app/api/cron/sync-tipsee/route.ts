@@ -32,11 +32,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── 2. Determine Sync Date ──
+  // ── 2. Determine Sync Date & Venue Filter ──
   // Allow manual date override via query param for backfilling
-  // Default: yesterday (reports are available next day)
+  // Allow venue filter via query param for parallel processing
+  // Default: yesterday (reports are available next day), all venues
   const searchParams = request.nextUrl?.searchParams;
   const dateParam = searchParams?.get('date');
+  const venueParam = searchParams?.get('venue'); // e.g., "nice-guy" or venue UUID
 
   let businessDate: string;
   if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
@@ -47,6 +49,10 @@ export async function POST(request: NextRequest) {
     syncDate.setDate(syncDate.getDate() - 1);
     businessDate = syncDate.toISOString().split('T')[0];
     console.log(`[sync-tipsee] Starting automatic sync for ${businessDate}`);
+  }
+
+  if (venueParam) {
+    console.log(`[sync-tipsee] Venue filter: ${venueParam}`);
   }
 
   // ── 3. Create Sync Log Entry ──
@@ -103,7 +109,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const venues: VenueMapping[] = mappings
+    let venues: VenueMapping[] = mappings
       .filter((m: any) => m.venues && m.tipsee_location_uuid)
       .map((m: any) => ({
         id: m.venue_id,
@@ -111,7 +117,33 @@ export async function POST(request: NextRequest) {
         tipsee_location_uuid: m.tipsee_location_uuid,
       }));
 
-    console.log(`[sync-tipsee] Found ${venues.length} venues to sync`);
+    // Apply venue filter if specified
+    if (venueParam) {
+      venues = venues.filter((v: VenueMapping) => {
+        const slug = v.name.toLowerCase().replace(/\s+/g, '-');
+        return (
+          v.tipsee_location_uuid === venueParam ||
+          v.id === venueParam ||
+          slug === venueParam ||
+          v.name.toLowerCase().includes(venueParam.toLowerCase())
+        );
+      });
+
+      if (venues.length === 0) {
+        console.warn(`[sync-tipsee] No venues matched filter: ${venueParam}`);
+        await updateSyncLog(syncLogId, 'completed', 0, 0, Date.now() - t0);
+        return NextResponse.json({
+          success: true,
+          message: `No venues matched filter: ${venueParam}`,
+          venuesSynced: 0,
+          venuesFailed: 0,
+        });
+      }
+
+      console.log(`[sync-tipsee] Filtered to ${venues.length} venue(s): ${venues.map((v: VenueMapping) => v.name).join(', ')}`);
+    } else {
+      console.log(`[sync-tipsee] Found ${venues.length} venues to sync`);
+    }
 
     // ── 5. Sync Each Venue (Sequential to avoid overloading TipSee) ──
     for (const venue of venues) {
