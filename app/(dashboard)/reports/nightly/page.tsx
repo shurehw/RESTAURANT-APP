@@ -1047,6 +1047,64 @@ export default function NightlyReportPage() {
                       </div>
                     );
                   })()}
+                  {/* Food/Bev Split - moved from Summary Stats */}
+                  {(() => {
+                    const categories = viewMode === 'nightly'
+                      ? (report.salesByCategory || [])
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.categories_wtd || [])
+                        : (factsSummary?.categories_ptd || []);
+
+                    const isBevCategory = (cat: string) => {
+                      const lower = (cat || '').toLowerCase();
+                      return lower.includes('bev') || lower.includes('wine') ||
+                             lower.includes('beer') || lower.includes('liquor') ||
+                             lower.includes('cocktail');
+                    };
+
+                    const foodGross = categories
+                      .filter((c: any) => !isBevCategory(c.category))
+                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+                    const bevGross = categories
+                      .filter((c: any) => isBevCategory(c.category))
+                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+
+                    const totalCategoryGross = foodGross + bevGross;
+                    const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
+                    const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
+
+                    const actualNetSales = viewMode === 'nightly'
+                      ? (report.summary.net_sales || 0)
+                      : viewMode === 'wtd'
+                        ? (factsSummary?.variance?.wtd_net_sales || 0)
+                        : (factsSummary?.variance?.ptd_net_sales || 0);
+
+                    const foodSales = actualNetSales * (foodPct / 100);
+                    const bevSales = actualNetSales * (bevPct / 100);
+
+                    return (
+                      <>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums">
+                            {formatCurrency(foodSales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Food Sales</div>
+                          <div className="text-xs text-muted-foreground">
+                            {foodPct.toFixed(1)}% mix
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums">
+                            {formatCurrency(bevSales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Bev Sales</div>
+                          <div className="text-xs text-muted-foreground">
+                            {bevPct.toFixed(1)}% mix
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -1063,95 +1121,6 @@ export default function NightlyReportPage() {
             </div>
           )}
 
-          {/* Summary Stats - Single Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard
-              label="Avg/Cover"
-              value={formatCurrency(
-                report.summary.total_covers > 0
-                  ? report.summary.net_sales / report.summary.total_covers
-                  : 0
-              )}
-              icon={<TrendingUp className="h-5 w-5 text-sage" />}
-            />
-            <StatCard
-              label="Comp %"
-              value={`${report.summary.net_sales > 0 ? ((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1) : '0.0'}%`}
-              icon={<Gift className="h-5 w-5 text-error" />}
-            />
-            {/* Food/Bev calculated from salesByCategory (live TipSee data) */}
-            {(() => {
-              // Select category data based on view mode
-              const categories = viewMode === 'nightly'
-                ? (report.salesByCategory || [])
-                : viewMode === 'wtd'
-                  ? (factsSummary?.categories_wtd || [])
-                  : (factsSummary?.categories_ptd || []);
-
-              const isBevCategory = (cat: string) => {
-                const lower = (cat || '').toLowerCase();
-                return lower.includes('bev') || lower.includes('wine') ||
-                       lower.includes('beer') || lower.includes('liquor') ||
-                       lower.includes('cocktail');
-              };
-
-              const foodGross = categories
-                .filter((c: { category: string; net_sales: number }) => !isBevCategory(c.category))
-                .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
-              const bevGross = categories
-                .filter((c: { category: string; net_sales: number }) => isBevCategory(c.category))
-                .reduce((sum: number, c: { net_sales: number }) => sum + (Number(c.net_sales) || 0), 0);
-
-              // Calculate mix percentage (food vs bev)
-              const totalCategoryGross = foodGross + bevGross;
-              const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
-              const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
-
-              // Use period-appropriate net sales
-              const actualNetSales = viewMode === 'nightly'
-                ? (report.summary.net_sales || 0)
-                : viewMode === 'wtd'
-                  ? (factsSummary?.variance?.wtd_net_sales || 0)
-                  : (factsSummary?.variance?.ptd_net_sales || 0);
-              const foodSales = actualNetSales * (foodPct / 100);
-              const bevSales = actualNetSales * (bevPct / 100);
-
-              return (
-                <>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-md bg-muted">
-                        <UtensilsCrossed className="h-5 w-5 text-brass" />
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold tabular-nums">
-                          {formatCurrency(foodSales)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          FOOD · {foodPct.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-md bg-muted">
-                        <DollarSign className="h-5 w-5 text-sage" />
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold tabular-nums">
-                          {formatCurrency(bevSales)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          BEVERAGE · {bevPct.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </>
-              );
-            })()}
-          </div>
 
           {/* Labor & Productivity */}
           {(() => {
@@ -1860,13 +1829,28 @@ export default function NightlyReportPage() {
                            lower.includes('cocktail');
                   };
 
+                  const isExcludedCategory = (cat: string) => {
+                    const lower = cat.toLowerCase();
+                    return lower.includes('service charge') ||
+                           lower.includes('other') ||
+                           lower === 'other';
+                  };
+
                   // Handle both TipSee data (parent_category) and facts data (category)
-                  const foodItems = menuItems.filter(item =>
-                    !isBeverage((item as any).parent_category || (item as any).category || '')
-                  );
-                  const bevItems = menuItems.filter(item =>
-                    isBeverage((item as any).parent_category || (item as any).category || '')
-                  );
+                  // Filter out service charges and "other", then limit to top 5 of each
+                  const foodItems = menuItems
+                    .filter(item => {
+                      const category = (item as any).parent_category || (item as any).category || '';
+                      return !isBeverage(category) && !isExcludedCategory(category);
+                    })
+                    .slice(0, 5);
+
+                  const bevItems = menuItems
+                    .filter(item => {
+                      const category = (item as any).parent_category || (item as any).category || '';
+                      return isBeverage(category) && !isExcludedCategory(category);
+                    })
+                    .slice(0, 5);
 
                     return (
                       <table className="table-opsos">
