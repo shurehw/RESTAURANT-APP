@@ -204,7 +204,8 @@ export function detectLaborExceptions(
 
   const requiresStructuralReview = checkStructuralTriggers(
     exceptions,
-    recentExceptions || []
+    recentExceptions || [],
+    laborBounds
   );
 
   if (requiresStructuralReview) {
@@ -298,7 +299,8 @@ function getDiagnostic(
  */
 function checkStructuralTriggers(
   currentExceptions: LaborException[],
-  recentExceptions: { date: string; critical: boolean }[]
+  recentExceptions: { date: string; critical: boolean }[],
+  laborBounds: LaborBounds
 ): boolean {
   // Current day has critical → add to recent
   const hasCriticalToday = currentExceptions.some(
