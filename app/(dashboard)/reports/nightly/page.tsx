@@ -938,10 +938,10 @@ export default function NightlyReportPage() {
                       if (!comparison || comparison === 0) return null;
                       return ((actual - comparison) / comparison) * 100;
                     };
-                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary.variance.sdlw_net_sales);
-                    const sdlySalesPct = calcVar(liveNetSales, factsSummary.variance.sdly_net_sales);
-                    const sdlwCoversPct = calcVar(liveCovers, factsSummary.variance.sdlw_covers);
-                    const sdlyCoversPct = calcVar(liveCovers, factsSummary.variance.sdly_covers);
+                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdlw_net_sales);
+                    const sdlySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdly_net_sales);
+                    const sdlwCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdlw_covers);
+                    const sdlyCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdly_covers);
 
                     return (
                       <>
@@ -970,65 +970,65 @@ export default function NightlyReportPage() {
                     );
                   })()}
                   {/* SDLW context */}
-                  {factsSummary.variance.sdlw_net_sales && (
+                  {factsSummary?.variance?.sdlw_net_sales && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance.sdlw_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.sdlw_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">SDLW</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary.variance.sdlw_covers} covers
+                        {factsSummary?.variance?.sdlw_covers} covers
                       </div>
                     </div>
                   )}
                   {/* SDLY context */}
-                  {factsSummary.variance.sdly_net_sales && (
+                  {factsSummary?.variance?.sdly_net_sales && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance.sdly_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.sdly_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">SDLY</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary.variance.sdly_covers} covers
+                        {factsSummary?.variance?.sdly_covers} covers
                       </div>
                     </div>
                   )}
                   {/* WTD (Week-to-Date) - Calendar week Mon→Today */}
-                  {factsSummary.variance.wtd_net_sales != null && factsSummary.variance.wtd_net_sales > 0 && (
+                  {factsSummary?.variance?.wtd_net_sales != null && factsSummary?.variance?.wtd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.variance.wtd_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.wtd_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">WTD</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance.wtd_covers || 0)} covers
+                        {formatNumber(factsSummary?.variance?.wtd_covers || 0)} covers
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance.vs_wtd_pct} label="$" />
-                        <VarianceBadge value={factsSummary.variance.vs_wtd_covers_pct} label="cvrs" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_wtd_pct} label="$" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_wtd_covers_pct} label="cvrs" />
                       </div>
                     </div>
                   )}
                   {/* PTD (Period-to-Date) - Fiscal period start→Today */}
-                  {factsSummary.variance.ptd_net_sales != null && factsSummary.variance.ptd_net_sales > 0 && (
+                  {factsSummary?.variance?.ptd_net_sales != null && factsSummary?.variance?.ptd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.variance.ptd_net_sales)}
+                        {formatCurrency(factsSummary?.variance?.ptd_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">PTD</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance.ptd_covers || 0)} covers
+                        {formatNumber(factsSummary?.variance?.ptd_covers || 0)} covers
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance.vs_ptd_pct} label="$" />
-                        <VarianceBadge value={factsSummary.variance.vs_ptd_covers_pct} label="cvrs" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_ptd_pct} label="$" />
+                        <VarianceBadge value={factsSummary?.variance?.vs_ptd_covers_pct} label="cvrs" />
                       </div>
                     </div>
                   )}
                   {/* Labor efficiency preview */}
                   {(() => {
                     const laborPreview = viewMode === 'nightly'
-                      ? factsSummary.labor
+                      ? factsSummary?.labor
                       : viewMode === 'wtd'
                         ? factsSummary?.labor_wtd
                         : factsSummary?.labor_ptd;
