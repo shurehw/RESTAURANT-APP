@@ -16,7 +16,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchCompExceptions } from '@/lib/database/tipsee';
 import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
-import { writeSignals } from '@/lib/feedback/signal-writer';
+import { writeSignals, type SignalInput } from '@/lib/feedback/signal-writer';
 import { generateCompFeedback } from '@/lib/feedback/feedback-generator';
 
 export const dynamic = 'force-dynamic';
@@ -40,10 +40,10 @@ export async function POST(request: NextRequest) {
     const orgId = 'f59afbc0-7dc7-4fcc-bb98-9d82c8bb5e5e'; // h.wood Group
 
     // Fetch comp settings for this venue
-    const settings = await getCompSettingsForVenue(orgId, venueId);
+    const settings = await getCompSettingsForVenue(venueId);
 
     // Detect comp exceptions using existing logic
-    const exceptions = await fetchCompExceptions(date, venueId, settings);
+    const exceptions = await fetchCompExceptions(date, venueId, settings ?? undefined);
 
     if (exceptions.exceptions.length === 0) {
       return NextResponse.json({
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert exceptions to signals
-    const signals = exceptions.exceptions.map(exc => {
+    const signals: SignalInput[] = exceptions.exceptions.map(exc => {
       let signalType = 'comp_unapproved_reason';
       let severity: 'info' | 'warning' | 'critical' = 'warning';
 
@@ -86,37 +86,37 @@ export async function POST(request: NextRequest) {
         entityId: exc.check_id,
         payload: {
           check_id: exc.check_id,
-          table: exc.table,
+          table_name: exc.table_name,
           server: exc.server,
-          covers: exc.covers,
           comp_total: exc.comp_total,
           check_total: exc.check_total,
           reason: exc.reason,
-          comp_pct: exc.comp_pct,
-          threshold: exc.threshold,
+          message: exc.message,
+          details: exc.details,
         },
       };
     });
 
-    // Add daily budget signal if applicable
-    if (exceptions.summary.dailyBudgetExceeded) {
+    // Add daily budget signal if comp % is at warning or critical level
+    if (exceptions.summary.comp_pct_status !== 'ok') {
       signals.push({
         orgId,
         venueId,
         businessDate: date,
-        domain: 'revenue',
+        domain: 'revenue' as const,
         signalType: 'comp_daily_budget_exceeded',
-        source: 'rule',
-        severity: exceptions.summary.comp_pct >= 3 ? 'critical' : 'warning',
+        source: 'rule' as const,
+        severity: exceptions.summary.comp_pct_status === 'critical' ? 'critical' : 'warning',
         impactValue: exceptions.summary.total_comps,
         impactUnit: 'usd',
+        entityType: 'check',
+        entityId: `daily-${date}-${venueId}`,
         payload: {
           comp_pct: exceptions.summary.comp_pct,
           total_comps: exceptions.summary.total_comps,
           net_sales: exceptions.summary.net_sales,
-          threshold: exceptions.summary.dailyBudgetThreshold,
+          comp_pct_status: exceptions.summary.comp_pct_status,
         },
-        dedupeKey: `revenue:comp_daily_budget_exceeded:${date}:${venueId}`,
       });
     }
 
