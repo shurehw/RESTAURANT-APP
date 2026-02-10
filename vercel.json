@@ -1,15 +1,87 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-tipsee",
+      "path": "/api/cron/sync-tipsee?venue=nice-guy",
       "schedule": "*/15 11-23 * * *"
     },
     {
-      "path": "/api/cron/sync-tipsee",
+      "path": "/api/cron/sync-tipsee?venue=delilah-la",
+      "schedule": "*/15 11-23 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=keys",
+      "schedule": "*/15 11-23 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=poppy",
+      "schedule": "*/15 11-23 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=bird-streets",
+      "schedule": "*/15 11-23 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=delilah-miami",
+      "schedule": "*/15 11-23 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=didi",
+      "schedule": "*/15 11-23 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=nice-guy",
       "schedule": "*/15 0-2 * * *"
     },
     {
-      "path": "/api/cron/sync-tipsee",
+      "path": "/api/cron/sync-tipsee?venue=delilah-la",
+      "schedule": "*/15 0-2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=keys",
+      "schedule": "*/15 0-2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=poppy",
+      "schedule": "*/15 0-2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=bird-streets",
+      "schedule": "*/15 0-2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=delilah-miami",
+      "schedule": "*/15 0-2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=didi",
+      "schedule": "*/15 0-2 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=nice-guy",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=delilah-la",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=keys",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=poppy",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=bird-streets",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=delilah-miami",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tipsee?venue=didi",
       "schedule": "0 3 * * *"
     }
   ]
