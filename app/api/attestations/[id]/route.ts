@@ -10,9 +10,9 @@ import { getServiceClient } from '@/lib/supabase/service';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const attestationId = params.id;
+  const { id: attestationId } = await params;
   const supabase = getServiceClient();
 
   try {

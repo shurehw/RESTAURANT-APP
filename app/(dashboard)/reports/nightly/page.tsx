@@ -38,6 +38,8 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
+  Activity,
+  ArrowUpRight,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
 import { RevenueAttestation } from '@/components/attestation/RevenueAttestation';
@@ -842,9 +844,7 @@ export default function NightlyReportPage() {
                         backgroundColor:
                           healthData.status === 'GREEN' ? '#10b98120' :
                           healthData.status === 'YELLOW' ? '#f5970620' :
-                          healthData.status === 'ORANGE' ? '#f97316
-
-20' :
+                          healthData.status === 'ORANGE' ? '#f9731620' :
                           '#ef444420',
                         border: `1.5px solid ${
                           healthData.status === 'GREEN' ? '#10b981' :
@@ -886,21 +886,21 @@ export default function NightlyReportPage() {
                     const liveNetSales = viewMode === 'nightly'
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
-                        ? (factsSummary?.variance.wtd_net_sales || 0)
-                        : (factsSummary?.variance.ptd_net_sales || 0);
+                        ? (factsSummary?.variance?.wtd_net_sales || 0)
+                        : (factsSummary?.variance?.ptd_net_sales || 0);
                     const liveCovers = viewMode === 'nightly'
                       ? (report.summary.total_covers || 0)
                       : viewMode === 'wtd'
-                        ? (factsSummary?.variance.wtd_covers || 0)
-                        : (factsSummary?.variance.ptd_covers || 0);
+                        ? (factsSummary?.variance?.wtd_covers || 0)
+                        : (factsSummary?.variance?.ptd_covers || 0);
                     const calcVar = (actual: number, comparison: number | null | undefined) => {
                       if (!comparison || comparison === 0) return null;
                       return ((actual - comparison) / comparison) * 100;
                     };
-                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary.variance.sdlw_net_sales);
-                    const sdlySalesPct = calcVar(liveNetSales, factsSummary.variance.sdly_net_sales);
-                    const sdlwCoversPct = calcVar(liveCovers, factsSummary.variance.sdlw_covers);
-                    const sdlyCoversPct = calcVar(liveCovers, factsSummary.variance.sdly_covers);
+                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary.variance?.sdlw_net_sales);
+                    const sdlySalesPct = calcVar(liveNetSales, factsSummary.variance?.sdly_net_sales);
+                    const sdlwCoversPct = calcVar(liveCovers, factsSummary.variance?.sdlw_covers);
+                    const sdlyCoversPct = calcVar(liveCovers, factsSummary.variance?.sdly_covers);
 
                     return (
                       <>
@@ -929,58 +929,58 @@ export default function NightlyReportPage() {
                     );
                   })()}
                   {/* SDLW context */}
-                  {factsSummary.variance.sdlw_net_sales && (
+                  {factsSummary.variance?.sdlw_net_sales && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance.sdlw_net_sales)}
+                        {formatCurrency(factsSummary.variance?.sdlw_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">SDLW</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary.variance.sdlw_covers} covers
+                        {factsSummary.variance?.sdlw_covers} covers
                       </div>
                     </div>
                   )}
                   {/* SDLY context */}
-                  {factsSummary.variance.sdly_net_sales && (
+                  {factsSummary.variance?.sdly_net_sales && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance.sdly_net_sales)}
+                        {formatCurrency(factsSummary.variance?.sdly_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">SDLY</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary.variance.sdly_covers} covers
+                        {factsSummary.variance?.sdly_covers} covers
                       </div>
                     </div>
                   )}
                   {/* WTD (Week-to-Date) - Calendar week Mon→Today */}
-                  {factsSummary.variance.wtd_net_sales != null && factsSummary.variance.wtd_net_sales > 0 && (
+                  {factsSummary.variance?.wtd_net_sales != null && factsSummary.variance?.wtd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.variance.wtd_net_sales)}
+                        {formatCurrency(factsSummary.variance?.wtd_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">WTD</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance.wtd_covers || 0)} covers
+                        {formatNumber(factsSummary.variance?.wtd_covers || 0)} covers
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance.vs_wtd_pct} label="$" />
-                        <VarianceBadge value={factsSummary.variance.vs_wtd_covers_pct} label="cvrs" />
+                        <VarianceBadge value={factsSummary.variance?.vs_wtd_pct} label="$" />
+                        <VarianceBadge value={factsSummary.variance?.vs_wtd_covers_pct} label="cvrs" />
                       </div>
                     </div>
                   )}
                   {/* PTD (Period-to-Date) - Fiscal period start→Today */}
-                  {factsSummary.variance.ptd_net_sales != null && factsSummary.variance.ptd_net_sales > 0 && (
+                  {factsSummary.variance?.ptd_net_sales != null && factsSummary.variance?.ptd_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary.variance.ptd_net_sales)}
+                        {formatCurrency(factsSummary.variance?.ptd_net_sales)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">PTD</div>
                       <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance.ptd_covers || 0)} covers
+                        {formatNumber(factsSummary.variance?.ptd_covers || 0)} covers
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary.variance.vs_ptd_pct} label="$" />
-                        <VarianceBadge value={factsSummary.variance.vs_ptd_covers_pct} label="cvrs" />
+                        <VarianceBadge value={factsSummary.variance?.vs_ptd_pct} label="$" />
+                        <VarianceBadge value={factsSummary.variance?.vs_ptd_covers_pct} label="cvrs" />
                       </div>
                     </div>
                   )}
@@ -1071,8 +1071,8 @@ export default function NightlyReportPage() {
               const actualNetSales = viewMode === 'nightly'
                 ? (report.summary.net_sales || 0)
                 : viewMode === 'wtd'
-                  ? (factsSummary?.variance.wtd_net_sales || 0)
-                  : (factsSummary?.variance.ptd_net_sales || 0);
+                  ? (factsSummary?.variance?.wtd_net_sales || 0)
+                  : (factsSummary?.variance?.ptd_net_sales || 0);
               const foodSales = actualNetSales * (foodPct / 100);
               const bevSales = actualNetSales * (bevPct / 100);
 
@@ -1132,8 +1132,8 @@ export default function NightlyReportPage() {
             const periodCovers = viewMode === 'nightly'
               ? report.summary.total_covers
               : viewMode === 'wtd'
-                ? (factsSummary?.variance.wtd_covers || 0)
-                : (factsSummary?.variance.ptd_covers || 0);
+                ? (factsSummary?.variance?.wtd_covers || 0)
+                : (factsSummary?.variance?.ptd_covers || 0);
             const costPerCover = periodCovers > 0 ? labor.labor_cost / periodCovers : 0;
             const hasOT = labor.ot_hours > 0;
 
@@ -1230,8 +1230,8 @@ export default function NightlyReportPage() {
                     const netSales = viewMode === 'nightly'
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
-                        ? (factsSummary?.variance.wtd_net_sales || 0)
-                        : (factsSummary?.variance.ptd_net_sales || 0);
+                        ? (factsSummary?.variance?.wtd_net_sales || 0)
+                        : (factsSummary?.variance?.ptd_net_sales || 0);
                     // % of sales labels
                     const fohPct = netSales > 0 ? (fohCost / netSales) * 100 : 0;
                     const bohPct = netSales > 0 ? (bohCost / netSales) * 100 : 0;
@@ -1822,10 +1822,10 @@ export default function NightlyReportPage() {
 
                   // Handle both TipSee data (parent_category) and facts data (category)
                   const foodItems = menuItems.filter(item =>
-                    !isBeverage((item as any).parent_category || item.category || '')
+                    !isBeverage((item as any).parent_category || (item as any).category || '')
                   );
                   const bevItems = menuItems.filter(item =>
-                    isBeverage((item as any).parent_category || item.category || '')
+                    isBeverage((item as any).parent_category || (item as any).category || '')
                   );
 
                     return (
@@ -2195,7 +2195,7 @@ export default function NightlyReportPage() {
             date={date}
             venueName={selectedVenue?.name || ''}
             venueId={selectedVenue?.id || ''}
-            periodLabel={serverPerfTab === 'nightly' ? 'Tonight' : serverPerfTab === 'wtd' ? 'Week to Date' : 'Period to Date'}
+            periodLabel={viewMode === 'nightly' ? 'Tonight' : viewMode === 'wtd' ? 'Week to Date' : 'Period to Date'}
             isOpen={serverModalOpen}
             onClose={() => {
               setServerModalOpen(false);
