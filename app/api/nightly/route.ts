@@ -80,7 +80,7 @@ async function getCachedReport(locationUuid: string, businessDate: string): Prom
 
     // Look up venue_id from TipSee location UUID
     const { data: mapping } = await (supabase as any)
-      .from('venue_tipsee_mappings')
+      .from('venue_tipsee_mapping')
       .select('venue_id')
       .eq('tipsee_location_uuid', locationUuid)
       .eq('is_active', true)

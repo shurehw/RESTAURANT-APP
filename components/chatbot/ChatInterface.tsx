@@ -3,20 +3,20 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, RotateCcw } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
+const INITIAL_MESSAGE: Message = {
+  role: 'assistant',
+  content: 'Hello! I\'m your OpsOS assistant. I can query your POS data directly — ask me about sales, servers, menu items, comps, labor, reservations, and more.',
+};
+
 export function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Hello! I\'m your OpsOS assistant. I can query your POS data directly — ask me about sales, servers, menu items, comps, labor, reservations, and more.',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -77,8 +77,29 @@ export function ChatInterface() {
     }
   };
 
+  const handleNewChat = () => {
+    setMessages([INITIAL_MESSAGE]);
+    setInput('');
+  };
+
   return (
     <div className="flex flex-col h-full">
+      {/* Header */}
+      {messages.length > 1 && (
+        <div className="flex items-center justify-end px-6 pt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleNewChat}
+            disabled={loading}
+            className="text-xs"
+          >
+            <RotateCcw className="w-3 h-3 mr-1.5" />
+            New Chat
+          </Button>
+        </div>
+      )}
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((message, idx) => (
