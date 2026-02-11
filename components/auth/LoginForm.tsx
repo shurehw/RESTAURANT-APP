@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,8 +30,9 @@ export function LoginForm() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Redirect to dashboard
-      router.push('/');
+      // Redirect to original page (or dashboard)
+      const redirectTo = searchParams.get('redirect') || '/';
+      router.push(redirectTo);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

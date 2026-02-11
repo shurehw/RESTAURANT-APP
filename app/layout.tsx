@@ -15,8 +15,31 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "OpsOS - Restaurant Operations Platform",
-  description: "Hospitality back-office platform integrating finance, inventory, recipes, budgets, and intelligence.",
+  title: {
+    default: "OpsOS - Restaurant Operations Platform",
+    template: "%s | OpsOS",
+  },
+  description:
+    "Hospitality back-office platform integrating finance, inventory, recipes, budgets, and intelligence.",
+  metadataBase: new URL("https://opsos-restaurant-app.vercel.app"),
+  manifest: "/manifest.json",
+  themeColor: "#0f172a",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Pulse",
+  },
+  openGraph: {
+    title: "OpsOS - Restaurant Operations Platform",
+    description:
+      "Hospitality back-office platform integrating finance, inventory, recipes, budgets, and intelligence.",
+    siteName: "OpsOS",
+    type: "website",
+  },
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({
@@ -29,6 +52,11 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <Toaster />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`,
+          }}
+        />
       </body>
     </html>
   );
