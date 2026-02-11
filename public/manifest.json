@@ -1,0 +1,29 @@
+{
+  "name": "Pulse — Live Sales",
+  "short_name": "Pulse",
+  "description": "Real-time sales pace during service",
+  "start_url": "/pulse",
+  "scope": "/pulse",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icons/pulse-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/pulse-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/pulse-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
