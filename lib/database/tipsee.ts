@@ -497,6 +497,88 @@ export async function fetchTipseeLocations(): Promise<TipseeLocation[]> {
 }
 
 // ============================================================================
+// INTRA-DAY SUMMARY (lightweight, for 5-min sales pace polling)
+// ============================================================================
+
+export interface IntraDaySummary {
+  total_checks: number;
+  total_covers: number;
+  gross_sales: number;
+  net_sales: number;
+  food_sales: number;
+  beverage_sales: number;
+  comps_total: number;
+  voids_total: number;
+}
+
+/**
+ * Fetch running totals for a single business day — two lightweight queries.
+ * Query 1: check-level aggregates (checks, covers, net, comps, voids)
+ * Query 2: category-level food/bev split from check_items
+ */
+export async function fetchIntraDaySummary(
+  locationUuids: string[],
+  date: string
+): Promise<IntraDaySummary> {
+  const pool = getTipseePool();
+
+  const [summaryResult, categoryResult] = await Promise.all([
+    pool.query(
+      `SELECT
+        COUNT(*) as total_checks,
+        COALESCE(SUM(guest_count), 0) as total_covers,
+        COALESCE(SUM(sub_total), 0) as gross_sales,
+        COALESCE(SUM(revenue_total), 0) as net_sales,
+        COALESCE(SUM(comp_total), 0) as comps_total,
+        COALESCE(SUM(void_total), 0) as voids_total
+      FROM public.tipsee_checks
+      WHERE location_uuid = ANY($1) AND trading_day = $2`,
+      [locationUuids, date]
+    ),
+    pool.query(
+      `SELECT
+        CASE
+          WHEN LOWER(COALESCE(parent_category, '')) LIKE '%bev%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%wine%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%beer%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%liquor%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%cocktail%'
+          THEN 'Beverage'
+          ELSE 'Food'
+        END as sales_type,
+        COALESCE(SUM(price * quantity), 0) as total
+      FROM public.tipsee_check_items
+      WHERE location_uuid = ANY($1) AND trading_day = $2
+      GROUP BY sales_type`,
+      [locationUuids, date]
+    ),
+  ]);
+
+  const summary = summaryResult.rows[0]
+    ? cleanRow(summaryResult.rows[0])
+    : { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, comps_total: 0, voids_total: 0 };
+
+  let food_sales = 0;
+  let beverage_sales = 0;
+  for (const row of categoryResult.rows) {
+    const clean = cleanRow(row);
+    if (clean.sales_type === 'Food') food_sales = clean.total;
+    else beverage_sales = clean.total;
+  }
+
+  return {
+    total_checks: summary.total_checks,
+    total_covers: summary.total_covers,
+    gross_sales: summary.gross_sales,
+    net_sales: summary.net_sales,
+    food_sales,
+    beverage_sales,
+    comps_total: summary.comps_total,
+    voids_total: summary.voids_total,
+  };
+}
+
+// ============================================================================
 // COMP EXCEPTION DETECTION
 // Based on h.wood Group Comps, Voids and Discounts SOP
 // ============================================================================

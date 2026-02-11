@@ -27,6 +27,7 @@ export function Sidebar({ user }: SidebarProps) {
         <NavLink href="/budget">Budget</NavLink>
         <NavLink href="/proforma">Proforma</NavLink>
         <NavSection title="Sales">
+          <NavLink href="/sales/pace">Live Pulse</NavLink>
           <NavLink href="/labor/forecasts">Forecasts</NavLink>
         </NavSection>
         <NavSection title="Labor">
@@ -35,7 +36,6 @@ export function Sidebar({ user }: SidebarProps) {
           <NavLink href="/labor/schedule">Schedule</NavLink>
         </NavSection>
         <NavLink href="/alerts">Alerts</NavLink>
-        <NavLink href="/messages">Messages</NavLink>
         <div className="border-t my-2"></div>
         <NavSection title="Settings">
           <NavLink href="/settings/organization">Organization</NavLink>
