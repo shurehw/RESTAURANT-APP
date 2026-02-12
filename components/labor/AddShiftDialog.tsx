@@ -34,6 +34,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
+  initialPositionName?: string;
 }
 
 const SHIFT_TYPES: Record<string, { label: string; start: string; end: string; hours: number }> = {
@@ -51,7 +52,7 @@ const REASON_CATEGORIES = [
   'Other',
 ];
 
-export function AddShiftDialog({ scheduleId, date, positions, employees, open, onOpenChange, onSaved }: Props) {
+export function AddShiftDialog({ scheduleId, date, positions, employees, open, onOpenChange, onSaved, initialPositionName }: Props) {
   const [positionId, setPositionId] = useState('');
   const [employeeId, setEmployeeId] = useState('');
   const [shiftType, setShiftType] = useState('dinner');
@@ -130,8 +131,11 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
 
   const handleOpenChange = (isOpen: boolean) => {
     if (isOpen) {
-      // Reset form
-      setPositionId(positions[0]?.id || '');
+      // Reset form — pre-select position if initialPositionName provided
+      const matchedPos = initialPositionName
+        ? positions.find(p => p.name === initialPositionName)
+        : null;
+      setPositionId(matchedPos?.id || positions[0]?.id || '');
       setEmployeeId('');
       setShiftType('dinner');
       setStartTime(SHIFT_TYPES.dinner.start);

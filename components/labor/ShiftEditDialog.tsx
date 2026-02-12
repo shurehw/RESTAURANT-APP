@@ -324,14 +324,19 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
               Remove
             </Button>
           ) : (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleting || !reason.trim()}
-            >
-              {deleting ? 'Removing...' : 'Confirm Remove'}
-            </Button>
+            <div className="flex flex-col gap-1">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={deleting || !reason.trim()}
+              >
+                {deleting ? 'Removing...' : 'Confirm Remove'}
+              </Button>
+              {!reason.trim() && (
+                <span className="text-xs text-red-500">Enter a reason above first</span>
+              )}
+            </div>
           )}
 
           <div className="flex gap-2">
