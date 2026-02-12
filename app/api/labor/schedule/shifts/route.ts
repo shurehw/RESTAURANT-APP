@@ -121,7 +121,7 @@ export async function PATCH(request: NextRequest) {
     // Fetch original shift before editing
     const { data: original, error: fetchErr } = await supabase
       .from('shift_assignments')
-      .select('*, employee:employees(first_name, last_name), position:positions(name), schedule:weekly_schedules(venue_id)')
+      .select('*, employee:employees(first_name, last_name), position:positions(id, name, category, base_hourly_rate), schedule:weekly_schedules(venue_id)')
       .eq('id', validated.shift_id)
       .single();
 
@@ -304,7 +304,7 @@ export async function DELETE(request: NextRequest) {
     // Fetch original before cancelling
     const { data: original, error: fetchErr } = await supabase
       .from('shift_assignments')
-      .select('*, employee:employees(first_name, last_name), position:positions(name), schedule:weekly_schedules(venue_id)')
+      .select('*, employee:employees(first_name, last_name), position:positions(id, name, category, base_hourly_rate), schedule:weekly_schedules(venue_id)')
       .eq('id', validated.shift_id)
       .single();
 
