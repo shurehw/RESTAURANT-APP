@@ -17,6 +17,9 @@ import {
   getSalesPaceSettings,
   storeSalesSnapshot,
   getTipseeMappingForVenue,
+  getVenueTimezone,
+  getBusinessDateForTimezone,
+  isWithinServiceHoursForTimezone,
 } from '@/lib/database/sales-pace';
 import {
   fetchIntraDaySummary,
@@ -94,11 +97,12 @@ async function processVenue(venueId: string): Promise<{
   skipped_reason?: string;
 }> {
   const settings = await getSalesPaceSettings(venueId);
+  const tz = await getVenueTimezone(venueId);
 
-  // Check service hours
+  // Check service hours (in venue's local timezone)
   const startHour = settings?.service_start_hour ?? 11;
   const endHour = settings?.service_end_hour ?? 3;
-  if (!isWithinServiceHours(startHour, endHour)) {
+  if (!isWithinServiceHoursForTimezone(startHour, endHour, tz)) {
     return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'outside_service_hours' };
   }
 
@@ -108,8 +112,8 @@ async function processVenue(venueId: string): Promise<{
     return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'no_tipsee_mapping' };
   }
 
-  // Determine business date (before 5 AM = previous day)
-  const businessDate = getBusinessDate();
+  // Determine business date (before 5 AM local = previous day)
+  const businessDate = getBusinessDateForTimezone(tz);
 
   // Detect POS type and fetch running totals from the right source
   const posType = await getPosTypeForLocations(locationUuids);
@@ -141,33 +145,3 @@ async function processVenue(venueId: string): Promise<{
   };
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════════════════════════════
-
-/**
- * Check if current time is within service hours.
- * Handles overnight ranges (e.g., 11 PM to 3 AM = start=23, end=3).
- */
-function isWithinServiceHours(startHour: number, endHour: number): boolean {
-  const now = new Date();
-  const currentHour = now.getHours();
-
-  if (startHour <= endHour) {
-    return currentHour >= startHour && currentHour < endHour;
-  } else {
-    // Overnight range (e.g., 17 to 3)
-    return currentHour >= startHour || currentHour < endHour;
-  }
-}
-
-/**
- * Restaurant business date: before 5 AM belongs to the previous day.
- */
-function getBusinessDate(): string {
-  const now = new Date();
-  if (now.getHours() < 5) {
-    now.setDate(now.getDate() - 1);
-  }
-  return now.toISOString().split('T')[0];
-}

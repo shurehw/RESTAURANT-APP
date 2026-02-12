@@ -18,6 +18,9 @@ import {
   getSalesPaceSettings,
   computeProjectedEOD,
   computePaceStatus,
+  getVenueTimezone,
+  getBusinessDateForTimezone,
+  getNowInTimezone,
 } from '@/lib/database/sales-pace';
 
 export async function GET(request: NextRequest) {
@@ -30,11 +33,14 @@ export async function GET(request: NextRequest) {
   }
 
   const venueId = request.nextUrl.searchParams.get('venue_id');
-  const date = request.nextUrl.searchParams.get('date') || getBusinessDate();
 
   if (!venueId) {
     return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
   }
+
+  // Use venue timezone for business date
+  const tz = await getVenueTimezone(venueId);
+  const date = request.nextUrl.searchParams.get('date') || getBusinessDateForTimezone(tz);
 
   try {
     const [settings, snapshots, latest, forecast, sdlw] = await Promise.all([
@@ -45,18 +51,19 @@ export async function GET(request: NextRequest) {
       getSDLWFacts(venueId, date),
     ]);
 
-    // Compute pace metrics
+    // Compute pace metrics (using venue local time for projection)
     const startHour = settings?.service_start_hour ?? 11;
     const endHour = settings?.service_end_hour ?? 3;
+    const venueNow = getNowInTimezone(tz);
 
     const currentNetSales = latest?.net_sales ?? 0;
     const currentCovers = latest?.covers_count ?? 0;
 
     const projectedRevenue = currentNetSales > 0
-      ? computeProjectedEOD(currentNetSales, startHour, endHour)
+      ? computeProjectedEOD(currentNetSales, startHour, endHour, venueNow)
       : 0;
     const projectedCovers = currentCovers > 0
-      ? computeProjectedEOD(currentCovers, startHour, endHour)
+      ? computeProjectedEOD(currentCovers, startHour, endHour, venueNow)
       : 0;
 
     const revenueTarget = forecast?.revenue_predicted ?? sdlw?.net_sales ?? 0;
@@ -103,10 +110,3 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function getBusinessDate(): string {
-  const now = new Date();
-  if (now.getHours() < 5) {
-    now.setDate(now.getDate() - 1);
-  }
-  return now.toISOString().split('T')[0];
-}
