@@ -3,6 +3,7 @@
  * Real-time sales tracking during service hours.
  * Compares current revenue and covers against forecast + SDLW.
  * Auto-refreshes every 5 minutes to match polling interval.
+ * Supports single-venue detail and group-wide summary views.
  */
 
 'use client';
@@ -22,6 +23,9 @@ import {
   RefreshCw,
   UtensilsCrossed,
   Wine,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -82,6 +86,26 @@ interface PaceData {
   };
 }
 
+interface GroupVenuePace extends PaceData {
+  venue_id: string;
+  venue_name: string;
+}
+
+interface GroupData {
+  date: string;
+  venues: GroupVenuePace[];
+  totals: {
+    net_sales: number;
+    covers: number;
+    checks: number;
+    food_sales: number;
+    beverage_sales: number;
+    revenue_target: number;
+    covers_target: number;
+    sdlw_net: number;
+  };
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════════════════
@@ -107,8 +131,19 @@ function formatTime(isoString: string): string {
   });
 }
 
-// Business date is computed server-side using venue timezone.
-// No client-side date computation needed.
+function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   on_pace: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', label: 'On Pace' },
@@ -120,6 +155,49 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 // ══════════════════════════════════════════════════════════════════════════
 // COMPONENTS
 // ══════════════════════════════════════════════════════════════════════════
+
+function DateSelector({
+  selectedDate,
+  onDateChange,
+  onToday,
+}: {
+  selectedDate: string | null;
+  onDateChange: (date: string) => void;
+  onToday: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => selectedDate && onDateChange(shiftDate(selectedDate, -1))}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <div className="flex items-center gap-1.5">
+        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+        <input
+          type="date"
+          value={selectedDate || ''}
+          onChange={(e) => onDateChange(e.target.value)}
+          className="bg-transparent border-none text-sm font-medium w-[130px] cursor-pointer focus:outline-none"
+        />
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8"
+        onClick={() => selectedDate && onDateChange(shiftDate(selectedDate, 1))}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onToday}>
+        Today
+      </Button>
+    </div>
+  );
+}
 
 function PaceBadge({ status }: { status: string }) {
   const config = STATUS_COLORS[status] || STATUS_COLORS.no_target;
@@ -165,7 +243,6 @@ function GaugeCard({
       <CardContent>
         <div className="text-2xl font-bold">{fmt(current)}</div>
 
-        {/* Progress bar */}
         {target > 0 && (
           <div className="mt-3 space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -185,14 +262,12 @@ function GaugeCard({
           </div>
         )}
 
-        {/* Projected EOD */}
         {projected > 0 && (
           <div className="mt-2 text-xs text-muted-foreground">
             Projected EOD: <span className="font-medium text-foreground">{fmt(projected)}</span>
           </div>
         )}
 
-        {/* SDLW comparison */}
         {sdlw != null && sdlw > 0 && (
           <div className="mt-1 flex items-center gap-1 text-xs">
             <span className="text-muted-foreground">SDLW:</span>
@@ -260,7 +335,6 @@ function CategoryMixCard({
           </div>
         </div>
 
-        {/* Stacked bar */}
         {total > 0 && (
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
             <div className="bg-orange-500 transition-all" style={{ width: `${foodPct}%` }} />
@@ -287,7 +361,6 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
     );
   }
 
-  // Show most recent first
   const sorted = [...snapshots].reverse();
 
   return (
@@ -331,7 +404,6 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
   );
 }
 
-// Simple cumulative chart using HTML/CSS (no charting library needed)
 function CumulativeChart({
   snapshots,
   forecastRevenue,
@@ -350,7 +422,6 @@ function CumulativeChart({
     1
   );
 
-  // Compute bar heights
   const barWidth = Math.max(4, Math.min(20, Math.floor(600 / snapshots.length)));
 
   return (
@@ -371,23 +442,156 @@ function CumulativeChart({
         })}
       </div>
 
-      {/* Reference lines legend */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm bg-emerald-500" />
           <span>Actual</span>
         </div>
         {forecastRevenue != null && forecastRevenue > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span>Forecast EOD: {formatCurrency(forecastRevenue)}</span>
-          </div>
+          <span>Forecast EOD: {formatCurrency(forecastRevenue)}</span>
         )}
         {sdlwRevenue != null && sdlwRevenue > 0 && (
-          <div className="flex items-center gap-1.5">
-            <span>SDLW EOD: {formatCurrency(sdlwRevenue)}</span>
-          </div>
+          <span>SDLW EOD: {formatCurrency(sdlwRevenue)}</span>
         )}
       </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// GROUP-WIDE VIEW
+// ══════════════════════════════════════════════════════════════════════════
+
+function GroupSummary({ data }: { data: GroupData }) {
+  const { totals, venues } = data;
+  const bevPct = (totals.food_sales + totals.beverage_sales) > 0
+    ? (totals.beverage_sales / (totals.food_sales + totals.beverage_sales)) * 100
+    : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Group totals */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Group Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totals.net_sales)}</div>
+            {totals.sdlw_net > 0 && (
+              <div className="mt-1 flex items-center gap-1 text-xs">
+                <span className="text-muted-foreground">SDLW:</span>
+                <span className="font-medium">{formatCurrency(totals.sdlw_net)}</span>
+                {totals.net_sales >= totals.sdlw_net ? (
+                  <TrendingUp className="h-3 w-3 text-emerald-500" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-500" />
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Group Covers</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatNumber(totals.covers)}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {formatNumber(totals.checks)} checks
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Check</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {totals.checks > 0 ? formatCurrency(totals.net_sales / totals.checks) : '—'}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Bev Mix</CardTitle>
+            <Wine className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{bevPct.toFixed(0)}%</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {formatCurrency(totals.beverage_sales)} of {formatCurrency(totals.food_sales + totals.beverage_sales)}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Per-venue table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Venue Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Venue</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Net Sales</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Covers</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Checks</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Target</th>
+                  <th className="pb-2 font-medium text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {venues
+                  .sort((a, b) => (b.current?.net_sales ?? 0) - (a.current?.net_sales ?? 0))
+                  .map((v) => {
+                    const net = v.current?.net_sales ?? 0;
+                    const covers = v.current?.covers_count ?? 0;
+                    const checks = v.current?.checks_count ?? 0;
+                    return (
+                      <tr key={v.venue_id} className="border-b border-border/50 hover:bg-muted/50">
+                        <td className="py-2.5 pr-4 font-medium">{v.venue_name}</td>
+                        <td className="py-2.5 pr-4 text-right font-medium">{formatCurrency(net)}</td>
+                        <td className="py-2.5 pr-4 text-right">{formatNumber(covers)}</td>
+                        <td className="py-2.5 pr-4 text-right">{formatNumber(checks)}</td>
+                        <td className="py-2.5 pr-4 text-right">
+                          {checks > 0 ? formatCurrency(net / checks) : '—'}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right">
+                          {v.pace.revenue_target > 0 ? formatCurrency(v.pace.revenue_target) : '—'}
+                        </td>
+                        <td className="py-2.5 text-center">
+                          <PaceBadge status={v.pace.status} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                {/* Totals row */}
+                <tr className="border-t-2 font-semibold">
+                  <td className="py-2.5 pr-4">Total</td>
+                  <td className="py-2.5 pr-4 text-right">{formatCurrency(totals.net_sales)}</td>
+                  <td className="py-2.5 pr-4 text-right">{formatNumber(totals.covers)}</td>
+                  <td className="py-2.5 pr-4 text-right">{formatNumber(totals.checks)}</td>
+                  <td className="py-2.5 pr-4 text-right">
+                    {totals.checks > 0 ? formatCurrency(totals.net_sales / totals.checks) : '—'}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right">
+                    {totals.revenue_target > 0 ? formatCurrency(totals.revenue_target) : '—'}
+                  </td>
+                  <td className="py-2.5" />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -396,38 +600,57 @@ function CumulativeChart({
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════
 
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export default function LivePulsePage() {
-  const { selectedVenue } = useVenue();
+  const { selectedVenue, isAllVenues } = useVenue();
   const [data, setData] = useState<PaceData | null>(null);
+  const [groupData, setGroupData] = useState<GroupData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    if (!selectedVenue) return;
+    if (!selectedVenue && !isAllVenues) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/sales/pace?venue_id=${selectedVenue.id}`);
+      const venueParam = isAllVenues ? 'all' : selectedVenue!.id;
+      const dateParam = selectedDate ? `&date=${selectedDate}` : '';
+      const res = await fetch(`/api/sales/pace?venue_id=${venueParam}${dateParam}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);
       }
       const json = await res.json();
-      setData(json);
+
+      if (isAllVenues) {
+        setGroupData(json);
+        setData(null);
+        // Set date from server response if we don't have one
+        if (!selectedDate && json.date) {
+          setSelectedDate(json.date);
+        }
+      } else {
+        setData(json);
+        setGroupData(null);
+        // Set date from the first snapshot's business_date
+        if (!selectedDate && json.current?.business_date) {
+          setSelectedDate(json.current.business_date);
+        }
+      }
       setLastRefreshed(new Date());
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [selectedVenue]);
+  }, [selectedVenue, isAllVenues, selectedDate]);
 
-  // Fetch on mount and venue change
+  // Fetch on mount, venue change, or date change
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -438,17 +661,31 @@ export default function LivePulsePage() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  const handleToday = () => {
+    setSelectedDate(null); // null = let server compute today
+    // fetchData will be triggered by the state change
+  };
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Live Pulse</h1>
           <p className="text-muted-foreground text-sm">
-            Real-time sales pace vs. forecast
+            {isAllVenues ? 'Group-wide sales overview' : 'Real-time sales pace vs. forecast'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <DateSelector
+            selectedDate={selectedDate}
+            onDateChange={handleDateChange}
+            onToday={handleToday}
+          />
           {lastRefreshed && (
             <span className="text-xs text-muted-foreground">
               Updated {formatTime(lastRefreshed.toISOString())}
@@ -471,7 +708,7 @@ export default function LivePulsePage() {
       </div>
 
       {/* No venue selected */}
-      {!selectedVenue && (
+      {!selectedVenue && !isAllVenues && (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             Select a venue to view live sales data.
@@ -489,14 +726,19 @@ export default function LivePulsePage() {
       )}
 
       {/* Loading state */}
-      {loading && !data && selectedVenue && (
+      {loading && !data && !groupData && (selectedVenue || isAllVenues) && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 
-      {/* Main content */}
-      {data && selectedVenue && (
+      {/* Group-wide view */}
+      {isAllVenues && groupData && (
+        <GroupSummary data={groupData} />
+      )}
+
+      {/* Single venue view */}
+      {data && selectedVenue && !isAllVenues && (
         <>
           {/* Overall status */}
           <div className="flex items-center gap-3">
