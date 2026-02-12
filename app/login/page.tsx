@@ -3,6 +3,7 @@
  * Login page with email/password authentication
  */
 
+import { Suspense } from 'react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import Link from 'next/link';
 
@@ -17,7 +18,9 @@ export default function LoginPage() {
           </h2>
         </div>
 
-        <LoginForm />
+        <Suspense>
+          <LoginForm />
+        </Suspense>
 
         <div className="text-center text-sm">
           <p className="text-muted-foreground">
