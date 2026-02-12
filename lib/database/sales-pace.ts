@@ -354,6 +354,70 @@ export async function getTipseeMappingForVenue(
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// VENUE TIMEZONE
+// ══════════════════════════════════════════════════════════════════════════
+
+const timezoneCache = new Map<string, { tz: string; ts: number }>();
+
+export async function getVenueTimezone(venueId: string): Promise<string> {
+  const cached = timezoneCache.get(venueId);
+  if (cached && isFresh(cached.ts)) return cached.tz;
+
+  const supabase = getServiceClient();
+  const { data, error } = await (supabase as any)
+    .from('venues')
+    .select('timezone')
+    .eq('id', venueId)
+    .maybeSingle();
+
+  const tz = data?.timezone || 'America/Los_Angeles';
+  timezoneCache.set(venueId, { tz, ts: Date.now() });
+  return tz;
+}
+
+/**
+ * Get the current time in a venue's timezone.
+ */
+export function getNowInTimezone(tz: string): Date {
+  const nowStr = new Date().toLocaleString('en-US', { timeZone: tz });
+  return new Date(nowStr);
+}
+
+/**
+ * Business date in venue timezone: before 5 AM = previous day.
+ */
+export function getBusinessDateForTimezone(tz: string): string {
+  const local = getNowInTimezone(tz);
+  if (local.getHours() < 5) {
+    local.setDate(local.getDate() - 1);
+  }
+  const y = local.getFullYear();
+  const m = String(local.getMonth() + 1).padStart(2, '0');
+  const d = String(local.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Check if current time (in venue timezone) is within service hours.
+ * Handles overnight ranges (e.g., 17 to 3).
+ */
+export function isWithinServiceHoursForTimezone(
+  startHour: number,
+  endHour: number,
+  tz: string
+): boolean {
+  const local = getNowInTimezone(tz);
+  const currentHour = local.getHours();
+
+  if (startHour <= endHour) {
+    return currentHour >= startHour && currentHour < endHour;
+  } else {
+    // Overnight range
+    return currentHour >= startHour || currentHour < endHour;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // NORMALIZERS
 // ══════════════════════════════════════════════════════════════════════════
 
