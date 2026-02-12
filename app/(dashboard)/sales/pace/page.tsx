@@ -107,13 +107,8 @@ function formatTime(isoString: string): string {
   });
 }
 
-function getBusinessDate(): string {
-  const now = new Date();
-  if (now.getHours() < 5) {
-    now.setDate(now.getDate() - 1);
-  }
-  return now.toISOString().split('T')[0];
-}
+// Business date is computed server-side using venue timezone.
+// No client-side date computation needed.
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
   on_pace: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', label: 'On Pace' },
@@ -417,8 +412,7 @@ export default function LivePulsePage() {
     setError(null);
 
     try {
-      const date = getBusinessDate();
-      const res = await fetch(`/api/sales/pace?venue_id=${selectedVenue.id}&date=${date}`);
+      const res = await fetch(`/api/sales/pace?venue_id=${selectedVenue.id}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `HTTP ${res.status}`);
