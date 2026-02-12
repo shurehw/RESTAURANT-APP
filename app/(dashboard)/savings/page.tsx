@@ -30,7 +30,7 @@ export default async function SavingsPage() {
   const yearStart = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
 
   // Fetch monthly savings summary
-  const { data: monthlySavings } = await supabase
+  const { data: monthlySavings } = await (supabase as any)
     .from("monthly_savings_summary")
     .select("*")
     .gte("month_start", monthStart)
@@ -38,14 +38,14 @@ export default async function SavingsPage() {
     .order("total_savings", { ascending: false });
 
   // Fetch annual savings summary
-  const { data: annualSavings } = await supabase
+  const { data: annualSavings } = await (supabase as any)
     .from("annual_savings_summary")
     .select("*")
     .eq("year", now.getFullYear())
     .order("total_savings", { ascending: false });
 
   // Fetch recent savings events
-  const { data: recentEvents } = await supabase
+  const { data: recentEvents } = await (supabase as any)
     .from("savings_events")
     .select(`
       *,
@@ -60,8 +60,8 @@ export default async function SavingsPage() {
     .limit(20);
 
   // Calculate totals
-  const monthlyTotal = monthlySavings?.reduce((sum, s) => sum + (s.total_savings || 0), 0) || 0;
-  const annualTotal = annualSavings?.reduce((sum, s) => sum + (s.total_savings || 0), 0) || 0;
+  const monthlyTotal = monthlySavings?.reduce((sum: number, s: any) => sum + (s.total_savings || 0), 0) || 0;
+  const annualTotal = annualSavings?.reduce((sum: number, s: any) => sum + (s.total_savings || 0), 0) || 0;
   const avgMonthlySavings = annualTotal / 12;
 
   // Group by type
@@ -104,7 +104,7 @@ export default async function SavingsPage() {
             ${monthlyTotal.toFixed(0)}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            {monthlySavings?.reduce((sum, s) => sum + (s.event_count || 0), 0) || 0} events
+            {monthlySavings?.reduce((sum: number, s: any) => sum + (s.event_count || 0), 0) || 0} events
           </div>
         </Card>
 
@@ -119,7 +119,7 @@ export default async function SavingsPage() {
             ${annualTotal.toFixed(0)}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            {annualSavings?.reduce((sum, s) => sum + (s.event_count || 0), 0) || 0} events
+            {annualSavings?.reduce((sum: number, s: any) => sum + (s.event_count || 0), 0) || 0} events
           </div>
         </Card>
 
@@ -203,7 +203,7 @@ export default async function SavingsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                recentEvents.map((event) => (
+                recentEvents.map((event: any) => (
                   <TableRow key={event.id}>
                     <TableCell className="text-sm">
                       {new Date(event.event_date).toLocaleDateString()}

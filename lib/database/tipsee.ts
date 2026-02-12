@@ -579,6 +579,82 @@ export async function fetchIntraDaySummary(
 }
 
 // ============================================================================
+// SIMPHONY POS SUPPORT (Oracle Simphony — used by Dallas, etc.)
+// ============================================================================
+
+/**
+ * Detect POS type for a set of location UUIDs.
+ * Returns 'simphony' | 'upserve' (default).
+ */
+export async function getPosTypeForLocations(
+  locationUuids: string[]
+): Promise<'simphony' | 'upserve'> {
+  if (locationUuids.length === 0) return 'upserve';
+
+  const pool = getTipseePool();
+  const result = await pool.query(
+    `SELECT pos_type FROM public.general_locations
+     WHERE uuid = ANY($1::uuid[]) AND pos_type IS NOT NULL
+     LIMIT 1`,
+    [locationUuids]
+  );
+
+  if (result.rows.length > 0 && result.rows[0].pos_type === 'simphony') {
+    return 'simphony';
+  }
+  return 'upserve';
+}
+
+/**
+ * Fetch running totals for Simphony POS venues (e.g. Dallas).
+ * Sums across all revenue centers. Uses revenue_center_name to approximate
+ * food/bev split: centers containing "bar" → beverage, everything else → food.
+ */
+export async function fetchSimphonyIntraDaySummary(
+  locationUuids: string[],
+  date: string
+): Promise<IntraDaySummary> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      COALESCE(SUM(check_count), 0) as total_checks,
+      COALESCE(SUM(guest_count), 0) as total_covers,
+      COALESCE(SUM(gross_sales), 0) as gross_sales,
+      COALESCE(SUM(net_sales), 0) as net_sales,
+      COALESCE(SUM(discount_total), 0) as comps_total,
+      COALESCE(SUM(void_total), 0) as voids_total,
+      COALESCE(SUM(CASE
+        WHEN LOWER(COALESCE(revenue_center_name, '')) LIKE '%bar%'
+          OR (revenue_center_name IS NULL AND revenue_center_number = 2)
+        THEN net_sales ELSE 0 END), 0) as beverage_sales,
+      COALESCE(SUM(CASE
+        WHEN LOWER(COALESCE(revenue_center_name, '')) NOT LIKE '%bar%'
+          AND NOT (revenue_center_name IS NULL AND revenue_center_number = 2)
+        THEN net_sales ELSE 0 END), 0) as food_sales
+    FROM public.tipsee_simphony_sales
+    WHERE location_uuid = ANY($1) AND trading_day = $2`,
+    [locationUuids, date]
+  );
+
+  const row = result.rows[0] ? cleanRow(result.rows[0]) : {
+    total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0,
+    comps_total: 0, voids_total: 0, beverage_sales: 0, food_sales: 0,
+  };
+
+  return {
+    total_checks: row.total_checks,
+    total_covers: row.total_covers,
+    gross_sales: row.gross_sales,
+    net_sales: row.net_sales,
+    food_sales: row.food_sales,
+    beverage_sales: row.beverage_sales,
+    comps_total: row.comps_total,
+    voids_total: row.voids_total,
+  };
+}
+
+// ============================================================================
 // COMP EXCEPTION DETECTION
 // Based on h.wood Group Comps, Voids and Discounts SOP
 // ============================================================================

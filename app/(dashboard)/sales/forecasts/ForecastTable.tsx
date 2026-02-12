@@ -34,10 +34,10 @@ interface ForecastRow {
 
 interface Override {
   business_date: string;
-  shift_type: string;
+  shift_type: string | null;
   forecast_post_override: number;
   reason_code: string;
-  delta: number;
+  delta: number | null;
 }
 
 interface ForecastTableProps {

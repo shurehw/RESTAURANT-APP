@@ -18,7 +18,11 @@ import {
   storeSalesSnapshot,
   getTipseeMappingForVenue,
 } from '@/lib/database/sales-pace';
-import { fetchIntraDaySummary } from '@/lib/database/tipsee';
+import {
+  fetchIntraDaySummary,
+  fetchSimphonyIntraDaySummary,
+  getPosTypeForLocations,
+} from '@/lib/database/tipsee';
 
 const CRON_SECRET = process.env.CRON_SECRET || process.env.CV_CRON_SECRET;
 
@@ -107,8 +111,11 @@ async function processVenue(venueId: string): Promise<{
   // Determine business date (before 5 AM = previous day)
   const businessDate = getBusinessDate();
 
-  // Fetch running totals from TipSee
-  const summary = await fetchIntraDaySummary(locationUuids, businessDate);
+  // Detect POS type and fetch running totals from the right source
+  const posType = await getPosTypeForLocations(locationUuids);
+  const summary = posType === 'simphony'
+    ? await fetchSimphonyIntraDaySummary(locationUuids, businessDate)
+    : await fetchIntraDaySummary(locationUuids, businessDate);
 
   // Store snapshot
   const now = new Date().toISOString();
