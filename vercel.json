@@ -83,6 +83,14 @@
     {
       "path": "/api/cron/sync-tipsee?venue=9cff9179-c87f-40f1-924b-d8df2edaeb06",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/sales/poll",
+      "schedule": "*/5 11-23 * * *"
+    },
+    {
+      "path": "/api/sales/poll",
+      "schedule": "*/5 0-3 * * *"
     }
   ]
 }
