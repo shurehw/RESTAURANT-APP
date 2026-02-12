@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
+import { generateScheduleTS } from '@/lib/scheduler-lite';
 
 const execAsync = promisify(exec);
 
@@ -40,85 +41,71 @@ export async function POST(request: NextRequest) {
     const validated = validate(generateSchema, body);
     assertVenueAccess(validated.venue_id, venueIds);
 
-    const scriptPath = path.join(process.cwd(), 'python-services', 'scheduler', 'auto_scheduler.py');
-    let command = `python "${scriptPath}" --venue-id ${validated.venue_id} --week-start ${validated.week_start_date}`;
-    if (validated.save) command += ' --save';
+    // Try Python scheduler first, fall back to TS scheduler if Python unavailable
+    let scheduleId: string | null = null;
+    let schedule: any = null;
+    let usedFallback = false;
 
-    let stdout: string;
-    let stderr: string;
     try {
+      const scriptPath = path.join(process.cwd(), 'python-services', 'scheduler', 'auto_scheduler.py');
+      let command = `python "${scriptPath}" --venue-id ${validated.venue_id} --week-start ${validated.week_start_date}`;
+      if (validated.save) command += ' --save';
+
       const result = await execAsync(command, {
         env: { ...process.env, PYTHONPATH: path.join(process.cwd(), 'python-services'), PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
         timeout: 120000,
       });
-      stdout = result.stdout;
-      stderr = result.stderr;
+      const stdout = result.stdout;
+      const stderr = result.stderr;
+      if (stderr && !stderr.includes('warning')) console.error('Python stderr:', stderr);
+
+      if (validated.save) {
+        const match = stdout.match(/Schedule ([a-f0-9-]+) ready/i);
+        if (match) scheduleId = match[1];
+      }
     } catch (execError: any) {
-      // execAsync throws when the process exits with non-zero code
-      console.error('Python scheduler failed:', execError.stderr || execError.message);
-      const errOutput = (execError.stderr || execError.stdout || execError.message || '').trim();
-      // Extract the last meaningful line from stderr/stdout for a user-friendly message
-      const lines = errOutput.split('\n').filter((l: string) => l.trim());
-      const lastLine = lines[lines.length - 1] || 'Unknown error';
-      const error: any = new Error(`Schedule generation failed: ${lastLine}`);
-      error.status = 500;
-      error.code = 'SCHEDULER_ERROR';
-      error.details = errOutput.slice(-500); // last 500 chars for debugging
-      throw error;
+      const errMsg = (execError.stderr || execError.message || '').trim();
+      const isPythonMissing = errMsg.includes('not found') || errMsg.includes('not recognized') || errMsg.includes('ENOENT');
+
+      if (isPythonMissing) {
+        // Python not available (e.g., Vercel) — use TS scheduler
+        console.log('[generate] Python unavailable, using TS scheduler fallback');
+        usedFallback = true;
+        const result = await generateScheduleTS(validated.venue_id, validated.week_start_date, validated.save !== false);
+        scheduleId = result.scheduleId;
+      } else {
+        // Python exists but scheduler failed
+        console.error('Python scheduler failed:', errMsg);
+        const lines = errMsg.split('\n').filter((l: string) => l.trim());
+        const lastLine = lines[lines.length - 1] || 'Unknown error';
+        const error: any = new Error(`Schedule generation failed: ${lastLine}`);
+        error.status = 500;
+        error.code = 'SCHEDULER_ERROR';
+        throw error;
+      }
     }
 
-    if (stderr && !stderr.includes('warning')) console.error('Python stderr:', stderr);
-
-    let scheduleId = null;
-    let schedule = null;
-
-    if (validated.save) {
-      // Saved schedule - get from database
-      const match = stdout.match(/Schedule ([a-f0-9-]+) ready/i);
-      if (match) scheduleId = match[1];
-
-      if (scheduleId) {
-        const supabase = await createClient();
-        const { data, error } = await supabase
-          .from('weekly_schedules')
-          .select(`*, shifts:shift_assignments(*, employee:employees(first_name, last_name), position:positions(name, category, base_hourly_rate))`)
-          .eq('id', scheduleId)
-          .single();
-        if (error) throw error;
-        schedule = data;
-      }
-    } else {
-      // Non-saved schedule - parse from stdout JSON (between markers)
-      try {
-        const startMarker = '---JSON_START---';
-        const endMarker = '---JSON_END---';
-        const startIdx = stdout.indexOf(startMarker);
-        const endIdx = stdout.indexOf(endMarker);
-        if (startIdx !== -1 && endIdx !== -1) {
-          const jsonStr = stdout.slice(startIdx + startMarker.length, endIdx).trim();
-          schedule = JSON.parse(jsonStr);
-        }
-      } catch (e) {
-        console.error('Failed to parse schedule JSON:', e);
-      }
+    // Fetch the saved schedule from DB
+    if (scheduleId) {
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('weekly_schedules')
+        .select(`*, shifts:shift_assignments(*, employee:employees(first_name, last_name), position:positions(name, category, base_hourly_rate))`)
+        .eq('id', scheduleId)
+        .single();
+      if (error) throw error;
+      schedule = data;
     }
 
     if (!schedule && !scheduleId) {
-      // Python ran OK but produced no schedule — surface why
-      let reason: string;
-      if (stdout.includes('MISSING_EMPLOYEES')) {
-        reason = 'No active employees found for this venue. Add employees before generating a schedule.';
-      } else if (stdout.includes('MISSING_POSITIONS')) {
-        reason = 'No active positions found for this venue. Add positions before generating a schedule.';
-      } else if (stdout.includes('Could not find optimal')) {
-        reason = 'Could not find an optimal schedule with available staff. Check employee/position setup.';
-      } else {
-        reason = 'Scheduler ran but produced no schedule. Check employees, positions, and requirements data.';
-      }
-      return NextResponse.json({ success: false, error: 'NO_SCHEDULE', message: reason, output: stdout }, { status: 422 });
+      return NextResponse.json({
+        success: false,
+        error: 'NO_SCHEDULE',
+        message: 'Scheduler produced no schedule. Check employees and positions.',
+      }, { status: 422 });
     }
 
-    return NextResponse.json({ success: true, schedule_id: scheduleId, schedule, output: stdout });
+    return NextResponse.json({ success: true, schedule_id: scheduleId, schedule, fallback: usedFallback });
   });
 }
 

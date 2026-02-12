@@ -103,6 +103,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
   // Add shift dialog state
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addDialogDate, setAddDialogDate] = useState('');
+  const [addDialogPosition, setAddDialogPosition] = useState('');
 
   // Employee data for dialogs
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -273,9 +274,10 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
     setEditDialogOpen(true);
   };
 
-  const handleAddShift = (date: string) => {
+  const handleAddShift = (date: string, positionName?: string) => {
     if (schedule?.status === 'locked') return;
     setAddDialogDate(date);
+    setAddDialogPosition(positionName || '');
     setAddDialogOpen(true);
   };
 
@@ -542,7 +544,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
                     {/* Add shift button */}
                     {schedule.status === 'draft' && (
                       <button
-                        onClick={() => handleAddShift(day.date)}
+                        onClick={() => handleAddShift(day.date, position)}
                         className="w-full p-1 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded border border-dashed border-gray-200 hover:border-gray-400 transition-colors"
                       >
                         <Plus className="w-3 h-3 mx-auto" />
@@ -585,6 +587,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
           open={addDialogOpen}
           onOpenChange={setAddDialogOpen}
           onSaved={handleShiftSaved}
+          initialPositionName={addDialogPosition}
         />
       )}
     </div>
