@@ -141,7 +141,7 @@ async function handleGroupView(request: NextRequest) {
       .select('id, name, timezone')
       .in('id', venueIds);
 
-    const venueMap = new Map((venueRows || []).map((v: any) => [v.id, v]));
+    const venueMap = new Map<string, { id: string; name: string; timezone: string }>((venueRows || []).map((v: any) => [v.id, v]));
 
     // Default date from first venue's timezone (all are similar enough)
     const firstTz = venueMap.get(venueIds[0])?.timezone || 'America/Los_Angeles';
