@@ -21,6 +21,8 @@ import {
   Lock,
   Edit3,
   AlertCircle,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 import { ShiftEditDialog } from './ShiftEditDialog';
 import { AddShiftDialog } from './AddShiftDialog';
@@ -481,6 +483,9 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
         </div>
       )}
 
+      {/* Covers Projection */}
+      <CoversProjection shifts={activeShifts} weekDays={weekDays} schedule={schedule} />
+
       {/* Calendar Grid */}
       <div className="bg-white border rounded-lg overflow-hidden">
         {/* Header Row - Days */}
@@ -621,6 +626,166 @@ function formatDate(dateStr: string): string {
     day: 'numeric',
     year: 'numeric',
   });
+}
+
+// Server CPLH used by the scheduler (dinner period)
+const SERVER_CPLH = 18.0;
+
+function CoversProjection({
+  shifts,
+  weekDays,
+  schedule,
+}: {
+  shifts: Shift[];
+  weekDays: { date: string; dayName: string; dateStr: string }[];
+  schedule: Schedule;
+}) {
+  // Compute per-day stats from shift data
+  const dailyStats = weekDays.map((day) => {
+    const dayShifts = shifts.filter((s) => s.business_date === day.date);
+    const serverShifts = dayShifts.filter((s) => s.position?.name === 'Server');
+    const bartenderShifts = dayShifts.filter((s) => s.position?.name === 'Bartender');
+    const fohShifts = dayShifts.filter((s) => s.position?.category === 'front_of_house');
+    const bohShifts = dayShifts.filter((s) => s.position?.category === 'back_of_house');
+    const mgtShifts = dayShifts.filter((s) => s.position?.category === 'management');
+
+    const serverHours = serverShifts.reduce((sum, s) => sum + s.scheduled_hours, 0);
+    const projectedCovers = Math.round(serverHours * SERVER_CPLH);
+
+    return {
+      date: day.date,
+      dayName: day.dayName,
+      dateStr: day.dateStr,
+      projectedCovers,
+      serverCount: serverShifts.length,
+      bartenderCount: bartenderShifts.length,
+      fohCount: fohShifts.length,
+      bohCount: bohShifts.length,
+      mgtCount: mgtShifts.length,
+      totalStaff: dayShifts.length,
+      totalHours: dayShifts.reduce((sum, s) => sum + s.scheduled_hours, 0),
+    };
+  });
+
+  const totalCovers = dailyStats.reduce((sum, d) => sum + d.projectedCovers, 0);
+  const totalStaff = dailyStats.reduce((sum, d) => sum + d.totalStaff, 0);
+  const peakDay = dailyStats.reduce((max, d) => (d.projectedCovers > max.projectedCovers ? d : max), dailyStats[0]);
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <TrendingUp className="w-4 h-4 text-emerald-600" />
+        <h3 className="text-sm font-semibold text-gray-900">Covers Projection & Staffing</h3>
+        <span className="text-xs text-gray-500 ml-auto">
+          Based on POS data (server_day_facts P75+10%) | CPLH {SERVER_CPLH}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-gray-50">
+              <th className="text-left p-2 text-gray-600 font-medium w-36"></th>
+              {dailyStats.map((d, i) => (
+                <th key={i} className="text-center p-2 text-gray-600 font-medium">
+                  <div className="text-xs">{d.dayName}</div>
+                  <div className="text-xs text-gray-400">{d.dateStr}</div>
+                </th>
+              ))}
+              <th className="text-center p-2 text-gray-700 font-semibold bg-gray-100">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Projected Covers */}
+            <tr className="border-b">
+              <td className="p-2 font-medium text-gray-900 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-emerald-500" />
+                Projected Covers
+              </td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 font-semibold ${
+                  d.projectedCovers === 0 ? 'text-gray-300' :
+                  d.projectedCovers >= 500 ? 'text-red-600' :
+                  d.projectedCovers >= 300 ? 'text-amber-600' : 'text-gray-900'
+                }`}>
+                  {d.projectedCovers === 0 ? 'Closed' : d.projectedCovers.toLocaleString()}
+                </td>
+              ))}
+              <td className="text-center p-2 font-bold text-gray-900 bg-gray-50">
+                {totalCovers.toLocaleString()}
+              </td>
+            </tr>
+
+            {/* Server count */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700 flex items-center gap-1">
+                <Users className="w-3 h-3 text-blue-500" />
+                Servers
+              </td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 ${d.serverCount === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.serverCount || '-'}
+                </td>
+              ))}
+              <td className="text-center p-2 text-gray-600 bg-gray-50">-</td>
+            </tr>
+
+            {/* Bartender count */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700 pl-6">Bartenders</td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 ${d.bartenderCount === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.bartenderCount || '-'}
+                </td>
+              ))}
+              <td className="text-center p-2 text-gray-600 bg-gray-50">-</td>
+            </tr>
+
+            {/* FOH total */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700 pl-6">FOH Total</td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 ${d.fohCount === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.fohCount || '-'}
+                </td>
+              ))}
+              <td className="text-center p-2 text-gray-600 bg-gray-50">-</td>
+            </tr>
+
+            {/* BOH total */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700 pl-6">BOH Total</td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 ${d.bohCount === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.bohCount || '-'}
+                </td>
+              ))}
+              <td className="text-center p-2 text-gray-600 bg-gray-50">-</td>
+            </tr>
+
+            {/* Total staff */}
+            <tr className="bg-gray-50">
+              <td className="p-2 font-medium text-gray-900">Total Staff</td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 font-semibold ${d.totalStaff === 0 ? 'text-gray-300' : 'text-gray-900'}`}>
+                  {d.totalStaff || '-'}
+                </td>
+              ))}
+              <td className="text-center p-2 font-bold text-gray-900">{totalStaff}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Summary chips */}
+      <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 flex-wrap">
+        <span>Peak: <strong className="text-gray-700">{peakDay.dayName} {peakDay.dateStr}</strong> ({peakDay.projectedCovers} covers, {peakDay.totalStaff} staff)</span>
+        <span>Weekly Rev: <strong className="text-gray-700">${(schedule.projected_revenue || 0).toLocaleString()}</strong></span>
+        <span>Labor: <strong className="text-gray-700">${(schedule.total_labor_cost || 0).toLocaleString()}</strong> ({schedule.total_labor_hours || 0}h)</span>
+        <span>Labor%: <strong className="text-gray-700">{schedule.projected_revenue ? ((schedule.total_labor_cost / schedule.projected_revenue) * 100).toFixed(1) : '—'}%</strong></span>
+      </div>
+    </Card>
+  );
 }
 
 function formatTime(timeStr: string): string {
