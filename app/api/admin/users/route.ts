@@ -60,7 +60,7 @@ export async function GET() {
         custom_user_id: customUser?.id || null,
         organizations: userMemberships
           .filter((m): m is typeof m & { organizations: { id: string; name: string; slug: string } } => 
-            m.is_active && m.organizations !== null
+            !!m.is_active && m.organizations !== null
           )
           .map(m => ({
             id: m.organizations.id,

@@ -70,7 +70,7 @@ export default async function LaborRequirementsPage() {
       </div>
 
       <RequirementsDisplay
-        requirements={requirements || []}
+        requirements={(requirements || []) as any}
         venueId={venueId}
         laborTarget={laborTargets?.target_labor_percentage || 27.5}
       />

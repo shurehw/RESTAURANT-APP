@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     let query = adminClient
       .from('entertainment_bookings')
       .select('*')
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', ctx.orgId ?? '')
       .order('booking_date', { ascending: true });
 
     if (venueId) {
@@ -147,7 +147,7 @@ export async function PUT(request: NextRequest) {
       .from('entertainment_bookings')
       .update(updates)
       .eq('id', id)
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', ctx.orgId ?? '')
       .select()
       .single();
 
@@ -183,7 +183,7 @@ export async function DELETE(request: NextRequest) {
       .from('entertainment_bookings')
       .delete()
       .eq('id', id)
-      .eq('organization_id', ctx.orgId);
+      .eq('organization_id', ctx.orgId ?? '');
 
     if (error) {
       console.error('Error deleting booking:', error);

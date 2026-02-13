@@ -231,8 +231,9 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
 
           {/* Employee selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Employee</label>
+            <label htmlFor="shift-employee" className="text-sm font-medium text-gray-700 block mb-1">Employee</label>
             <select
+              id="shift-employee"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
@@ -254,8 +255,9 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
           {/* Time pickers */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Start Time</label>
+              <label htmlFor="shift-start" className="text-sm font-medium text-gray-700 block mb-1">Start Time</label>
               <input
+                id="shift-start"
                 type="time"
                 className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 value={startTime}
@@ -263,8 +265,9 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">End Time</label>
+              <label htmlFor="shift-end" className="text-sm font-medium text-gray-700 block mb-1">End Time</label>
               <input
+                id="shift-end"
                 type="time"
                 className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 value={endTime}
@@ -285,8 +288,9 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
 
           {/* Reason category */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Reason Category</label>
+            <label htmlFor="shift-reason-cat" className="text-sm font-medium text-gray-700 block mb-1">Reason Category</label>
             <select
+              id="shift-reason-cat"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               value={reasonCategory}
               onChange={(e) => setReasonCategory(e.target.value)}
@@ -299,10 +303,11 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
 
           {/* Reason text */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
+            <label htmlFor="shift-reason" className="text-sm font-medium text-gray-700 block mb-1">
               Reason for Change <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="shift-reason"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring min-h-[60px]"
               placeholder="Why are you making this change? (helps the AI learn)"
               value={reason}

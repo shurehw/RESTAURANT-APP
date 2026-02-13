@@ -98,8 +98,9 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Venue Selection */}
         <div>
-          <label className="block text-sm font-medium mb-2">Venue</label>
+          <label htmlFor="invoice-venue" className="block text-sm font-medium mb-2">Venue</label>
           <select
+            id="invoice-venue"
             value={venueId}
             onChange={(e) => setVenueId(e.target.value)}
             className="w-full border rounded px-3 py-2 bg-white"
@@ -115,8 +116,9 @@ export function InvoiceUploadForm({ venues }: InvoiceUploadFormProps) {
 
         {/* File Upload */}
         <div>
-          <label className="block text-sm font-medium mb-2">Invoice Image</label>
+          <label htmlFor="invoice-file" className="block text-sm font-medium mb-2">Invoice Image</label>
           <input
+            id="invoice-file"
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp"
             onChange={handleFileChange}

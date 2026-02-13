@@ -160,10 +160,11 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
         <div className="space-y-4 py-2">
           {/* Position selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
+            <label htmlFor="shift-position" className="text-sm font-medium text-gray-700 block mb-1">
               Position <span className="text-red-500">*</span>
             </label>
             <select
+              id="shift-position"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               value={positionId}
               onChange={(e) => { setPositionId(e.target.value); setEmployeeId(''); }}
@@ -179,10 +180,11 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
 
           {/* Employee selector */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
+            <label htmlFor="shift-employee-add" className="text-sm font-medium text-gray-700 block mb-1">
               Employee <span className="text-red-500">*</span>
             </label>
             <select
+              id="shift-employee-add"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
@@ -224,8 +226,9 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
           {/* Time pickers */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Start Time</label>
+              <label htmlFor="shift-start-time" className="text-sm font-medium text-gray-700 block mb-1">Start Time</label>
               <input
+                id="shift-start-time"
                 type="time"
                 className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 value={startTime}
@@ -233,8 +236,9 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">End Time</label>
+              <label htmlFor="shift-end-time" className="text-sm font-medium text-gray-700 block mb-1">End Time</label>
               <input
+                id="shift-end-time"
                 type="time"
                 className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 value={endTime}
@@ -255,8 +259,9 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
 
           {/* Reason category */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Reason Category</label>
+            <label htmlFor="shift-reason-category" className="text-sm font-medium text-gray-700 block mb-1">Reason Category</label>
             <select
+              id="shift-reason-category"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
               value={reasonCategory}
               onChange={(e) => setReasonCategory(e.target.value)}
@@ -269,10 +274,11 @@ export function AddShiftDialog({ scheduleId, date, positions, employees, open, o
 
           {/* Reason */}
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">
+            <label htmlFor="shift-reason" className="text-sm font-medium text-gray-700 block mb-1">
               Reason <span className="text-red-500">*</span>
             </label>
             <textarea
+              id="shift-reason"
               className="w-full border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring min-h-[60px]"
               placeholder="Why are you adding this shift? (helps the AI learn)"
               value={reason}

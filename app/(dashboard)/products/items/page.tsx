@@ -81,7 +81,7 @@ export default async function ItemsPage() {
       {/* Items Table */}
       <Card className="p-6">
         <h2 className="text-lg font-semibold text-ledger-black mb-4">All Items</h2>
-        <ItemsTable items={recentItems || []} />
+        <ItemsTable items={(recentItems || []) as any} />
       </Card>
     </div>
   );

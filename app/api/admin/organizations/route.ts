@@ -40,7 +40,7 @@ export async function GET() {
     // Enrich with member count
     const enriched = organizations?.map(org => ({
       ...org,
-      member_count: org.organization_users?.filter((m: { is_active: boolean }) => m.is_active).length || 0,
+      member_count: org.organization_users?.filter((m: { is_active: boolean | null }) => m.is_active).length || 0,
     }));
 
     return NextResponse.json({ organizations: enriched });
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     // Initialize organization usage
-    await adminClient
+    await (adminClient as any)
       .from('organization_usage')
       .insert({
         organization_id: newOrg.id,

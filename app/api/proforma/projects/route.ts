@@ -14,8 +14,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('Creating project with body:', JSON.stringify(body, null, 2));
-
     const {
       org_id,
       name,
@@ -110,7 +108,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-create default revenue centers (Dining Room and Bar)
-    console.log('Creating default revenue centers...');
     const calculatedSeats = manual_seats || Math.floor(total_sf * (dining_area_pct / 100) / (sf_per_seat || 15));
 
     const { error: revCenterError } = await supabase
@@ -138,7 +135,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-create default service periods (Lunch and Dinner)
-    console.log('Creating default service periods...');
     const { error: servicePeriodError } = await supabase
       .from("service_periods")
       .insert([
@@ -164,8 +160,6 @@ export async function POST(request: NextRequest) {
       console.error("Warning: Could not create service periods:", servicePeriodError);
       // Don't fail the whole request, service periods can be added later
     }
-
-    console.log('✓ Project created with default revenue centers and service periods');
 
     return NextResponse.json({ project, scenario });
   } catch (error) {
@@ -197,7 +191,6 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('Updating project with body:', JSON.stringify(body, null, 2));
 
     const {
       name,

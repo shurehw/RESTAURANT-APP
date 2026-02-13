@@ -37,7 +37,7 @@ export default async function ForecastsPage({
   const { data: forecasts } = await supabase
     .from('demand_forecasts')
     .select('*')
-    .eq('venue_id', selectedVenue)
+    .eq('venue_id', selectedVenue ?? '')
     .gte('business_date', startDate)
     .lte('business_date', endDate)
     .order('business_date');
@@ -46,7 +46,7 @@ export default async function ForecastsPage({
   const totalCovers = forecasts?.reduce((sum, f) => sum + (f.covers_predicted || 0), 0) || 0;
   const totalRevenue = forecasts?.reduce((sum, f) => sum + (f.revenue_predicted || 0), 0) || 0;
   const avgCheck = totalRevenue / totalCovers || 0;
-  const avgConfidence = forecasts?.reduce((sum, f) => sum + (f.confidence_level || 0), 0) / (forecasts?.length || 1) || 0;
+  const avgConfidence = (forecasts?.reduce((sum, f) => sum + (f.confidence_level || 0), 0) ?? 0) / (forecasts?.length || 1);
 
   return (
     <div>
@@ -149,7 +149,7 @@ export default async function ForecastsPage({
       {forecasts && forecasts.length > 0 ? (
         <Card className="p-6 mb-6">
           <h3 className="font-semibold mb-4">Covers & Revenue Forecast</h3>
-          <ForecastChart forecasts={forecasts} />
+          <ForecastChart forecasts={forecasts as any} />
         </Card>
       ) : (
         <Card className="p-12 text-center text-muted-foreground">

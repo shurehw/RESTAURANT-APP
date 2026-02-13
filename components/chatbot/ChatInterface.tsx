@@ -19,6 +19,7 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -45,6 +46,7 @@ export function ChatInterface() {
         body: JSON.stringify({
           question: input,
           history: messages.slice(1), // Exclude initial greeting
+          ...(conversationId && { conversationId }),
         }),
       });
 
@@ -53,6 +55,9 @@ export function ChatInterface() {
       if (!response.ok && !data.answer) {
         throw new Error(data.message || 'Failed to get response');
       }
+
+      // Track conversation ID from server
+      if (data.conversationId) setConversationId(data.conversationId);
 
       const assistantMessage: Message = {
         role: 'assistant',
@@ -80,6 +85,7 @@ export function ChatInterface() {
   const handleNewChat = () => {
     setMessages([INITIAL_MESSAGE]);
     setInput('');
+    setConversationId(null);
   };
 
   return (

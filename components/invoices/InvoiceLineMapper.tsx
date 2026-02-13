@@ -42,18 +42,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [isCreating, setIsCreating] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('[InvoiceLineMapper] Line data:', {
-      lineId: line.id,
-      description: line.description?.substring(0, 40),
-      hasInvoice: !!line.invoice,
-      invoiceId: line.invoice?.id,
-      invoiceNumber: line.invoice?.invoice_number,
-      storagePath: line.invoice?.storage_path,
-    });
-  }, []);
-
   // Auto-search on mount
   useEffect(() => {
     handleSearch();
@@ -78,7 +66,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   // Map line to selected item
   const handleMapItem = async (itemId: string) => {
     try {
-      console.log('Mapping line', line.id, 'to item', itemId);
       const response = await fetch(`/api/invoice-lines/${line.id}/map`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,15 +73,12 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
       });
 
       const data = await response.json();
-      console.log('Mapping response:', response.status, data);
 
       if (!response.ok) {
-        console.error('Mapping failed:', data);
         alert(`Failed to map item: ${data.error || data.message || 'Unknown error'}`);
         return;
       }
 
-      console.log('Mapping successful, reloading...');
       window.location.reload(); // Refresh to show updated mapping
     } catch (error) {
       console.error('Map error:', error);
@@ -626,22 +610,17 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
       if (response.ok) {
         const data = await response.json();
-        console.log('AI normalization response:', data);
         const parsedUOM = parseUOMFromDescription(line.description);
-        console.log('Parsed UOM from description:', parsedUOM);
 
         // Prefer parsed UOM over AI UOM for beverages (AI often returns 'unit' incorrectly)
         const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
         const finalUOM = isBeverage ? parsedUOM : (data.uom || parsedUOM);
-        console.log('Final UOM:', finalUOM, '(beverage override:', isBeverage, ')');
 
         setNewItemName(data.name || normalizeItemName(line.description));
         setNewItemSKU(data.sku || '');
         setNewItemUOM(finalUOM);
 
         // Parse pack configuration - prioritize learned > parsed > default
-        console.log('Parsing pack config from:', line.description);
-
         let parsedPackConfig = null;
 
         // Pattern 1: "12x750ml" or "12 × 750 ml" = 12 bottles per case, 750ml each
@@ -650,7 +629,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           const unitsPerPack = parseInt(caseXSizeMatch[1]);
           const unitSize = parseFloat(caseXSizeMatch[3]);
           const unitSizeUom = caseXSizeMatch[4].toLowerCase();
-          console.log('Pattern 1 matched (case × size):', caseXSizeMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
           parsedPackConfig = {
             pack_type: 'case',
             units_per_pack: unitsPerPack,
@@ -663,7 +641,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
         else if (line.description.match(/(\d+)\s*(?:pc|piece|ea|each)?\s*\/\s*(?:cs|case|box)\b/i)) {
           const foodCaseMatch = line.description.match(/(\d+)\s*(?:pc|piece|ea|each)?\s*\/\s*(?:cs|case|box)\b/i);
           const unitsPerPack = parseInt(foodCaseMatch![1]);
-          console.log('Pattern 2 matched (food case):', foodCaseMatch![0], '→', unitsPerPack, 'pieces per case');
           parsedPackConfig = {
             pack_type: 'case',
             units_per_pack: unitsPerPack,
@@ -680,7 +657,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             const unitSize = parseFloat(casePackMatch[2]);
             const unitSizeUom = casePackMatch[3].toLowerCase();
 
-            console.log('Pattern 3 matched (slash beverage case):', casePackMatch[0], '→', unitsPerPack, 'units @', unitSize, unitSizeUom);
             parsedPackConfig = {
               pack_type: unitSizeUom === 'cs' ? 'case' : 'case',
               units_per_pack: unitsPerPack,
@@ -698,7 +674,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             // Check if this is a catch-weight item (variable weight protein/seafood)
             const isCatchWeight = /(beef|pork|chicken|turkey|lamb|duck|veal|salmon|tuna|cod|halibut|shrimp|lobster|crab|scallop|seabass|fish|meat|protein)/i.test(line.description);
 
-            console.log('Pound pattern matched:', lbs, 'lb', '(catch-weight:', isCatchWeight, ')');
             parsedPackConfig = {
               pack_type: isCatchWeight ? 'catch_weight' : 'bag',
               units_per_pack: 1,
@@ -709,7 +684,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           }
           // Pattern 4: "EA" or "EACH" = sold as individual pieces
           else if (/\b(ea|each)\b/i.test(line.description)) {
-            console.log('Each pattern matched');
             parsedPackConfig = {
               pack_type: 'each',
               units_per_pack: 1,
@@ -733,7 +707,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                 packType = isCatchWeight ? 'catch_weight' : 'bag';
               }
 
-              console.log('Pattern 5 matched (single unit):', bottleMatch[0], '→ 1', packType, '@', unitSize, unitSizeUom);
               parsedPackConfig = {
                 pack_type: packType,
                 units_per_pack: 1,
@@ -745,9 +718,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
             // Pattern 6: Common beverage defaults (no size found)
             else {
               const isBeverage = /(liquor|wine|beer|vodka|gin|rum|whiskey|tequila|bourbon|bitters|vermouth|liqueur|spirit|aperitif)/i.test(line.description);
-              console.log('No size pattern matched. Is beverage?', isBeverage);
               if (isBeverage) {
-                console.log('Defaulting to 750mL bottle');
                 parsedPackConfig = {
                   pack_type: 'bottle',
                   units_per_pack: 1,
@@ -762,7 +733,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
         // Use learned config if available and confident, otherwise use parsed
         if (learnedPackConfig && (!parsedPackConfig || learnedPackConfig.confidence === 'high')) {
-          console.log('Using learned pack config:', learnedPackConfig);
           setPackConfigs([{
             pack_type: learnedPackConfig.pack_type,
             units_per_pack: learnedPackConfig.units_per_pack,
@@ -771,7 +741,6 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
           }]);
           // packConfigSource already set above
         } else if (parsedPackConfig) {
-          console.log('Using parsed pack config:', parsedPackConfig);
           setPackConfigs([parsedPackConfig]);
         }
       } else {

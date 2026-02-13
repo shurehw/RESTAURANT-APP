@@ -40,7 +40,7 @@ export default async function ForecastsPage({
   const { data: forecasts } = await supabase
     .from('forecasts_with_bias')
     .select('*')
-    .eq('venue_id', selectedVenue)
+    .eq('venue_id', selectedVenue ?? '')
     .gte('business_date', startDate)
     .lte('business_date', endDate)
     .order('business_date');
@@ -49,7 +49,7 @@ export default async function ForecastsPage({
   const { data: overrides } = await supabase
     .from('forecast_overrides')
     .select('business_date, shift_type, forecast_post_override, reason_code, delta')
-    .eq('venue_id', selectedVenue)
+    .eq('venue_id', selectedVenue ?? '')
     .gte('business_date', startDate)
     .lte('business_date', endDate);
 
@@ -139,7 +139,7 @@ export default async function ForecastsPage({
       {forecasts && forecasts.length > 0 ? (
         <Card className="p-6 mb-6">
           <h3 className="font-semibold mb-4">Covers & Revenue Forecast</h3>
-          <ForecastChart forecasts={forecasts} />
+          <ForecastChart forecasts={forecasts as any} />
         </Card>
       ) : (
         <Card className="p-12 text-center text-muted-foreground">
@@ -152,8 +152,8 @@ export default async function ForecastsPage({
       {/* Detailed Table with Override capability */}
       {forecasts && forecasts.length > 0 && (
         <ForecastTable
-          forecasts={forecasts}
-          overrideMap={Object.fromEntries(overrideMap)}
+          forecasts={forecasts as any}
+          overrideMap={Object.fromEntries(overrideMap) as any}
           venueId={selectedVenue || ''}
         />
       )}

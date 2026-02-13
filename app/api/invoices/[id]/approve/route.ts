@@ -26,7 +26,7 @@ export async function POST(
       );
     }
 
-    if (!['draft', 'pending_approval'].includes(invoice.status)) {
+    if (!['draft', 'pending_approval'].includes(invoice.status || '')) {
       return NextResponse.json(
         { 
           error: 'Invoice cannot be approved',

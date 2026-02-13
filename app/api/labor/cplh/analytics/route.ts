@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check venue access
-    const { data: access } = await supabase
+    const { data: access } = await (supabase as any)
       .from('user_venue_access')
       .select('venue_id')
       .eq('user_id', user.id)
@@ -118,8 +118,8 @@ export async function GET(request: NextRequest) {
     const overall_calc = calculateCPLH(total_covers, total_hours, avg_target);
 
     // Calculate trend
-    const timeline_data = cplh_data.map(row => ({
-      date: row.business_date,
+    const timeline_data = cplh_data.map((row: any) => ({
+      date: row.business_date as string,
       cplh: row.covers_per_labor_hour || 0
     }));
 
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
       target: number;
     }>();
 
-    cplh_data.forEach(row => {
+    cplh_data.forEach((row: any) => {
       const key = row.position_id;
       if (!by_position_map.has(key)) {
         by_position_map.set(key, {
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
       target: number;
     }>();
 
-    cplh_data.forEach(row => {
+    cplh_data.forEach((row: any) => {
       const key = row.shift_type;
       if (!by_shift_map.has(key)) {
         by_shift_map.set(key, {
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
 
     // Timeline (daily aggregates)
     const timeline_map = new Map<string, { covers: number; hours: number }>();
-    cplh_data.forEach(row => {
+    cplh_data.forEach((row: any) => {
       const key = row.business_date;
       if (!timeline_map.has(key)) {
         timeline_map.set(key, { covers: 0, hours: 0 });

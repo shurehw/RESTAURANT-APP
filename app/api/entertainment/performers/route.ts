@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     let query = adminClient
       .from('entertainment_artists')
       .select('*')
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', ctx.orgId ?? '')
       .order('name');
 
     if (venueId) {
@@ -124,7 +124,7 @@ export async function DELETE(request: NextRequest) {
       .from('entertainment_artists')
       .delete()
       .eq('id', id)
-      .eq('organization_id', ctx.orgId);
+      .eq('organization_id', ctx.orgId ?? '');
 
     if (error) {
       console.error('Error deleting performer:', error);

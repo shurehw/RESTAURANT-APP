@@ -76,7 +76,6 @@ export function CenterParticipationMatrix({ scenarioId }: CenterParticipationMat
       setServices(servicesData.servicePeriods || []);
       setParticipation(participationData.participation || []);
 
-      console.log('✅ Reloaded participation data:', participationData.participation?.length || 0, 'records');
     } catch (error) {
       console.error("Error loading data:", error);
     } finally {
@@ -88,16 +87,7 @@ export function CenterParticipationMatrix({ scenarioId }: CenterParticipationMat
     const record = participation.find(
       (p) => p.revenue_center_id === centerId && p.service_period_id === serviceId
     );
-    const active = record?.is_active ?? false;
-
-    // Log for debugging
-    const center = centers.find(c => c.id === centerId);
-    const service = services.find(s => s.id === serviceId);
-    if (center?.center_name === 'Bar') {
-      console.log(`isActive check - ${center?.center_name} × ${service?.service_name}:`, active, 'record:', record);
-    }
-
-    return active;
+    return record?.is_active ?? false;
   };
 
   const getUtilization = (centerId: string, serviceId: string): number | undefined => {
@@ -140,8 +130,6 @@ export function CenterParticipationMatrix({ scenarioId }: CenterParticipationMat
     // When activating, set default utilization based on center type
     const defaultUtil = center ? getDefaultUtilization(center.center_name) : 65;
 
-    console.log('Toggling participation:', { centerId, serviceId, currentState, defaultUtil });
-
     try {
       const response = await fetch("/api/proforma/center-participation", {
         method: "PATCH",
@@ -154,11 +142,7 @@ export function CenterParticipationMatrix({ scenarioId }: CenterParticipationMat
         }),
       });
 
-      console.log('Response status:', response.status);
-
       if (response.ok) {
-        const data = await response.json();
-        console.log('Response data:', data);
         await loadData();
       } else {
         const errorData = await response.json().catch(() => ({}));

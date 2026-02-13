@@ -12,8 +12,6 @@ export async function GET(
     const supabase = await createClient();
     const cookieStore = await cookies();
 
-    console.log('Fetching PDF for invoice:', id);
-
     // Get user ID from cookie (custom auth) or Supabase session
     let userId: string | null = null;
     const { data: { user } } = await supabase.auth.getUser();
@@ -57,9 +55,6 @@ export async function GET(
       .eq('id', id)
       .single();
 
-    console.log('Invoice data:', invoice);
-    console.log('Invoice error:', invoiceError);
-
     if (invoiceError) {
       console.error('Error fetching invoice:', invoiceError);
       return NextResponse.json(
@@ -77,14 +72,11 @@ export async function GET(
     }
 
     if (!invoice?.storage_path) {
-      console.log('No storage path found for invoice');
       return NextResponse.json(
         { error: 'Invoice PDF not found' },
         { status: 404 }
       );
     }
-
-    console.log('Storage path:', invoice.storage_path);
 
     // Get signed URL for the PDF using admin client
     const { data: urlData, error: urlError } = await adminClient
@@ -116,8 +108,6 @@ export async function GET(
         { status: 500 }
       );
     }
-
-    console.log('Signed URL created successfully');
 
     // Return the signed URL as JSON
     return NextResponse.json({ url: urlData.signedUrl });

@@ -22,6 +22,7 @@ export function FloatingChatWidget() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -48,6 +49,7 @@ export function FloatingChatWidget() {
         body: JSON.stringify({
           question: input,
           history: messages.slice(1), // Exclude initial greeting
+          ...(conversationId && { conversationId }),
         }),
       });
 
@@ -56,6 +58,10 @@ export function FloatingChatWidget() {
       }
 
       const data = await response.json();
+
+      // Track conversation ID from server
+      if (data.conversationId) setConversationId(data.conversationId);
+
       const assistantMessage: Message = {
         role: 'assistant',
         content: data.answer || 'Sorry, I couldn\'t process that request.',
@@ -79,6 +85,7 @@ export function FloatingChatWidget() {
   const handleNewChat = () => {
     setMessages([INITIAL_MESSAGE]);
     setInput('');
+    setConversationId(null);
   };
 
   if (!isOpen) {

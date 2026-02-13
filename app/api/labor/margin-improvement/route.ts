@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: access } = await supabase
+    const { data: access } = await (supabase as any)
       .from('user_venue_access')
       .select('venue_id')
       .eq('user_id', user.id)
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     current.labor_percentage = current.revenue > 0 ? (current.labor_cost / current.revenue) * 100 : 0;
     current.cplh = current_schedules
       .filter(s => s.overall_cplh && s.overall_cplh > 0)
-      .reduce((sum, s) => sum + s.overall_cplh, 0) /
+      .reduce((sum, s) => sum + (s.overall_cplh || 0), 0) /
       current_schedules.filter(s => s.overall_cplh && s.overall_cplh > 0).length || 0;
 
     // Aggregate baseline period
@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
     baseline.labor_percentage = baseline.revenue > 0 ? (baseline.labor_cost / baseline.revenue) * 100 : 0;
     baseline.cplh = baseline_schedules
       .filter(s => s.overall_cplh && s.overall_cplh > 0)
-      .reduce((sum, s) => sum + s.overall_cplh, 0) /
+      .reduce((sum, s) => sum + (s.overall_cplh || 0), 0) /
       baseline_schedules.filter(s => s.overall_cplh && s.overall_cplh > 0).length || 0;
 
     // Calculate improvement
@@ -155,9 +155,9 @@ export async function GET(request: NextRequest) {
       .gte('week_start_date', trend_start)
       .order('week_start_date', { ascending: true });
 
-    const trend = trend_data?.map(week => ({
+    const trend = trend_data?.map((week: any) => ({
       period: week.week_start_date,
-      labor_pct: week.projected_revenue > 0 ? (week.total_labor_cost / week.projected_revenue) * 100 : 0,
+      labor_pct: (week.projected_revenue || 0) > 0 ? ((week.total_labor_cost || 0) / week.projected_revenue) * 100 : 0,
       cplh: week.overall_cplh || 0,
       quality_score: week.service_quality_score || 0
     })) || [];

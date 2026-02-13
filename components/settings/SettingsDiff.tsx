@@ -147,7 +147,7 @@ export function SettingsDiff({ oldVersion, newVersion }: SettingsDiffProps) {
                   {formatValue(change.oldValue)}
                 </span>
                 {change.type === "modified" && (
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
+                  <ArrowRight className="h-4 w-4 text-gray-500" />
                 )}
                 {change.type !== "removed" && (
                   <span className="font-medium">{formatValue(change.newValue)}</span>

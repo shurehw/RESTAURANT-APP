@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
+import { resolveContext } from '@/lib/auth/resolveContext';
 import { z } from 'zod';
 
 const createSchema = z.object({
@@ -12,6 +13,11 @@ const createSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    const ctx = await resolveContext();
+    if (!ctx || !ctx.isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const searchParams = req.nextUrl.searchParams;
     const venueId = searchParams.get('venue_id');
     const businessDate = searchParams.get('business_date');
@@ -50,6 +56,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const ctx = await resolveContext();
+    if (!ctx || !ctx.isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { venue_id, business_date } = createSchema.parse(body);
 

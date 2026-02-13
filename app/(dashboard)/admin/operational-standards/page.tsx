@@ -19,7 +19,7 @@ export default async function AdminOperationalStandardsPage() {
         name
       )
     `)
-    .eq('user_id', user?.id)
+    .eq('user_id', user?.id ?? '')
     .eq('is_active', true)
     .in('role', ['admin', 'owner']);
 

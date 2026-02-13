@@ -3,10 +3,8 @@
  * Sidebar + topbar with brass accent line
  */
 
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
-  LayoutDashboard,
   ShoppingCart,
   FileText,
   Users,
@@ -25,6 +23,7 @@ import {
   ShieldCheck,
   Activity,
 } from "lucide-react";
+import { NavLink } from "@/components/layout/NavLink";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
 import { VenueProvider } from "@/components/providers/VenueProvider";
@@ -38,10 +37,10 @@ export default async function DashboardLayout({
 
   // Get current user's organization
   const { data: { user } } = await supabase.auth.getUser();
-  const { data: userData } = await supabase
+  const { data: userData } = await (supabase as any)
     .from("users")
     .select("organization_id")
-    .eq("id", user?.id)
+    .eq("id", user?.id ?? '')
     .single();
 
   const { data: organization } = await supabase
@@ -59,6 +58,14 @@ export default async function DashboardLayout({
   return (
     <VenueProvider initialVenues={venues || []}>
       <div className="flex min-h-screen bg-background">
+        {/* Skip to main content — keyboard/screen-reader shortcut */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-brass focus:text-opsos-slate-800 focus:rounded-md focus:font-semibold focus:text-sm"
+        >
+          Skip to main content
+        </a>
+
         {/* Sidebar */}
         <Sidebar />
 
@@ -72,7 +79,7 @@ export default async function DashboardLayout({
           />
 
           {/* Page Content */}
-          <main className="flex-1 p-8">{children}</main>
+          <main id="main-content" className="flex-1 p-8">{children}</main>
         </div>
 
         {/* Floating Chat Widget - Always Available */}
@@ -87,16 +94,16 @@ function Sidebar() {
     <aside className="w-64 bg-opsos-sage-600 border-r-2 border-brass relative">
       {/* Logo */}
       <div className="h-24 flex items-center justify-center px-4 border-b-2 border-brass bg-white overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/opsos-logo.png"
-          alt="OpsOS"
-          className="h-20 w-full object-contain"
-          style={{ objectPosition: 'center', transform: 'scale(1.8)' }}
+          alt="OpsOS logo"
+          className="h-20 w-full object-contain object-center scale-[1.8]"
         />
       </div>
 
       {/* Navigation */}
-      <nav className="p-4 space-y-1">
+      <nav className="p-4 space-y-1" aria-label="Main navigation">
         <NavLink href="/" icon={<Moon className="w-5 h-5" />}>
           Home
         </NavLink>
@@ -180,24 +187,6 @@ function Sidebar() {
       {/* Brass accent line at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-brass"></div>
     </aside>
-  );
-}
-
-function NavLink({
-  href,
-  icon,
-  children,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  // TODO: Add active state detection with usePathname
-  return (
-    <Link href={href} className="nav-link">
-      {icon}
-      <span>{children}</span>
-    </Link>
   );
 }
 

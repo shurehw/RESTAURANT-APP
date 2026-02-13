@@ -127,13 +127,6 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
     }
   };
 
-  // Debug pack configs
-  console.log('ProductsTable - First product:', {
-    name: initialProducts[0]?.name,
-    packConfigs: initialProducts[0]?.item_pack_configurations,
-    packCount: initialProducts[0]?.item_pack_configurations?.length
-  });
-
   // Sort function
   const handleSort = (column: keyof Product) => {
     if (sortColumn === column) {

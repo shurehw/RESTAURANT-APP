@@ -171,7 +171,7 @@ export default async function StatementDetailPage({ params }: Props) {
             {allMatches.map((match) => (
               <TableRow key={match.statement_line_id}>
                 <TableCell className="text-sm">
-                  {new Date(match.line_date).toLocaleDateString()}
+                  {new Date(match.line_date || '').toLocaleDateString()}
                 </TableCell>
                 <TableCell className="font-mono text-sm">
                   {match.invoice_number || "—"}
@@ -237,7 +237,7 @@ export default async function StatementDetailPage({ params }: Props) {
                 <TableCell className="text-right">
                   {!match.matched && (
                     <AIMatchButton
-                      statementLineId={match.statement_line_id}
+                      statementLineId={match.statement_line_id || ''}
                     />
                   )}
                 </TableCell>

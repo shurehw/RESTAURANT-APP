@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, AlertTriangle, TrendingUp, XCircle } from 'lucide-react';
 
 interface Notification {
@@ -13,6 +13,19 @@ interface Notification {
 
 export function NotificationsDropdown() {
   const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const close = useCallback(() => setIsOpen(false), []);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, close]);
 
   // Mock notifications - will be replaced with real data
   const notifications: Notification[] = [
@@ -59,9 +72,12 @@ export function NotificationsDropdown() {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Notifications"
+        aria-expanded={isOpen}
+        aria-haspopup="true"
         className="relative p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors duration-fast"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-5 h-5" aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-2 h-2 bg-brass rounded-full"></span>
         )}
@@ -71,9 +87,10 @@ export function NotificationsDropdown() {
       {isOpen && (
         <>
           {/* Backdrop */}
+          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
           <div
             className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
+            onClick={close}
           />
 
           {/* Dropdown Panel */}

@@ -120,7 +120,7 @@ export function RequirementsDisplay({ requirements, venueId, laborTarget }: Prop
   if (shifts.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <Calculator className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+        <Calculator className="w-12 h-12 text-gray-500 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           No Requirements Calculated
         </h3>

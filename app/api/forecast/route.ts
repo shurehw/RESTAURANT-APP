@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient();
     const today = new Date().toISOString().split('T')[0];
 
-    let query = supabase
+    let query = (supabase as any)
       .from('venue_day_forecast')
       .select('*')
       .eq('venue_id', params.venueId)

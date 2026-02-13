@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: access } = await supabase
+    const { data: access } = await (supabase as any)
       .from('user_venue_access')
       .select('venue_id')
       .eq('user_id', user.id)

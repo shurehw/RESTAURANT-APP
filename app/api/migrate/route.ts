@@ -12,7 +12,7 @@ export async function POST() {
     const sql = readFileSync(migrationPath, 'utf8');
 
     // Execute the migration
-    const { error } = await supabase.rpc('exec', { sql });
+    const { error } = await (supabase as any).rpc('exec', { sql });
 
     if (error) {
       console.error('Migration error:', error);

@@ -62,7 +62,7 @@ export default async function AdminOrganizations() {
           <tbody className="bg-white divide-y divide-gray-200">
             {organizations?.map((org) => {
               const activeMembers = org.organization_users?.filter(
-                (m: { is_active: boolean }) => m.is_active
+                (m: { is_active: boolean | null }) => m.is_active
               ).length || 0;
               
               return (

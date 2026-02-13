@@ -19,6 +19,7 @@ const chatSchema = z.object({
     role: z.enum(['user', 'assistant']),
     content: z.string(),
   })).optional().default([]),
+  conversationId: z.string().uuid().optional(),
 });
 
 let _anthropic: Anthropic | null = null;
@@ -29,15 +30,105 @@ function getAnthropic(): Anthropic {
   return _anthropic;
 }
 
+/**
+ * Build the list of notable dates/events near today for AI context.
+ * Includes major US holidays, cultural events, and high-impact restaurant nights.
+ */
+function getUpcomingEvents(today: Date): string {
+  const year = today.getFullYear();
+
+  // Static holidays & events (month is 0-indexed)
+  const events: { date: Date; name: string; impact: string }[] = [
+    { date: new Date(year, 0, 1), name: "New Year's Day", impact: 'Brunch rush, lower dinner' },
+    { date: new Date(year, 1, 14), name: "Valentine's Day", impact: 'Peak dinner covers, prix-fixe menus, high avg check' },
+    { date: new Date(year, 2, 17), name: "St. Patrick's Day", impact: 'High bar sales, extended hours' },
+    { date: new Date(year, 4, 5), name: 'Cinco de Mayo', impact: 'High bar/tequila sales' },
+    { date: new Date(year, 6, 4), name: 'Independence Day', impact: 'Brunch/patio traffic, may close early' },
+    { date: new Date(year, 9, 31), name: 'Halloween', impact: 'Late-night traffic, bar-heavy' },
+    { date: new Date(year, 11, 24), name: 'Christmas Eve', impact: 'Early close or special menus' },
+    { date: new Date(year, 11, 25), name: 'Christmas Day', impact: 'Likely closed or limited' },
+    { date: new Date(year, 11, 31), name: "New Year's Eve", impact: 'Peak revenue night, special events, prix-fixe' },
+  ];
+
+  // Dynamic holidays (approximate — good enough for context)
+  // Super Bowl: first Sunday in February
+  const feb1 = new Date(year, 1, 1);
+  const superBowlDay = feb1.getDay() === 0 ? 1 : (7 - feb1.getDay()) + 1;
+  events.push({ date: new Date(year, 1, superBowlDay), name: 'Super Bowl Sunday', impact: 'Huge bar sales, watch parties, high covers' });
+
+  // Mother's Day: second Sunday in May
+  const may1 = new Date(year, 4, 1);
+  const mothersDayDay = may1.getDay() === 0 ? 8 : (14 - may1.getDay()) + 1;
+  events.push({ date: new Date(year, 4, mothersDayDay), name: "Mother's Day", impact: 'Peak brunch, high covers, prix-fixe' });
+
+  // Father's Day: third Sunday in June
+  const jun1 = new Date(year, 5, 1);
+  const fathersDayDay = jun1.getDay() === 0 ? 15 : (21 - jun1.getDay()) + 1;
+  events.push({ date: new Date(year, 5, fathersDayDay), name: "Father's Day", impact: 'High dinner covers, steakhouse peak' });
+
+  // Thanksgiving: fourth Thursday in November
+  const nov1 = new Date(year, 10, 1);
+  const thanksgivingDay = nov1.getDay() <= 4 ? (4 - nov1.getDay()) + 22 : (11 - nov1.getDay()) + 22;
+  events.push({ date: new Date(year, 10, thanksgivingDay), name: 'Thanksgiving', impact: 'Special menu or closed, Wed before is big bar night' });
+
+  // Memorial Day: last Monday in May
+  const may31 = new Date(year, 4, 31);
+  const memorialDay = may31.getDay() >= 1 ? 31 - (may31.getDay() - 1) : 31 - 6;
+  events.push({ date: new Date(year, 4, memorialDay), name: 'Memorial Day', impact: 'Weekend brunch surge, summer kickoff' });
+
+  // Labor Day: first Monday in September
+  const sep1 = new Date(year, 8, 1);
+  const laborDayDay = sep1.getDay() === 1 ? 1 : sep1.getDay() === 0 ? 2 : (8 - sep1.getDay()) + 1;
+  events.push({ date: new Date(year, 8, laborDayDay), name: 'Labor Day', impact: 'Weekend brunch surge, end of summer' });
+
+  // Sort by date
+  events.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Format date as YYYY-MM-DD
+  const fmt = (d: Date) => d.toISOString().split('T')[0];
+  const todayMs = today.getTime();
+  const msPerDay = 86400000;
+
+  // Find events within ±14 days for "nearby" context, plus list all for the year
+  const nearby = events.filter(e => {
+    const diff = e.date.getTime() - todayMs;
+    return diff >= -7 * msPerDay && diff <= 14 * msPerDay;
+  });
+
+  let section = 'MAJOR EVENTS & HOLIDAYS (affects traffic and revenue patterns):\n';
+
+  if (nearby.length > 0) {
+    section += 'Nearby events:\n';
+    for (const e of nearby) {
+      const diffDays = Math.round((e.date.getTime() - todayMs) / msPerDay);
+      const rel = diffDays === 0 ? 'TODAY' : diffDays < 0 ? `${Math.abs(diffDays)} days ago` : `in ${diffDays} days`;
+      section += `- ${e.name} (${fmt(e.date)}, ${rel}): ${e.impact}\n`;
+    }
+    section += '\n';
+  }
+
+  section += 'Full calendar:\n';
+  for (const e of events) {
+    const isPast = e.date.getTime() < todayMs;
+    section += `- ${fmt(e.date)}: ${e.name}${isPast ? ' (past)' : ''} — ${e.impact}\n`;
+  }
+
+  section += `\nWhen analyzing data near these dates, factor in event-driven traffic changes. Compare event-day performance to the previous week's same day-of-week for meaningful context.`;
+
+  return section;
+}
+
 function buildSystemPrompt(
   venueNames: string[],
   fiscal: { calendarType: FiscalCalendarType; periodInfo: ReturnType<typeof getFiscalPeriod> }
 ): string {
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
   const { calendarType, periodInfo } = fiscal;
   const { fiscalYear, fiscalQuarter, fiscalPeriod, periodStartDate, periodEndDate } = periodInfo;
 
   const calendarLabel = calendarType === 'standard' ? 'standard monthly' : calendarType;
+  const eventsSection = getUpcomingEvents(now);
 
   return `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
 
@@ -56,6 +147,13 @@ FISCAL CALENDAR:
 - "PTD" = period-to-date (${periodStartDate} to ${today})
 - "QTD" = quarter-to-date
 - When the user says "current period", "PTD", or "period to date", use ${periodStartDate} to ${today}
+
+${eventsSection}
+
+DATA SYNC TIMING:
+- POS data from TipSee syncs nightly, typically completing by 6–8 AM ET the next day
+- If "last night" returns no data, it may not have synced yet — suggest trying the previous day or checking back later
+- Labor punch data may lag 12–24 hours behind sales data
 
 AVAILABLE DATA (via tools):
 
@@ -177,7 +275,12 @@ export async function POST(req: NextRequest) {
     const periodInfo = getFiscalPeriod(new Date(), calendarType, fyStartDate);
 
     const body = await req.json();
-    const { question, history } = chatSchema.parse(body);
+    const { question, history, conversationId: clientConvId } = chatSchema.parse(body);
+
+    // conversation_id lets us group messages in the same chat session
+    const conversationId = clientConvId || crypto.randomUUID();
+    const startTime = Date.now();
+    const toolsUsed: string[] = [];
 
     // Build messages
     const messages: Anthropic.MessageParam[] = [];
@@ -191,12 +294,13 @@ export async function POST(req: NextRequest) {
     const systemPrompt = buildSystemPrompt(venueNames, { calendarType, periodInfo });
 
     // Tool-use loop
+    let toolCallCount = 0;
     let response = await getAnthropic().messages.create({
       model: 'claude-haiku-4-5-20251001',
       system: systemPrompt,
       messages,
       tools: CHATBOT_TOOLS,
-      max_tokens: 1500,
+      max_tokens: 2500,
       temperature: 0.3,
     });
 
@@ -204,6 +308,12 @@ export async function POST(req: NextRequest) {
       const toolBlocks = response.content.filter(
         (b): b is Anthropic.ToolUseBlock => b.type === 'tool_use'
       );
+
+      // Track tools used
+      for (const block of toolBlocks) {
+        if (!toolsUsed.includes(block.name)) toolsUsed.push(block.name);
+        toolCallCount++;
+      }
 
       // Append assistant's response (includes tool_use blocks)
       messages.push({ role: 'assistant', content: response.content });
@@ -228,7 +338,7 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages,
         tools: CHATBOT_TOOLS,
-        max_tokens: 1500,
+        max_tokens: 2500,
         temperature: 0.3,
       });
     }
@@ -236,9 +346,30 @@ export async function POST(req: NextRequest) {
     // Extract final text answer
     const textBlock = response.content.find((b) => b.type === 'text');
     const answer = textBlock?.type === 'text' ? textBlock.text : '';
+    const responseTimeMs = Date.now() - startTime;
+
+    // Log conversation async (fire-and-forget — never block the response)
+    (supabase as any)
+      .from('chatbot_conversations')
+      .insert({
+        conversation_id: conversationId,
+        org_id: ctx.orgId,
+        user_id: ctx.authUserId,
+        venue_ids: venueIds,
+        question,
+        answer,
+        tools_used: toolsUsed,
+        tool_calls: toolCallCount,
+        model: 'claude-haiku-4-5-20251001',
+        response_time_ms: responseTimeMs,
+      })
+      .then(({ error }: { error: any }) => {
+        if (error) console.error('[chatbot] Failed to log conversation:', error.message);
+      });
 
     return NextResponse.json({
       answer,
+      conversationId,
       context_used: true,
     });
   });

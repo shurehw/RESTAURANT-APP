@@ -60,7 +60,7 @@ export default async function SchedulePage({
       </div>
 
       <ScheduleCalendar
-        schedule={schedule}
+        schedule={schedule as any}
         venueId={venueId}
         weekStart={weekStart}
       />

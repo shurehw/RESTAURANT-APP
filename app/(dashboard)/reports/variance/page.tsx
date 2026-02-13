@@ -154,14 +154,15 @@ export default async function VarianceReportPage() {
               <tbody className="text-sm">
                 {varianceData.map((row) => {
                   const variance = (row.actual_cost || 0) - (row.theoretical_cost || 0);
-                  const variancePct = row.theoretical_cost > 0
-                    ? ((variance / row.theoretical_cost) * 100)
+                  const theoreticalCost = row.theoretical_cost || 0;
+                  const variancePct = theoreticalCost > 0
+                    ? ((variance / theoreticalCost) * 100)
                     : 0;
 
                   return (
                     <tr key={row.date} className="border-b hover:bg-muted/50">
                       <td className="py-3">
-                        {new Date(row.date).toLocaleDateString('en-US', {
+                        {new Date(row.date || '').toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
                           year: 'numeric'

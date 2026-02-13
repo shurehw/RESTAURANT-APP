@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient();
 
-    let query = supabase
+    let query = (supabase as any)
       .from('operational_exceptions')
       .select('*')
       .in('venue_id', venueIds)
@@ -47,13 +47,13 @@ export async function GET(req: NextRequest) {
     // Group exceptions by type for summary
     const summary = {
       total: exceptions?.length || 0,
-      critical: exceptions?.filter(e => e.severity === 'critical').length || 0,
-      warning: exceptions?.filter(e => e.severity === 'warning').length || 0,
-      info: exceptions?.filter(e => e.severity === 'info').length || 0,
+      critical: exceptions?.filter((e: any) => e.severity === 'critical').length || 0,
+      warning: exceptions?.filter((e: any) => e.severity === 'warning').length || 0,
+      info: exceptions?.filter((e: any) => e.severity === 'info').length || 0,
       byType: {} as Record<string, number>,
     };
 
-    exceptions?.forEach(e => {
+    exceptions?.forEach((e: any) => {
       summary.byType[e.exception_type] = (summary.byType[e.exception_type] || 0) + 1;
     });
 

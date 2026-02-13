@@ -7,9 +7,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchCompExceptions } from '@/lib/database/tipsee';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
+import { resolveContext } from '@/lib/auth/resolveContext';
 
 export async function GET(request: NextRequest) {
   try {
+    const ctx = await resolveContext();
+    if (!ctx || !ctx.isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const date = searchParams.get('date');
     const venueId = searchParams.get('venue_id');

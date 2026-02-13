@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient();
 
     // Get forecast for the date
-    const { data: forecasts, error } = await supabase
+    const { data: forecasts, error } = await (supabase as any)
       .from('venue_day_forecast')
       .select('*')
       .eq('venue_id', params.venueId)

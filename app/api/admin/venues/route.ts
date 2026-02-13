@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const validated = createVenueSchema.parse(body);
 
     // Create venue
-    const { data: venue, error } = await supabase
+    const { data: venue, error } = await (supabase as any)
       .from('venues')
       .insert({
         name: validated.name,

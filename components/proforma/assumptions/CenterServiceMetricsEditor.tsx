@@ -388,16 +388,10 @@ export function CenterServiceMetricsEditor({
   };
 
   const handleSave = async () => {
-    console.log('[CenterServiceMetricsEditor] Starting save, metrics:', metrics);
-
     const validationErrors = validateMetrics();
-    console.log('[CenterServiceMetricsEditor] Validation errors:', validationErrors);
-
     const criticalErrors = validationErrors.filter(e => !e.startsWith('Warning:'));
-    console.log('[CenterServiceMetricsEditor] Critical errors:', criticalErrors);
 
     if (criticalErrors.length > 0) {
-      console.log('[CenterServiceMetricsEditor] Blocking save due to critical errors');
       setErrors(validationErrors);
       return;
     }
@@ -411,19 +405,13 @@ export function CenterServiceMetricsEditor({
         service_period_id: serviceId,
         ...metrics,
       };
-      console.log('[CenterServiceMetricsEditor] Sending PATCH request with payload:', payload);
-
       const response = await fetch("/api/proforma/center-service-metrics", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      console.log('[CenterServiceMetricsEditor] Response status:', response.status);
-
       if (response.ok) {
-        const data = await response.json();
-        console.log('[CenterServiceMetricsEditor] Save successful, response:', data);
         onClose();
       } else {
         const error = await response.json();

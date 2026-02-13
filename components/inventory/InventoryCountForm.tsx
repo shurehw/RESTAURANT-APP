@@ -67,11 +67,6 @@ export function InventoryCountForm() {
 
   const handleSave = async () => {
     // TODO: Implement save to API
-    console.log('Saving count:', {
-      count_date: countDate,
-      count_type: countType,
-      lines,
-    });
   };
 
   return (
@@ -81,8 +76,9 @@ export function InventoryCountForm() {
         <h3 className="font-semibold mb-4">Count Details</h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Count Date</label>
+            <label htmlFor="count-date" className="block text-sm font-medium mb-2">Count Date</label>
             <input
+              id="count-date"
               type="date"
               value={countDate}
               onChange={(e) => setCountDate(e.target.value)}
@@ -91,8 +87,9 @@ export function InventoryCountForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Count Type</label>
+            <label htmlFor="count-type" className="block text-sm font-medium mb-2">Count Type</label>
             <select
+              id="count-type"
               value={countType}
               onChange={(e) => setCountType(e.target.value as any)}
               className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"

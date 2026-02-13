@@ -55,9 +55,6 @@ export function ItemBulkImport() {
         return normalizedRow;
       });
 
-      console.log('Parsed Excel data:', normalized.length, 'rows');
-      console.log('Sample row:', normalized[0]);
-
       setParsedData(normalized);
     } catch (error) {
       console.error('Failed to parse Excel:', error);
@@ -82,7 +79,6 @@ export function ItemBulkImport() {
       });
 
       const result = await response.json();
-      console.log('Import result:', result);
 
       if (response.ok) {
         setImportResults(result.results);
