@@ -22,7 +22,7 @@ export async function POST(
     const supabase = createAdminClient();
 
     // Fetch the order
-    const { data: order, error: fetchError } = await supabase
+    const { data: order, error: fetchError } = await (supabase as any)
       .from("purchase_orders")
       .select(`
         id, status, venue_id,
@@ -36,7 +36,7 @@ export async function POST(
     }
 
     // Verify org access
-    if (!ctx.isPlatformAdmin && order.venue?.[0]?.organization_id !== ctx.orgId) {
+    if (!ctx.isPlatformAdmin && (order.venue as any)?.[0]?.organization_id !== ctx.orgId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

@@ -36,7 +36,7 @@ export async function POST(
     }
 
     // Verify org access
-    if (!ctx.isPlatformAdmin && order.venue?.[0]?.organization_id !== ctx.orgId) {
+    if (!ctx.isPlatformAdmin && (order.venue as any)?.[0]?.organization_id !== ctx.orgId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 

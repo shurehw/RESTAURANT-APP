@@ -29,7 +29,7 @@ export async function GET(
     const supabase = await createClient();
 
     // Get daily performance from materialized view
-    const { data: performance, error: perfError } = await supabase
+    const { data: performance, error: perfError } = await (supabase as any)
       .from('daily_performance')
       .select('*')
       .eq('venue_id', venueId)
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     // Get variance (actual vs budget)
-    const { data: variance, error: varError } = await supabase
+    const { data: variance, error: varError } = await (supabase as any)
       .from('daily_variance')
       .select('*')
       .eq('venue_id', venueId)
@@ -53,7 +53,7 @@ export async function GET(
     }
 
     // Get unacknowledged alerts for this venue and date
-    const { data: alerts, error: alertsError } = await supabase
+    const { data: alerts, error: alertsError } = await (supabase as any)
       .from('alerts')
       .select('*')
       .eq('venue_id', venueId)
@@ -68,7 +68,7 @@ export async function GET(
     }
 
     // Get hourly breakdown
-    const { data: hourly, error: hourlyError } = await supabase
+    const { data: hourly, error: hourlyError } = await (supabase as any)
       .from('labor_efficiency_hourly')
       .select('*')
       .eq('venue_id', venueId)

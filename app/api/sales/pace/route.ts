@@ -98,6 +98,7 @@ async function buildVenuePace(venueId: string, date: string, tz: string) {
     : coversStatus;
 
   return {
+    date,
     current: latest,
     snapshots,
     forecast,

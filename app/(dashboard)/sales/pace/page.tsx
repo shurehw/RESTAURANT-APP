@@ -630,17 +630,13 @@ export default function LivePulsePage() {
       if (isAllVenues) {
         setGroupData(json);
         setData(null);
-        // Set date from server response if we don't have one
-        if (!selectedDate && json.date) {
-          setSelectedDate(json.date);
-        }
       } else {
         setData(json);
         setGroupData(null);
-        // Set date from the first snapshot's business_date
-        if (!selectedDate && json.current?.business_date) {
-          setSelectedDate(json.current.business_date);
-        }
+      }
+      // Always sync date from server response
+      if (!selectedDate && json.date) {
+        setSelectedDate(json.date);
       }
       setLastRefreshed(new Date());
     } catch (err: any) {
