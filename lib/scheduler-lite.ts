@@ -161,6 +161,7 @@ export async function generateScheduleTS(
 
         // Assign shift
         shifts.push({
+          venue_id: venueId,
           employee_id: emp.id,
           position_id: posInfo.id,
           business_date: day.date,
@@ -168,6 +169,8 @@ export async function generateScheduleTS(
           scheduled_start: `${day.date}T${config.start}:00`,
           scheduled_end: `${day.date}T${config.end}:00`,
           scheduled_hours: config.shiftHours,
+          hourly_rate: posInfo.base_hourly_rate,
+          scheduled_cost: config.shiftHours * posInfo.base_hourly_rate,
           status: 'scheduled',
         });
 
