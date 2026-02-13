@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: access } = await supabase
+    const { data: access } = await (supabase as any)
       .from('user_venue_access')
       .select('venue_id')
       .eq('user_id', user.id)
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Default standards if none found
-    const standards: ServiceQualityStandards = standards_data || {
+    const standards: ServiceQualityStandards = (standards_data as ServiceQualityStandards) || {
       max_tables_per_server: 3.5,
       max_covers_per_server: 12.0,
       min_busser_to_server_ratio: 0.5,
@@ -154,8 +154,8 @@ export async function GET(request: NextRequest) {
       .filter(a => a.employee?.performance_rating)
       .map(a => ({
         employee_id: a.employee_id,
-        performance_rating: a.employee.performance_rating,
-        covers_per_hour_avg: a.employee.covers_per_hour_avg
+        performance_rating: a.employee.performance_rating ?? 0,
+        covers_per_hour_avg: a.employee.covers_per_hour_avg ?? 0,
       }));
 
     // Calculate score

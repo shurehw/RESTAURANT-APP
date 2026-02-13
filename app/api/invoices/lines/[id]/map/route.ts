@@ -153,6 +153,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
                 units_per_pack: packConfig.units_per_pack,
                 unit_size: packConfig.unit_size,
                 unit_size_uom: packConfig.unit_size_uom,
+                conversion_factor: packConfig.units_per_pack * packConfig.unit_size,
                 vendor_id: vendorId,
                 vendor_item_code: invoiceLine.vendor_item_code,
                 is_active: true,

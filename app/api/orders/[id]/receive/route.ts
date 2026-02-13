@@ -58,12 +58,12 @@ export async function POST(
     }
 
     // Verify org access
-    if (!ctx.isPlatformAdmin && order.venue?.[0]?.organization_id !== ctx.orgId) {
+    if (!ctx.isPlatformAdmin && (order.venue as any)?.[0]?.organization_id !== ctx.orgId) {
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Check order status allows receiving
-    if (!["ordered", "pending"].includes(order.status)) {
+    if (!["ordered", "pending"].includes(order.status ?? '')) {
       return NextResponse.json(
         { error: `Cannot receive against order with status: ${order.status}` },
         { status: 400 }
@@ -95,7 +95,7 @@ export async function POST(
           { status: 400 }
         );
       }
-      if (line.qty_received > orderLine.remaining_qty) {
+      if (line.qty_received > (orderLine.remaining_qty ?? 0)) {
         return NextResponse.json(
           {
             error: `Quantity ${line.qty_received} exceeds remaining ${orderLine.remaining_qty} for line ${line.line_id}`,

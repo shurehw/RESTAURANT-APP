@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Create invoice record
-        const { data: invoiceData, error: invoiceError } = await supabase
+        const { data: invoiceData, error: invoiceError } = await (supabase as any)
           .from('invoices')
           .insert({
             venue_id: venueId,
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
         let syncedEmailId = existing?.id;
 
         if (!syncedEmailId) {
-          const { data: syncedEmailData } = await supabase
+          const { data: syncedEmailData } = await (supabase as any)
             .from('synced_emails')
             .insert({
               email_sync_config_id: null, // TODO: Link to config
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Save attachment metadata
-        await supabase.from('email_attachments').insert({
+        await (supabase as any).from('email_attachments').insert({
           synced_email_id: syncedEmailId,
           attachment_name: attachment.name,
           attachment_type: attachment.contentType,
@@ -171,8 +171,8 @@ export async function POST(request: NextRequest) {
         });
 
         // Mark email as processed
-        await supabase.rpc('mark_email_processed', {
-          p_synced_email_id: syncedEmailId,
+        await (supabase as any).rpc('mark_email_processed', {
+          p_synced_email_id: syncedEmailId ?? '',
           p_invoice_id: invoiceData.id,
         });
 

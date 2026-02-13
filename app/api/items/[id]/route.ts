@@ -120,10 +120,11 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           units_per_pack: config.units_per_pack,
           unit_size: config.unit_size,
           unit_size_uom: config.unit_size_uom,
+          conversion_factor: (config.units_per_pack || 1) * (config.unit_size || 1),
           vendor_item_code: config.vendor_item_code || null,
         }));
 
-        const { error: packError } = await adminClient
+        const { error: packError } = await (adminClient as any)
           .from('item_pack_configurations')
           .insert(newConfigs);
 

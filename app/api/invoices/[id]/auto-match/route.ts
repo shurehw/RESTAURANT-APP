@@ -109,7 +109,7 @@ export async function POST(
       invoice.vendor_id,
       invoice.venue_id,
       invoice.invoice_date,
-      invoice.po_number_ocr
+      invoice.po_number_ocr ?? undefined
     );
 
     if (candidatePOs.length === 0) {
@@ -128,7 +128,7 @@ export async function POST(
       const match = await matchLineToPO(
         line,
         bestPO,
-        vendorTolerance
+        vendorTolerance as any
       );
 
       if (match) {
@@ -184,7 +184,7 @@ export async function POST(
     const summary = calculateVarianceSummary(matches, invoice.total_amount || 0);
 
     // Determine auto-approval
-    const autoApprove = summary.match_pct >= vendorTolerance.auto_approve_threshold_pct &&
+    const autoApprove = summary.match_pct >= (vendorTolerance.auto_approve_threshold_pct ?? 95) &&
       summary.severity !== 'critical';
 
     // Update invoice
