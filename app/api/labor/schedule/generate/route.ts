@@ -6,12 +6,7 @@ import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant
 import { rateLimit } from '@/lib/rate-limit';
 import { validate, validateQuery, uuid } from '@/lib/validate';
 import { z } from 'zod';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
 import { generateScheduleTS } from '@/lib/scheduler-lite';
-
-const execAsync = promisify(exec);
 
 const generateSchema = z.object({
   venue_id: uuid,
@@ -41,49 +36,15 @@ export async function POST(request: NextRequest) {
     const validated = validate(generateSchema, body);
     assertVenueAccess(validated.venue_id, venueIds);
 
-    // Try Python scheduler first, fall back to TS scheduler if Python unavailable
-    let scheduleId: string | null = null;
+    // Generate schedule using TS scheduler
+    const result = await generateScheduleTS(
+      validated.venue_id,
+      validated.week_start_date,
+      validated.save !== false
+    );
+
+    const scheduleId = result.scheduleId;
     let schedule: any = null;
-    let usedFallback = false;
-
-    try {
-      const scriptPath = path.join(process.cwd(), 'python-services', 'scheduler', 'auto_scheduler.py');
-      let command = `python "${scriptPath}" --venue-id ${validated.venue_id} --week-start ${validated.week_start_date}`;
-      if (validated.save) command += ' --save';
-
-      const result = await execAsync(command, {
-        env: { ...process.env, PYTHONPATH: path.join(process.cwd(), 'python-services'), PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
-        timeout: 120000,
-      });
-      const stdout = result.stdout;
-      const stderr = result.stderr;
-      if (stderr && !stderr.includes('warning')) console.error('Python stderr:', stderr);
-
-      if (validated.save) {
-        const match = stdout.match(/Schedule ([a-f0-9-]+) ready/i);
-        if (match) scheduleId = match[1];
-      }
-    } catch (execError: any) {
-      const errMsg = (execError.stderr || execError.message || '').trim();
-      const isPythonMissing = errMsg.includes('not found') || errMsg.includes('not recognized') || errMsg.includes('ENOENT');
-
-      if (isPythonMissing) {
-        // Python not available (e.g., Vercel) — use TS scheduler
-        console.log('[generate] Python unavailable, using TS scheduler fallback');
-        usedFallback = true;
-        const result = await generateScheduleTS(validated.venue_id, validated.week_start_date, validated.save !== false);
-        scheduleId = result.scheduleId;
-      } else {
-        // Python exists but scheduler failed
-        console.error('Python scheduler failed:', errMsg);
-        const lines = errMsg.split('\n').filter((l: string) => l.trim());
-        const lastLine = lines[lines.length - 1] || 'Unknown error';
-        const error: any = new Error(`Schedule generation failed: ${lastLine}`);
-        error.status = 500;
-        error.code = 'SCHEDULER_ERROR';
-        throw error;
-      }
-    }
 
     // Fetch the saved schedule from DB
     if (scheduleId) {
@@ -105,7 +66,7 @@ export async function POST(request: NextRequest) {
       }, { status: 422 });
     }
 
-    return NextResponse.json({ success: true, schedule_id: scheduleId, schedule, fallback: usedFallback });
+    return NextResponse.json({ success: true, schedule_id: scheduleId, schedule });
   });
 }
 

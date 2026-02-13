@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -316,32 +315,33 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
           </div>
         </div>
 
-        <DialogFooter className="flex items-center justify-between sm:justify-between">
+        <div className="flex items-center justify-between pt-4 border-t">
           {/* Delete shift */}
           {!showDeleteConfirm ? (
             <Button
               variant="ghost"
               size="sm"
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={() => setShowDeleteConfirm(true)}
+              onClick={() => {
+                if (!reason.trim()) {
+                  toast.error('Please enter a reason above before removing');
+                  return;
+                }
+                setShowDeleteConfirm(true);
+              }}
             >
               <Trash2 className="w-4 h-4 mr-1" />
               Remove
             </Button>
           ) : (
-            <div className="flex flex-col gap-1">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-                disabled={deleting || !reason.trim()}
-              >
-                {deleting ? 'Removing...' : 'Confirm Remove'}
-              </Button>
-              {!reason.trim() && (
-                <span className="text-xs text-red-500">Enter a reason above first</span>
-              )}
-            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Removing...' : 'Confirm Remove'}
+            </Button>
           )}
 
           <div className="flex gap-2">
@@ -352,7 +352,7 @@ export function ShiftEditDialog({ shift, employees, open, onOpenChange, onSaved 
               {saving ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );
