@@ -29,7 +29,7 @@ export async function GET(
     const supabase = await createClient();
 
     // Get daily labor efficiency
-    const { data: dailyEfficiency, error: dailyError } = await supabase
+    const { data: dailyEfficiency, error: dailyError } = await (supabase as any)
       .from('labor_efficiency_daily')
       .select('*')
       .eq('venue_id', venueId)
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     // Get hourly breakdown
-    const { data: hourlyEfficiency, error: hourlyError } = await supabase
+    const { data: hourlyEfficiency, error: hourlyError } = await (supabase as any)
       .from('labor_efficiency_hourly')
       .select('*')
       .eq('venue_id', venueId)
@@ -54,7 +54,7 @@ export async function GET(
     }
 
     // Get shift assignments for the day
-    const { data: shifts, error: shiftsError } = await supabase
+    const { data: shifts, error: shiftsError } = await (supabase as any)
       .from('shift_assignments')
       .select(`
         *,

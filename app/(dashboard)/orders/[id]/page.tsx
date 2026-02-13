@@ -83,10 +83,10 @@ export default async function OrderDetailPage({ params }: Props) {
   return (
     <OrderDetailClient
       order={order}
-      lines={lines || []}
-      receipts={receipts || []}
-      linkedInvoices={linkedInvoices || []}
-      variances={variances || []}
+      lines={(lines || []) as any}
+      receipts={(receipts || []) as any}
+      linkedInvoices={(linkedInvoices || []) as any}
+      variances={(variances || []) as any}
     />
   );
 }

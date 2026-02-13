@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     let query = (adminClient as any)
       .from('entertainment_shift_logs')
       .select('*')
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', ctx.orgId ?? '')
       .order('business_date', { ascending: false });
 
     if (venueId) {
@@ -163,7 +163,7 @@ export async function PUT(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
-      .eq('organization_id', ctx.orgId)
+      .eq('organization_id', ctx.orgId ?? '')
       .select()
       .single();
 

@@ -104,7 +104,7 @@ export default async function DailyBriefingPage() {
     }
   }
 
-  const { data: adjustments } = await supabase
+  const { data: adjustments } = await (supabase as any)
     .from('schedule_adjustments')
     .select(`*, shift:shift_assignments(employee:employee_id(first_name, last_name), position, scheduled_start, scheduled_end)`)
     .eq('status', 'pending')
@@ -113,8 +113,8 @@ export default async function DailyBriefingPage() {
     .order('net_benefit', { ascending: false })
     .limit(5);
 
-  const formattedAdjustments: AdjustmentRecommendation[] = (adjustments || []).map((adj) => {
-    const shift = adj.shift as any;
+  const formattedAdjustments: AdjustmentRecommendation[] = (adjustments || []).map((adj: any) => {
+    const shift = adj.shift;
     const employee = shift?.employee;
     const shiftStart = new Date(shift?.scheduled_start);
     return {
@@ -122,8 +122,8 @@ export default async function DailyBriefingPage() {
       employeeName: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
       position: shift?.position || 'Unknown',
       savings: adj.labor_savings,
-      penalty: adj.penalty_cost,
-      netBenefit: adj.net_benefit,
+      penalty: adj.penalty_cost ?? 0,
+      netBenefit: adj.net_benefit ?? 0,
       hoursUntilShift: (shiftStart.getTime() - today.getTime()) / (1000 * 60 * 60),
       reason: adj.reason || 'Forecast variance',
     };
@@ -142,7 +142,7 @@ export default async function DailyBriefingPage() {
         shift: f.shift_type,
         covers: f.covers_predicted,
         revenue: f.revenue_predicted || 0,
-        confidence: f.confidence_level * 100,
+        confidence: (f.confidence_level ?? 0) * 100,
         laborCost: f.labor_cost_estimate || 0,
         laborPercentage: f.labor_percentage_estimate || 0,
       };

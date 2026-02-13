@@ -6,28 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Settings,
-  Clock,
-  Camera,
-  MapPin,
   Calendar,
-  Users,
   Bell,
   Save,
 } from 'lucide-react';
 
 interface OrganizationSettings {
-  // Time clock
-  allow_mobile_clock_in: boolean;
-  require_photo_verification: boolean;
-  require_geofence: boolean;
-  geofence_radius_meters: number;
-
-  // Schedule
-  allow_shift_swaps: boolean;
-  require_manager_approval_swaps: boolean;
-  allow_time_off_requests: boolean;
-  min_notice_hours_time_off: number;
-
   // Labor
   enable_auto_scheduling: boolean;
   enable_labor_forecasting: boolean;
@@ -144,137 +128,6 @@ export default function OrganizationSettingsPage() {
       </div>
 
       <div className="space-y-6">
-        {/* Time Clock Settings */}
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Clock className="w-6 h-6 text-opsos-sage-600" />
-            <h2 className="text-xl font-semibold">Time Clock Settings</h2>
-          </div>
-
-          <div className="space-y-4">
-            <SettingToggle
-              icon={<Clock className="w-5 h-5" />}
-              label="Allow Mobile Clock-In"
-              description="Enable employees to clock in/out from their mobile devices"
-              checked={settings.allow_mobile_clock_in}
-              onChange={(checked) =>
-                updateSetting('allow_mobile_clock_in', checked)
-              }
-            />
-
-            {settings.allow_mobile_clock_in && (
-              <>
-                <SettingToggle
-                  icon={<Camera className="w-5 h-5" />}
-                  label="Require Photo Verification"
-                  description="Employees must take a selfie when clocking in/out"
-                  checked={settings.require_photo_verification}
-                  onChange={(checked) =>
-                    updateSetting('require_photo_verification', checked)
-                  }
-                />
-
-                <SettingToggle
-                  icon={<MapPin className="w-5 h-5" />}
-                  label="Require Geofencing"
-                  description="Employees must be within specified radius of venue"
-                  checked={settings.require_geofence}
-                  onChange={(checked) => updateSetting('require_geofence', checked)}
-                />
-
-                {settings.require_geofence && (
-                  <div className="ml-8 mt-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Geofence Radius (meters)
-                    </label>
-                    <input
-                      type="number"
-                      value={settings.geofence_radius_meters}
-                      onChange={(e) =>
-                        updateSetting(
-                          'geofence_radius_meters',
-                          parseFloat(e.target.value)
-                        )
-                      }
-                      min={10}
-                      max={1000}
-                      step={10}
-                      className="w-32 p-2 border border-gray-300 rounded-md"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Recommended: 100m
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </Card>
-
-        {/* Schedule Settings */}
-        <Card className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <Calendar className="w-6 h-6 text-opsos-sage-600" />
-            <h2 className="text-xl font-semibold">Schedule Settings</h2>
-          </div>
-
-          <div className="space-y-4">
-            <SettingToggle
-              icon={<Users className="w-5 h-5" />}
-              label="Allow Shift Swaps"
-              description="Employees can request to swap shifts with each other"
-              checked={settings.allow_shift_swaps}
-              onChange={(checked) => updateSetting('allow_shift_swaps', checked)}
-            />
-
-            {settings.allow_shift_swaps && (
-              <SettingToggle
-                icon={<Users className="w-5 h-5" />}
-                label="Require Manager Approval for Swaps"
-                description="Shift swaps must be approved by a manager before taking effect"
-                checked={settings.require_manager_approval_swaps}
-                onChange={(checked) =>
-                  updateSetting('require_manager_approval_swaps', checked)
-                }
-              />
-            )}
-
-            <SettingToggle
-              icon={<Calendar className="w-5 h-5" />}
-              label="Allow Time-Off Requests"
-              description="Employees can submit time-off requests through the app"
-              checked={settings.allow_time_off_requests}
-              onChange={(checked) =>
-                updateSetting('allow_time_off_requests', checked)
-              }
-            />
-
-            {settings.allow_time_off_requests && (
-              <div className="ml-8 mt-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Minimum Notice (hours)
-                </label>
-                <input
-                  type="number"
-                  value={settings.min_notice_hours_time_off}
-                  onChange={(e) =>
-                    updateSetting(
-                      'min_notice_hours_time_off',
-                      parseInt(e.target.value)
-                    )
-                  }
-                  min={1}
-                  max={720}
-                  className="w-32 p-2 border border-gray-300 rounded-md"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  How far in advance employees must request time off
-                </p>
-              </div>
-            )}
-          </div>
-        </Card>
-
         {/* Labor Settings */}
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">

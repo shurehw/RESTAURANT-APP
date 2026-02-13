@@ -33,7 +33,6 @@ export async function GET(request: Request) {
     }
 
     if (!servicePeriods || servicePeriods.length === 0) {
-      console.log('No service periods found for scenario:', scenario_id);
       return NextResponse.json({
         annual_revenue: 0,
         annual_covers: 0,

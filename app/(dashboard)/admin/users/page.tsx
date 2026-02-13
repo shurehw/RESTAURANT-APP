@@ -13,7 +13,8 @@ export default async function AdminUsersPage() {
     .order("name");
 
   // Get all users with their org memberships
-  const { data: users } = await supabase
+  // Note: uses type cast because the users→organization_users FK isn't in generated types
+  const { data: users } = await (supabase as any)
     .from("users")
     .select(`
       id,
@@ -47,7 +48,7 @@ export default async function AdminUsersPage() {
         <div>
           <h2 className="text-xl font-semibold mb-4">All Users</h2>
           <div className="space-y-2">
-            {users?.map((user) => (
+            {users?.map((user: any) => (
               <div key={user.id} className="p-3 border rounded-lg">
                 <div className="font-medium">{user.full_name || user.email}</div>
                 <div className="text-sm text-muted-foreground">{user.email}</div>

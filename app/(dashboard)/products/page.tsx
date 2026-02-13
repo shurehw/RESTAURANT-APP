@@ -27,14 +27,6 @@ export default async function ProductsPage() {
 
   const orgId = ctx.orgId;
   const isPlatformAdmin = ctx.isPlatformAdmin;
-  
-  console.log('Products page context:', { 
-    authUserId: ctx.authUserId, 
-    email: ctx.email, 
-    orgId, 
-    role: ctx.role,
-    isPlatformAdmin 
-  });
 
   // ========================================================================
   // Data queries use admin client with explicit org filter
@@ -88,19 +80,6 @@ export default async function ProductsPage() {
     items = allItems;
     itemsError = itemsError;
 
-    console.log('Items fetch result:', {
-      orgId,
-      isPlatformAdmin,
-      itemsCount: items?.length || 0,
-      error: itemsError,
-      firstItem: items?.[0]?.name
-    });
-
-    if (itemsError) {
-      console.error('Error fetching items:', itemsError);
-    }
-  } else {
-    console.error('No organization ID found for user:', ctx.authUserId);
   }
 
   // Fetch pack configs for items in this organization using admin client
@@ -124,11 +103,7 @@ export default async function ProductsPage() {
         .select('*')
         .in('item_id', batch);
 
-      if (packError) {
-        console.error('Error fetching pack configs batch:', packError);
-        console.error('Batch size:', batch.length);
-      } else {
-        console.log(`Batch ${Math.floor(i/batchSize) + 1}: fetched ${packConfigs?.length || 0} pack configs for ${batch.length} items`);
+      if (!packError) {
         if (packConfigs) {
           allPackConfigs.push(...packConfigs);
         }
@@ -150,13 +125,6 @@ export default async function ProductsPage() {
       item_pack_configurations: packConfigsByItem.get(item.id) || []
     }));
 
-    console.log('Pack configs loaded:', {
-      totalItems: items.length,
-      totalPackConfigs: allPackConfigs.length,
-      itemsWithPacks: itemsWithConfigs.filter(i => i.item_pack_configurations.length > 0).length,
-      sampleItem: itemsWithConfigs[0]?.name,
-      samplePacks: itemsWithConfigs[0]?.item_pack_configurations?.length
-    });
   }
 
   // adminClient already created above

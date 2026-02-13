@@ -172,7 +172,7 @@ export async function POST(
             .limit(1);
 
           if (!existing || existing.length === 0) {
-            const { error: packErr } = await adminClient
+            const { error: packErr } = await (adminClient as any)
               .from('item_pack_configurations')
               .insert({
                 item_id,

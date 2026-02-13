@@ -25,14 +25,6 @@ export default async function InvoicesPage() {
 
   const orgId = ctx.orgId;
   const isPlatformAdmin = ctx.isPlatformAdmin;
-  
-  console.log('Invoices page context:', { 
-    authUserId: ctx.authUserId, 
-    email: ctx.email, 
-    orgId, 
-    role: ctx.role,
-    isPlatformAdmin 
-  });
 
   if (!orgId && !isPlatformAdmin) {
     return <div className="p-8">No organization associated with your account.</div>;
@@ -90,8 +82,6 @@ export default async function InvoicesPage() {
     invoices = result.data || [];
     error = result.error;
   }
-
-  console.log('Invoices query result:', { count: invoices?.length, error, orgId, venueCount: venues?.length });
 
   return <InvoicesClient invoices={invoices || []} venues={venues || []} />;
 }

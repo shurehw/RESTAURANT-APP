@@ -109,7 +109,7 @@ export function VersionHistory({ orgId, onSelectVersion }: VersionHistoryProps) 
                       </div>
                     )}
                     {version.created_by && (
-                      <div className="text-xs text-gray-400 flex items-center gap-1 justify-end mt-1">
+                      <div className="text-xs text-gray-500 flex items-center gap-1 justify-end mt-1">
                         <User className="h-3 w-3" />
                         <span className="truncate max-w-[100px]">{version.created_by}</span>
                       </div>

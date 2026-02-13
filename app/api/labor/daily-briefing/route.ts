@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     // Format adjustments for briefing
     const formattedAdjustments: AdjustmentRecommendation[] =
-      (adjustments || []).map((adj) => {
+      (adjustments || []).map((adj: any) => {
         const shift = adj.shift as any;
         const employee = shift?.employee;
         const shiftStart = new Date(shift?.scheduled_start);
@@ -157,8 +157,8 @@ export async function GET(request: NextRequest) {
             : 'Unknown',
           position: shift?.position || 'Unknown',
           savings: adj.labor_savings,
-          penalty: adj.penalty_cost,
-          netBenefit: adj.net_benefit,
+          penalty: adj.penalty_cost ?? 0,
+          netBenefit: adj.net_benefit ?? 0,
           hoursUntilShift,
           reason: adj.reason || 'Forecast variance',
         };
@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
           shift: f.shift_type,
           covers: f.covers_predicted,
           revenue: f.revenue_predicted || 0,
-          confidence: f.confidence_level * 100,
+          confidence: (f.confidence_level ?? 0) * 100,
           laborCost: f.labor_cost_estimate || 0,
           laborPercentage: f.labor_percentage_estimate || 0,
         };

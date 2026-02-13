@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { FileText, X, AlertCircle } from "lucide-react";
 
@@ -15,11 +15,23 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [isImage, setIsImage] = useState(false);
 
+  const close = useCallback(() => setIsOpen(false), []);
+
   useEffect(() => {
     if (isOpen && !pdfUrl && !error) {
       loadPDF();
     }
   }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, close]);
 
   const loadPDF = async () => {
     setIsLoading(true);
@@ -28,7 +40,6 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
       const response = await fetch(`/api/invoices/${invoiceId}/pdf-url`);
       if (response.ok) {
         const data = await response.json();
-        console.log("PDF URL:", data.url);
         setPdfUrl(data.url);
 
         // Detect if it's an image based on URL extension
@@ -38,11 +49,9 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
         setIsImage(isImageFile);
       } else {
         const errorData = await response.json();
-        console.error("Failed to load PDF:", errorData);
         setError(errorData.details || errorData.error || "Failed to load PDF");
       }
-    } catch (error) {
-      console.error("Error loading PDF:", error);
+    } catch {
       setError("Network error loading PDF");
     } finally {
       setIsLoading(false);
@@ -57,7 +66,12 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
       </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Original Invoice"
+        >
           <div className="relative w-full max-w-4xl h-[85vh] bg-white rounded-lg shadow-xl flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
@@ -65,10 +79,11 @@ export function InvoicePDFModal({ invoiceId }: InvoicePDFModalProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsOpen(false)}
+                onClick={close}
+                aria-label="Close"
                 className="h-8 w-8 p-0"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
 

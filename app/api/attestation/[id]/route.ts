@@ -3,12 +3,18 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
+import { resolveContext } from '@/lib/auth/resolveContext';
 import { updateAttestationSchema } from '@/lib/attestation/types';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, ctx: RouteContext) {
   try {
+    const authCtx = await resolveContext();
+    if (!authCtx || !authCtx.isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await ctx.params;
     const supabase = getServiceClient();
 
@@ -58,6 +64,11 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 
 export async function PUT(req: NextRequest, ctx: RouteContext) {
   try {
+    const authCtx = await resolveContext();
+    if (!authCtx || !authCtx.isAuthenticated) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await ctx.params;
     const supabase = getServiceClient();
 

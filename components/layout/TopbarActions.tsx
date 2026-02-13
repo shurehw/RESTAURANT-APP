@@ -3,7 +3,6 @@
 import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { VendorOnboardingLinkDisplay } from './VendorOnboardingLinkDisplay';
-import { createClient } from '@/lib/supabase/client';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { useEffect } from 'react';
 
@@ -34,8 +33,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
   }, [selectedVenue, venues, setSelectedVenue]);
 
   const handleTeamSettings = () => {
-    // TODO: Navigate to team settings page
-    console.log('Team settings clicked');
+    window.location.href = '/settings/organization';
   };
 
   const handleUserSettings = () => {
@@ -43,8 +41,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
   };
 
   const handleProfile = () => {
-    // TODO: Navigate to profile page or show dropdown
-    console.log('Profile clicked');
+    window.location.href = '/settings/organization';
   };
 
   const handleLogout = async () => {
@@ -71,6 +68,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
         <div className="flex items-center gap-2 px-3 py-1.5 border border-opsos-sage-300 rounded-md bg-white hover:bg-opsos-sage-50 transition-colors">
           <Building2 className="w-4 h-4 text-opsos-sage-600" />
           <select
+            aria-label="Select venue"
             className="text-sm bg-transparent border-none focus:outline-none text-opsos-sage-800 cursor-pointer"
             value={selectedVenue?.id || ''}
             onChange={(e) => {
@@ -83,12 +81,10 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
                   city: null,
                   state: null,
                 });
-                console.log('Selected: All Venues');
               } else {
                 const venue = venues.find(v => v.id === e.target.value);
                 if (venue) {
                   setSelectedVenue(venue);
-                  console.log('Selected venue:', venue.name);
                 }
               }
             }}
@@ -108,18 +104,18 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
       <button
         onClick={handleTeamSettings}
         className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
-        title="Team Settings"
+        aria-label="Team Settings"
       >
-        <Users className="w-5 h-5" />
+        <Users className="w-5 h-5" aria-hidden="true" />
       </button>
 
       {/* User Settings */}
       <button
         onClick={handleUserSettings}
         className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
-        title="User Settings"
+        aria-label="User Settings"
       >
-        <Settings className="w-5 h-5" />
+        <Settings className="w-5 h-5" aria-hidden="true" />
       </button>
 
       {/* Notifications */}
@@ -129,18 +125,18 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
       <button
         onClick={handleProfile}
         className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
-        title="Profile"
+        aria-label="Profile"
       >
-        <UserCircle className="w-5 h-5" />
+        <UserCircle className="w-5 h-5" aria-hidden="true" />
       </button>
 
       {/* Logout */}
       <button
         onClick={handleLogout}
         className="p-2 text-opsos-sage-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-        title="Logout"
+        aria-label="Log out"
       >
-        <LogOut className="w-5 h-5" />
+        <LogOut className="w-5 h-5" aria-hidden="true" />
       </button>
     </div>
   );

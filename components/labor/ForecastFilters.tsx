@@ -13,8 +13,9 @@ export function ForecastFilters({ venues, selectedVenue, daysAhead }: ForecastFi
   return (
     <div className="flex gap-4 mb-6">
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium">Venue:</label>
+        <label htmlFor="forecast-venue" className="text-sm font-medium">Venue:</label>
         <select
+          id="forecast-venue"
           className="px-3 py-2 border rounded-md"
           value={selectedVenue}
           onChange={(e) => {
@@ -30,8 +31,9 @@ export function ForecastFilters({ venues, selectedVenue, daysAhead }: ForecastFi
       </div>
 
       <div className="flex items-center gap-2">
-        <label className="text-sm font-medium">Days Ahead:</label>
+        <label htmlFor="forecast-days" className="text-sm font-medium">Days Ahead:</label>
         <select
+          id="forecast-days"
           className="px-3 py-2 border rounded-md"
           value={daysAhead}
           onChange={(e) => {

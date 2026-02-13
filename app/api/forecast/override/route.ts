@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
 
     // 1. Snapshot current layer outputs
-    const { data: forecast } = await supabase
+    const { data: forecast } = await (supabase as any)
       .from('forecasts_with_bias')
       .select('*')
       .eq('venue_id', params.venueId)
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     let layerOutputId: string | null = null;
 
     if (forecast) {
-      const { data: layerOutput } = await supabase
+      const { data: layerOutput } = await (supabase as any)
         .from('forecast_layer_outputs')
         .insert({
           venue_id: params.venueId,
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Upsert the override
-    const { data: override, error } = await supabase
+    const { data: override, error } = await (supabase as any)
       .from('forecast_overrides')
       .upsert({
         venue_id: params.venueId,

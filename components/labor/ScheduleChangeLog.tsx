@@ -114,9 +114,9 @@ export function ScheduleChangeLog({ venueId, weekStart }: Props) {
           )}
         </div>
         {expanded ? (
-          <ChevronUp className="w-4 h-4 text-gray-400" />
+          <ChevronUp className="w-4 h-4 text-gray-500" />
         ) : (
-          <ChevronDown className="w-4 h-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-gray-500" />
         )}
       </button>
 
@@ -152,7 +152,7 @@ export function ScheduleChangeLog({ venueId, weekStart }: Props) {
                           {reasonText}
                         </div>
                       )}
-                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
                         <Clock className="w-3 h-3" />
                         <span>
                           {new Date(entry.created_at).toLocaleString('en-US', {

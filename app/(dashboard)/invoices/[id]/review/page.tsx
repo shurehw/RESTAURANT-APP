@@ -36,13 +36,6 @@ export default async function InvoiceReviewPage({ params }: Props) {
     redirect("/login");
   }
 
-  console.log('Invoice review page context:', { 
-    authUserId: ctx.authUserId, 
-    email: ctx.email, 
-    orgId: ctx.orgId, 
-    role: ctx.role 
-  });
-
   // ========================================================================
   // Data queries use admin client
   // (User's org membership is verified via resolveContext)
@@ -233,7 +226,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
 
           {/* Individual Item Cards */}
           <div className="space-y-4">
-            {unmappedLines.map((line) => (
+            {unmappedLines.map((line: any) => (
               <InvoiceLineMapper
                 key={line.id}
                 line={line}
@@ -305,7 +298,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
           Mapped Items ({mappedLines.filter(l => l.qty > 0).length})
         </h2>
 
-        <MappedItemsTable lines={mappedLines.filter(l => l.qty > 0)} />
+        <MappedItemsTable lines={mappedLines.filter(l => l.qty > 0) as any} />
       </div>
 
       {/* GL Account Summary */}

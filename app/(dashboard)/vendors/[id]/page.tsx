@@ -36,13 +36,6 @@ export default async function VendorDetailPage({ params }: Props) {
     redirect("/login");
   }
 
-  console.log('Vendor detail page context:', { 
-    authUserId: ctx.authUserId, 
-    email: ctx.email, 
-    orgId: ctx.orgId, 
-    role: ctx.role 
-  });
-
   // ========================================================================
   // Data queries use admin client with explicit org filter
   // (Safe: org is derived from authenticated user's membership)
@@ -50,7 +43,7 @@ export default async function VendorDetailPage({ params }: Props) {
   const adminClient = createAdminClient();
 
   // Fetch vendor with profile
-  const { data: vendor } = await adminClient
+  const { data: vendor } = await (adminClient as any)
     .from("vendors")
     .select(`
       *,
@@ -116,7 +109,7 @@ export default async function VendorDetailPage({ params }: Props) {
         <div className="grid grid-cols-4 gap-6">
           <div>
             <div className="text-sm text-muted-foreground mb-1">Payment Terms</div>
-            <div className="font-semibold">{vendor.payment_terms || "Not set"}</div>
+            <div className="font-semibold">{vendor.payment_terms_days ? `Net ${vendor.payment_terms_days}` : "Not set"}</div>
           </div>
           <div>
             <div className="text-sm text-muted-foreground mb-1">Profile Status</div>
@@ -184,7 +177,7 @@ export default async function VendorDetailPage({ params }: Props) {
                     <div>
                       <div className="font-medium capitalize">{form.form_type} Authorization</div>
                       <div className="text-sm text-muted-foreground">
-                        Submitted {new Date(form.created_at).toLocaleDateString()}
+                        Submitted {new Date(form.created_at || '').toLocaleDateString()}
                       </div>
                     </div>
                     <Badge
@@ -214,7 +207,7 @@ export default async function VendorDetailPage({ params }: Props) {
             <h2 className="text-xl font-semibold mb-6">Invoice History ({allInvoices?.length || 0})</h2>
 
             {allInvoices && allInvoices.length > 0 ? (
-              <VendorInvoiceList invoices={allInvoices} />
+              <VendorInvoiceList invoices={allInvoices as any} />
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />

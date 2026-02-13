@@ -328,7 +328,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
         </Card>
 
         <Card className="p-12 text-center">
-          <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <Calendar className="w-16 h-16 text-gray-500 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No Schedule Generated
           </h3>

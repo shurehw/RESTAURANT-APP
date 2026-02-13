@@ -144,6 +144,7 @@ export function GLAccountSelector({
         value={selectedId || ''}
         onChange={(e) => handleSelect(e.target.value)}
         className="text-sm border rounded px-2 py-1 w-full"
+        aria-label={`GL Account for ${itemName}`}
       >
         <option value="">Select GL Account...</option>
         {suggestions.map((acc) => (

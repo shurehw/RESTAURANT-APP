@@ -45,7 +45,7 @@ export default async function OrganizationDetail({
     id: string;
     user_id: string;
     role: string;
-    is_active: boolean;
+    is_active: boolean | null;
     created_at: string;
   }) => {
     const authUser = authUsers?.users?.find(u => u.id === member.user_id);
@@ -100,7 +100,7 @@ export default async function OrganizationDetail({
       <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Members</p>
-          <p className="text-2xl font-semibold">{members.filter((m: { is_active: boolean }) => m.is_active).length}</p>
+          <p className="text-2xl font-semibold">{members.filter((m: { is_active: boolean | null }) => m.is_active).length}</p>
         </div>
         <div className="bg-white rounded-lg shadow p-4">
           <p className="text-sm text-gray-500">Venues</p>
@@ -128,7 +128,7 @@ export default async function OrganizationDetail({
           </Link>
         </div>
         <div className="divide-y">
-          {members.filter((m: { is_active: boolean }) => m.is_active).map((member: {
+          {members.filter((m: { is_active: boolean | null }) => m.is_active).map((member: {
             id: string;
             email: string;
             full_name: string | null;
@@ -151,7 +151,7 @@ export default async function OrganizationDetail({
               </span>
             </div>
           ))}
-          {!members.filter((m: { is_active: boolean }) => m.is_active).length && (
+          {!members.filter((m: { is_active: boolean | null }) => m.is_active).length && (
             <div className="px-6 py-8 text-center text-gray-500">
               No members yet.
             </div>

@@ -33,7 +33,7 @@ export default async function BudgetPage() {
     { day: "Sun", budget: 10000, actual: 10200, remaining: -200 },
   ];
 
-  const weeklyBudget = budgets?.amount || 10000;
+  const weeklyBudget = budgets?.initial_budget || 10000;
   const actualSpend = 10200;
   const remaining = weeklyBudget - actualSpend;
   const percentUsed = (actualSpend / weeklyBudget) * 100;

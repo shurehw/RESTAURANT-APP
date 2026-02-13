@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const supabase = await createClient();
 
     // Get alert to verify access
-    const { data: alert, error: getError } = await supabase
+    const { data: alert, error: getError } = await (supabase as any)
       .from('alerts')
       .select('venue_id')
       .eq('id', alert_id)
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Call the acknowledge_alert function
-    const { data, error } = await supabase.rpc('acknowledge_alert', {
+    const { data, error } = await (supabase as any).rpc('acknowledge_alert', {
       p_alert_id: alert_id,
       p_user_id: user.id,
     });

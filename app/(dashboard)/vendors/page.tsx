@@ -36,14 +36,6 @@ export default async function VendorsPage() {
   const orgId = ctx.orgId;
   const isPlatformAdmin = ctx.isPlatformAdmin;
   
-  console.log('Vendors page context:', { 
-    authUserId: ctx.authUserId, 
-    email: ctx.email, 
-    orgId, 
-    role: ctx.role,
-    isPlatformAdmin 
-  });
-
   if (!orgId && !isPlatformAdmin) {
     return (
       <div className="p-8">
@@ -118,28 +110,28 @@ export default async function VendorsPage() {
                     {vendor.name}
                   </Link>
                 </TableCell>
-                <TableCell>{vendor.contact_name || "—"}</TableCell>
+                <TableCell>{vendor.contact_email || "—"}</TableCell>
                 <TableCell>
-                  {vendor.phone ? (
+                  {vendor.contact_phone ? (
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="w-3 h-3 text-muted-foreground" />
-                      {vendor.phone}
+                      {vendor.contact_phone}
                     </div>
                   ) : (
                     "—"
                   )}
                 </TableCell>
                 <TableCell>
-                  {vendor.email ? (
+                  {vendor.contact_email ? (
                     <div className="flex items-center gap-2 text-sm">
                       <Mail className="w-3 h-3 text-muted-foreground" />
-                      {vendor.email}
+                      {vendor.contact_email}
                     </div>
                   ) : (
                     "—"
                   )}
                 </TableCell>
-                <TableCell>{vendor.payment_terms || "—"}</TableCell>
+                <TableCell>{vendor.payment_terms_days ? `Net ${vendor.payment_terms_days}` : "—"}</TableCell>
                 <TableCell>
                   <Badge variant={vendor.is_active ? "sage" : "default"}>
                     {vendor.is_active ? "Active" : "Inactive"}

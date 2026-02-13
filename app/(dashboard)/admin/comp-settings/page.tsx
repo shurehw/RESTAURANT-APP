@@ -20,7 +20,7 @@ export default async function AdminCompSettingsPage() {
         logo_url
       )
     `)
-    .eq('user_id', user?.id)
+    .eq('user_id', user?.id ?? '')
     .eq('is_active', true);
 
   const organizations = orgs?.map(o => o.organizations).filter(Boolean) || [];

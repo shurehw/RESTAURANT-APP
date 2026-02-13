@@ -79,8 +79,6 @@ export async function PATCH(request: Request) {
     const supabase = await createClient();
     const body = await request.json();
 
-    console.log('[center-service-metrics PATCH] Request body:', body);
-
     const {
       revenue_center_id,
       service_period_id,
@@ -214,12 +212,6 @@ export async function PATCH(request: Request) {
 
     // Use upsert if revenue_center_id and service_period_id provided
     if (revenue_center_id && service_period_id) {
-      console.log('[center-service-metrics PATCH] Upserting with data:', {
-        revenue_center_id,
-        service_period_id,
-        ...updateData,
-      });
-
       const { data, error } = await supabase
         .from("proforma_center_service_participation")
         .upsert(
@@ -240,8 +232,6 @@ export async function PATCH(request: Request) {
         console.error("Error details:", JSON.stringify(error, null, 2));
         return NextResponse.json({ error: error.message, details: error }, { status: 500 });
       }
-
-      console.log('[center-service-metrics PATCH] Success:', data);
 
       // Transform response to match frontend expectations
       const responseData = {
