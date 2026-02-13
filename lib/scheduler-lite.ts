@@ -198,10 +198,9 @@ export async function generateScheduleTS(
         total_labor_hours: Math.round(totalHours * 100) / 100,
         total_labor_cost: Math.round(totalCost * 100) / 100,
         overall_cplh: totalHours > 0 ? Math.round((totalCovers / totalHours) * 100) / 100 : 0,
-        predicted_covers: totalCovers,
         projected_revenue: totalRevenue,
         service_quality_score: 0.4,
-        optimization_mode: 'smart',
+        optimization_mode: 'balanced',
         auto_generated: true,
       })
       .select('id')
