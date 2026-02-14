@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { requireUser } from '@/lib/auth';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { getActiveProcurementSettings, checkPurchasingAuthorization } from '@/lib/database/procurement-settings';
+import { getServiceClient } from '@/lib/supabase/service';
 
 const orderItemSchema = z.object({
   item_id: z.string().uuid(),
@@ -47,6 +49,31 @@ export async function createOrder(prevState: CreateOrderState, formData: FormDat
     }
 
     const { vendor_id, venue_id, delivery_date, items } = validated.data;
+
+    // Purchasing authorization gate: check if user is allowed to purchase these items
+    const service = getServiceClient();
+    const { data: venue } = await (service as any)
+      .from('venues')
+      .select('organization_id')
+      .eq('id', venue_id)
+      .maybeSingle();
+
+    if (venue?.organization_id) {
+      const settings = await getActiveProcurementSettings(venue.organization_id);
+      if (settings.require_purchasing_authorization) {
+        const authCheck = await checkPurchasingAuthorization(
+          venue.organization_id,
+          user.id,
+          venue_id,
+          items.map(i => i.item_id)
+        );
+        if (!authCheck.authorized) {
+          return {
+            error: `You are not authorized to purchase: ${authCheck.unauthorizedItemNames.join(', ')}`,
+          };
+        }
+      }
+    }
 
     // Calculate total amount
     const total_amount = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);

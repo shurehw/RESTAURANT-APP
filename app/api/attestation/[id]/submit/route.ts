@@ -68,6 +68,37 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       }
     }
 
+    // Attestation gating: check for unresolved critical feedback objects
+    {
+      const { data: venue } = await (supabase as any)
+        .from('venues')
+        .select('organization_id')
+        .eq('id', attestation.venue_id)
+        .single();
+
+      if (venue?.organization_id) {
+        const { data: canSubmit } = await (supabase as any).rpc(
+          'can_submit_attestation',
+          {
+            p_org_id: venue.organization_id,
+            p_venue_id: attestation.venue_id,
+            p_business_date: attestation.business_date,
+          }
+        );
+
+        if (canSubmit === false) {
+          return NextResponse.json(
+            {
+              error:
+                'Attestation blocked: unresolved critical feedback items must be addressed before submission.',
+              code: 'ATTESTATION_GATED',
+            },
+            { status: 422 }
+          );
+        }
+      }
+    }
+
     // Submit / amend
     const now = new Date().toISOString();
     const updatePayload = isAmendment
