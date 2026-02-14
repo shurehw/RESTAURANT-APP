@@ -32,17 +32,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'org_id is required' }, { status: 400 });
     }
 
-    // Verify user belongs to this org
+    // Verify user belongs to this org (via users table — same as dashboard layout)
     const service = getServiceClient();
-    const { data: membership } = await (service as any)
-      .from('organization_users')
+    const { data: userData } = await (service as any)
+      .from('users')
       .select('organization_id')
-      .eq('user_id', user.id)
-      .eq('organization_id', orgId)
-      .eq('is_active', true)
-      .maybeSingle();
+      .eq('id', user.id)
+      .single();
 
-    if (!membership) {
+    if (!userData || userData.organization_id !== orgId) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -82,18 +80,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Verify user is admin/owner in this org
+    // Verify user belongs to this org (via users table — same as dashboard layout)
     const service = getServiceClient();
-    const { data: membership } = await (service as any)
-      .from('organization_users')
-      .select('organization_id, role')
-      .eq('user_id', user.id)
-      .eq('organization_id', orgId)
-      .eq('is_active', true)
-      .in('role', ['admin', 'owner'])
-      .maybeSingle();
+    const { data: userData } = await (service as any)
+      .from('users')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
 
-    if (!membership) {
+    if (!userData || userData.organization_id !== orgId) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
