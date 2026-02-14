@@ -1,32 +1,23 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { ProcurementSettingsManager } from './ProcurementSettingsManager';
 
 export default async function AdminProcurementSettingsPage() {
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
+  // Fetch org name for display
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-
-  // Use same pattern as dashboard layout — users table has organization_id
-  const { data: userData } = await (supabase as any)
-    .from('users')
-    .select('organization_id')
-    .eq('id', user?.id ?? '')
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .eq('id', orgId)
     .single();
 
-  let organizations: any[] = [];
-  if (userData?.organization_id) {
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('id, name')
-      .eq('id', userData.organization_id)
-      .single();
-
-    if (org) {
-      organizations = [org];
-    }
-  }
+  const organizations = org ? [org] : [];
 
   return (
     <div className="container max-w-7xl mx-auto py-8">
