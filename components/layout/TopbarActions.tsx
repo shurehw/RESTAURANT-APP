@@ -33,7 +33,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
   }, [selectedVenue, venues, setSelectedVenue]);
 
   const handleTeamSettings = () => {
-    window.location.href = '/settings/organization';
+    window.location.href = '/admin/users';
   };
 
   const handleUserSettings = () => {
