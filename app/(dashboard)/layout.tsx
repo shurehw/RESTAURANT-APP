@@ -188,6 +188,9 @@ function Sidebar() {
         </div>
 
         <NavSection title="Admin">
+          <NavLink href="/settings/organization" icon={<Settings className="w-5 h-5" />}>
+            Org Settings
+          </NavLink>
           <NavLink href="/admin/comp-settings" icon={<Settings className="w-5 h-5" />}>
             Comp Settings
           </NavLink>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
     const user = await requireUser();
     const { orgId } = await getUserOrgAndVenues(user.id);
 
-    const supabase = await createClient();
+    // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
+    const supabase = createAdminClient();
 
     // Get organization settings
     const { data: settings, error: settingsError } = await supabase
@@ -58,7 +59,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = validate(orgSettingsSchema, body);
 
-    const supabase = await createClient();
+    // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
+    const supabase = createAdminClient();
 
     // Update settings
     const { error: updateError } = await supabase
