@@ -22,6 +22,7 @@ import {
   Music2,
   ShieldCheck,
   Activity,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/layout/NavLink";
 import { TopbarActions } from "@/components/layout/TopbarActions";
@@ -185,6 +186,15 @@ function Sidebar() {
             Reports
           </NavLink>
         </div>
+
+        <NavSection title="Admin">
+          <NavLink href="/admin/comp-settings" icon={<Settings className="w-5 h-5" />}>
+            Comp Settings
+          </NavLink>
+          <NavLink href="/admin/procurement-settings" icon={<ShoppingCart className="w-5 h-5" />}>
+            Procurement
+          </NavLink>
+        </NavSection>
       </nav>
 
       {/* Brass accent line at bottom */}
