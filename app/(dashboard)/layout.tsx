@@ -142,6 +142,9 @@ function Sidebar() {
           <NavLink href="/reports/health" icon={<Activity className="w-5 h-5" />}>
             Venue Health
           </NavLink>
+          <NavLink href="/preshift" icon={<ClipboardList className="w-5 h-5" />}>
+            Preshift
+          </NavLink>
           <NavLink href="/control-plane" icon={<ShieldCheck className="w-5 h-5" />}>
             Action Items
           </NavLink>
