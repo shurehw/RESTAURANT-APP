@@ -46,6 +46,7 @@ export function ProcurementSettingsManager({ organizations }: Props) {
   const [authorizations, setAuthorizations] = useState<PurchasingAuth[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'thresholds' | 'authorizations'>('thresholds');
 
   // Form state for thresholds
@@ -78,15 +79,19 @@ export function ProcurementSettingsManager({ organizations }: Props) {
 
   const loadSettings = useCallback(async (orgId: string) => {
     setLoading(true);
+    setLoadError(null);
     try {
       const res = await fetch(`/api/procurement/settings?org_id=${orgId}`);
       if (res.ok) {
         const data = await res.json();
         setSettings(data.data);
         setFormData(data.data);
+      } else {
+        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        setLoadError(errData.error || `HTTP ${res.status}`);
       }
-    } catch (error) {
-      console.error('Failed to load settings:', error);
+    } catch (error: any) {
+      setLoadError(error.message || 'Network error');
     } finally {
       setLoading(false);
     }
@@ -323,6 +328,12 @@ export function ProcurementSettingsManager({ organizations }: Props) {
           Purchasing Authorizations
         </button>
       </div>
+
+      {loadError && (
+        <div className="p-4 rounded-lg border border-red-300 bg-red-50 text-red-800 text-sm">
+          Failed to load settings: {loadError}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
