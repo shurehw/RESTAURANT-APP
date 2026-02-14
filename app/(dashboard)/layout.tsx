@@ -3,7 +3,9 @@
  * Sidebar + topbar with brass accent line
  */
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
+import { getUserOrgAndVenues } from "@/lib/tenant";
 import {
   ShoppingCart,
   FileText,
@@ -34,20 +36,16 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
 
-  // Get current user's organization
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: userData } = await (supabase as any)
-    .from("users")
-    .select("organization_id")
-    .eq("id", user?.id ?? '')
-    .single();
+  // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
+  const supabase = createAdminClient();
 
   const { data: organization } = await supabase
     .from("organizations")
     .select("id, name, slug")
-    .eq("id", userData?.organization_id)
+    .eq("id", orgId)
     .single();
 
   // Fetch venues for topbar selector
