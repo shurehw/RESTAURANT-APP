@@ -12,19 +12,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getPreshiftSummary } from '@/lib/enforcement/carry-forward';
-import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/service';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    await requireUser();
 
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venue_id');

@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
 import {
   completeAction,
   dismissAction,
@@ -24,14 +24,7 @@ type ItemAction = 'complete' | 'dismiss' | 'acknowledge' | 'resolve' | 'escalate
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const user = await requireUser();
 
     const body = await request.json();
     const {
