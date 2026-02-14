@@ -1,35 +1,17 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { ProformaSettingsClient } from "@/components/settings/ProformaSettingsClient";
 
 export default async function ProformaSettingsPage() {
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Get user's organization
-  const { data: orgUser } = await supabase
-    .from("organization_users")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true)
-    .single();
-
-  if (!orgUser?.organization_id) {
-    return (
-      <div className="p-6">
-        <p className="text-red-500">No organization found</p>
-      </div>
-    );
-  }
+  const orgUser = { organization_id: orgId };
 
   // Get or create settings
   const { data: settings } = await supabase

@@ -1,7 +1,9 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { ProformaProjectClient } from "@/components/proforma/ProformaProjectClient";
 
 export default async function ProformaProjectPage({
@@ -10,32 +12,12 @@ export default async function ProformaProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Get user's organizations
-  const { data: orgUsers } = await supabase
-    .from("organization_users")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true);
-
-  if (!orgUsers || orgUsers.length === 0) {
-    return (
-      <div className="p-6">
-        <p className="text-red-500">No organization found for user</p>
-      </div>
-    );
-  }
-
-  const orgIds = orgUsers.map(ou => ou.organization_id);
+  const orgIds = [orgId];
 
   // Get project with scenarios and assumptions
   const { data: project, error } = await supabase

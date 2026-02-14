@@ -1,29 +1,23 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { CompSettingsManager } from '@/components/admin/CompSettingsManager';
 
 export default async function AdminCompSettingsPage() {
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
+  // Fetch org details for display
   const supabase = await createClient();
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name, logo_url')
+    .eq('id', orgId)
+    .single();
 
-  // Get current user's organizations
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const { data: orgs } = await supabase
-    .from('organization_users')
-    .select(`
-      organization_id,
-      role,
-      organizations (
-        id,
-        name,
-        logo_url
-      )
-    `)
-    .eq('user_id', user?.id ?? '')
-    .eq('is_active', true);
-
-  const organizations = orgs?.map(o => o.organizations).filter(Boolean) || [];
+  const organizations = org ? [org] : [];
 
   return (
     <div className="container max-w-7xl mx-auto py-8">
