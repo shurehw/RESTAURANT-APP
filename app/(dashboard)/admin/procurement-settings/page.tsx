@@ -8,20 +8,25 @@ export default async function AdminProcurementSettingsPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: orgs } = await supabase
-    .from('organization_users')
-    .select(`
-      organization_id,
-      role,
-      organizations (
-        id,
-        name
-      )
-    `)
-    .eq('user_id', user?.id ?? '')
-    .eq('is_active', true);
+  // Use same pattern as dashboard layout — users table has organization_id
+  const { data: userData } = await (supabase as any)
+    .from('users')
+    .select('organization_id')
+    .eq('id', user?.id ?? '')
+    .single();
 
-  const organizations = orgs?.map(o => o.organizations).filter(Boolean) || [];
+  let organizations: any[] = [];
+  if (userData?.organization_id) {
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('id, name')
+      .eq('id', userData.organization_id)
+      .single();
+
+    if (org) {
+      organizations = [org];
+    }
+  }
 
   return (
     <div className="container max-w-7xl mx-auto py-8">
