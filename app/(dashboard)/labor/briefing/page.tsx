@@ -6,16 +6,15 @@ export const dynamic = 'force-dynamic';
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
 import { BriefingDisplay } from '@/components/labor/BriefingDisplay';
 import { redirect } from 'next/navigation';
 import { generateDailyBriefing, explainForecastChange, ForecastChange, AdjustmentRecommendation } from '@/lib/ai/forecast-explainer';
 
 export default async function DailyBriefingPage() {
-  const supabase = await createClient();
+  await requireUser();
 
-  // Check authentication
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  const supabase = await createClient();
 
   // Get user's selected venue (from session or default)
   const { data: venues } = await supabase

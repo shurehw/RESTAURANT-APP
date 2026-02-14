@@ -1,29 +1,22 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { OperationalStandardsManager } from '@/components/admin/OperationalStandardsManager';
 
 export default async function AdminOperationalStandardsPage() {
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
   const supabase = await createClient();
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .eq('id', orgId)
+    .single();
 
-  // Get current user's organizations
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data: orgs } = await supabase
-    .from('organization_users')
-    .select(`
-      organization_id,
-      role,
-      organizations (
-        id,
-        name
-      )
-    `)
-    .eq('user_id', user?.id ?? '')
-    .eq('is_active', true)
-    .in('role', ['admin', 'owner']);
-
-  const organizations = orgs?.map(o => o.organizations).filter(Boolean) || [];
+  const organizations = org ? [org] : [];
 
   return (
     <div className="container max-w-7xl mx-auto py-8">

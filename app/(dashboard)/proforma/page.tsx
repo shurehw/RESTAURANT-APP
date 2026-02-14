@@ -1,36 +1,17 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { ProformaClient } from "@/components/proforma/ProformaClient";
 
 export default async function ProformaPage() {
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Get user's organizations (they may have multiple)
-  const { data: orgUsers } = await supabase
-    .from("organization_users")
-    .select("organization_id")
-    .eq("user_id", user.id)
-    .eq("is_active", true);
-
-  if (!orgUsers || orgUsers.length === 0) {
-    return (
-      <div className="p-6">
-        <p className="text-red-500">No organization found for user</p>
-      </div>
-    );
-  }
-
-  const orgIds = orgUsers.map(ou => ou.organization_id);
+  const orgIds = [orgId];
 
   // Get all active (non-archived) projects for ALL user's organizations
   const { data: projects, error } = await supabase

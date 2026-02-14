@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { ItemBulkImport } from '@/components/items/ItemBulkImport';
 import { ItemsTable } from '@/components/items/ItemsTable';
 import { Card } from '@/components/ui/card';
@@ -7,25 +8,10 @@ import { Card } from '@/components/ui/card';
 export const dynamic = 'force-dynamic';
 
 export default async function ItemsPage() {
+  const user = await requireUser();
+  const { orgId } = await getUserOrgAndVenues(user.id);
+
   const supabase = await createClient();
-
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) {
-    redirect('/login');
-  }
-
-  // Get user's organization
-  const { data: orgUsers } = await supabase
-    .from('organization_users')
-    .select('organization_id')
-    .eq('user_id', user.user.id)
-    .eq('is_active', true);
-
-  if (!orgUsers || orgUsers.length === 0) {
-    return <div>No organization found</div>;
-  }
-
-  const orgId = orgUsers[0].organization_id;
 
   // Get items count
   const { count: itemsCount } = await supabase
