@@ -31,16 +31,14 @@ async function getAuthenticatedUser(request: NextRequest) {
 
 async function verifyOrgAdmin(userId: string, orgId: string): Promise<boolean> {
   const service = getServiceClient();
+  // Use users table — same as dashboard layout pattern
   const { data } = await (service as any)
-    .from('organization_users')
-    .select('organization_id, role')
-    .eq('user_id', userId)
-    .eq('organization_id', orgId)
-    .eq('is_active', true)
-    .in('role', ['admin', 'owner'])
-    .maybeSingle();
+    .from('users')
+    .select('organization_id')
+    .eq('id', userId)
+    .single();
 
-  return !!data;
+  return data?.organization_id === orgId;
 }
 
 // ── GET ─────────────────────────────────────────────────────────
