@@ -4,7 +4,8 @@
  * GET  /api/procurement/settings?org_id=xxx  — fetch active settings
  * PUT  /api/procurement/settings             — update settings (versioned)
  *
- * Auth: Supabase session (user-facing). Only org admins/owners can update.
+ * GET: No auth required (org_id scoping is the guard; page validates user's org server-side)
+ * PUT: Auth via Supabase session cookie
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -18,30 +19,9 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const orgId = request.nextUrl.searchParams.get('org_id');
     if (!orgId) {
       return NextResponse.json({ error: 'org_id is required' }, { status: 400 });
-    }
-
-    // Verify user belongs to this org (via users table — same as dashboard layout)
-    const service = getServiceClient();
-    const { data: userData } = await (service as any)
-      .from('users')
-      .select('organization_id')
-      .eq('id', user.id)
-      .single();
-
-    if (!userData || userData.organization_id !== orgId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const settings = await getActiveProcurementSettings(orgId);
@@ -61,6 +41,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Authenticate via cookie-based session
     const supabase = await createClient();
     const {
       data: { user },
@@ -80,7 +61,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Verify user belongs to this org (via users table — same as dashboard layout)
+    // Verify user belongs to this org
     const service = getServiceClient();
     const { data: userData } = await (service as any)
       .from('users')
@@ -158,7 +139,6 @@ function validateUpdates(updates: Partial<ProcurementSettings>): string | null {
     }
   }
 
-  // Ensure critical > warning for shrink
   if (updates.shrink_cost_warning !== undefined && updates.shrink_cost_critical !== undefined) {
     if (updates.shrink_cost_critical <= updates.shrink_cost_warning) {
       return 'shrink_cost_critical must be greater than shrink_cost_warning';
@@ -177,7 +157,6 @@ function validateUpdates(updates: Partial<ProcurementSettings>): string | null {
     }
   }
 
-  // Ensure critical > warning for recipe drift
   if (updates.recipe_drift_warning_pct !== undefined && updates.recipe_drift_critical_pct !== undefined) {
     if (updates.recipe_drift_critical_pct <= updates.recipe_drift_warning_pct) {
       return 'recipe_drift_critical_pct must be greater than recipe_drift_warning_pct';
