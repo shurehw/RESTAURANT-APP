@@ -1,10 +1,14 @@
 export const dynamic = 'force-dynamic';
 
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
+import { requireUser } from "@/lib/auth";
 import { AddUserForm } from "@/components/admin/AddUserForm";
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient();
+  await requireUser();
+
+  // Use admin client — auth already validated by requireUser
+  const supabase = createAdminClient();
 
   // Get all organizations
   const { data: organizations } = await supabase

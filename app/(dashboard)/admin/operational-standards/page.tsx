@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
 import { OperationalStandardsManager } from '@/components/admin/OperationalStandardsManager';
@@ -9,7 +9,7 @@ export default async function AdminOperationalStandardsPage() {
   const user = await requireUser();
   const { orgId } = await getUserOrgAndVenues(user.id);
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data: org } = await supabase
     .from('organizations')
     .select('id, name')

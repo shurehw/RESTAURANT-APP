@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { createClient } from '@/lib/supabase/server';
+import { requireUser } from '@/lib/auth';
 import { SystemBoundsManager } from '@/components/admin/SystemBoundsManager';
 
 // Super admin emails
@@ -10,13 +10,10 @@ const SUPER_ADMIN_EMAILS = [
 ];
 
 export default async function AdminSystemBoundsPage() {
-  const supabase = await createClient();
-
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await requireUser();
 
   // Check if user is super admin
-  const isSuperAdmin = user && SUPER_ADMIN_EMAILS.includes(user.email || '');
+  const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(user.email || '');
 
   if (!isSuperAdmin) {
     return (

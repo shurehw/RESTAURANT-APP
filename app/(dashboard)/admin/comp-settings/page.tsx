@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
 import { CompSettingsManager } from '@/components/admin/CompSettingsManager';
@@ -9,8 +9,8 @@ export default async function AdminCompSettingsPage() {
   const user = await requireUser();
   const { orgId } = await getUserOrgAndVenues(user.id);
 
-  // Fetch org details for display
-  const supabase = await createClient();
+  // Fetch org details for display — use admin client since auth is already validated
+  const supabase = createAdminClient();
   const { data: org } = await supabase
     .from('organizations')
     .select('id, name, logo_url')
