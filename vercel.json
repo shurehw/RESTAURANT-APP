@@ -1,4 +1,26 @@
 {
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "prime-cost.com"
+        }
+      ],
+      "destination": "/coming-soon.html"
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.prime-cost.com"
+        }
+      ],
+      "destination": "/coming-soon.html"
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/sync-tipsee?venue=aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4",
