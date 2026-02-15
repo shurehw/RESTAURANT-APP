@@ -3,10 +3,16 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login'];
+const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login', '/coming-soon', '/api/landing'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+
+  // Marketing domain — serve landing page, skip auth
+  if (hostname.includes('prime-cost.com')) {
+    return NextResponse.rewrite(new URL('/coming-soon.html', request.url));
+  }
 
   // Allow public routes
   if (publicRoutes.some(route => pathname.startsWith(route))) {
