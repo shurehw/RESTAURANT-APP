@@ -106,28 +106,5 @@ export async function getUserProfile(userId: string): Promise<UserWithRole | nul
   };
 }
 
-/**
- * Role display labels
- */
-export const ROLE_LABELS: Record<UserRole, string> = {
-  owner: 'Owner',
-  director: 'Director',
-  gm: 'General Manager',
-  agm: 'Assistant GM',
-  manager: 'Manager',
-  exec_chef: 'Executive Chef',
-  sous_chef: 'Sous Chef',
-};
-
-/**
- * Role descriptions
- */
-export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  owner: 'Full access - strategic oversight and control',
-  director: 'Full access - strategic oversight across operations',
-  gm: 'Full operational access, limited admin settings',
-  agm: 'Operations focus, most access except financial admin',
-  manager: 'Day-to-day operations, no deep admin access',
-  exec_chef: 'Kitchen + procurement, plus operational visibility',
-  sous_chef: 'Kitchen operations, limited visibility',
-};
+// Re-export role constants from client-safe module
+export { ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/nav/role-permissions';
