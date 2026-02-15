@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Save, X } from "lucide-react";
-import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/database/user-management";
+import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/nav/role-permissions";
 import type { UserRole } from "@/lib/nav/role-permissions";
 import { useRouter } from "next/navigation";
 
