@@ -54,7 +54,7 @@ export default async function SchedulePage({
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Weekly Schedule</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Auto-generated optimal schedules
+            AI-generated schedule recommendations
           </p>
         </div>
       </div>

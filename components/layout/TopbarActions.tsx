@@ -3,6 +3,7 @@
 import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { VendorOnboardingLinkDisplay } from './VendorOnboardingLinkDisplay';
+import { IntegrationStatus } from './IntegrationStatus';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { useEffect } from 'react';
 
@@ -105,6 +106,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
         onClick={handleTeamSettings}
         className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
         aria-label="Team Settings"
+        title="Team Settings"
       >
         <Users className="w-5 h-5" aria-hidden="true" />
       </button>
@@ -114,9 +116,13 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
         onClick={handleUserSettings}
         className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
         aria-label="User Settings"
+        title="Organization Settings"
       >
         <Settings className="w-5 h-5" aria-hidden="true" />
       </button>
+
+      {/* Integration Status */}
+      <IntegrationStatus />
 
       {/* Notifications */}
       <NotificationsDropdown />
@@ -126,6 +132,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
         onClick={handleProfile}
         className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
         aria-label="Profile"
+        title="User Profile"
       >
         <UserCircle className="w-5 h-5" aria-hidden="true" />
       </button>
@@ -135,6 +142,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
         onClick={handleLogout}
         className="p-2 text-opsos-sage-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
         aria-label="Log out"
+        title="Log Out"
       >
         <LogOut className="w-5 h-5" aria-hidden="true" />
       </button>
