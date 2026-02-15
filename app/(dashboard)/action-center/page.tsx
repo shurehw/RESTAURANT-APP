@@ -11,7 +11,7 @@ export default async function ActionCenterPage() {
   const { profile } = await requireUser();
 
   // Get all active violations
-  const violations = await getActiveViolations(profile.org_id);
+  const violations = await getActiveViolations(profile.org_id!);
 
   // Group by severity
   const critical = violations.filter((v) => v.severity === 'critical');
