@@ -139,7 +139,7 @@ export default function OrganizationSettingsPage() {
             <SettingToggle
               icon={<Calendar className="w-5 h-5" />}
               label="Enable Auto-Scheduling"
-              description="Use AI to automatically generate optimal schedules"
+              description="Use AI to automatically generate schedule recommendations"
               checked={settings.enable_auto_scheduling}
               onChange={(checked) =>
                 updateSetting('enable_auto_scheduling', checked)

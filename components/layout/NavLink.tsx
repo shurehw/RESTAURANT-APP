@@ -7,10 +7,12 @@ export function NavLink({
   href,
   icon,
   children,
+  badge,
 }: {
   href: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  badge?: number;
 }) {
   const pathname = usePathname();
   const isActive =
@@ -24,6 +26,11 @@ export function NavLink({
     >
       {icon}
       <span>{children}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="ml-auto px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded-full">
+          {badge}
+        </span>
+      )}
     </Link>
   );
 }

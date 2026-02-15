@@ -9,12 +9,18 @@ export default async function AdminOperationalStandardsPage() {
   const user = await requireUser();
   const { orgId } = await getUserOrgAndVenues(user.id);
 
+  // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
   const supabase = createAdminClient();
-  const { data: org } = await supabase
+  const { data: org, error } = await supabase
     .from('organizations')
     .select('id, name')
     .eq('id', orgId)
     .single();
+
+  // If error, log it but still try to show the page with empty org
+  if (error) {
+    console.error('Failed to fetch organization:', error);
+  }
 
   const organizations = org ? [org] : [];
 
@@ -38,10 +44,20 @@ export default async function AdminOperationalStandardsPage() {
         </div>
       </div>
 
-      {organizations.length === 0 ? (
+      {error ? (
+        <div className="p-6 border rounded-lg bg-red-50 border-red-200">
+          <h3 className="text-lg font-semibold text-red-900 mb-2">Error Loading Organization</h3>
+          <p className="text-sm text-red-800 mb-4">
+            {error.message || 'Failed to load organization data'}
+          </p>
+          <p className="text-xs text-red-700">
+            Your org ID: <code className="bg-red-100 px-1 py-0.5 rounded">{orgId}</code>
+          </p>
+        </div>
+      ) : organizations.length === 0 ? (
         <div className="text-center py-12 border rounded-lg bg-muted/50">
           <p className="text-muted-foreground">
-            You need admin or owner role to manage operational standards
+            Organization not found. Contact support if this persists.
           </p>
         </div>
       ) : (
