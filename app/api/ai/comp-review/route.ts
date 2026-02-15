@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     // Run AI review with org settings
     const review = await reviewComps(reviewInput, compSettings ?? undefined);
 
-    // Cache result + save to Control Plane (non-blocking)
+    // Cache result + save to Action Center (non-blocking)
     await Promise.all([
       setCachedReview(supabase, venueId, date, inputHash, review),
       saveToControlPlane(venueId, date, venueName || 'Unknown Venue', review),
@@ -315,7 +315,7 @@ async function saveToControlPlane(venueId: string, date: string, venueName: stri
       console.error('Failed to save some actions:', actionResult.errors);
     }
   } catch (err) {
-    console.error('Error saving actions to Control Plane:', err);
+    console.error('Error saving actions to Action Center:', err);
   }
 }
 

@@ -25,7 +25,6 @@ export function Sidebar({ user }: SidebarProps) {
         <NavLink href="/inventory">Inventory</NavLink>
         <NavLink href="/recipes">Recipes</NavLink>
         <NavLink href="/budget">Budget</NavLink>
-        <NavLink href="/proforma">Proforma</NavLink>
         <NavSection title="Sales">
           <NavLink href="/sales/pace">Live Pulse</NavLink>
           <NavLink href="/labor/forecasts">Forecasts</NavLink>
@@ -39,7 +38,6 @@ export function Sidebar({ user }: SidebarProps) {
         <div className="border-t my-2"></div>
         <NavSection title="Settings">
           <NavLink href="/settings/organization">Organization</NavLink>
-          <NavLink href="/settings/proforma">Proforma Defaults</NavLink>
         </NavSection>
         <NavSection title="System Admin">
           <NavLink href="/admin">Admin</NavLink>

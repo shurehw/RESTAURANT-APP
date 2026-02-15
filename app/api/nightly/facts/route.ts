@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
 
     if (venueData?.organization_id) {
       const { data: settingsData } = await (supabase as any)
-        .from('proforma_settings')
+        .from('organization_settings')
         .select('fiscal_calendar_type, fiscal_year_start_date')
         .eq('org_id', venueData.organization_id)
         .single();

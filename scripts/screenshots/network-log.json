@@ -1,0 +1,1288 @@
+{
+  "requests": [
+    {
+      "url": "https://leads.restaurantactivityreport.com/",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/jquery/dist/jquery.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/index.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-KQGNXN7TNQ",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/animate.css/animate.min.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/glyphicons/glyphicons.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/font-awesome/css/font-awesome.min.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/font-awesome/css/font-awesome.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/material-design-icons/material-design-icons.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/bootstrap/dist/css/bootstrap.min.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/tag-input/ng-tags-input.min.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/Croppie-2.4.0/croppie.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/styles/app.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/styles/font.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/Multiple_select/bootstrap-multiselect.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/spinner.gif",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/jquery/dist/jquery.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://code.jquery.com/jquery-1.11.3.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/tether/dist/js/tether.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/bootstrap/dist/js/bootstrap.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/PACE/pace.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular/angular.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?onload=vcRecaptchaApiLoaded&render=explicit",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-recaptcha.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/ng-idle/1.2.0/angular-idle.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-animate/angular-animate.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-resource/angular-resource.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-sanitize/angular-sanitize.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-touch/angular-touch.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/tag-input/ng-tags-input.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-cookies.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-ui-router/release/angular-ui-router.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/ngstorage/ngStorage.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-ui-utils/ui-utils.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/oclazyload/dist/ocLazyLoad.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-datepicker/bootstrap_Datepicker.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-datepicker/bootstrap_Datepicker.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-translate/angular-translate.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/echarts/build/dist/Chart_loader.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/Croppie-2.4.0/croppie.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/Multiple_select/bootstrap-multiselect.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/payform.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/Croppie-2.4.0/Profile_image.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.10/jquery.mask.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.57/pdfmake.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.1/jspdf.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/2.3.5/jspdf.plugin.autotable.min.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.22/vfs_fonts.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/app.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/config.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/config.lazyload.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/config.router.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/app.ctrl.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-jp.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-nav.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-fullscreen.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-scroll-to.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-toggle-class.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-include.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/filters/fromnow.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/services/ngstore.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/services/ui-load.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/services/palette.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/common.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/company.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/lead.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/subscriber.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/contacts.js?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/xml2json.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtm.js?id=GTM-TQMPQM89",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/fonts/roboto/font.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-KQGNXN7TNQ&gtm=45je62b1h2v878201154za200zd878201154&_p=1770932142099&gcd=13l3l3l3l1l1&npa=0&dma=0&cid=925459280.1770932142&ul=en-us&sr=1920x1080&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&are=1&frm=0&pscdl=noapi&_s=1&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~115938466~115938468~116491844~116988316&sid=1770932142&sct=1&seg=0&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&dr=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&tfd=370",
+      "method": "POST"
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtag/js?id=AW-1019803677&cx=c&gtm=4e62b0",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/ccm/collect?frm=0&en=page_view&dr=leads.restaurantactivityreport.com&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&scrsrc=www.googletagmanager.com&rnd=522076785.1770932142&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&auid=1871695048.1770932142&navt=n&npa=0&ep.ads_data_redaction=0&gtm=45He62b0v9217342716za200zd9217342716xea&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316&apve=1&apvf=f&apvc=1&tft=1770932142390&tfd=397",
+      "method": "POST"
+    },
+    {
+      "url": "https://www.googletagmanager.com/static/service_worker/6240/sw_iframe.html?origin=https%3A%2F%2Fleads.restaurantactivityreport.com",
+      "method": "GET"
+    },
+    {
+      "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/1019803677/?random=1770932142544&cv=11&fst=1770932142544&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be62b0z89217342716za20gzb9217342716zd9217342716xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316~117455676~117455678&u_w=1920&u_h=1080&url=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&ref=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&frm=0&tiba=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1871695048.1770932142&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&data=event%3Dgtag.config&rfmt=3&fmt=4",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/ccm/collect?frm=0&en=page_view&dr=leads.restaurantactivityreport.com&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&scrsrc=www.googletagmanager.com&rnd=522076785.1770932142&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&auid=1871695048.1770932142&navt=n&npa=0&gtm=45be62b0z89217342716za20gzb9217342716zd9217342716xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316~117455676~117455678&apve=1&apvf=f&apvc=0&tids=AW-1019803677&tid=AW-1019803677&tft=1770932142569&tfd=576",
+      "method": "POST"
+    },
+    {
+      "url": "https://www.google.com/pagead/1p-user-list/1019803677/?random=1770932142544&cv=11&fst=1770930000000&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be62b0z89217342716za20gzb9217342716zd9217342716xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316~117455676~117455678&u_w=1920&u_h=1080&url=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&ref=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&frm=0&tiba=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1871695048.1770932142&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&data=event%3Dgtag.config&rfmt=3&fmt=3&is_vtc=1&cid=CAQSiwEA56J1eaNGORbpJNWLEDHInSuCclSYDndPgGNV4zdrhx9hojMCO--JBFTC03AeWVAmgzzX50S5GgKfhgewLBLUPaC5B-eTNldTI-Ni4MsQGztsd4cVLS1knIvnnsDb6qDPO8nYN7Y7A3OeOOedJp4E9Jeq28nimwdXfNw7HopNtbeafJ5lcgMDSyV-&random=588024359&rmt_tld=0&ipr=y",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/fonts/roboto/400.woff",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/layout/layout.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/partials/common/login.html?v=1.0.0.7",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?_=1770932143372",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?render=explicit&onload=initApp&_=1770932143373",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?onload=ReCaptchaCallbackV3&render=6Lfm3fQZAAAAAFhcOv20DS5lWEFqNJB-wnSWdank&_=1770932143374",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/navbar.brand.white.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/nav.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/aside.bottom.1.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/header.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/footer.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/fonts/roboto/700.woff",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/logo.jpg",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LeisV4aAAAAAFpq150BjDD2PvL7lbAWKdkNgDkf&co=aHR0cHM6Ly9sZWFkcy5yZXN0YXVyYW50YWN0aXZpdHlyZXBvcnQuY29tOjQ0Mw..&hl=en&v=vUgXt_KV952_-5BB2jjloYzl&size=normal&anchor-ms=20000&execute-ms=30000&cb=q56eynnorcwx",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/i_1.svg",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/i_3.svg",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/SubscriberSearch.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/LeadSearch.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/ERLSearch.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/ERLContactSearch.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/dropdown.user.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/dropdown.new.html",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/%7B%7BauthorisedUser.Image%7D%7D",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/styles__ltr.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api2/webworker.js?hl=en&v=vUgXt_KV952_-5BB2jjloYzl",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/api2/logo_48.png",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/logo.png",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api2/bframe?hl=en&v=vUgXt_KV952_-5BB2jjloYzl&k=6LeisV4aAAAAAFpq150BjDD2PvL7lbAWKdkNgDkf&bft=0dAFcWeA6ijPHVM8W8aVcttQYq4TVo84O55_J6cJ6zeX6o99QGZRx3w40uQUlN_DHoPmes6thngrFXWgpDKXX6SDw7gVeETtSgfw",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/styles__ltr.css",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "method": "GET"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2",
+      "method": "GET"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-KQGNXN7TNQ&gtm=45je62b1h2v878201154za200zd878201154&_p=1770932142099&gcd=13l3l3l3l1l1&npa=0&dma=0&cid=925459280.1770932142&ul=en-us&sr=1920x1080&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEAAAAQ&_s=2&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~115938466~115938468~116491844~116988316&sid=1770932142&sct=1&seg=0&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&dr=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&en=scroll&epn.percent_scrolled=90&_et=8&tfd=5392",
+      "method": "POST"
+    }
+  ],
+  "responses": [
+    {
+      "url": "https://leads.restaurantactivityreport.com/",
+      "status": 200,
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\" />\n  <title> Leads Portal  - </title>\n  <meta name=\"description\" content=\"ERL, RLR\" />\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, minimal-ui\" />\n  <meta name=\"keywords\" content=\"Restaurant Activity Report, Leads Portal\">\n  <script src=\"libs/jquery/jquery/dist/jquery.js\"></script>\n\n    <script>\r\n        $(document).ready(function () {\r\n            window.location.href = \"app/index.html#dash"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/jquery/dist/jquery.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/jquery/dist/jquery.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/index.html",
+      "status": 200,
+      "body": "<!DOCTYPE html>\r\n<html lang=\"en\" data-ng-app=\"app\">\r\n<head>\r\n    <meta charset=\"utf-8\" />\r\n\r\n    <!-- <title data-ng-bind=\"'Restaurant Activity Report | Leads Portal  - '+ $state.current.data.title \">Restaurant Activity Report | Leads Portal  - </title> -->\r\n\t<title>Restaurant Activity Report | Leads Portal  - </title>\r\n    <!--<meta http-equiv=\"Expires\" content=\"30\">-->\r\n\t\r\n    <meta name=\"description\" content=\"Admin, Dashboard, RLR, ERL, Restaurant Activity Report, Leads Portal\">\r\n    <meta na"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/glyphicons/glyphicons.css",
+      "status": 200,
+      "body": "@font-face {\n  font-family: 'Glyphicons Halflings';\n\n  src:  url('glyphicons-halflings-regular.eot');\n  src:  url('glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), \n        url('glyphicons-halflings-regular.woff2') format('woff2'), \n        url('glyphicons-halflings-regular.woff') format('woff'), \n        url('glyphicons-halflings-regular.ttf') format('truetype'), \n        url('glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');\n}\n.glyphicon {\n  po"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/animate.css/animate.min.css",
+      "status": 200,
+      "body": "@charset \"UTF-8\";/*!\nAnimate.css - http://daneden.me/animate\nLicensed under the MIT license - http://opensource.org/licenses/MIT\n\nCopyright (c) 2015 Daniel Eden\n*/.animated{-webkit-animation-duration:1s;animation-duration:1s;-webkit-animation-fill-mode:both;animation-fill-mode:both}.animated.infinite{-webkit-animation-iteration-count:infinite;animation-iteration-count:infinite}.animated.hinge{-webkit-animation-duration:2s;animation-duration:2s}.animated.bounceIn,.animated.bounceOut,.animated.fli"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/font-awesome/css/font-awesome.min.css",
+      "status": 200,
+      "body": "/*!\n *  Font Awesome 4.3.0 by @davegandy - http://fontawesome.io - @fontawesome\n *  License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)\n */@font-face{font-family:'FontAwesome';src:url('../fonts/fontawesome-webfont.eot?v=4.3.0');src:url('../fonts/fontawesome-webfont.eot?#iefix&v=4.3.0') format('embedded-opentype'),url('../fonts/fontawesome-webfont.woff2?v=4.3.0') format('woff2'),url('../fonts/fontawesome-webfont.woff?v=4.3.0') format('woff'),url('../fonts/fontawesome-web"
+    },
+    {
+      "url": "https://ajax.googleapis.com/ajax/libs/angularjs/1.5.3/angular-cookies.js",
+      "status": 200,
+      "body": "/**\n * @license AngularJS v1.5.3\n * (c) 2010-2016 Google, Inc. http://angularjs.org\n * License: MIT\n */\n(function(window, angular, undefined) {'use strict';\n\n/**\n * @ngdoc module\n * @name ngCookies\n * @description\n *\n * # ngCookies\n *\n * The `ngCookies` module provides a convenient wrapper for reading and writing browser cookies.\n *\n *\n * <div doc-module-components=\"ngCookies\"></div>\n *\n * See {@link ngCookies.$cookies `$cookies`} for usage.\n */\n\n\nangular.module('ngCookies', ['ng']).\n  /**\n   * "
+    },
+    {
+      "url": "https://code.jquery.com/jquery-1.11.3.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?onload=vcRecaptchaApiLoaded&render=explicit",
+      "status": 200,
+      "body": "/* PLEASE DO NOT COPY AND PASTE THIS CODE. */(function(){var w=window,C='___grecaptcha_cfg',cfg=w[C]=w[C]||{},N='grecaptcha';var gr=w[N]=w[N]||{};gr.ready=gr.ready||function(f){(cfg['fns']=cfg['fns']||[]).push(f);};w['__recaptcha_api']='https://www.google.com/recaptcha/api2/';(cfg['render']=cfg['render']||[]).push('explicit');(cfg['onload']=cfg['onload']||[]).push('vcRecaptchaApiLoaded');(cfg['clr']=cfg['clr']||[]).push('true');(cfg['anchor-ms']=cfg['anchor-ms']||[]).push(20000);(cfg['execute-ms"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/ng-idle/1.2.0/angular-idle.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.10/jquery.mask.js",
+      "status": 200
+    },
+    {
+      "url": "https://netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css",
+      "status": 200,
+      "body": "/*!\n *  Font Awesome 3.2.1\n *  the iconic font designed for Bootstrap\n *  ------------------------------------------------------------------------------\n *  The full suite of pictographic icons, examples, and documentation can be\n *  found at http://fontawesome.io.  Stay up to date on Twitter at\n *  http://twitter.com/fontawesome.\n *\n *  License\n *  ------------------------------------------------------------------------------\n *  - The Font Awesome font is licensed under SIL OFL 1.1 -\n *    htt"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/font-awesome/css/font-awesome.css",
+      "status": 200,
+      "body": "/*!\n *  Font Awesome 4.3.0 by @davegandy - http://fontawesome.io - @fontawesome\n *  License - http://fontawesome.io/license (Font: SIL OFL 1.1, CSS: MIT License)\n */\n/* FONT PATH\n * -------------------------- */\n@font-face {\n  font-family: 'FontAwesome';\n  src: url('../fonts/fontawesome-webfont.eot?v=4.3.0');\n  src: url('../fonts/fontawesome-webfont.eot?#iefix&v=4.3.0') format('embedded-opentype'), url('../fonts/fontawesome-webfont.woff2?v=4.3.0') format('woff2'), url('../fonts/fontawesome-webfo"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/material-design-icons/material-design-icons.css",
+      "status": 200,
+      "body": "@font-face {\n  font-family: 'Material Icons';\n  font-style: normal;\n  font-weight: 400;\n  src: url(iconfont/MaterialIcons-Regular.eot); /* For IE6-8 */\n  src: local('Material Icons'),\n       local('MaterialIcons-Regular'),\n       url(iconfont/MaterialIcons-Regular.woff2) format('woff2'),\n       url(iconfont/MaterialIcons-Regular.woff) format('woff'),\n       url(iconfont/MaterialIcons-Regular.ttf) format('truetype');\n}\n\n.material-icons {\n  font-family: 'Material Icons';\n  font-weight: normal;\n  f"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/tag-input/ng-tags-input.min.css",
+      "status": 200,
+      "body": "tags-input{display:block}tags-input *,tags-input :after,tags-input :before{-moz-box-sizing:border-box;-webkit-box-sizing:border-box;box-sizing:border-box}tags-input \r\n                                                                                                                                                          .host{\r\n                                                                                                                                                              position:rela"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/styles/font.css",
+      "status": 200,
+      "body": "/*custom*/\n@import url(../../assets/fonts/roboto/font.css);\nbody{\n  font-family: \"Roboto\", \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n}\n"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/Croppie-2.4.0/croppie.css",
+      "status": 200,
+      "body": ".croppie-container {\n    width: 100%;\n    height: 100%;\n}\n.croppie-container .cr-image {\n\tz-index: -1;\n\tposition: absolute;\n\ttop: 0;\n\tleft: 0;\n\ttransform-origin: 0 0;\n    max-width: none;\n}\n.croppie-container .cr-boundary {\n\tposition: relative;\n\toverflow: hidden;\n\tmargin: 0 auto;\n\tz-index: 1;\n    width: 100%;\n    height: 100%;\n}\n.croppie-container .cr-viewport {\n\tposition: absolute;\n\tborder: 2px solid #fff;\n\tmargin: auto;\n\ttop: 0;\n\tbottom: 0;\n\tright: 0;\n\tleft: 0;\n   /* box-shadow: 0 0 2000px 200"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/Multiple_select/bootstrap-multiselect.css",
+      "status": 200,
+      "body": "/**\n * Bootstrap Multiselect (http://davidstutz.de/bootstrap-multiselect/)\n *\n * Apache License, Version 2.0:\n * Copyright (c) 2012 - 2020 David Stutz\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\"); you may not\n * use this file except in compliance with the License. You may obtain a\n * copy of the License at http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on "
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtag/js?id=G-KQGNXN7TNQ",
+      "status": 200
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtm.js?id=GTM-TQMPQM89",
+      "status": 200
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.22/vfs_fonts.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/bootstrap/dist/css/bootstrap.min.css",
+      "status": 200,
+      "body": "/*!\n * Bootstrap v4.0.0-alpha.4 (http://getbootstrap.com)\n * Copyright 2011-2016 The Bootstrap Authors\n * Copyright 2011-2016 Twitter, Inc.\n * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)\n *//*! normalize.css v4.0.0 | MIT License | github.com/necolas/normalize.css */html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%}body{margin:0}article,aside,details,figcaption,figure,footer,header,main,menu,nav,section,summary{display:block}audio,c"
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.57/pdfmake.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/2.3.5/jspdf.plugin.autotable.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.4.1/jspdf.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://www.google.com/ccm/collect?frm=0&en=page_view&dr=leads.restaurantactivityreport.com&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&scrsrc=www.googletagmanager.com&rnd=522076785.1770932142&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&auid=1871695048.1770932142&navt=n&npa=0&ep.ads_data_redaction=0&gtm=45He62b0v9217342716za200zd9217342716xea&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316&apve=1&apvf=f&apvc=1&tft=1770932142390&tfd=397",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/spinner.gif",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/tether/dist/js/tether.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/styles/app.css",
+      "status": 200,
+      "body": "/* \r\n\r\n*/\r\nhtml\r\n{\r\n    /*background-color: #e0e0e0;*/\r\n}\r\n\r\nbody\r\n{\r\n    color: rgba(0, 0, 0, 0.87);\r\n    font-size: 0.875rem;\r\n    background-color: #fff;\r\n    -webkit-font-smoothing: antialiased;\r\n}\r\n\r\n*:focus\r\n{\r\n    outline: 0 !important;\r\n}\r\n\r\na\r\n{\r\n    color: inherit;\r\n    text-decoration: none;\r\n    cursor: pointer;\r\n    outline: 0;\r\n}\r\n\r\n    a:hover,\r\n    a:focus\r\n    {\r\n        color: inherit;\r\n        text-decoration: none;\r\n    }\r\n\r\nbutton\r\n{\r\n    color: inherit;\r\n}\r\n\r\npre\r\n{\r\n    co"
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-KQGNXN7TNQ&gtm=45je62b1h2v878201154za200zd878201154&_p=1770932142099&gcd=13l3l3l3l1l1&npa=0&dma=0&cid=925459280.1770932142&ul=en-us&sr=1920x1080&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&are=1&frm=0&pscdl=noapi&_s=1&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~115938466~115938468~116491844~116988316&sid=1770932142&sct=1&seg=0&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&dr=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&en=page_view&_fv=1&_nsi=1&_ss=1&_ee=1&tfd=370",
+      "status": 204
+    },
+    {
+      "url": "https://www.googletagmanager.com/static/service_worker/6240/sw_iframe.html?origin=https%3A%2F%2Fleads.restaurantactivityreport.com",
+      "status": 200,
+      "body": "<!DOCTYPE html>\n<html>\n<head>\n  <link rel=\"shortcut icon\" href=\"data:image/x-icon;,\" type=\"image/x-icon\">\n</head>\n<body>\n  <script>\n'use strict';var l={};class m{constructor(a){this.j=a;this.g={};this.h={};this.i=0;this.id=String(Math.floor(Number.MAX_SAFE_INTEGER*Math.random()))}}function n(a){return a.performance&&a.performance.now()||Date.now()}\nvar p=function(a,c){class d{constructor(b,f,g){this.failureType=b;this.data=f;this.g=g;this.h=new m(n(g))}o(b,f){const g=b.clientId;if(b.type===0){b."
+    },
+    {
+      "url": "https://www.googletagmanager.com/gtag/js?id=AW-1019803677&cx=c&gtm=4e62b0",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/PACE/pace.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-recaptcha.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/bootstrap/dist/js/bootstrap.js",
+      "status": 200
+    },
+    {
+      "url": "https://www.google.com/ccm/collect?frm=0&en=page_view&dr=leads.restaurantactivityreport.com&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&scrsrc=www.googletagmanager.com&rnd=522076785.1770932142&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&auid=1871695048.1770932142&navt=n&npa=0&gtm=45be62b0z89217342716za20gzb9217342716zd9217342716xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316~117455676~117455678&apve=1&apvf=f&apvc=0&tids=AW-1019803677&tid=AW-1019803677&tft=1770932142569&tfd=576",
+      "status": 200
+    },
+    {
+      "url": "https://googleads.g.doubleclick.net/pagead/viewthroughconversion/1019803677/?random=1770932142544&cv=11&fst=1770932142544&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be62b0z89217342716za20gzb9217342716zd9217342716xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316~117455676~117455678&u_w=1920&u_h=1080&url=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&ref=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&frm=0&tiba=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1871695048.1770932142&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&data=event%3Dgtag.config&rfmt=3&fmt=4",
+      "status": 200,
+      "body": "(function(){var s = {};(function(){var k=typeof Object.defineProperties==\"function\"?Object.defineProperty:function(a,d,b){if(a==Array.prototype||a==Object.prototype)return a;a[d]=b.value;return a};function l(a){a=[\"object\"==typeof globalThis&&globalThis,a,\"object\"==typeof window&&window,\"object\"==typeof self&&self,\"object\"==typeof global&&global];for(var d=0;d<a.length;++d){var b=a[d];if(b&&b.Math==Math)return b}throw Error(\"Cannot find global object\");} var p=l(this),q=typeof Symbol===\"function"
+    },
+    {
+      "url": "https://www.google.com/pagead/1p-user-list/1019803677/?random=1770932142544&cv=11&fst=1770930000000&bg=ffffff&guid=ON&async=1&en=gtag.config&gtm=45be62b0z89217342716za20gzb9217342716zd9217342716xec&gcd=13l3l3l3l1l1&dma=0&tag_exp=103116026~103200004~104527906~104528501~104684208~104684211~115616985~115938466~115938469~116491844~116988316~117455676~117455678&u_w=1920&u_h=1080&url=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&ref=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&frm=0&tiba=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&hn=www.googleadservices.com&npa=0&pscdl=noapi&auid=1871695048.1770932142&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&data=event%3Dgtag.config&rfmt=3&fmt=3&is_vtc=1&cid=CAQSiwEA56J1eaNGORbpJNWLEDHInSuCclSYDndPgGNV4zdrhx9hojMCO--JBFTC03AeWVAmgzzX50S5GgKfhgewLBLUPaC5B-eTNldTI-Ni4MsQGztsd4cVLS1knIvnnsDb6qDPO8nYN7Y7A3OeOOedJp4E9Jeq28nimwdXfNw7HopNtbeafJ5lcgMDSyV-&random=588024359&rmt_tld=0&ipr=y",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-animate/angular-animate.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-resource/angular-resource.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-sanitize/angular-sanitize.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-touch/angular-touch.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/tag-input/ng-tags-input.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/ngstorage/ngStorage.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/oclazyload/dist/ocLazyLoad.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-datepicker/bootstrap_Datepicker.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-translate/angular-translate.min.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-datepicker/bootstrap_Datepicker.css",
+      "status": 200,
+      "body": "/*!\r\n * Datepicker for Bootstrap\r\n *\r\n * Copyright 2012 Stefan Petre\r\n * Improvements by Andrew Rowls\r\n * Licensed under the Apache License v2.0\r\n * http://www.apache.org/licenses/LICENSE-2.0\r\n *\r\n */\r\n.datepicker {\r\n  padding: 4px;\r\n  -webkit-border-radius: 4px;\r\n  -moz-border-radius: 4px;\r\n  border-radius: 4px;\r\n  direction: ltr;\r\n  /*.dow {\r\n\t\tborder-top: 1px solid #ddd !important;\r\n\t}*/\r\n\r\n}\r\n.datepicker-inline {\r\n  width: 220px;\r\n}\r\n.datepicker.datepicker-rtl {\r\n  direction: rtl;\r\n}\r\n.datep"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/Croppie-2.4.0/croppie.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/payform.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/app.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/Croppie-2.4.0/Profile_image.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-nav.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-fullscreen.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-jp.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/config.router.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-scroll-to.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/config.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-include.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/filters/fromnow.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/config.lazyload.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/directives/ui-toggle-class.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/services/ngstore.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/services/palette.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/services/ui-load.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/lead.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/subscriber.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/jquery/xml2json.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/contacts.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/fonts/roboto/font.css",
+      "status": 200,
+      "body": "@font-face {\r\n  font-family: 'Roboto';\r\n  font-style: normal;\r\n  font-weight: 300;\r\n  src: local('Roboto Light'), local('Roboto-Light'), url(300.woff) format('woff');\r\n}\r\n@font-face {\r\n  font-family: 'Roboto';\r\n  font-style: normal;\r\n  font-weight: 400;\r\n  src: local('Roboto'), local('Roboto-Regular'), url(400.woff) format('woff');\r\n}\r\n@font-face {\r\n  font-family: 'Roboto';\r\n  font-style: normal;\r\n  font-weight: 700;\r\n  src: local('Roboto Bold'), local('Roboto-Bold'), url(700.woff) format('woff'"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-ui-router/release/angular-ui-router.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular-ui-utils/ui-utils.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/Multiple_select/bootstrap-multiselect.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/app.ctrl.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/company.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/scripts/controllers/appCtrls/common.js?v=1.0.0.7",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/js/echarts/build/dist/Chart_loader.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/libs/angular/angular/angular.js",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/fonts/roboto/400.woff",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/layout/layout.html",
+      "status": 200,
+      "body": "<!-- aside -->\r\n<div id=\"aside\" class=\"app-aside box-shadow-z3 modal fade lg nav-expand\" data-ng-class=\"{'folded': app.setting.folded}\" data-ng-show=\"authorisedUser.Membershipid\">\r\n    <div class=\"left navside white dk\" layout=\"column\">\r\n        <div class=\"navbar navbar-md no-radius box-shadow-z4\">\r\n            <div data-ui-include=\"'../views/blocks/navbar.brand.white.html'\"></div>\r\n        </div>\r\n\r\n\r\n        <div flex class=\"hide-scroll\">\r\n            <nav class=\"scroll\">\r\n            <!--   "
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "status": 200,
+      "body": "[{\"StateCode\":\"AK\",\"StateName\":\"Alaska\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AL\",\"StateName\":\"Alabama\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AR\",\"StateName\":\"Arkansas\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AZ\",\"StateName\":\"Arizona\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CA\",\"StateName\":\"California\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CO\",\"StateName\":\"Colorado\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CT\",\"StateName\":\"Connecticut\",\"IsActi"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/partials/common/login.html?v=1.0.0.7",
+      "status": 200,
+      "body": "<script src=\"https://www.google.com/recaptcha/api.js\" async defer></script>\r\n<style>\r\n    .col-xs-12.col-sm-3.col-lg-3\r\n    {\r\n        padding: 0px 30px;\r\n    }\r\n\r\n    .col-xs-12.col-sm-12.col-lg-12.box.step1.Subscription-Inner-Sec\r\n    {\r\n        padding: 20px 6px;\r\n        text-align: center;\r\n    }\r\n\r\n    .Subscription-Section h4 input\r\n    {\r\n        width: 18px;\r\n        height: 18px;\r\n        margin-right: 8px;\r\n        margin-top: 3px;\r\n    }\r\n\t.Subscription-Section\r\n    {\r\n      justify-"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "status": 200,
+      "body": "(function(){/*\n\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n\n\n Copyright (c) 2015-2018 Google, Inc., Netflix, Inc., Microsoft Corp. and contributors\n Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License.\n You may obtain a copy of the License at\n     http://www.apache.org/licenses/LICENSE-2.0\n Unless r"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?_=1770932143372",
+      "status": 200,
+      "body": "/* PLEASE DO NOT COPY AND PASTE THIS CODE. */(function(){var w=window,C='___grecaptcha_cfg',cfg=w[C]=w[C]||{},N='grecaptcha';var gr=w[N]=w[N]||{};gr.ready=gr.ready||function(f){(cfg['fns']=cfg['fns']||[]).push(f);};w['__recaptcha_api']='https://www.google.com/recaptcha/api2/';(cfg['render']=cfg['render']||[]).push('onload');(cfg['clr']=cfg['clr']||[]).push('true');(cfg['anchor-ms']=cfg['anchor-ms']||[]).push(20000);(cfg['execute-ms']=cfg['execute-ms']||[]).push(30000);w['__google_recaptcha_clien"
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api.js?render=explicit&onload=initApp&_=1770932143373",
+      "status": 200,
+      "body": "/* PLEASE DO NOT COPY AND PASTE THIS CODE. */(function(){var w=window,C='___grecaptcha_cfg',cfg=w[C]=w[C]||{},N='grecaptcha';var gr=w[N]=w[N]||{};gr.ready=gr.ready||function(f){(cfg['fns']=cfg['fns']||[]).push(f);};w['__recaptcha_api']='https://www.google.com/recaptcha/api2/';(cfg['render']=cfg['render']||[]).push('explicit');(cfg['onload']=cfg['onload']||[]).push('initApp');(cfg['clr']=cfg['clr']||[]).push('true');(cfg['anchor-ms']=cfg['anchor-ms']||[]).push(20000);(cfg['execute-ms']=cfg['execu"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/fonts/roboto/700.woff",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/logo.jpg",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/navbar.brand.white.html",
+      "status": 200,
+      "body": "<!-- brand -->\n<a class=\"navbar-brand\">\n\t<!--<div ui-include=\"'../assets/images/logo.white.svg'\"></div>-->\n\t<img src=\"../assets/images/logo.jpg\" alt=\"{{app.name}}\" class=\"\" style=\" width: 270px; vertical-align: middle; \">\n\t<!--<span class=\"hidden-folded inline\">{{app.name}}</span>-->\n</a>\n<!-- / brand -->\n"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/aside.bottom.1.html",
+      "status": 200,
+      "body": "<nav ui-nav n>\n  <ul class=\"nav\">\n    <li class=\"no-bg\" ng-controller=\"logoutController\">\n      <a class=\"btn-logout\" ng-click=\"logout()\" >\n        <span class=\"nav-icon\">\n      \t <i class=\"material-icons\">&#xe8ac;</i>\n        </span>\n        <span class=\"nav-text\">{{ 'Logout' | translate }}</span>\n      </a>\n    </li>\n  </ul>\n</nav>\n"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/nav.html",
+      "status": 200,
+      "body": "<style>\r\n    .activedNow\r\n    {\r\n        background-color: rgba(0, 0, 0, 0.065);\r\n    }\r\n</style>\r\n\r\n<div class=\"navbar-add\" data-ng-if=\"authorisedUser.RoleName.toLowerCase()=='subscriber'\">\r\n    <ul class=\"nav\" ui-nav>\r\n        <li class=\"nav-header hidden-folded p-t-1\">\r\n            <small class=\"text-muted\"></small>\r\n        </li>\r\n        <li data-ui-sref-active=\"active\">\r\n            <a data-ui-sref=\"app.profile\">\r\n                <span class=\"nav-icon\">\r\n                    <i class=\"mater"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/header.html",
+      "status": 200,
+      "body": "<style>\r\n    .headrLink\r\n    {\r\n        background-color: #f44455;\r\n        padding: 10px;\r\n        border-radius: 10px;\r\n    }\r\n\r\n    .headrRole\r\n    {\r\n        background-color: #63a50b;\r\n        padding: 10px;\r\n        border-radius: 10px;\r\n    }\r\n</style>\r\n\r\n<div class=\"navbar\">\r\n    <!-- Open side - Naviation on mobile -->\r\n    <a data-toggle=\"modal\" data-target=\"#aside\" class=\"navbar-item pull-left hidden-lg-up\">\r\n        <i class=\"material-icons\">&#xe5d2;</i>\r\n    </a>\r\n    <div class=\"na"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/footer.html",
+      "status": 200,
+      "body": "<div class=\"p-a text-xs\">\n  <!--<div class=\"pull-right text-muted\">\n    &copy; Copyright <strong>{{app.name}}</strong> <span class=\"hidden-xs-down\">  {{app.version}}</span>\n    <a ui-scroll-to=\"content\"><i class=\"fa fa-long-arrow-up p-x-sm\"></i></a>\n  </div>-->\n <!-- <div class=\"nav\">\n    <a class=\"nav-link\" href=\"../\">About</a>\n    <span class=\"text-muted\">-</span>\n    <a class=\"nav-link label accent\" href=\"http://themeforest.net/user/flatfull/portfolio?ref=flatfull\">Get it</a>\n  </div>-->\n</di"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/i_3.svg",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/i_1.svg",
+      "status": 200
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api2/anchor?ar=1&k=6LeisV4aAAAAAFpq150BjDD2PvL7lbAWKdkNgDkf&co=aHR0cHM6Ly9sZWFkcy5yZXN0YXVyYW50YWN0aXZpdHlyZXBvcnQuY29tOjQ0Mw..&hl=en&v=vUgXt_KV952_-5BB2jjloYzl&size=normal&anchor-ms=20000&execute-ms=30000&cb=q56eynnorcwx",
+      "status": 200,
+      "body": "<!DOCTYPE HTML><html dir=\"ltr\" lang=\"en\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>reCAPTCHA</title>\n<style type=\"text/css\">\n/* cyrillic-ext */\n@font-face {\n  font-family: 'Roboto';\n  font-style: normal;\n  font-weight: 400;\n  font-stretch: 100%;\n  src: url(//fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2) format('woff2');\n  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/SubscriberSearch.html",
+      "status": 200,
+      "body": "<div data-ng-controller=\"manageSubscriberController\">\r\n    <form id=\"SubscriberSerachReport\" data-ng-submit=\"SubscribersSearch(SubscriberSearchModel)\">\r\n\r\n        <div class=\"form-group row\">\r\n            <div class=\"col-sm-12 m-t-1 p-a-0\">\r\n                <div class=\"col-sm-6\">\r\n                    <input type=\"text\" class=\"form-control\" id=\"inputFirstName\" data-ng-model=\"SubscriberSearchModel.Name\" placeholder=\"Name\" autocomplete=\"off\">\r\n                </div>\r\n\r\n                <div class=\"c"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/LeadSearch.html",
+      "status": 200,
+      "body": "<style>\r\n    .filters label {\r\n        width: calc(100% + 20px);\r\n        padding: 1px 0px 7px 25px;\r\n        margin: 0px;\r\n    }\r\n\r\n    .filters input[type=\"checkbox\"] {\r\n        left: -280px;\r\n        width: calc(100% + 300px);\r\n        position: absolute;\r\n        padding: 0px;\r\n        height: 20px;\r\n    }\r\n\r\n    .filters ul.mutli-select-option {\r\n        position: fixed;\r\n        top: auto;\r\n        right: 0;\r\n        bottom: 0px;\r\n        left: 0px;\r\n    }\r\n\r\n    .species-select {\r\n       "
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/app/%7B%7BauthorisedUser.Image%7D%7D",
+      "status": 404,
+      "body": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n<html xmlns=\"http://www.w3.org/1999/xhtml\">\r\n<head>\r\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\"/>\r\n<title>404 - File or directory not found.</title>\r\n<style type=\"text/css\">\r\n<!--\r\nbody{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}\r\nfieldset{padding:0 15px 10px 15px;} \r\nh1{font-size:2.4em;margin:0;color:#FFF;}"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/ERLSearch.html",
+      "status": 200,
+      "body": "<style>\r\n    .filters label\r\n    {\r\n        width: calc(100% + 32px);\r\n        padding: 0px 0px 0px 11px;\r\n        position: relative;\r\n        top: -25px;\r\n        margin: 0px;\r\n    }\r\n\r\n    .filters input[type=\"checkbox\"] {\r\n    left: -280px;\r\n    width: calc(100% + 300px);\r\n    padding: 0px;\r\n    position: relative;\r\n    height: 20px;\r\n    z-index: 9999;\r\n}\r\n\r\n\r\n    .filters ul.mutli-select-option\r\n    {\r\n        position: fixed;\r\n        top: auto;\r\n        right: 0;\r\n        bottom: 0px;\r\n "
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/ERLContactSearch.html",
+      "status": 200,
+      "body": "<style>\r\n    .filters label\r\n    {\r\n        width: calc(100% + 32px);\r\n    padding: 0px 0px 0px 11px;\r\n    position: relative;\r\n    top: -25px;\r\n    margin: 0px;\r\n    }\r\n\r\n    .filters input[type=\"checkbox\"] {\r\n    left: -280px;\r\n    width: calc(100% + 300px);\r\n    padding: 0px;\r\n    position: relative;\r\n    height: 20px;\r\n    z-index: 9999;\r\n}\r\n\r\n\r\n    .filters ul.mutli-select-option\r\n    {\r\n        position: fixed;\r\n        top: auto;\r\n        right: 0;\r\n        bottom: 0px;\r\n        left: 0px"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/dropdown.user.html",
+      "status": 200,
+      "body": "<div class=\"dropdown-menu pull-right dropdown-menu-scale\" ng-controller=\"logoutController\">\n<!--  <a class=\"dropdown-item\" ui-sref=\"app.inbox.list\">\n    <span>Inbox</span>\n    <span class=\"label warn m-l-xs\">3</span>\n  </a>\n  \n  <a class=\"dropdown-item\" ui-sref=\"app.page.setting\">\n    <span>Settings</span>\n    <span class=\"label primary m-l-xs\">3/9</span>\n  </a>-->\n\n <!--   <a class=\"dropdown-item\" ui-sref=\"app.profile\">\n    <span>Profile</span>\n  </a>-->\n  <div class=\"dropdown-divider\"></div>\n<"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/views/blocks/dropdown.new.html",
+      "status": 200,
+      "body": "<div class=\"dropdown-menu dropdown-menu-scale\">\n  <a class=\"dropdown-item\" ui-sref=\"app.inbox.compose\">\n    <span>Inbox</span>\n  </a>\n  <a class=\"dropdown-item\" ui-sref=\"app.todo\">\n    <span>Todo</span>\n  </a>\n  <a class=\"dropdown-item\" ui-sref=\"app.note.list\">\n    <span>Note</span>\n    <span class=\"label primary m-l-xs\">3</span>\n  </a>\n  <div class=\"dropdown-divider\"></div>\n  <a class=\"dropdown-item\" ui-sref=\"app.contact\">Contact</a>\n</div>\n"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "status": 200,
+      "body": "[{\"RegionAvailabilityId\":1,\"Name\":\"Existing Restaurant Leads (ERL)\",\"Code\":\"ERL\",\"ProductDescription\":\"With a subscription, you will get a current and accurate database of up to 350,000 existing restaurants nationwide available today, over 150k contacts and over 90k unique email addresses are the most up to date in the industry as we check over 20,000 records per day for accuracy and open status.\",\"IsActive\":true,\"IsSelected\":false,\"SearchLimit\":0,\"SearchLimtConsumed\":0},{\"RegionAvailabilityId\":"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "status": 200,
+      "body": "[{\"StateCode\":\"AK\",\"StateName\":\"Alaska\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AL\",\"StateName\":\"Alabama\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AR\",\"StateName\":\"Arkansas\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AZ\",\"StateName\":\"Arizona\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CA\",\"StateName\":\"California\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CO\",\"StateName\":\"Colorado\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CT\",\"StateName\":\"Connecticut\",\"IsActi"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/styles__ltr.css",
+      "status": 200,
+      "body": ".goog-inline-block{position:relative;display:-moz-inline-box;display:inline-block}* html .goog-inline-block{display:inline}*:first-child+html .goog-inline-block{display:inline}.recaptcha-checkbox{border:none;font-size:1px;height:28px;margin:4px;width:28px;overflow:visible;outline:0;vertical-align:text-bottom}.recaptcha-checkbox-border{border-radius:2px;background-color:#fff;border:2px solid #444746;font-size:1px;height:24px;position:absolute;width:24px;z-index:1}.recaptcha-checkbox-borderAnimati"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "status": 200,
+      "body": "[{\"RegionID\":13,\"RegionName\":\"Alabama - Statewide\",\"RegionCount\":0,\"Price\":0.01,\"RegionType\":0,\"Response\":null,\"Availability\":null,\"Abbreviation\":\"GA-AL\",\"IsSelected\":false,\"IsERLSelected\":false,\"PageCount\":0,\"CurrentPageIndex\":0,\"TotalRowCount\":0,\"FilePath\":\"/userfiles/regions/ALStatewide.png\",\"Extention\":null,\"Sub_Region_ID\":0,\"SubscriberID\":0,\"IsForERL\":true,\"IsForRLR\":true,\"RegionAvailability\":null,\"PublicRegionList\":null,\"PublicLeadList\":null,\"PublicERLList\":null},{\"RegionID\":2,\"RegionName\""
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "status": 200,
+      "body": "[{\"PriceLevelID\":1,\"PriceLevelType\":\"Moderate\"},{\"PriceLevelID\":2,\"PriceLevelType\":\"Inexpensive\"},{\"PriceLevelID\":3,\"PriceLevelType\":\"Expensive\"},{\"PriceLevelID\":4,\"PriceLevelType\":\"Very Expensive\"}]"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "status": 200,
+      "body": "[{\"RegionAvailabilityId\":1,\"Name\":\"Existing Restaurant Leads (ERL)\",\"Code\":\"ERL\",\"ProductDescription\":\"With a subscription, you will get a current and accurate database of up to 350,000 existing restaurants nationwide available today, over 150k contacts and over 90k unique email addresses are the most up to date in the industry as we check over 20,000 records per day for accuracy and open status.\",\"IsActive\":true,\"IsSelected\":false,\"SearchLimit\":0,\"SearchLimtConsumed\":0},{\"RegionAvailabilityId\":"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "status": 200,
+      "body": "[{\"StateCode\":\"AK\",\"StateName\":\"Alaska\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AL\",\"StateName\":\"Alabama\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AR\",\"StateName\":\"Arkansas\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AZ\",\"StateName\":\"Arizona\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CA\",\"StateName\":\"California\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CO\",\"StateName\":\"Colorado\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CT\",\"StateName\":\"Connecticut\",\"IsActi"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "status": 200,
+      "body": "[{\"PriceLevelID\":1,\"PriceLevelType\":\"Moderate\"},{\"PriceLevelID\":2,\"PriceLevelType\":\"Inexpensive\"},{\"PriceLevelID\":3,\"PriceLevelType\":\"Expensive\"},{\"PriceLevelID\":4,\"PriceLevelType\":\"Very Expensive\"}]"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "status": 200,
+      "body": "(function(){/*\n\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n\n\n Copyright (c) 2015-2018 Google, Inc., Netflix, Inc., Microsoft Corp. and contributors\n Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License.\n You may obtain a copy of the License at\n     http://www.apache.org/licenses/LICENSE-2.0\n Unless r"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "status": 401
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/api2/logo_48.png",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "status": 200,
+      "body": "[{\"RegionAvailabilityId\":1,\"Name\":\"Existing Restaurant Leads (ERL)\",\"Code\":\"ERL\",\"ProductDescription\":\"With a subscription, you will get a current and accurate database of up to 350,000 existing restaurants nationwide available today, over 150k contacts and over 90k unique email addresses are the most up to date in the industry as we check over 20,000 records per day for accuracy and open status.\",\"IsActive\":true,\"IsSelected\":false,\"SearchLimit\":0,\"SearchLimtConsumed\":0},{\"RegionAvailabilityId\":"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "status": 200,
+      "body": "[{\"StateCode\":\"AK\",\"StateName\":\"Alaska\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AL\",\"StateName\":\"Alabama\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AR\",\"StateName\":\"Arkansas\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AZ\",\"StateName\":\"Arizona\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CA\",\"StateName\":\"California\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CO\",\"StateName\":\"Colorado\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CT\",\"StateName\":\"Connecticut\",\"IsActi"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "status": 200,
+      "body": "[{\"RegionID\":13,\"RegionName\":\"Alabama - Statewide\",\"RegionCount\":0,\"Price\":0.01,\"RegionType\":0,\"Response\":null,\"Availability\":null,\"Abbreviation\":\"GA-AL\",\"IsSelected\":false,\"IsERLSelected\":false,\"PageCount\":0,\"CurrentPageIndex\":0,\"TotalRowCount\":0,\"FilePath\":\"/userfiles/regions/ALStatewide.png\",\"Extention\":null,\"Sub_Region_ID\":0,\"SubscriberID\":0,\"IsForERL\":true,\"IsForRLR\":true,\"RegionAvailability\":null,\"PublicRegionList\":null,\"PublicLeadList\":null,\"PublicERLList\":null},{\"RegionID\":2,\"RegionName\""
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "status": 200,
+      "body": "[{\"PriceLevelID\":1,\"PriceLevelType\":\"Moderate\"},{\"PriceLevelID\":2,\"PriceLevelType\":\"Inexpensive\"},{\"PriceLevelID\":3,\"PriceLevelType\":\"Expensive\"},{\"PriceLevelID\":4,\"PriceLevelType\":\"Very Expensive\"}]"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStatusList",
+      "status": 401
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api2/webworker.js?hl=en&v=vUgXt_KV952_-5BB2jjloYzl",
+      "status": 200,
+      "body": "importScripts('https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js');"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetAvailabilityList",
+      "status": 200,
+      "body": "[{\"RegionAvailabilityId\":1,\"Name\":\"Existing Restaurant Leads (ERL)\",\"Code\":\"ERL\",\"ProductDescription\":\"With a subscription, you will get a current and accurate database of up to 350,000 existing restaurants nationwide available today, over 150k contacts and over 90k unique email addresses are the most up to date in the industry as we check over 20,000 records per day for accuracy and open status.\",\"IsActive\":true,\"IsSelected\":false,\"SearchLimit\":0,\"SearchLimtConsumed\":0},{\"RegionAvailabilityId\":"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetStateList",
+      "status": 200,
+      "body": "[{\"StateCode\":\"AK\",\"StateName\":\"Alaska\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AL\",\"StateName\":\"Alabama\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AR\",\"StateName\":\"Arkansas\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"AZ\",\"StateName\":\"Arizona\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CA\",\"StateName\":\"California\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CO\",\"StateName\":\"Colorado\",\"IsActive\":false,\"Response\":null},{\"StateCode\":\"CT\",\"StateName\":\"Connecticut\",\"IsActi"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "status": 200,
+      "body": "(function(){/*\n\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n\n\n Copyright (c) 2015-2018 Google, Inc., Netflix, Inc., Microsoft Corp. and contributors\n Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License.\n You may obtain a copy of the License at\n     http://www.apache.org/licenses/LICENSE-2.0\n Unless r"
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyLocationList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetOpenStatus",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetCompanyMenuTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetServiceTypeList",
+      "status": 401
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetPriceLevelList",
+      "status": 200,
+      "body": "[{\"PriceLevelID\":1,\"PriceLevelType\":\"Moderate\"},{\"PriceLevelID\":2,\"PriceLevelType\":\"Inexpensive\"},{\"PriceLevelID\":3,\"PriceLevelType\":\"Expensive\"},{\"PriceLevelID\":4,\"PriceLevelType\":\"Very Expensive\"}]"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2",
+      "status": 200
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "status": 200,
+      "body": "[{\"RegionID\":13,\"RegionName\":\"Alabama - Statewide\",\"RegionCount\":0,\"Price\":0.01,\"RegionType\":0,\"Response\":null,\"Availability\":null,\"Abbreviation\":\"GA-AL\",\"IsSelected\":false,\"IsERLSelected\":false,\"PageCount\":0,\"CurrentPageIndex\":0,\"TotalRowCount\":0,\"FilePath\":\"/userfiles/regions/ALStatewide.png\",\"Extention\":null,\"Sub_Region_ID\":0,\"SubscriberID\":0,\"IsForERL\":true,\"IsForRLR\":true,\"RegionAvailability\":null,\"PublicRegionList\":null,\"PublicLeadList\":null,\"PublicERLList\":null},{\"RegionID\":2,\"RegionName\""
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/assets/images/logo.png",
+      "status": 200
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/styles__ltr.css",
+      "status": 200,
+      "body": ".goog-inline-block{position:relative;display:-moz-inline-box;display:inline-block}* html .goog-inline-block{display:inline}*:first-child+html .goog-inline-block{display:inline}.recaptcha-checkbox{border:none;font-size:1px;height:28px;margin:4px;width:28px;overflow:visible;outline:0;vertical-align:text-bottom}.recaptcha-checkbox-border{border-radius:2px;background-color:#fff;border:2px solid #444746;font-size:1px;height:24px;position:absolute;width:24px;z-index:1}.recaptcha-checkbox-borderAnimati"
+    },
+    {
+      "url": "https://www.gstatic.com/recaptcha/releases/vUgXt_KV952_-5BB2jjloYzl/recaptcha__en.js",
+      "status": 200,
+      "body": "(function(){/*\n\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n Copyright The Closure Library Authors.\n SPDX-License-Identifier: Apache-2.0\n*/\n/*\n\n\n Copyright (c) 2015-2018 Google, Inc., Netflix, Inc., Microsoft Corp. and contributors\n Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License.\n You may obtain a copy of the License at\n     http://www.apache.org/licenses/LICENSE-2.0\n Unless r"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2",
+      "status": 200
+    },
+    {
+      "url": "https://www.google.com/recaptcha/api2/bframe?hl=en&v=vUgXt_KV952_-5BB2jjloYzl&k=6LeisV4aAAAAAFpq150BjDD2PvL7lbAWKdkNgDkf&bft=0dAFcWeA6ijPHVM8W8aVcttQYq4TVo84O55_J6cJ6zeX6o99QGZRx3w40uQUlN_DHoPmes6thngrFXWgpDKXX6SDw7gVeETtSgfw",
+      "status": 200,
+      "body": "<!DOCTYPE HTML><html dir=\"ltr\" lang=\"en\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n\n<title>reCAPTCHA</title>\n<style type=\"text/css\">\n/* cyrillic-ext */\n@font-face {\n  font-family: 'Roboto';\n  font-style: normal;\n  font-weight: 400;\n  font-stretch: 100%;\n  src: url(//fonts.gstatic.com/s/roboto/v48/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3GUBGEe.woff2) format('woff2');\n  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, "
+    },
+    {
+      "url": "https://leads.restaurantactivityreport.com/RARWebApi/api/Account/GetRegions",
+      "status": 200,
+      "body": "[{\"RegionID\":13,\"RegionName\":\"Alabama - Statewide\",\"RegionCount\":0,\"Price\":0.01,\"RegionType\":0,\"Response\":null,\"Availability\":null,\"Abbreviation\":\"GA-AL\",\"IsSelected\":false,\"IsERLSelected\":false,\"PageCount\":0,\"CurrentPageIndex\":0,\"TotalRowCount\":0,\"FilePath\":\"/userfiles/regions/ALStatewide.png\",\"Extention\":null,\"Sub_Region_ID\":0,\"SubscriberID\":0,\"IsForERL\":true,\"IsForRLR\":true,\"RegionAvailability\":null,\"PublicRegionList\":null,\"PublicLeadList\":null,\"PublicERLList\":null},{\"RegionID\":2,\"RegionName\""
+    },
+    {
+      "url": "https://www.google-analytics.com/g/collect?v=2&tid=G-KQGNXN7TNQ&gtm=45je62b1h2v878201154za200zd878201154&_p=1770932142099&gcd=13l3l3l3l1l1&npa=0&dma=0&cid=925459280.1770932142&ul=en-us&sr=1920x1080&uaa=x86&uab=64&uafvl=Chromium%3B145.0.7632.6%7CNot%253AA-Brand%3B99.0.0.0&uamb=0&uam=&uap=Windows&uapv=10.0&uaw=0&are=1&frm=0&pscdl=noapi&_eu=AEAAAAQ&_s=2&tag_exp=103116026~103200004~104527906~104528500~104684208~104684211~115938466~115938468~116491844~116988316&sid=1770932142&sct=1&seg=0&dl=https%3A%2F%2Fleads.restaurantactivityreport.com%2Fapp%2Findex.html&dr=https%3A%2F%2Fleads.restaurantactivityreport.com%2F&dt=Restaurant%20Activity%20Report%20%7C%20Leads%20Portal%20-&en=scroll&epn.percent_scrolled=90&_et=8&tfd=5392",
+      "status": 204
+    }
+  ]
+}

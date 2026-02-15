@@ -1,0 +1,5861 @@
+{
+  "metadata": {
+    "url": "https://opsos-restaurant-app.vercel.app",
+    "timestamp": "2026-02-14T23:14:41.437Z",
+    "viewports": {
+      "desktop": "1440x900",
+      "mobile": [
+        {
+          "name": "iPhone-14",
+          "width": 390,
+          "height": 844
+        },
+        {
+          "name": "iPad",
+          "width": 820,
+          "height": 1180
+        }
+      ]
+    }
+  },
+  "login": {
+    "success": true,
+    "time_ms": 2928,
+    "redirect_url": "https://opsos-restaurant-app.vercel.app/"
+  },
+  "pages": [
+    {
+      "name": "Home",
+      "path": "/",
+      "section": "core",
+      "status": "TIMEOUT_OR_CRASH",
+      "http_status": 0,
+      "load_time_ms": 0,
+      "has_content": false,
+      "content_length": 0,
+      "page_errors": [
+        "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://opsos-restaurant-app.vercel.app/\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to fetch venue mappings: TypeError: Failed to fetch\n    at https://opsos-restaurant-app.vercel.app/_next/static/chunks/79cb373054980f9e.js?dpl=dpl_5CWbSrBptB7mA7bjJ5CTvB7DSRkX:1:109590\n    at https://opsos-restaurant-app.vercel.app/_next/static/chunks/79cb373054980f9e.js?dpl=dpl_5CWbSrBptB7mA",
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1r34m",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/api/nightly/facts?action=mappings",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/api/attestation",
+          "method": "POST",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1r34m",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1r34m",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1r34m",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1r34m",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [],
+      "screenshot": "",
+      "sidebar_visible": false,
+      "topbar_visible": false,
+      "h1_text": ""
+    },
+    {
+      "name": "Orders",
+      "path": "/orders",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3602,
+      "has_content": true,
+      "content_length": 40272,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/api/nightly?date=2026-02-13&location=f7a049ac-cf43-42b6-9083-b35d1848b24f",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1lu7b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "02-orders.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Orders"
+    },
+    {
+      "name": "Invoices",
+      "path": "/invoices",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3240,
+      "has_content": true,
+      "content_length": 122002,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1nzon",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1nzon",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1nzon",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1nzon",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1nzon",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1nzon",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices/bulk-review?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=cjgzz",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "03-invoices.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Invoices"
+    },
+    {
+      "name": "Reconciliation",
+      "path": "/reconciliation",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2947,
+      "has_content": true,
+      "content_length": 45753,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1dx4o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1dx4o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1dx4o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1c81q",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1c81q",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1c81q",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1c81q",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1c81q",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1c81q",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "04-reconciliation.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Vendor Statement Reconciliation"
+    },
+    {
+      "name": "Vendors",
+      "path": "/vendors",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 4255,
+      "has_content": true,
+      "content_length": 216246,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1x09k",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1x09k",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1x09k",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/684a2577-80b6-4894-a4b4-29c8f681d06f?_rsc=1x09k",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/2f00d756-7a0b-470e-a38f-4bfe522bbda7?_rsc=1x09k",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1x09k",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/2f00d756-7a0b-470e-a38f-4bfe522bbda7?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/ec2d7efb-dfa2-43b8-96f5-e0937e46c78c?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/802dc17f-cc57-4acd-b51d-de822b15faf1?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/21c09bab-c676-4f3e-ab7a-341ae8271d25?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/644b5899-1d55-449e-b7a6-f148f6e57f4a?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/6affc67f-1683-4966-987d-ce368d1de543?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors/af72d9c7-9213-4321-8eca-bae02b35e01e?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1p41b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "05-vendors.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Vendors"
+    },
+    {
+      "name": "Products",
+      "path": "/products",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3908,
+      "has_content": true,
+      "content_length": 4000891,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=vb5au",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=vb5au",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=vb5au",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=vb5au",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=vb5au",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=vb5au",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1iw1p",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1iw1p",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1iw1p",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1iw1p",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1iw1p",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "06-products.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Products"
+    },
+    {
+      "name": "Product Items",
+      "path": "/products/items",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3107,
+      "has_content": true,
+      "content_length": 42341,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1bz0c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1bz0c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1bz0c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1bz0c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1a9xe",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1a9xe",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1a9xe",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1a9xe",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1a9xe",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1a9xe",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "empty_state",
+        "debug_output"
+      ],
+      "screenshot": "07-product-items.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Item Master"
+    },
+    {
+      "name": "Recipes",
+      "path": "/recipes",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3005,
+      "has_content": true,
+      "content_length": 49984,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1ie3b",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1ahv2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "08-recipes.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Recipes"
+    },
+    {
+      "name": "Inventory",
+      "path": "/inventory",
+      "section": "cogs",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3188,
+      "has_content": true,
+      "content_length": 44240,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1jigb",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1jigb",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1jigb",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1jigb",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1jigb",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1gbx2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1gbx2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1gbx2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1gbx2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1gbx2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=1gbx2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "09-inventory.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Inventory Counts"
+    },
+    {
+      "name": "Forecasts",
+      "path": "/sales/forecasts",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2927,
+      "has_content": true,
+      "content_length": 62542,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1ea66",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1tblw",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1tblw",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "10-forecasts.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Demand Forecasts"
+    },
+    {
+      "name": "Sales Pace",
+      "path": "/sales/pace",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3120,
+      "has_content": true,
+      "content_length": 41217,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1n043",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1n043",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1n043",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1n043",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=p1kpk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "11-sales-pace.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Live Pulse"
+    },
+    {
+      "name": "Nightly Report",
+      "path": "/reports/nightly",
+      "section": "sales",
+      "status": "TIMEOUT_OR_CRASH",
+      "http_status": 0,
+      "load_time_ms": 0,
+      "has_content": false,
+      "content_length": 0,
+      "page_errors": [
+        "page.goto: Timeout 45000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"https://opsos-restaurant-app.vercel.app/reports/nightly\", waiting until \"networkidle\"\u001b[22m\n"
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=skvce",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=17mb2",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [],
+      "screenshot": "",
+      "sidebar_visible": false,
+      "topbar_visible": false,
+      "h1_text": ""
+    },
+    {
+      "name": "Venue Health",
+      "path": "/reports/health",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2960,
+      "has_content": true,
+      "content_length": 40334,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/api/nightly?date=2026-02-13&location=f7a049ac-cf43-42b6-9083-b35d1848b24f",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1ph2o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1ph2o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1ph2o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1ph2o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1ph2o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ph2o",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1nrzr",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "13-venue-health.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Venue Health"
+    },
+    {
+      "name": "Preshift",
+      "path": "/preshift",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2957,
+      "has_content": true,
+      "content_length": 39883,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=p4gmd",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=p4gmd",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=p4gmd",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=p4gmd",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=p4gmd",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1cpd0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "14-preshift.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Preshift Briefing"
+    },
+    {
+      "name": "Action Items",
+      "path": "/control-plane",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2877,
+      "has_content": true,
+      "content_length": 39803,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1cbyx",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1cbyx",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1cbyx",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1cbyx",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1cbyx",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=v27os",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "15-action-items.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Control Plane"
+    },
+    {
+      "name": "Attestations",
+      "path": "/control-plane/attestations",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 6077,
+      "has_content": true,
+      "content_length": 41663,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=a2f9d28d-8dde-4b57-8013-2c94602fe078&_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1phob",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-10&venue=a2f9d28d-8dde-4b57-8013-2c94602fe078&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=a2f9d28d-8dde-4b57-8013-2c94602fe078&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-14&venue=f9fb757b-e2dc-4c16-835d-9de80f983073&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=c6776476-44c5-454b-9765-29f3737e3776&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-10&venue=c6776476-44c5-454b-9765-29f3737e3776&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-13&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=c6776476-44c5-454b-9765-29f3737e3776&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-10&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-09&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-14&venue=11111111-1111-1111-1111-111111111111&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-14&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-12&venue=11111111-1111-1111-1111-111111111111&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-13&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-12&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-12&venue=a7da18a4-a70b-4492-abed-c9fed5851c9e&_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1sluv",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "16-attestations.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Attestation Compliance"
+    },
+    {
+      "name": "Entertainment",
+      "path": "/entertainment",
+      "section": "sales",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2984,
+      "has_content": true,
+      "content_length": 40981,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1oggu",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=176pl",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "17-entertainment.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Entertainment Calendar"
+    },
+    {
+      "name": "Daily Briefing",
+      "path": "/labor/briefing",
+      "section": "labor",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3006,
+      "has_content": true,
+      "content_length": 40780,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=18pzk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=18pzk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=18pzk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=170wn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "18-daily-briefing.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Daily Briefing"
+    },
+    {
+      "name": "Requirements",
+      "path": "/labor/requirements",
+      "section": "labor",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2939,
+      "has_content": true,
+      "content_length": 40846,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1ei57",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1tgvo",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "19-requirements.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Labor Requirements"
+    },
+    {
+      "name": "Schedule",
+      "path": "/labor/schedule",
+      "section": "labor",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3035,
+      "has_content": true,
+      "content_length": 225692,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1kr89",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1kr89",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1j25c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1j25c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1j25c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1j25c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1j25c",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "20-schedule.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Weekly Schedule"
+    },
+    {
+      "name": "AI Assistant",
+      "path": "/assistant",
+      "section": "tools",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3413,
+      "has_content": true,
+      "content_length": 41178,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1rbm1",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1rbm1",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1rbm1",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1rbm1",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1o52s",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "21-ai-assistant.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "AI Assistant"
+    },
+    {
+      "name": "Budget",
+      "path": "/budget",
+      "section": "tools",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2977,
+      "has_content": true,
+      "content_length": 45298,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=nw697",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1dhf4",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "22-budget.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Budget"
+    },
+    {
+      "name": "Proforma",
+      "path": "/proforma",
+      "section": "tools",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3129,
+      "has_content": true,
+      "content_length": 40446,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=vcfv0",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1ixc9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "23-proforma.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Proforma Builder"
+    },
+    {
+      "name": "Savings",
+      "path": "/savings",
+      "section": "tools",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2872,
+      "has_content": true,
+      "content_length": 47842,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=2i3ko",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=2i3ko",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=2i3ko",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1tmze",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1tmze",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1tmze",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1tmze",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1tmze",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "24-savings.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Cost Savings Dashboard"
+    },
+    {
+      "name": "Reports",
+      "path": "/reports",
+      "section": "tools",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3008,
+      "has_content": true,
+      "content_length": 53097,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1ar67",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ar67",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ar67",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1ar67",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "25-reports.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Reports"
+    },
+    {
+      "name": "Org Settings",
+      "path": "/settings/organization",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2922,
+      "has_content": true,
+      "content_length": 39722,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=172zk",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1oml5",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1oml5",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1oml5",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1oml5",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1oml5",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "26-org-settings.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Organization Settings"
+    },
+    {
+      "name": "Comp Settings",
+      "path": "/admin/comp-settings",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2853,
+      "has_content": true,
+      "content_length": 40577,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1t05g",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1t05g",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1t05g",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1t05g",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1t05g",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1pmmn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "27-comp-settings.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Comp Policy Settings"
+    },
+    {
+      "name": "Procurement Settings",
+      "path": "/admin/procurement-settings",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2953,
+      "has_content": true,
+      "content_length": 41384,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1vhkf",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1vhkf",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1vhkf",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1vhkf",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=7shye",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=7shye",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=7shye",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=7shye",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=7shye",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "28-procurement-settings.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Procurement Settings"
+    },
+    {
+      "name": "Operational Standards",
+      "path": "/admin/operational-standards",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2908,
+      "has_content": true,
+      "content_length": 41779,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to load resource: the server responded with a status of 403 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=nlfiq",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=nlfiq",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=nlfiq",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=16hbn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=16hbn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=16hbn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=16hbn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=16hbn",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "29-operational-standards.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Operational Standards"
+    },
+    {
+      "name": "System Bounds",
+      "path": "/admin/system-bounds",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 2905,
+      "has_content": true,
+      "content_length": 39156,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1t486",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1t486",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1t486",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1pqpc",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1pqpc",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1pqpc",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1pqpc",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1pqpc",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1pqpc",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "30-system-bounds.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "🔒 Super Admin Only"
+    },
+    {
+      "name": "User Management",
+      "path": "/admin/users",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3048,
+      "has_content": true,
+      "content_length": 40861,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=1fn24",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1vh2z",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "31-user-management.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "User Management"
+    },
+    {
+      "name": "Proforma Settings",
+      "path": "/settings/proforma",
+      "section": "admin",
+      "status": "OK",
+      "http_status": 200,
+      "load_time_ms": 3231,
+      "has_content": true,
+      "content_length": 45741,
+      "page_errors": [
+        "Contains: \"This page could not be found\""
+      ],
+      "console_errors": [
+        "Failed to load resource: the server responded with a status of 401 ()",
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "network_errors": [
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=z30an",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        },
+        {
+          "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=5ehx9",
+          "method": "GET",
+          "error": "net::ERR_ABORTED"
+        }
+      ],
+      "quality_flags": [
+        "debug_output"
+      ],
+      "screenshot": "32-proforma-settings.png",
+      "sidebar_visible": true,
+      "topbar_visible": true,
+      "h1_text": "Proforma Settings"
+    }
+  ],
+  "broken_links": [],
+  "console_errors": [
+    {
+      "page": "/",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/",
+      "error": "Failed to fetch venue mappings: TypeError: Failed to fetch\n    at https://opsos-restaurant-app.vercel.app/_next/static/chunks/79cb373054980f9e.js?dpl=dpl_5CWbSrBptB7mA7bjJ5CTvB7DSRkX:1:109590\n    at https://opsos-restaurant-app.vercel.app/_next/static/chunks/79cb373054980f9e.js?dpl=dpl_5CWbSrBptB7mA"
+    },
+    {
+      "page": "/",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/orders",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/invoices",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/reconciliation",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/vendors",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/products",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/products/items",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/recipes",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/inventory",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/sales/forecasts",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/sales/pace",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/reports/nightly",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/reports/health",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/preshift",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/control-plane",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/entertainment",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/labor/briefing",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/labor/requirements",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/labor/schedule",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/assistant",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/budget",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/proforma",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/savings",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/reports",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/settings/organization",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "error": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "error": "Failed to load resource: the server responded with a status of 403 ()"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/admin/users",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/settings/proforma",
+      "error": "Failed to load resource: the server responded with a status of 401 ()"
+    },
+    {
+      "page": "/settings/proforma",
+      "error": "Failed to load resource: the server responded with a status of 500 ()"
+    }
+  ],
+  "network_failures": [
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1r34m",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/api/nightly/facts?action=mappings",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/api/attestation",
+      "method": "POST",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1r34m",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1r34m",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1r34m",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1r34m",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/api/nightly?date=2026-02-13&location=f7a049ac-cf43-42b6-9083-b35d1848b24f",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/orders",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1lu7b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1nzon",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1nzon",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1nzon",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1nzon",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1nzon",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1nzon",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices/bulk-review?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/invoices",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=cjgzz",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1dx4o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1dx4o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1dx4o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1c81q",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1c81q",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1c81q",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1c81q",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1c81q",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reconciliation",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1c81q",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1x09k",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1x09k",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1x09k",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/684a2577-80b6-4894-a4b4-29c8f681d06f?_rsc=1x09k",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/2f00d756-7a0b-470e-a38f-4bfe522bbda7?_rsc=1x09k",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1x09k",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/2f00d756-7a0b-470e-a38f-4bfe522bbda7?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/ec2d7efb-dfa2-43b8-96f5-e0937e46c78c?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/802dc17f-cc57-4acd-b51d-de822b15faf1?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/21c09bab-c676-4f3e-ab7a-341ae8271d25?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/644b5899-1d55-449e-b7a6-f148f6e57f4a?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/6affc67f-1683-4966-987d-ce368d1de543?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors/af72d9c7-9213-4321-8eca-bae02b35e01e?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/vendors",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1p41b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=vb5au",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=vb5au",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=vb5au",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=vb5au",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=vb5au",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=vb5au",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1iw1p",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1iw1p",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1iw1p",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1iw1p",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1iw1p",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1bz0c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1bz0c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1bz0c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1bz0c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1a9xe",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1a9xe",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1a9xe",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1a9xe",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1a9xe",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/products/items",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1a9xe",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1ie3b",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/recipes",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1ahv2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1jigb",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1jigb",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=1jigb",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1jigb",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1jigb",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1gbx2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1gbx2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1gbx2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1gbx2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1gbx2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/inventory",
+      "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=1gbx2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1ea66",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1tblw",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/forecasts",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1tblw",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1n043",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1n043",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1n043",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1n043",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/sales/pace",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=p1kpk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/nightly",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/nightly",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=skvce",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/nightly",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/nightly",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/nightly",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/nightly",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=17mb2",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/api/nightly?date=2026-02-13&location=f7a049ac-cf43-42b6-9083-b35d1848b24f",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1ph2o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1ph2o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1ph2o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1ph2o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1ph2o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ph2o",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports/health",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1nrzr",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=p4gmd",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=p4gmd",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=p4gmd",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=p4gmd",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=p4gmd",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/preshift",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1cpd0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1cbyx",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1cbyx",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1cbyx",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1cbyx",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1cbyx",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=v27os",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=a2f9d28d-8dde-4b57-8013-2c94602fe078&_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1phob",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-10&venue=a2f9d28d-8dde-4b57-8013-2c94602fe078&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=a2f9d28d-8dde-4b57-8013-2c94602fe078&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-14&venue=f9fb757b-e2dc-4c16-835d-9de80f983073&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=c6776476-44c5-454b-9765-29f3737e3776&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-10&venue=c6776476-44c5-454b-9765-29f3737e3776&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-13&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=c6776476-44c5-454b-9765-29f3737e3776&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-10&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-09&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-08&venue=288b7f22-ffdc-4701-a396-a6b415aff0f1&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-14&venue=11111111-1111-1111-1111-111111111111&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-14&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-12&venue=11111111-1111-1111-1111-111111111111&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-13&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-12&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-11&venue=79c33e6a-eb21-419f-9606-7494d1a9584c&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?date=2026-02-12&venue=a7da18a4-a70b-4492-abed-c9fed5851c9e&_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/control-plane/attestations",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1sluv",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1oggu",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/entertainment",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=176pl",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=18pzk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=18pzk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=18pzk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/briefing",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=170wn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1ei57",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/requirements",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1tgvo",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1kr89",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1kr89",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1j25c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1j25c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1j25c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1j25c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/labor/schedule",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1j25c",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1rbm1",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1rbm1",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1rbm1",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1rbm1",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/assistant",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1o52s",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=nw697",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/budget",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1dhf4",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=vcfv0",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=1ixc9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=2i3ko",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=2i3ko",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=2i3ko",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1tmze",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1tmze",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1tmze",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1tmze",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/savings",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1tmze",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1ar67",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1ar67",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1ar67",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/reports",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=1ar67",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/organization",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=172zk",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/organization",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1oml5",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/organization",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1oml5",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/organization",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1oml5",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/organization",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1oml5",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/organization",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=1oml5",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1t05g",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1t05g",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1t05g",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1t05g",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1t05g",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/comp-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1pmmn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1vhkf",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1vhkf",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1vhkf",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1vhkf",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=7shye",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=7shye",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=7shye",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=7shye",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/procurement-settings",
+      "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=7shye",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=nlfiq",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=nlfiq",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=nlfiq",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=16hbn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=16hbn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=16hbn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=16hbn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/operational-standards",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=16hbn",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1t486",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1t486",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1t486",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1pqpc",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1pqpc",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1pqpc",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=1pqpc",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1pqpc",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/system-bounds",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=1pqpc",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=1fn24",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/savings?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/proforma?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/admin/users",
+      "url": "https://opsos-restaurant-app.vercel.app/?_rsc=1vh2z",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/health?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/sales/forecasts?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/orders?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reports?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=z30an",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/assistant?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/budget?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/schedule?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/requirements?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/labor/briefing?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/entertainment?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/preshift?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/control-plane/attestations?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reports/nightly?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/inventory?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/recipes?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/vendors?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/invoices?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/products?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    },
+    {
+      "page": "/settings/proforma",
+      "url": "https://opsos-restaurant-app.vercel.app/reconciliation?_rsc=5ehx9",
+      "method": "GET",
+      "error": "net::ERR_ABORTED"
+    }
+  ],
+  "form_issues": [
+    {
+      "form": "login",
+      "test": "empty_submit",
+      "has_validation": true,
+      "screenshot": "form-login-empty.png"
+    },
+    {
+      "form": "login",
+      "test": "bad_email",
+      "has_validation": true,
+      "screenshot": "form-login-bad-email.png"
+    }
+  ],
+  "ui_anomalies": [],
+  "performance": [],
+  "mobile_issues": [
+    {
+      "viewport": "iPhone-14",
+      "page": "/",
+      "issues": [
+        "load_failed"
+      ]
+    },
+    {
+      "viewport": "iPhone-14",
+      "page": "/orders",
+      "issues": [
+        "horizontal-overflow",
+        "sidebar-not-collapsed"
+      ],
+      "screenshot": "mobile-iPhone-14-orders.png"
+    },
+    {
+      "viewport": "iPhone-14",
+      "page": "/preshift",
+      "issues": [
+        "horizontal-overflow",
+        "sidebar-not-collapsed"
+      ],
+      "screenshot": "mobile-iPhone-14-preshift.png"
+    },
+    {
+      "viewport": "iPhone-14",
+      "page": "/admin/comp-settings",
+      "issues": [
+        "horizontal-overflow",
+        "sidebar-not-collapsed"
+      ],
+      "screenshot": "mobile-iPhone-14-admin-comp-settings.png"
+    },
+    {
+      "viewport": "iPad",
+      "page": "/",
+      "issues": [
+        "load_failed"
+      ]
+    },
+    {
+      "viewport": "iPad",
+      "page": "/orders",
+      "issues": [
+        "horizontal-overflow",
+        "sidebar-not-collapsed"
+      ],
+      "screenshot": "mobile-iPad-orders.png"
+    },
+    {
+      "viewport": "iPad",
+      "page": "/preshift",
+      "issues": [
+        "horizontal-overflow",
+        "sidebar-not-collapsed"
+      ],
+      "screenshot": "mobile-iPad-preshift.png"
+    },
+    {
+      "viewport": "iPad",
+      "page": "/admin/comp-settings",
+      "issues": [
+        "horizontal-overflow",
+        "sidebar-not-collapsed"
+      ],
+      "screenshot": "mobile-iPad-admin-comp-settings.png"
+    }
+  ],
+  "summary": {
+    "total_pages": 32,
+    "pass": 0,
+    "warn": 30,
+    "fail": 2,
+    "slow_pages": 0,
+    "total_console_errors": 39,
+    "total_network_failures": 422,
+    "total_mobile_issues": 8,
+    "total_form_issues": 2,
+    "avg_load_time_ms": 3011,
+    "sidebar_links_count": 26,
+    "topbar_buttons_count": 6
+  },
+  "sidebar_links": [
+    {
+      "href": "/",
+      "text": "Home"
+    },
+    {
+      "href": "/orders",
+      "text": "Orders"
+    },
+    {
+      "href": "/invoices",
+      "text": "Invoices"
+    },
+    {
+      "href": "/reconciliation",
+      "text": "Reconciliation"
+    },
+    {
+      "href": "/vendors",
+      "text": "Vendors"
+    },
+    {
+      "href": "/products",
+      "text": "Products"
+    },
+    {
+      "href": "/recipes",
+      "text": "Recipes"
+    },
+    {
+      "href": "/inventory",
+      "text": "Inventory"
+    },
+    {
+      "href": "/sales/forecasts",
+      "text": "Forecasts"
+    },
+    {
+      "href": "/reports/nightly",
+      "text": "Nightly Report"
+    },
+    {
+      "href": "/reports/health",
+      "text": "Venue Health"
+    },
+    {
+      "href": "/preshift",
+      "text": "Preshift"
+    },
+    {
+      "href": "/control-plane",
+      "text": "Action Items"
+    },
+    {
+      "href": "/control-plane/attestations",
+      "text": "Attestations"
+    },
+    {
+      "href": "/entertainment",
+      "text": "Entertainment"
+    },
+    {
+      "href": "/labor/briefing",
+      "text": "Daily Briefing"
+    },
+    {
+      "href": "/labor/requirements",
+      "text": "Requirements"
+    },
+    {
+      "href": "/labor/schedule",
+      "text": "Schedule"
+    },
+    {
+      "href": "/assistant",
+      "text": "AI Assistant"
+    },
+    {
+      "href": "/budget",
+      "text": "Budget"
+    },
+    {
+      "href": "/proforma",
+      "text": "Proforma"
+    },
+    {
+      "href": "/savings",
+      "text": "Savings"
+    },
+    {
+      "href": "/reports",
+      "text": "Reports"
+    },
+    {
+      "href": "/settings/organization",
+      "text": "Org Settings"
+    },
+    {
+      "href": "/admin/comp-settings",
+      "text": "Comp Settings"
+    },
+    {
+      "href": "/admin/procurement-settings",
+      "text": "Procurement"
+    }
+  ],
+  "topbar_buttons": [
+    {
+      "label": "Vendor Onboarding Link"
+    },
+    {
+      "label": "Team Settings"
+    },
+    {
+      "label": "User Settings"
+    },
+    {
+      "label": "Notifications"
+    },
+    {
+      "label": "Profile"
+    },
+    {
+      "label": "Log out"
+    }
+  ]
+}
