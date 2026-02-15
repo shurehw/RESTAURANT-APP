@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Search, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { ROLE_LABELS, ROLE_DESCRIPTIONS } from "@/lib/database/user-management";
+import type { UserRole } from "@/lib/nav/role-permissions";
 
 interface AddUserFormProps {
   organizations: Array<{ id: string; name: string }>;
@@ -18,6 +20,7 @@ export function AddUserForm({ organizations }: AddUserFormProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedOrg, setSelectedOrg] = useState("");
+  const [selectedRole, setSelectedRole] = useState<UserRole>("manager");
   const [isAdding, setIsAdding] = useState(false);
 
   const handleSearch = async () => {
@@ -38,26 +41,42 @@ export function AddUserForm({ organizations }: AddUserFormProps) {
   };
 
   const handleAddUser = async () => {
-    if (!selectedUser || !selectedOrg) return;
+    if (!selectedUser || !selectedOrg || !selectedRole) return;
 
     setIsAdding(true);
     try {
-      const response = await fetch(`/api/admin/organizations/${selectedOrg}/add-user`, {
+      // Add user to organization
+      const addResponse = await fetch(`/api/admin/organizations/${selectedOrg}/add-user`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: selectedUser.id }),
       });
 
-      if (response.ok) {
-        alert("User added successfully!");
+      if (!addResponse.ok) {
+        const error = await addResponse.json();
+        alert(error.error || "Failed to add user");
+        setIsAdding(false);
+        return;
+      }
+
+      // Set user role
+      const roleResponse = await fetch(`/api/admin/users/${selectedUser.id}/role`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: selectedRole }),
+      });
+
+      if (roleResponse.ok) {
+        alert("User added successfully with role!");
         setSearchQuery("");
         setSearchResults([]);
         setSelectedUser(null);
         setSelectedOrg("");
+        setSelectedRole("manager");
         router.refresh();
       } else {
-        const error = await response.json();
-        alert(error.error || "Failed to add user");
+        alert("User added but role assignment failed. Please update role manually.");
+        router.refresh();
       }
     } catch (error) {
       console.error("Error adding user:", error);
@@ -128,6 +147,27 @@ export function AddUserForm({ organizations }: AddUserFormProps) {
         </div>
       )}
 
+      {/* Select Role */}
+      {selectedUser && selectedOrg && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">Assign Role</label>
+          <select
+            value={selectedRole}
+            onChange={(e) => setSelectedRole(e.target.value as UserRole)}
+            className="w-full px-3 py-2 border border-input rounded-md"
+          >
+            {(Object.entries(ROLE_LABELS) as [UserRole, string][]).map(([role, label]) => (
+              <option key={role} value={role}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground mt-1">
+            {ROLE_DESCRIPTIONS[selectedRole]}
+          </p>
+        </div>
+      )}
+
       {/* Add Button */}
       {selectedUser && selectedOrg && (
         <Button
@@ -137,7 +177,7 @@ export function AddUserForm({ organizations }: AddUserFormProps) {
           className="w-full"
         >
           <UserPlus className="w-4 h-4 mr-2" />
-          Add {selectedUser.full_name || selectedUser.email} to Organization
+          Add {selectedUser.full_name || selectedUser.email} as {ROLE_LABELS[selectedRole]}
         </Button>
       )}
     </Card>
