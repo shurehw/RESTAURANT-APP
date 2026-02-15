@@ -1,0 +1,3226 @@
+{
+  "GetLeadTypeList": [
+    {
+      "LeadTypeID": 1,
+      "LeadTypeName": "Renovation"
+    },
+    {
+      "LeadTypeID": 2,
+      "LeadTypeName": "New Owner"
+    },
+    {
+      "LeadTypeID": 3,
+      "LeadTypeName": "New Opening"
+    },
+    {
+      "LeadTypeID": 4,
+      "LeadTypeName": "Relocation"
+    },
+    {
+      "LeadTypeID": 5,
+      "LeadTypeName": "Reopening"
+    },
+    {
+      "LeadTypeID": 6,
+      "LeadTypeName": "Update"
+    },
+    {
+      "LeadTypeID": 7,
+      "LeadTypeName": "Remodel"
+    }
+  ],
+  "GetLocationTypeList": [
+    {
+      "LocationTypeID": 6,
+      "LocationTypeName": "Franchise",
+      "IsActive": true
+    },
+    {
+      "LocationTypeID": 7,
+      "LocationTypeName": "Independent",
+      "IsActive": true
+    },
+    {
+      "LocationTypeID": 24,
+      "LocationTypeName": "National",
+      "IsActive": true
+    },
+    {
+      "LocationTypeID": 25,
+      "LocationTypeName": "Regional",
+      "IsActive": true
+    },
+    {
+      "LocationTypeID": 26,
+      "LocationTypeName": "Other",
+      "IsActive": true
+    },
+    {
+      "LocationTypeID": 27,
+      "LocationTypeName": "Restaurant, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 28,
+      "LocationTypeName": "Restaurant, Multi-Unit",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 29,
+      "LocationTypeName": "Hotel, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 30,
+      "LocationTypeName": "Hotel, Multi-Unit",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 31,
+      "LocationTypeName": "Amusement, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 32,
+      "LocationTypeName": "Convenience, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 33,
+      "LocationTypeName": "Golf Course/Country Club",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 34,
+      "LocationTypeName": "Convenience, Multi-Unit",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 35,
+      "LocationTypeName": "Bar, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 36,
+      "LocationTypeName": "Banquet/Catering",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 37,
+      "LocationTypeName": "Restaurant, Multi-Concept",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 38,
+      "LocationTypeName": "Free Standing",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 39,
+      "LocationTypeName": "Grocery, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 40,
+      "LocationTypeName": "Grocery, Multi-Unit",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 41,
+      "LocationTypeName": "Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 42,
+      "LocationTypeName": "Chain (local)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 43,
+      "LocationTypeName": "Restaurant, Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 44,
+      "LocationTypeName": "Bakery Cafe, Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 45,
+      "LocationTypeName": "Restaurant, Upscale",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 46,
+      "LocationTypeName": "Cafe, Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 47,
+      "LocationTypeName": "QSR, Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 48,
+      "LocationTypeName": "Bakery Café, Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 49,
+      "LocationTypeName": "Restaurant, Chain (Fast-Casual)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 50,
+      "LocationTypeName": "Restaurant, Independent (Fast-Casual)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 51,
+      "LocationTypeName": "Bakery/Cafe, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 52,
+      "LocationTypeName": "Pizzeria (brewery kitchen), Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 53,
+      "LocationTypeName": "Food Hall Vendor (German Döner)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 54,
+      "LocationTypeName": "Food Hall Vendor (Cuban)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 55,
+      "LocationTypeName": "Restaurant (Malaysian fusion)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 56,
+      "LocationTypeName": "Cafe + Bar, Independent",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 57,
+      "LocationTypeName": "Restaurant, Upscale Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 58,
+      "LocationTypeName": "Restaurant, Italian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 59,
+      "LocationTypeName": "Restaurant, Group",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 60,
+      "LocationTypeName": "Restaurant, Fast Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 61,
+      "LocationTypeName": "Restaurant & Supper Club",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 62,
+      "LocationTypeName": "Bakery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 63,
+      "LocationTypeName": "Fast-Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 64,
+      "LocationTypeName": "Pizza (inside brewery)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 65,
+      "LocationTypeName": "Mexican Restaurant & Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 66,
+      "LocationTypeName": "Cuban (Food Hall Stall)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 67,
+      "LocationTypeName": "German Döner Kebab (Food Hall Stall)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 68,
+      "LocationTypeName": "Arcade Bar & Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 69,
+      "LocationTypeName": "Coffee + Cocktail Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 70,
+      "LocationTypeName": "Bakery/Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 71,
+      "LocationTypeName": "Restaurant (inside brewery)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 72,
+      "LocationTypeName": "Restaurant/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 73,
+      "LocationTypeName": "Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 74,
+      "LocationTypeName": "Bakery/Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 75,
+      "LocationTypeName": "Southern Fried Chicken",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 76,
+      "LocationTypeName": "Independent (Group)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 77,
+      "LocationTypeName": "Fast Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 78,
+      "LocationTypeName": "Brunch & Cocktails",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 79,
+      "LocationTypeName": "Seafood Boil",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 80,
+      "LocationTypeName": "Steak Frites",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 81,
+      "LocationTypeName": "Food Hall",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 82,
+      "LocationTypeName": "Independent (Food Hall)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 83,
+      "LocationTypeName": "Daytime Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 84,
+      "LocationTypeName": "Toast/Juice Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 85,
+      "LocationTypeName": "Chain (Fast Casual)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 86,
+      "LocationTypeName": "Brunch",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 87,
+      "LocationTypeName": "Independent (Brunch Concept)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 88,
+      "LocationTypeName": "Independent (Restaurant)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 89,
+      "LocationTypeName": "Sushi Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 90,
+      "LocationTypeName": "Family Sports Bistreaux",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 91,
+      "LocationTypeName": "Multi-Brand Delivery + Dine-in",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 92,
+      "LocationTypeName": "Brewpub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 93,
+      "LocationTypeName": "Independent (2nd unit)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 94,
+      "LocationTypeName": "Seafood Buffet",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 95,
+      "LocationTypeName": "Independent (Buffet)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 96,
+      "LocationTypeName": "Teppanyaki",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 97,
+      "LocationTypeName": "Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 98,
+      "LocationTypeName": "Chain (Fine Dining)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 99,
+      "LocationTypeName": "Independent (Restaurant Group)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 100,
+      "LocationTypeName": "Gastropub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 101,
+      "LocationTypeName": "Independent (Food Hall Stall)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 102,
+      "LocationTypeName": "Bar/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 103,
+      "LocationTypeName": "Dumplings & Noodles",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 104,
+      "LocationTypeName": "Vintage Tex-Mex (Independent)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 105,
+      "LocationTypeName": "Drive-Thru Coffee",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 106,
+      "LocationTypeName": "Breakfast/Brunch",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 107,
+      "LocationTypeName": "English Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 108,
+      "LocationTypeName": "Brasserie",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 109,
+      "LocationTypeName": "Chain QSR",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 110,
+      "LocationTypeName": "Family Pizzeria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 111,
+      "LocationTypeName": "Entertainment/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 112,
+      "LocationTypeName": "Retro Bar/Rotisserie",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 113,
+      "LocationTypeName": "Filipino",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 114,
+      "LocationTypeName": "Sports Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 115,
+      "LocationTypeName": "Independent (Employee-Owned Group)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 116,
+      "LocationTypeName": "Independent (new unit)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 117,
+      "LocationTypeName": "Modern Mexican",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 118,
+      "LocationTypeName": "Independent (Wine Bar + Kitchen)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 119,
+      "LocationTypeName": "Latin Food Hall",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 120,
+      "LocationTypeName": "Pizza/Family",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 121,
+      "LocationTypeName": "Multi-Unit Group",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 122,
+      "LocationTypeName": "Burgers & Beer",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 123,
+      "LocationTypeName": "Bar/Arcade",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 124,
+      "LocationTypeName": "Independent (Steakhouse)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 125,
+      "LocationTypeName": "Salads/Healthy",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 126,
+      "LocationTypeName": "Chain (QSR)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 127,
+      "LocationTypeName": "Chain (new to UT)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 128,
+      "LocationTypeName": "Restaurant (Reopening)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 129,
+      "LocationTypeName": "Independent (Pub)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 130,
+      "LocationTypeName": "Independent (Brewpub)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 131,
+      "LocationTypeName": "Brewpub / Taproom + Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 132,
+      "LocationTypeName": "Brewpub/Pizza",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 133,
+      "LocationTypeName": "Independent (Chef Team)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 134,
+      "LocationTypeName": "Italian/French Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 135,
+      "LocationTypeName": "Hawaiian Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 136,
+      "LocationTypeName": "Brewery Taproom",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 137,
+      "LocationTypeName": "Independent (Brewery Taproom)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 138,
+      "LocationTypeName": "Modern American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 139,
+      "LocationTypeName": "Greek Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 140,
+      "LocationTypeName": "Upscale",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 141,
+      "LocationTypeName": "Pizzeria/Italian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 142,
+      "LocationTypeName": "Independent (Legacy)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 143,
+      "LocationTypeName": "Family Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 144,
+      "LocationTypeName": "Fast Casual (Mediterranean)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 145,
+      "LocationTypeName": "Greek",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 146,
+      "LocationTypeName": "Korean BBQ",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 147,
+      "LocationTypeName": "Italian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 148,
+      "LocationTypeName": "Italian/Steak",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 149,
+      "LocationTypeName": "Spanish",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 150,
+      "LocationTypeName": "Bar & Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 151,
+      "LocationTypeName": "Thai",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 152,
+      "LocationTypeName": "Neighborhood Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 153,
+      "LocationTypeName": "Bakery-Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 154,
+      "LocationTypeName": "Italian/Pizza",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 155,
+      "LocationTypeName": "Moroccan Fusion",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 156,
+      "LocationTypeName": "Seafood & Pasta",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 157,
+      "LocationTypeName": "Dessert/Cocktail Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 158,
+      "LocationTypeName": "Coffee",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 159,
+      "LocationTypeName": "American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 160,
+      "LocationTypeName": "Dessert Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 161,
+      "LocationTypeName": "Dockside Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 162,
+      "LocationTypeName": "Poké",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 163,
+      "LocationTypeName": "Ethiopian/Eritrean",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 164,
+      "LocationTypeName": "Mexican",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 165,
+      "LocationTypeName": "Bar & Sandwiches",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 166,
+      "LocationTypeName": "BBQ",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 167,
+      "LocationTypeName": "Independent (Second Unit)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 168,
+      "LocationTypeName": "Independent (Relocation)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 169,
+      "LocationTypeName": "Café/Market",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 170,
+      "LocationTypeName": "Pizzeria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 171,
+      "LocationTypeName": "Rooftop Bar + Kitchen",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 172,
+      "LocationTypeName": "Brewery + Pizza",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 173,
+      "LocationTypeName": "Independent (Relaunch)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 174,
+      "LocationTypeName": "Portuguese Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 175,
+      "LocationTypeName": "Southern/Cajun",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 176,
+      "LocationTypeName": "Fast Casual Chicken",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 177,
+      "LocationTypeName": "Dining/Healthy Bowls",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 178,
+      "LocationTypeName": "Coffee Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 179,
+      "LocationTypeName": "Interactive Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 180,
+      "LocationTypeName": "Roastery Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 181,
+      "LocationTypeName": "Distillery + Kitchen",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 182,
+      "LocationTypeName": "Donut Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 183,
+      "LocationTypeName": "Doughnut Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 184,
+      "LocationTypeName": "Wing House",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 185,
+      "LocationTypeName": "New American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 186,
+      "LocationTypeName": "Pan-Asian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 187,
+      "LocationTypeName": "Bistro",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 188,
+      "LocationTypeName": "Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 189,
+      "LocationTypeName": "Deli",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 190,
+      "LocationTypeName": "Vegan",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 191,
+      "LocationTypeName": "Market/Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 192,
+      "LocationTypeName": "Dessert",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 193,
+      "LocationTypeName": "Second Unit",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 194,
+      "LocationTypeName": "QSR",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 195,
+      "LocationTypeName": "Chain/Group",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 196,
+      "LocationTypeName": "Beer Bar/Retail",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 197,
+      "LocationTypeName": "Multi-Concept",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 198,
+      "LocationTypeName": "Group",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 199,
+      "LocationTypeName": "Sushi/Omakase",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 200,
+      "LocationTypeName": "Latin Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 201,
+      "LocationTypeName": "Chain (chef-driven)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 202,
+      "LocationTypeName": "Independent (Rich Table team)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 203,
+      "LocationTypeName": "Restaurant, Chain/Group",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 204,
+      "LocationTypeName": "Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 205,
+      "LocationTypeName": "QSR Bakery/Coffee",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 206,
+      "LocationTypeName": "Hotel Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 207,
+      "LocationTypeName": "National franchise",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 208,
+      "LocationTypeName": "Casual full-service",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 209,
+      "LocationTypeName": "Fast-casual / drive-through hybrid",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 210,
+      "LocationTypeName": "Café / coffeehouse.",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 211,
+      "LocationTypeName": "Casual all-day restaurant / sandwich house.",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 212,
+      "LocationTypeName": "New bakery/café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 213,
+      "LocationTypeName": "Hamburger restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 214,
+      "LocationTypeName": "Hotel restaurant / destination lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 215,
+      "LocationTypeName": "Beer-garden",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 216,
+      "LocationTypeName": "Upscale Mexican / contemporary Mexican",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 217,
+      "LocationTypeName": "Boutique steakhouse / butcher hybrid",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 218,
+      "LocationTypeName": "Upscale-casual / destination restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 219,
+      "LocationTypeName": "Café / specialty retail & light dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 220,
+      "LocationTypeName": "Fast-casual / quick-service chicken restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 221,
+      "LocationTypeName": "Entertainment venue / sports bar / restaurant hybrid",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 222,
+      "LocationTypeName": "Bakery Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 223,
+      "LocationTypeName": "Canadian Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 224,
+      "LocationTypeName": "Persian Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 225,
+      "LocationTypeName": "Pan-Asian Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 226,
+      "LocationTypeName": "Coffee Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 227,
+      "LocationTypeName": "Sports Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 228,
+      "LocationTypeName": "Themed Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 229,
+      "LocationTypeName": "Cafe/Grocery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 230,
+      "LocationTypeName": "Beverage/Fast Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 231,
+      "LocationTypeName": "Cocktail Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 232,
+      "LocationTypeName": "Pizzeria & Italian Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 233,
+      "LocationTypeName": "Nepalese Quick-Serve",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 234,
+      "LocationTypeName": "QSR Sandwiches",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 235,
+      "LocationTypeName": "Tex-Mex Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 236,
+      "LocationTypeName": "Steak/Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 237,
+      "LocationTypeName": "Fast-casual salads/bowls",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 238,
+      "LocationTypeName": "Chicken/QSR",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 239,
+      "LocationTypeName": "Brewery + Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 240,
+      "LocationTypeName": "Italian (Fine/Casual)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 241,
+      "LocationTypeName": "Takeout/Delivery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 242,
+      "LocationTypeName": "Brewery + Kitchen",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 243,
+      "LocationTypeName": "Spanish Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 244,
+      "LocationTypeName": "Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 245,
+      "LocationTypeName": "Punjabi Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 246,
+      "LocationTypeName": "Indian Street Food",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 247,
+      "LocationTypeName": "Bombay-Inspired Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 248,
+      "LocationTypeName": "Pan-Asian Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 249,
+      "LocationTypeName": "French Brasserie",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 250,
+      "LocationTypeName": "Burger/QSR",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 251,
+      "LocationTypeName": "Taco Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 252,
+      "LocationTypeName": "Drive-In/QSR",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 253,
+      "LocationTypeName": "Sandwich shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 254,
+      "LocationTypeName": "Pizza Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 255,
+      "LocationTypeName": "Cheese Bar (Conveyor Belt)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 256,
+      "LocationTypeName": "Pizzeria + Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 257,
+      "LocationTypeName": "Seafood Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 258,
+      "LocationTypeName": "Barbecue Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 259,
+      "LocationTypeName": "Bakery & Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 260,
+      "LocationTypeName": "Italian Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 261,
+      "LocationTypeName": "Upscale Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 262,
+      "LocationTypeName": "Family Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 263,
+      "LocationTypeName": "Mexican Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 264,
+      "LocationTypeName": "Vietnamese Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 265,
+      "LocationTypeName": "Tea/Dessert",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 266,
+      "LocationTypeName": "American Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 267,
+      "LocationTypeName": "British Seafood Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 268,
+      "LocationTypeName": "Korean-Southern Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 269,
+      "LocationTypeName": "Israeli Restaurant (name TBA)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 270,
+      "LocationTypeName": "Fast-Casual Chicken",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 271,
+      "LocationTypeName": "Chinese Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 272,
+      "LocationTypeName": "Southern Restaurant + Music Venue",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 273,
+      "LocationTypeName": "Upscale dining, shareable plates",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 274,
+      "LocationTypeName": "Bagel shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 275,
+      "LocationTypeName": "Farmhouse-style fried chicken",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 276,
+      "LocationTypeName": "Rooftop bar + full-service restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 277,
+      "LocationTypeName": "Rotisserie Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 278,
+      "LocationTypeName": "Tapas Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 279,
+      "LocationTypeName": "Seafood Shack/Market",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 280,
+      "LocationTypeName": "Quick Service",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 281,
+      "LocationTypeName": "Fast-casual pizzeria and taproom",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 282,
+      "LocationTypeName": "Pizzeria/Tavern",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 283,
+      "LocationTypeName": "Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 284,
+      "LocationTypeName": "Scoop Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 285,
+      "LocationTypeName": "Fine Dining Pastry",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 286,
+      "LocationTypeName": "Seafood Bistro",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 287,
+      "LocationTypeName": "Ice cream parlor",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 288,
+      "LocationTypeName": "Casual Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 289,
+      "LocationTypeName": "Sushi/Ramen Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 290,
+      "LocationTypeName": "Chophouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 291,
+      "LocationTypeName": "Fine Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 292,
+      "LocationTypeName": "American Bistro",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 293,
+      "LocationTypeName": "Italian Steakhouse Fusion",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 294,
+      "LocationTypeName": "Appalachian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 295,
+      "LocationTypeName": "Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 296,
+      "LocationTypeName": "Casual Fine Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 297,
+      "LocationTypeName": "Mexican American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 298,
+      "LocationTypeName": "Bakery & Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 299,
+      "LocationTypeName": "Deli/Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 300,
+      "LocationTypeName": "Theme Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 301,
+      "LocationTypeName": "Turkish",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 302,
+      "LocationTypeName": "BBQ Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 303,
+      "LocationTypeName": "Sushi burrito restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 304,
+      "LocationTypeName": "Shared Kitchen/Incubator",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 305,
+      "LocationTypeName": "Beer Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 306,
+      "LocationTypeName": "Breakfast Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 307,
+      "LocationTypeName": "Asian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 308,
+      "LocationTypeName": "Asian Fusion Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 309,
+      "LocationTypeName": "Global Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 310,
+      "LocationTypeName": "Persian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 311,
+      "LocationTypeName": "Taiwanese",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 312,
+      "LocationTypeName": "Breakfast cafe/restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 313,
+      "LocationTypeName": "Coffee Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 314,
+      "LocationTypeName": "Bar/Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 315,
+      "LocationTypeName": "Restaurant and Speakeasy",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 316,
+      "LocationTypeName": "Filipino Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 317,
+      "LocationTypeName": "French Bakery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 318,
+      "LocationTypeName": "Donut Bakery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 319,
+      "LocationTypeName": "All-Day Cafe/Bar/Bakery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 320,
+      "LocationTypeName": "Modern Mexican Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 321,
+      "LocationTypeName": "Casual American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 322,
+      "LocationTypeName": "Cafe/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 323,
+      "LocationTypeName": "Dessert Café/Bakery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 324,
+      "LocationTypeName": "Cafe/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 325,
+      "LocationTypeName": "Bakery/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 326,
+      "LocationTypeName": "Speakeasy Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 327,
+      "LocationTypeName": "Barbecue",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 328,
+      "LocationTypeName": "Middle Eastern",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 329,
+      "LocationTypeName": "Fusion",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 330,
+      "LocationTypeName": "Classic Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 331,
+      "LocationTypeName": "Bakery/Mill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 332,
+      "LocationTypeName": "Italian-American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 333,
+      "LocationTypeName": "Italian Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 334,
+      "LocationTypeName": "Immersive Fine Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 335,
+      "LocationTypeName": "Italian Coastal",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 336,
+      "LocationTypeName": "French Mediterranean",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 337,
+      "LocationTypeName": "Cafe/Bakery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 338,
+      "LocationTypeName": "Restaurant and Event Venue",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 339,
+      "LocationTypeName": "Global Fusion",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 340,
+      "LocationTypeName": "Japanese",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 341,
+      "LocationTypeName": "Coffee Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 342,
+      "LocationTypeName": "Coffee House",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 343,
+      "LocationTypeName": "Texican BBQ/Takeout",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 344,
+      "LocationTypeName": "Fast Food",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 345,
+      "LocationTypeName": "Tapas Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 346,
+      "LocationTypeName": "Soul Food",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 347,
+      "LocationTypeName": "American Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 348,
+      "LocationTypeName": "Convenience Store/Fast Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 349,
+      "LocationTypeName": "Donut Shop/Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 350,
+      "LocationTypeName": "Cafe/Brewery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 351,
+      "LocationTypeName": "Bagel Deli",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 352,
+      "LocationTypeName": "Chain pizzeria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 353,
+      "LocationTypeName": "Cannabis lounge/restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 354,
+      "LocationTypeName": "Italian Osteria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 355,
+      "LocationTypeName": "Japanese restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 356,
+      "LocationTypeName": "Cocktail Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 357,
+      "LocationTypeName": "Bagel Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 358,
+      "LocationTypeName": "Japanese Bar/Sushi",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 359,
+      "LocationTypeName": "Sushi Speakeasy",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 360,
+      "LocationTypeName": "Mediterranean",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 361,
+      "LocationTypeName": "Wine Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 362,
+      "LocationTypeName": "Bistro/Pastry",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 363,
+      "LocationTypeName": "Tavern",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 364,
+      "LocationTypeName": "Full-service restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 365,
+      "LocationTypeName": "Italian Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 366,
+      "LocationTypeName": "Rooftop restaurant/bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 367,
+      "LocationTypeName": "Casual dining/retail",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 368,
+      "LocationTypeName": "Casual restaurant/bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 369,
+      "LocationTypeName": "Airport concession pizzeria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 370,
+      "LocationTypeName": "Neighborhood pizzeria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 371,
+      "LocationTypeName": "Ramen Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 372,
+      "LocationTypeName": "Sandwich",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 373,
+      "LocationTypeName": "Full-Service",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 374,
+      "LocationTypeName": "Casual dining restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 375,
+      "LocationTypeName": "Juice Shop/Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 376,
+      "LocationTypeName": "Pickleball venue with restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 377,
+      "LocationTypeName": "Market/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 378,
+      "LocationTypeName": "Brunch Spot",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 379,
+      "LocationTypeName": "Breakfast",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 380,
+      "LocationTypeName": "Fine Dining Pop-Up",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 381,
+      "LocationTypeName": "Tex-Mex",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 382,
+      "LocationTypeName": "Cowboy cuisine & sports bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 383,
+      "LocationTypeName": "Casual Dining/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 384,
+      "LocationTypeName": "Cheese restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 385,
+      "LocationTypeName": "Speakeasy",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 386,
+      "LocationTypeName": "Pizza cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 387,
+      "LocationTypeName": "Farm-to-Table",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 388,
+      "LocationTypeName": "Brunch Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 389,
+      "LocationTypeName": "Coastal Mexican",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 390,
+      "LocationTypeName": "Hi-Fi Listening Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 391,
+      "LocationTypeName": "Restaurant + Events",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 392,
+      "LocationTypeName": "Pizza",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 393,
+      "LocationTypeName": "French",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 394,
+      "LocationTypeName": "Healthy",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 395,
+      "LocationTypeName": "Cafï¿½",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 396,
+      "LocationTypeName": "Theater Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 397,
+      "LocationTypeName": "Pizza Chain",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 398,
+      "LocationTypeName": "Full Service",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 399,
+      "LocationTypeName": "Modern Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 400,
+      "LocationTypeName": "Live-Fire Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 401,
+      "LocationTypeName": "Travel Center",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 402,
+      "LocationTypeName": "Ice Cream",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 403,
+      "LocationTypeName": "Themed Patio",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 404,
+      "LocationTypeName": "Upscale Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 405,
+      "LocationTypeName": "Pizza Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 406,
+      "LocationTypeName": "Modern Indian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 407,
+      "LocationTypeName": "Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 408,
+      "LocationTypeName": "Bar/Food Carts",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 409,
+      "LocationTypeName": "Food Pod",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 410,
+      "LocationTypeName": "Mercado",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 411,
+      "LocationTypeName": "Food Carts",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 412,
+      "LocationTypeName": "Various",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 413,
+      "LocationTypeName": "Specialty Coffee Roastery & Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 414,
+      "LocationTypeName": "Middle Eastern Coffee Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 415,
+      "LocationTypeName": "Fast-Casual Chicago-Style",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 416,
+      "LocationTypeName": "Grill/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 417,
+      "LocationTypeName": "Drive-Thru Specialty Coffee Stand",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 418,
+      "LocationTypeName": "Drive-Thru Coffee Stand",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 419,
+      "LocationTypeName": "Drive-Thru Coffee Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 420,
+      "LocationTypeName": "Casual Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 421,
+      "LocationTypeName": "Dessert Cafe / Customizeable Cookie Sandwiches",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 422,
+      "LocationTypeName": "Ice Cream Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 423,
+      "LocationTypeName": "Specialty Coffee & Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 424,
+      "LocationTypeName": "New York-Style Deli Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 425,
+      "LocationTypeName": "Marketplace/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 426,
+      "LocationTypeName": "Bakery / Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 427,
+      "LocationTypeName": "Upscale Italian Restaurant & Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 428,
+      "LocationTypeName": "Smoothie & Acai Bowl Cafe (Restaurant-Style)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 429,
+      "LocationTypeName": "Fast-Casual Cuban Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 430,
+      "LocationTypeName": "Kind Cafe / Coffee & Plant-Based Bites",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 431,
+      "LocationTypeName": "Coffee Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 432,
+      "LocationTypeName": "Casual Cafe / Neighborhood Eatery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 433,
+      "LocationTypeName": "Multi-Concept Food Hall",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 434,
+      "LocationTypeName": "Coffee Cafe (Trailer)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 435,
+      "LocationTypeName": "Mediterranean Eatery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 436,
+      "LocationTypeName": "Asian Fusion Spot",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 437,
+      "LocationTypeName": "Plant-Based Cafe Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 438,
+      "LocationTypeName": "Trenton-Style Pizzeria Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 439,
+      "LocationTypeName": "Afrocentric Cafe & Market",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 440,
+      "LocationTypeName": "High-End Fine Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 441,
+      "LocationTypeName": "Upscale American Bar-Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 442,
+      "LocationTypeName": "Oyster Bar & Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 443,
+      "LocationTypeName": "Fast-Casual Chicken Fingers",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 444,
+      "LocationTypeName": "Casual American Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 445,
+      "LocationTypeName": "Fine Dining Petite Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 446,
+      "LocationTypeName": "Taproom/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 447,
+      "LocationTypeName": "Brewery/Gastropub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 448,
+      "LocationTypeName": "Pizzeria/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 449,
+      "LocationTypeName": "Tavern/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 450,
+      "LocationTypeName": "Cafe/Market",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 451,
+      "LocationTypeName": "Brewery/Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 452,
+      "LocationTypeName": "Specialty Shop/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 453,
+      "LocationTypeName": "Bar/Restaurant (Casino)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 454,
+      "LocationTypeName": "Market/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 455,
+      "LocationTypeName": "Brewery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 456,
+      "LocationTypeName": "Provisions/Market",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 457,
+      "LocationTypeName": "Wine Bar/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 458,
+      "LocationTypeName": "Pizzeria/Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 459,
+      "LocationTypeName": "Bar/Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 460,
+      "LocationTypeName": "Family Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 461,
+      "LocationTypeName": "Public Market",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 462,
+      "LocationTypeName": "Restaurant & Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 463,
+      "LocationTypeName": "Historic Inn Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 464,
+      "LocationTypeName": "Healthy Drive-Thru",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 465,
+      "LocationTypeName": "Bowl Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 466,
+      "LocationTypeName": "Breakfast Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 467,
+      "LocationTypeName": "Fast-Casual Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 468,
+      "LocationTypeName": "Gourmet Burger Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 469,
+      "LocationTypeName": "Indian Street Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 470,
+      "LocationTypeName": "Drive-Thru Dessert Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 471,
+      "LocationTypeName": "BBQ Smokehouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 472,
+      "LocationTypeName": "Bistro and Cigar Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 473,
+      "LocationTypeName": "Cookie Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 474,
+      "LocationTypeName": "Fine-Dining Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 475,
+      "LocationTypeName": "Italian Restaurant & Private Club",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 476,
+      "LocationTypeName": "Buffet Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 477,
+      "LocationTypeName": "Omakase Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 478,
+      "LocationTypeName": "Restaurant and Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 479,
+      "LocationTypeName": "Arcade and Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 480,
+      "LocationTypeName": "Fine Dining Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 481,
+      "LocationTypeName": "Fried Chicken Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 482,
+      "LocationTypeName": "Vietnamese Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 483,
+      "LocationTypeName": "Brewery and Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 484,
+      "LocationTypeName": "Upscale Steakhouse",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 485,
+      "LocationTypeName": "Casual Family Dining",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 486,
+      "LocationTypeName": "Asian Fusion",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 487,
+      "LocationTypeName": "American Burger Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 488,
+      "LocationTypeName": "Health Cafe/Breakfast Spot",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 489,
+      "LocationTypeName": "Mediterranean Diner/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 490,
+      "LocationTypeName": "Korean Chicken Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 491,
+      "LocationTypeName": "All-Day Cafe/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 492,
+      "LocationTypeName": "Breakfast/Lunch Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 493,
+      "LocationTypeName": "Cowboy Cocktail Bar/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 494,
+      "LocationTypeName": "Casual Seafood",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 495,
+      "LocationTypeName": "Brewery Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 496,
+      "LocationTypeName": "Modern Mexican Diner/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 497,
+      "LocationTypeName": "American Cafe/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 498,
+      "LocationTypeName": "Breakfast Cafe/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 499,
+      "LocationTypeName": "Fine-Dining Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 500,
+      "LocationTypeName": "Bakery/Cafï¿½",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 501,
+      "LocationTypeName": "American Bar/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 502,
+      "LocationTypeName": "Breakfast Diner/Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 503,
+      "LocationTypeName": "Coffeehouse/Breakfast Cafe",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 504,
+      "LocationTypeName": "Hot Chicken Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 505,
+      "LocationTypeName": "Casual Indian",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 506,
+      "LocationTypeName": "Teppanyaki Diner/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 507,
+      "LocationTypeName": "Bagel Cafe/Breakfast Spot",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 508,
+      "LocationTypeName": "Fried Chicken Diner/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 509,
+      "LocationTypeName": "Taco Diner/Casual",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 510,
+      "LocationTypeName": "Jewish-American Deli/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 511,
+      "LocationTypeName": "Cajun Seafood Diner/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 512,
+      "LocationTypeName": "Australian-American Cafe/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 513,
+      "LocationTypeName": "Korean-American Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 514,
+      "LocationTypeName": "Modern Greek",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 515,
+      "LocationTypeName": "Modern Diner/American",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 516,
+      "LocationTypeName": "Mexican-American Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 517,
+      "LocationTypeName": "Market with Prepared Foods",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 518,
+      "LocationTypeName": "Artisan Bakery/Bistro/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 519,
+      "LocationTypeName": "Classic Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 520,
+      "LocationTypeName": "American Pizzeria/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 521,
+      "LocationTypeName": "Rotisserie Diner/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 522,
+      "LocationTypeName": "Upscale Mexican",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 523,
+      "LocationTypeName": "Chinese Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 524,
+      "LocationTypeName": "Market with Food",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 525,
+      "LocationTypeName": "French-American Bistro/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 526,
+      "LocationTypeName": "All-Day American Cafe/Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 527,
+      "LocationTypeName": "American Cafe/Breakfast Diner",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 528,
+      "LocationTypeName": "Breakfast/Healthy Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 529,
+      "LocationTypeName": "Restaurant/Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 530,
+      "LocationTypeName": "Restaurant/Tavern",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 531,
+      "LocationTypeName": "Restaurant/Bar/Event Space",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 532,
+      "LocationTypeName": "Tavern/Restaurant/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 533,
+      "LocationTypeName": "Bar/Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 534,
+      "LocationTypeName": "Virtual Food Hall/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 535,
+      "LocationTypeName": "Bakery/Cafe/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 536,
+      "LocationTypeName": "Ice Cream Shop/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 537,
+      "LocationTypeName": "Deli/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 538,
+      "LocationTypeName": "Drink Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 539,
+      "LocationTypeName": "Bar/Tavern",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 540,
+      "LocationTypeName": "Brewery/Taproom",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 541,
+      "LocationTypeName": "Bar, restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 542,
+      "LocationTypeName": "Bar, bistro",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 543,
+      "LocationTypeName": "Juice Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 544,
+      "LocationTypeName": "All-Day Dining/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 545,
+      "LocationTypeName": "Breakfast/Lunch",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 546,
+      "LocationTypeName": "Irish Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 547,
+      "LocationTypeName": "Fast-Food",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 548,
+      "LocationTypeName": "Restaurant, bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 549,
+      "LocationTypeName": "Modern Diner/Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 550,
+      "LocationTypeName": "Nightlife Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 551,
+      "LocationTypeName": "Brewery/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 552,
+      "LocationTypeName": "Quick-Serve",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 553,
+      "LocationTypeName": "Fusion Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 554,
+      "LocationTypeName": "Dining Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 555,
+      "LocationTypeName": "Quick-Service Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 556,
+      "LocationTypeName": "Restaurant-Bar-Mini Golf",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 557,
+      "LocationTypeName": "Bar-Venue (possible restaurant elements)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 558,
+      "LocationTypeName": "Dive Bar and Grill",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 559,
+      "LocationTypeName": "Cantina",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 560,
+      "LocationTypeName": "Sports Bar/Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 561,
+      "LocationTypeName": "Takeout Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 562,
+      "LocationTypeName": "Bar/Music Venue",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 563,
+      "LocationTypeName": "Bakery / Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 564,
+      "LocationTypeName": "Restaurant / Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 565,
+      "LocationTypeName": "Restaurant/Entertainment",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 566,
+      "LocationTypeName": "Sports Restaurant/Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 567,
+      "LocationTypeName": "Dessert Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 568,
+      "LocationTypeName": "Diner/Family Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 569,
+      "LocationTypeName": "Bar Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 570,
+      "LocationTypeName": "Bar / Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 571,
+      "LocationTypeName": "Bar/Nightlife",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 572,
+      "LocationTypeName": "Dive Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 573,
+      "LocationTypeName": "Bar & Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 574,
+      "LocationTypeName": "Takeout",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 575,
+      "LocationTypeName": "Restaurant + Deli",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 576,
+      "LocationTypeName": "Venue",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 577,
+      "LocationTypeName": "Restaurant (QSR)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 578,
+      "LocationTypeName": "Hotel (Independent/Multi-Unit)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 579,
+      "LocationTypeName": "Restaurant (Independent/Multi-Unit)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 580,
+      "LocationTypeName": "Bar (Independent)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 581,
+      "LocationTypeName": "Bar (tea Bar)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 582,
+      "LocationTypeName": "Restaurant/coffee Shop",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 583,
+      "LocationTypeName": "Bar/brewery",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 584,
+      "LocationTypeName": "Lounge/restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 585,
+      "LocationTypeName": "Restaurant (ice Cream Shop)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 586,
+      "LocationTypeName": "Jazz Cocktail Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 587,
+      "LocationTypeName": "Bar / Wine Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 588,
+      "LocationTypeName": "Fast Food Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 589,
+      "LocationTypeName": "Bar / Lounge",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 590,
+      "LocationTypeName": "Restaurant / Pizzeria",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 591,
+      "LocationTypeName": "Food Hall / Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 592,
+      "LocationTypeName": "Café / Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 593,
+      "LocationTypeName": "Pub / Bar",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 594,
+      "LocationTypeName": "Restaurant (Steakhouse/Seafood)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 595,
+      "LocationTypeName": "Pub / Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 596,
+      "LocationTypeName": "Restaurant / Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 597,
+      "LocationTypeName": "Fast Casual / Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 598,
+      "LocationTypeName": "Fast Casual Restaurant",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 599,
+      "LocationTypeName": "Deli / Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 600,
+      "LocationTypeName": "Restaurant / Brunch Spot",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 601,
+      "LocationTypeName": "Bar / Speakeasy",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 602,
+      "LocationTypeName": "Restaurant (Steakhouse)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 603,
+      "LocationTypeName": "Restaurant (BBQ)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 604,
+      "LocationTypeName": "Restaurant / Entertainment",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 605,
+      "LocationTypeName": "Restaurant (Asian)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 606,
+      "LocationTypeName": "Bakery / Café",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 607,
+      "LocationTypeName": "Brewery / Pub",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 608,
+      "LocationTypeName": "Restaurant (Buffet)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 609,
+      "LocationTypeName": "Restaurant (Fine Dining)",
+      "IsActive": false
+    },
+    {
+      "LocationTypeID": 610,
+      "LocationTypeName": "Restaurant (Seafood)",
+      "IsActive": false
+    }
+  ],
+  "GetGroupedMenuTypeList": [
+    {
+      "MenuID": 1,
+      "MenuCode": "mt1",
+      "MenuName": "American",
+      "MenuDescription": "'American, European, Pizza',\n'American, Other Ethnic, Pizza',\n'American, Pizza',\n'American, Burger,Pizza, Steak/Seafood',\n'American, Bar & Grill/Pub',\n'American, Bar & Grill/Pub, Chicken',\n'American, Bar & Grill/Pub, Chicken, Mexican/Latin, Pizza',\n'American, Bar & Grill/Pub, Mexican/Latin',\n'American, Bar & Grill/Pub, Pizza',\n'American, Bar & Grill/Pub, Steak/Seafood',\n'AmericanBar Food',\n'AmericanBar FoodBurgerSandwich',\n'AmericanBar FoodChicken',\n'AmericanBar FoodGrillSports Bar',\n'AmericanBar FoodSeafood',\n'American, European',\n'American, European, Pizza',\n'American, European, Sandwiches/Soups/Salads/Deli',\n'American, European, Steak/Seafood',\n'American, Chicken, Mexican/Latin',\n'American, Mexican/Latin',\n'American, Bakeries/Coffee/Snacks',\n'American, Bakeries/Coffee/Snacks, Mexican/Latin',\n'Steak/Seafood, American, Bar & Grill/Pub',\n'American, Other Ethnic, Steak/Seafood',\n'American, Steak/Seafood',\n'American, Steak/Seafood, Sandwhiches/Soups/Salads/Deli',\n'SeafoodAmerican',\n'American, Asian',\n'American, Chicken, Sandwiches/Soups/Salads/Deli, Hamburgers',\n'American, European, Sandwiches/Soups/Salads/Deli',\n'American, Sandwiches/Soups/Salads/Deli',\n'American, Sandwiches/Soups/Salads/Deli, Hamburgers, American, Hamburgers',\n'AmericanBar FoodBurgerSandwich',\n'American, Other Ethnic',\n'American, Other Ethnic, Pizza',\n'American, Other Ethnic, Regional',\n'American, Other Ethnic, Steak/Seafood',\n'CafAmerican',\n'South American'\r\n",
+      "MergeMenuIds": "26,41,46,57,73,79,85,94,119,121,122,128,136,168,180,199,218,252,266,282,351,361,381,386,392,404,455,496,500,527,542,558,559,563,567"
+    },
+    {
+      "MenuID": 3,
+      "MenuCode": "mt3",
+      "MenuName": "BBQ\r\n",
+      "MenuDescription": "'American, BBQ','Asian, BBQ','BBQ','BBQ, American, Bar Food, Bar & Grill/Pub','BBQ, Bar & Grill/Pub','BBQ, Chicken','BBQ, European, Pizza','BBQAmerican','BBQ, European, Pizza'\r\n",
+      "MergeMenuIds": "5,82,148,181,200,228,382,510\r\n"
+    },
+    {
+      "MenuID": 4,
+      "MenuCode": "mt4",
+      "MenuName": "Bar & Grill/Pub\r\n",
+      "MenuDescription": "'Bar & Grill/Pub, Pizza','Bar & Grill/Pub, Sandwiches/Soups/Salads/Deli','Bar & Grill/Pub, Steak/Seafood','Bar & Grill/Pub, Vegetarian/Vegan','Bar FoodAmericanAsianGrillJapaneseSushi','Bar FoodBakerycaf','Bar & Grill/Pub, Sandwiches/Soups/Salads/Deli','Bar & Grill/Pub, Other Ethnic'\r\n",
+      "MergeMenuIds": "58,76,113,166,217,532,568\r\n"
+    },
+    {
+      "MenuID": 5,
+      "MenuCode": "mt5",
+      "MenuName": "Beverages\r\n",
+      "MenuDescription": "'Bakeries/Coffee/Snacks, Beverages','Bakeries/Coffee/Snacks, Beverages, Sandwiches/Soups/Salads/Deli','Bakeries/Coffee/Snacks, Coffee/Tea, Beverages','Beverages','Beverages, Desserts','Beverages, Sandwiches/Soups/Salads/Deli','Sandwiches/Soups/Salads/Deli, Beverages','CoffeeTea','CoffeeTeaCaf','JuiceSmoothieCoffeetea','Beverages, Sandwiches/Soups/Salads/Deli'\r\n",
+      "MergeMenuIds": "18,149,161,167,359,376,482,509,512,546"
+    },
+    {
+      "MenuID": 6,
+      "MenuCode": "mt6",
+      "MenuName": "Bakeries/Coffee/Snacks",
+      "MenuDescription": "'Bakeries/Coffee/Snacks, Beverages, Sandwiches/Soups/Salads/Deli','Bakeries/Coffee/Snacks, Sandwiches/Soups/Salads/Deli','Snacks','Bakeries/Coffee/Snacks'",
+      "MergeMenuIds": "16,161,208,562"
+    },
+    {
+      "MenuID": 7,
+      "MenuCode": "mt7",
+      "MenuName": "Burger",
+      "MenuDescription": "'BurgerIce Creamyogurt','Hamburgers','SandwichBurgerChicken'",
+      "MergeMenuIds": "14,537,539"
+    },
+    {
+      "MenuID": 8,
+      "MenuCode": "mt8",
+      "MenuName": "Chicken",
+      "MenuDescription": "'Chicken, Pizza, Vegetarian','Chicken, Other Ethnic','Chicken'",
+      "MergeMenuIds": "6,116,157"
+    },
+    {
+      "MenuID": 9,
+      "MenuCode": "mt9",
+      "MenuName": "Desserts",
+      "MenuDescription": "'Ice CreamYogurt','Ice CreamYogurtBurger','Desserts'",
+      "MergeMenuIds": "17,523,572"
+    },
+    {
+      "MenuID": 10,
+      "MenuCode": "mt10",
+      "MenuName": "European",
+      "MenuDescription": "'Bakeries/Coffee/Snacks, European','Bakeries/Coffee/Snacks, European, Pizza','European','European, Other Ethnic','European, Pizza, Sandwiches/Soups/Salads/Deli','European/Pizza','Pizza, European','Bar & Grill/Pub, European','Bar & Grill/Pub, European, Pizza'",
+      "MergeMenuIds": "7,8,23,49,69,112,178,263,306"
+    },
+    {
+      "MenuID": 11,
+      "MenuCode": "mt11",
+      "MenuName": "Asian/Japanese",
+      "MenuDescription": "'Asian','Asian, Bakeries/Coffee/Snacks','Asian, Bar & Grill/Pub','Asian, Bar & Grill/Pub, Mexican/Latin','Asian, BBQ','Asian, Chicken','Asian, Chinese','Asian, Japanese, Sushi','Asian, Other Ethnic','Asian, Pizza','Asian, Pizza, Sushi','Asian, Sandwiches/Soups/Salads/Deli','Asian, Steak/Seafood','Asian, Sushi','Asian, Thai','AsianSandwich','ChineseAsian','JapaneseAsian','JapaneseAsianSoup','JapaneseAsianSushi','MexicanLatinAsian','SushiAsianJapanese','SushiAsianJapaneseSoup','ThaiAsianx','VietnameseAsian','VietnameseAsianCaf','Vegetarian, Asian'",
+      "MergeMenuIds": "9,42,71,82,101,102,107,138,215,232,251,349,374,388,395,397,505,518,530,535,540,541,549,557,569,571"
+    },
+    {
+      "MenuID": 12,
+      "MenuCode": "mt12",
+      "MenuName": "Indian",
+      "MenuDescription": "'Indian','IndianBar FoodGrill','IndianGrill','IndianIce Creamyogurt'",
+      "MergeMenuIds": "393,517,529,570"
+    },
+    {
+      "MenuID": 13,
+      "MenuCode": "mt13",
+      "MenuName": "Middle Eastern",
+      "MenuDescription": "Middle Eastern",
+      "MergeMenuIds": "533"
+    },
+    {
+      "MenuID": 14,
+      "MenuCode": "mt14",
+      "MenuName": "Other Ethnic/Regional",
+      "MenuDescription": "'Other Ethnic','Other Ethnic, Regional','Regional, Other Ethnic, Bar & Grill/Pub','Regional'",
+      "MergeMenuIds": "13,20,387,422"
+    },
+    {
+      "MenuID": 15,
+      "MenuCode": "mt15",
+      "MenuName": "Pizza",
+      "MenuDescription": "'Pizza','Italian','PizzaGrillItalian','PizzaItalian'",
+      "MergeMenuIds": "503,508,553,555"
+    },
+    {
+      "MenuID": 16,
+      "MenuCode": "mt16",
+      "MenuName": "Sandwiches/Soups/Salads/Deli",
+      "MenuDescription": "'Sandwich','SandwichBurgerChicken','SandwichCuban','SandwichDeliSalad','Sandwiches/Soups/Salads/Deli','Sandwiches/Soups/Salads/Deli, Bakeries/Coffee/Snacks','Sandwiches/Soups/Salads/Deli, Beverages','Sandwiches/Soups/Salads/Deli, Chicken','SteakSandwich','Pizza, Sandwiches/Soups/Salads/Deli','Desserts, Sandwiches/Soups/Salads/Deli','Deli ','Sandwiches/Soups/Salads/Deli, Bakeries/Coffee/Snacks','Salad'",
+      "MergeMenuIds": "15,173,346,371,380,482,502,516,525,536,539,554,566"
+    },
+    {
+      "MenuID": 17,
+      "MenuCode": "mt17",
+      "MenuName": "Seafood",
+      "MenuDescription": "'CajunCreoleSeafood','Chicken, Steak/Seafood','Seafood','Steak','SeafoodSeafoodSteakhouse','Steak/Seafood'",
+      "MergeMenuIds": "2,338,524,526"
+    },
+    {
+      "MenuID": 18,
+      "MenuCode": "mt18",
+      "MenuName": "Classic/Varied",
+      "MenuDescription": "'Classic/Varied','Classic/Varied, American, Regional','Classic/Varied, American, Regional, Bakeries/Coffee/Snacks','Classic/Varied, American, Sandwiches/Soups/Salads/Deli'",
+      "MergeMenuIds": "1,377,378,400"
+    },
+    {
+      "MenuID": 20,
+      "MenuCode": "mt19",
+      "MenuName": "Cafe",
+      "MenuDescription": "'BakeryCaf','Bar FoodBakerycaf','Caf','CoffeeTeaCaf','FilipinoBakerycaf','GrillCaf'",
+      "MergeMenuIds": "497,498,506,512,552,568"
+    },
+    {
+      "MenuID": 21,
+      "MenuCode": "mt20",
+      "MenuName": "Steakhouse",
+      "MenuDescription": "'Steakhouse','South AmericanItalianSteakhouse'",
+      "MergeMenuIds": "513,514"
+    },
+    {
+      "MenuID": 22,
+      "MenuCode": "mt21",
+      "MenuName": "Soul Food\r\n",
+      "MenuDescription": "Soul Food",
+      "MergeMenuIds": "543"
+    },
+    {
+      "MenuID": 23,
+      "MenuCode": "mt22",
+      "MenuName": "Vegetarian/Vegan",
+      "MenuDescription": "'Vegetarian','Vegetarian, Asian'",
+      "MergeMenuIds": "126,397"
+    },
+    {
+      "MenuID": 24,
+      "MenuCode": "mt23",
+      "MenuName": "Food Truck",
+      "MenuDescription": "Food Truck",
+      "MergeMenuIds": "10"
+    },
+    {
+      "MenuID": 25,
+      "MenuCode": "mt24",
+      "MenuName": "Lodging\r\n",
+      "MenuDescription": "Lodging\r\n",
+      "MergeMenuIds": "19"
+    },
+    {
+      "MenuID": 26,
+      "MenuCode": "mt25",
+      "MenuName": "Hot Dog\r\n",
+      "MenuDescription": " Hot Dog\r\n",
+      "MergeMenuIds": "515"
+    },
+    {
+      "MenuID": 27,
+      "MenuCode": "mt26",
+      "MenuName": "Caribbean\r\n",
+      "MenuDescription": " Caribbean\r\n",
+      "MergeMenuIds": "547"
+    },
+    {
+      "MenuID": 28,
+      "MenuCode": "mt27",
+      "MenuName": "African\r\n",
+      "MenuDescription": " African\r\n",
+      "MergeMenuIds": "556"
+    },
+    {
+      "MenuID": 29,
+      "MenuCode": "mt28",
+      "MenuName": "CajunCreole\r\n",
+      "MenuDescription": " CajunCreole\r\n",
+      "MergeMenuIds": "504"
+    },
+    {
+      "MenuID": 30,
+      "MenuCode": "mt29",
+      "MenuName": "French\r\n",
+      "MenuDescription": "'FrenchCaf','French'",
+      "MergeMenuIds": "550\r\n,551"
+    },
+    {
+      "MenuID": 31,
+      "MenuCode": "mt30",
+      "MenuName": "Jamaican\r\n",
+      "MenuDescription": "Jamaican\r\n",
+      "MergeMenuIds": "545"
+    },
+    {
+      "MenuID": 32,
+      "MenuCode": "mt31",
+      "MenuName": "Filipino",
+      "MenuDescription": "Filipino",
+      "MergeMenuIds": "534"
+    },
+    {
+      "MenuID": 33,
+      "MenuCode": "mt32",
+      "MenuName": "Snacks\r\n",
+      "MenuDescription": "Snacks\r\n",
+      "MergeMenuIds": "562"
+    },
+    {
+      "MenuID": 34,
+      "MenuCode": "mt33",
+      "MenuName": "Mediterranean\r\n",
+      "MenuDescription": " Mediterranean\r\n",
+      "MergeMenuIds": "521"
+    },
+    {
+      "MenuID": 37,
+      "MenuCode": "mt34",
+      "MenuName": "Mexican",
+      "MenuDescription": "Mexican",
+      "MergeMenuIds": "1837"
+    },
+    {
+      "MenuID": 38,
+      "MenuCode": "mt34",
+      "MenuName": "Regional",
+      "MenuDescription": "Regional",
+      "MergeMenuIds": "1838"
+    },
+    {
+      "MenuID": 39,
+      "MenuCode": "mt34",
+      "MenuName": "Pizza/Italian",
+      "MenuDescription": "Pizza/Italian",
+      "MergeMenuIds": "1839"
+    }
+  ]
+}

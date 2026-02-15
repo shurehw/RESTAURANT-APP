@@ -65,3 +65,6 @@ nul
 
 .vercel
 .env.local
+scripts/screenshots/erl-leads.json
+scripts/screenshots/rlr-leads.json
+scripts/audit-screenshots/trace.zip

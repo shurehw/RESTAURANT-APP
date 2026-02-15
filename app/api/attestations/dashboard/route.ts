@@ -1,6 +1,6 @@
 /**
  * Attestation Dashboard API
- * Provides compliance overview for Control Plane
+ * Provides compliance overview for Action Center
  *
  * GET /api/attestations/dashboard?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&venue_id=xxx
  *

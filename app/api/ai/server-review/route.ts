@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     const review = await reviewServerPerformance(reviewInput);
 
-    // Save coaching actions to Control Plane only for end-of-period reviews
+    // Save coaching actions to Action Center only for end-of-period reviews
     // (single shifts don't provide enough data for actionable coaching items)
     if (venueId && periodLabel === 'Period to Date') {
       try {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
           console.error('Failed to save some coaching actions:', actionResult.errors);
         }
       } catch (actionError) {
-        console.error('Error saving coaching actions to Control Plane:', actionError);
+        console.error('Error saving coaching actions to Action Center:', actionError);
       }
     }
 

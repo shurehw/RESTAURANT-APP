@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
   const supabase = getServiceClient();
 
   try {
-    // Get fiscal calendar settings for period calculations
+    // Get fiscal calendar settings from organization_settings
     const { data: settings } = await (supabase as any)
-      .from('proforma_settings')
+      .from('organization_settings')
       .select('fiscal_calendar_type, fiscal_year_start_date')
       .limit(1)
       .single();

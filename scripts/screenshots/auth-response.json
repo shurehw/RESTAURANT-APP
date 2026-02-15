@@ -1,0 +1,51 @@
+{
+  "AdminUserId": 62371,
+  "SubscriptionId": 0,
+  "UserId": "c302d119-eb81-47ff-800a-d132465488e3",
+  "UserName": "RAR_EMAIL_REDACTED",
+  "FirstName": "Matthew",
+  "MiddleName": null,
+  "LastName": "Perasso",
+  "Password": null,
+  "Email": "RAR_EMAIL_REDACTED",
+  "IsActive": false,
+  "Result": "Success",
+  "Token": null,
+  "Membershipid": "c302d119-eb81-47ff-800a-d132465488e3",
+  "RoleName": "subscriber",
+  "RarRoleId": "c31c1438-c48a-4091-b75b-3b4f97061368",
+  "access_token": "Basic bWF0dEB0aGViaW55YW5ncm91cC5jb206NjIzNzE=",
+  "AllowedModuleList": [
+    "RLR",
+    "ERL",
+    "RAL"
+  ],
+  "AccountStatus": "Active",
+  "CompanyName": "The Binyan Group",
+  "CreatedBy": 0,
+  "P_MLS": 0,
+  "P_MS": 0,
+  "P_AR": 0,
+  "P_MU": 0,
+  "P_MAR": 0,
+  "P_MRD": 0,
+  "CreatedOn": "0001-01-01T00:00:00",
+  "RarModuleList": [
+    {
+      "ModuleId": 1,
+      "ModuleName": "Manage Leads",
+      "ReadOnly": true,
+      "WriteOnly": false,
+      "Message": null
+    },
+    {
+      "ModuleId": 5,
+      "ModuleName": "Manage Company",
+      "ReadOnly": true,
+      "WriteOnly": false,
+      "Message": null
+    }
+  ],
+  "Image": null,
+  "Response": null
+}
