@@ -8,13 +8,14 @@ import { liftBlock } from '@/lib/database/enforcement';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user, profile } = await requireUser();
     const { lift_reason } = await req.json();
 
-    await liftBlock(params.id, user.id, lift_reason);
+    await liftBlock(id, user.id, lift_reason);
 
     return NextResponse.json({
       success: true,
