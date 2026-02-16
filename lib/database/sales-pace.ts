@@ -7,6 +7,7 @@
  */
 
 import { getServiceClient } from '@/lib/supabase/service';
+import { FiscalCalendarType } from '@/lib/fiscal-calendar';
 
 // ══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -27,6 +28,18 @@ export interface SalesSnapshot {
   voids_total: number;
   avg_check: number | null;
   bev_pct: number | null;
+  // Labor enrichment (populated by poll)
+  labor_cost: number;
+  labor_hours: number;
+  labor_employee_count: number;
+  labor_ot_hours: number;
+  labor_foh_cost: number;
+  labor_boh_cost: number;
+  // Comp enrichment (populated by poll)
+  comp_exception_count: number;
+  comp_critical_count: number;
+  comp_warning_count: number;
+  comp_top_exceptions: any[];
 }
 
 export interface SalesPaceSettings {
@@ -137,6 +150,18 @@ export async function storeSalesSnapshot(snapshot: {
   covers_count: number;
   comps_total: number;
   voids_total: number;
+  // Labor enrichment (optional — populated by poll, absent in backfill)
+  labor_cost?: number;
+  labor_hours?: number;
+  labor_employee_count?: number;
+  labor_ot_hours?: number;
+  labor_foh_cost?: number;
+  labor_boh_cost?: number;
+  // Comp enrichment (optional)
+  comp_exception_count?: number;
+  comp_critical_count?: number;
+  comp_warning_count?: number;
+  comp_top_exceptions?: any[];
 }): Promise<SalesSnapshot | null> {
   const supabase = getServiceClient();
   const { data, error } = await (supabase as any)
@@ -418,6 +443,141 @@ export function isWithinServiceHoursForTimezone(
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// PERIOD AGGREGATION HELPERS
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface VenueDayFact {
+  venue_id: string;
+  business_date: string;
+  gross_sales: number;
+  net_sales: number;
+  food_sales: number;
+  beverage_sales: number;
+  comps_total: number;
+  voids_total: number;
+  checks_count: number;
+  covers_count: number;
+}
+
+export interface LaborDayFact {
+  venue_id: string;
+  business_date: string;
+  total_hours: number;
+  labor_cost: number;
+  ot_hours: number;
+  employee_count: number;
+  foh_cost: number;
+  boh_cost: number;
+}
+
+/**
+ * Fetch venue_day_facts for a date range, for one or more venues.
+ */
+export async function getVenueDayFactsForRange(
+  venueIds: string[],
+  startDate: string,
+  endDate: string
+): Promise<VenueDayFact[]> {
+  const svc = getServiceClient();
+  const { data, error } = await (svc as any)
+    .from('venue_day_facts')
+    .select('venue_id, business_date, gross_sales, net_sales, food_sales, beverage_sales, comps_total, voids_total, checks_count, covers_count')
+    .in('venue_id', venueIds)
+    .gte('business_date', startDate)
+    .lte('business_date', endDate)
+    .order('business_date', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map((row: any) => ({
+    venue_id: row.venue_id,
+    business_date: row.business_date,
+    gross_sales: parseFloat(row.gross_sales) || 0,
+    net_sales: parseFloat(row.net_sales) || 0,
+    food_sales: parseFloat(row.food_sales) || 0,
+    beverage_sales: parseFloat(row.beverage_sales) || 0,
+    comps_total: parseFloat(row.comps_total) || 0,
+    voids_total: parseFloat(row.voids_total) || 0,
+    checks_count: parseInt(row.checks_count) || 0,
+    covers_count: parseInt(row.covers_count) || 0,
+  }));
+}
+
+/**
+ * Fetch labor_day_facts for a date range, for one or more venues.
+ */
+export async function getLaborDayFactsForRange(
+  venueIds: string[],
+  startDate: string,
+  endDate: string
+): Promise<LaborDayFact[]> {
+  const svc = getServiceClient();
+  const { data, error } = await (svc as any)
+    .from('labor_day_facts')
+    .select('venue_id, business_date, total_hours, labor_cost, ot_hours, employee_count, foh_cost, boh_cost')
+    .in('venue_id', venueIds)
+    .gte('business_date', startDate)
+    .lte('business_date', endDate)
+    .order('business_date', { ascending: true });
+
+  if (error) throw error;
+
+  return (data || []).map((row: any) => ({
+    venue_id: row.venue_id,
+    business_date: row.business_date,
+    total_hours: parseFloat(row.total_hours) || 0,
+    labor_cost: parseFloat(row.labor_cost) || 0,
+    ot_hours: parseFloat(row.ot_hours) || 0,
+    employee_count: parseInt(row.employee_count) || 0,
+    foh_cost: parseFloat(row.foh_cost) || 0,
+    boh_cost: parseFloat(row.boh_cost) || 0,
+  }));
+}
+
+const VALID_CALENDAR_TYPES: FiscalCalendarType[] = ['standard', '4-4-5', '4-5-4', '5-4-4'];
+
+/**
+ * Get fiscal calendar configuration for a venue (via its org).
+ */
+export async function getVenueFiscalConfig(venueId: string): Promise<{
+  calendarType: FiscalCalendarType;
+  fyStartDate: string | null;
+}> {
+  const svc = getServiceClient();
+
+  const { data: venueData } = await (svc as any)
+    .from('venues')
+    .select('organization_id')
+    .eq('id', venueId)
+    .single();
+
+  if (!venueData?.organization_id) {
+    return { calendarType: 'standard', fyStartDate: null };
+  }
+
+  const { data: settingsData } = await (svc as any)
+    .from('organization_settings')
+    .select('fiscal_calendar_type, fiscal_year_start_date')
+    .eq('org_id', venueData.organization_id)
+    .single();
+
+  if (!settingsData) {
+    return { calendarType: 'standard', fyStartDate: null };
+  }
+
+  const dbCalendarType = settingsData.fiscal_calendar_type;
+  const calendarType: FiscalCalendarType =
+    dbCalendarType && VALID_CALENDAR_TYPES.includes(dbCalendarType)
+      ? dbCalendarType
+      : 'standard';
+
+  return {
+    calendarType,
+    fyStartDate: settingsData.fiscal_year_start_date || null,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // NORMALIZERS
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -452,5 +612,17 @@ function normalizeSnapshot(row: any): SalesSnapshot {
     voids_total: parseFloat(row.voids_total) || 0,
     avg_check: row.avg_check != null ? parseFloat(row.avg_check) : null,
     bev_pct: row.bev_pct != null ? parseFloat(row.bev_pct) : null,
+    // Labor enrichment
+    labor_cost: parseFloat(row.labor_cost) || 0,
+    labor_hours: parseFloat(row.labor_hours) || 0,
+    labor_employee_count: parseInt(row.labor_employee_count) || 0,
+    labor_ot_hours: parseFloat(row.labor_ot_hours) || 0,
+    labor_foh_cost: parseFloat(row.labor_foh_cost) || 0,
+    labor_boh_cost: parseFloat(row.labor_boh_cost) || 0,
+    // Comp enrichment
+    comp_exception_count: parseInt(row.comp_exception_count) || 0,
+    comp_critical_count: parseInt(row.comp_critical_count) || 0,
+    comp_warning_count: parseInt(row.comp_warning_count) || 0,
+    comp_top_exceptions: Array.isArray(row.comp_top_exceptions) ? row.comp_top_exceptions : [],
   };
 }

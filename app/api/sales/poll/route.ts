@@ -6,7 +6,8 @@
  * For each active venue with sales pace monitoring enabled:
  * 1. Check if within service hours (skip if closed)
  * 2. Fetch current-day running totals from TipSee
- * 3. Store snapshot in sales_snapshots table
+ * 3. Fetch labor + comp data from TipSee (parallel)
+ * 4. Store enriched snapshot in sales_snapshots table
  *
  * Auth: x-cron-secret header or Bearer token (matches camera poll pattern)
  */
@@ -25,7 +26,10 @@ import {
   fetchIntraDaySummary,
   fetchSimphonyIntraDaySummary,
   getPosTypeForLocations,
+  fetchLaborSummary,
+  fetchCompExceptions,
 } from '@/lib/database/tipsee';
+import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
 
 const CRON_SECRET = process.env.CRON_SECRET || process.env.CV_CRON_SECRET;
 
@@ -94,6 +98,8 @@ async function processVenue(venueId: string): Promise<{
   net_sales: number;
   covers: number;
   checks: number;
+  labor_cost?: number;
+  comp_exceptions?: number;
   skipped_reason?: string;
 }> {
   const settings = await getSalesPaceSettings(venueId);
@@ -121,7 +127,40 @@ async function processVenue(venueId: string): Promise<{
     ? await fetchSimphonyIntraDaySummary(locationUuids, businessDate)
     : await fetchIntraDaySummary(locationUuids, businessDate);
 
-  // Store snapshot
+  // Fetch labor + comp data in parallel (non-blocking — sales snapshot still stores even if these fail)
+  const [laborResult, compResult] = await Promise.allSettled([
+    fetchLaborSummary(locationUuids[0], businessDate, summary.net_sales, summary.total_covers),
+    (async () => {
+      const compSettings = await getCompSettingsForVenue(venueId);
+      return fetchCompExceptions(
+        businessDate,
+        locationUuids[0],
+        compSettings ? {
+          approved_reasons: compSettings.approved_reasons,
+          high_value_comp_threshold: compSettings.high_value_comp_threshold,
+          high_comp_pct_threshold: compSettings.high_comp_pct_threshold,
+          daily_comp_pct_warning: compSettings.daily_comp_pct_warning,
+          daily_comp_pct_critical: compSettings.daily_comp_pct_critical,
+        } : undefined
+      );
+    })(),
+  ]);
+
+  const labor = laborResult.status === 'fulfilled' ? laborResult.value : null;
+  const compData = compResult.status === 'fulfilled' ? compResult.value : null;
+
+  // Build top exceptions array for JSONB storage
+  const topExceptions = compData
+    ? compData.exceptions.slice(0, 5).map(e => ({
+        type: e.type,
+        severity: e.severity,
+        server: e.server,
+        comp_total: e.comp_total,
+        message: e.message,
+      }))
+    : [];
+
+  // Store enriched snapshot
   const now = new Date().toISOString();
   await storeSalesSnapshot({
     venue_id: venueId,
@@ -135,6 +174,18 @@ async function processVenue(venueId: string): Promise<{
     covers_count: summary.total_covers,
     comps_total: summary.comps_total,
     voids_total: summary.voids_total,
+    // Labor enrichment
+    labor_cost: labor?.labor_cost ?? 0,
+    labor_hours: labor?.total_hours ?? 0,
+    labor_employee_count: labor?.employee_count ?? 0,
+    labor_ot_hours: labor?.ot_hours ?? 0,
+    labor_foh_cost: labor?.foh?.cost ?? 0,
+    labor_boh_cost: labor?.boh?.cost ?? 0,
+    // Comp enrichment
+    comp_exception_count: compData?.summary.exception_count ?? 0,
+    comp_critical_count: compData?.summary.critical_count ?? 0,
+    comp_warning_count: compData?.summary.warning_count ?? 0,
+    comp_top_exceptions: topExceptions,
   });
 
   return {
@@ -142,6 +193,7 @@ async function processVenue(venueId: string): Promise<{
     net_sales: summary.net_sales,
     covers: summary.total_covers,
     checks: summary.total_checks,
+    labor_cost: labor?.labor_cost,
+    comp_exceptions: compData?.summary.exception_count,
   };
 }
-

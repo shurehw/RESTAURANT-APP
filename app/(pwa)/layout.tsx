@@ -17,10 +17,8 @@ export default async function PwaLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Auth is enforced by middleware — no duplicate check here
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   // Fetch venues for the VenueProvider
   const { data: venues } = await supabase
@@ -28,15 +26,9 @@ export default async function PwaLayout({
     .select('id, name, location, city, state')
     .eq('is_active', true);
 
-  // If not authenticated, redirect to login
-  if (!user) {
-    const { redirect } = await import('next/navigation');
-    redirect('/login');
-  }
-
   return (
     <VenueProvider initialVenues={venues || []}>
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col" style={{ paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
         {/* Thin PWA header */}
         <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center sticky top-0 z-50">
           <div className="flex items-center gap-2">
@@ -46,7 +38,7 @@ export default async function PwaLayout({
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4" style={{ paddingBottom: 'var(--sab)' }}>{children}</main>
       </div>
     </VenueProvider>
   );

@@ -8,10 +8,13 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
 import { useVenue } from '@/components/providers/VenueProvider';
+import { createClient } from '@/lib/supabase/client';
 import {
   DollarSign,
   Users,
@@ -26,8 +29,18 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Receipt,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { CheckListSheet } from '@/components/pulse/CheckListSheet';
+import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
+import { LaborCard } from '@/components/pulse/LaborCard';
+import { CompCard } from '@/components/pulse/CompCard';
+import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/PeriodGaugeCard';
+import { PeriodDayChart } from '@/components/pulse/PeriodDayChart';
+import { PeriodDayTable } from '@/components/pulse/PeriodDayTable';
+import { Briefcase, ShieldAlert } from 'lucide-react';
 
 // ══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -106,6 +119,150 @@ interface GroupData {
   };
 }
 
+interface EnrichmentLaborData {
+  total_hours: number;
+  labor_cost: number;
+  labor_pct: number;
+  splh: number;
+  ot_hours: number;
+  covers_per_labor_hour: number | null;
+  employee_count: number;
+  punch_count: number;
+  foh: { hours: number; cost: number; employee_count: number } | null;
+  boh: { hours: number; cost: number; employee_count: number } | null;
+  other: { hours: number; cost: number; employee_count: number } | null;
+}
+
+interface EnrichmentCompData {
+  total: number;
+  pct: number;
+  net_sales: number;
+  exception_count: number;
+  critical_count: number;
+  warning_count: number;
+  top_exceptions: Array<{
+    type: string;
+    severity: string;
+    server: string;
+    comp_total: number;
+    message: string;
+  }>;
+}
+
+interface EnrichmentData {
+  venue_id: string;
+  venue_name: string;
+  labor: EnrichmentLaborData | null;
+  comps: EnrichmentCompData | null;
+}
+
+interface GroupEnrichmentData {
+  venues: EnrichmentData[];
+  totals: {
+    labor_cost: number;
+    labor_pct: number;
+    total_hours: number;
+    ot_hours: number;
+    employee_count: number;
+    splh: number;
+    comp_total: number;
+    comp_pct: number;
+    exception_count: number;
+    critical_count: number;
+    net_sales: number;
+  } | null;
+}
+
+type PulseViewMode = 'today' | 'wtd' | 'ptd' | 'ytd';
+
+interface PeriodAggregation {
+  net_sales: number;
+  gross_sales: number;
+  food_sales: number;
+  beverage_sales: number;
+  comps_total: number;
+  voids_total: number;
+  checks_count: number;
+  covers_count: number;
+  days_count: number;
+  avg_check: number;
+  beverage_pct: number;
+}
+
+interface PeriodLaborAggregation {
+  labor_cost: number;
+  total_hours: number;
+  ot_hours: number;
+  employee_count: number;
+  labor_pct: number;
+  splh: number;
+  foh_cost: number;
+  boh_cost: number;
+}
+
+interface PeriodDayRow {
+  business_date: string;
+  net_sales: number;
+  covers_count: number;
+  prior_net_sales: number | null;
+  prior_covers: number | null;
+}
+
+interface VenuePeriodData {
+  venue_id: string;
+  venue_name: string;
+  current: PeriodAggregation;
+  prior: PeriodAggregation;
+  labor_current: PeriodLaborAggregation | null;
+  labor_prior: PeriodLaborAggregation | null;
+  variance: {
+    net_sales_pct: number | null;
+    covers_pct: number | null;
+    avg_check_pct: number | null;
+    labor_pct_delta: number | null;
+    comp_pct_delta: number | null;
+  };
+  days: PeriodDayRow[];
+}
+
+interface PeriodResponse {
+  view: PulseViewMode;
+  date: string;
+  period_start: string;
+  period_end: string;
+  prior_start: string;
+  prior_end: string;
+  venue?: VenuePeriodData;
+  venues?: VenuePeriodData[];
+  totals?: {
+    current: PeriodAggregation;
+    prior: PeriodAggregation;
+    labor_current: PeriodLaborAggregation | null;
+    labor_prior: PeriodLaborAggregation | null;
+    variance: {
+      net_sales_pct: number | null;
+      covers_pct: number | null;
+      avg_check_pct: number | null;
+      labor_pct_delta: number | null;
+      comp_pct_delta: number | null;
+    };
+  };
+  fiscal?: {
+    calendar_type: string;
+    fiscal_year: number;
+    fiscal_period: number;
+    period_start_date: string;
+    period_end_date: string;
+  };
+}
+
+const VIEW_LABELS: Record<PulseViewMode, string> = {
+  today: 'Today',
+  wtd: 'Week to Date',
+  ptd: 'Period to Date',
+  ytd: 'Year to Date',
+};
+
 // ══════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════════════════
@@ -143,6 +300,14 @@ function shiftDate(dateStr: string, days: number): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
+}
+
+function formatDateRange(startStr: string, endStr: string): string {
+  const s = new Date(startStr + 'T12:00:00');
+  const e = new Date(endStr + 'T12:00:00');
+  const startFmt = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const endFmt = e.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return `${startFmt} – ${endFmt}`;
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -462,15 +627,32 @@ function CumulativeChart({
 // GROUP-WIDE VIEW
 // ══════════════════════════════════════════════════════════════════════════
 
-function GroupSummary({ data }: { data: GroupData }) {
+function GroupSummary({ data, enrichment, enrichmentLoading }: {
+  data: GroupData;
+  enrichment: GroupEnrichmentData | null;
+  enrichmentLoading: boolean;
+}) {
   const { totals, venues } = data;
   const bevPct = (totals.food_sales + totals.beverage_sales) > 0
     ? (totals.beverage_sales / (totals.food_sales + totals.beverage_sales)) * 100
     : 0;
 
+  const et = enrichment?.totals;
+  // Build venue enrichment lookup
+  const venueEnrichMap = new Map<string, EnrichmentData>();
+  enrichment?.venues?.forEach(v => venueEnrichMap.set(v.venue_id, v));
+
+  function laborPctColor(_pct: number) {
+    return '';
+  }
+
+  function compPctColor(_pct: number) {
+    return '';
+  }
+
   return (
     <div className="space-y-6">
-      {/* Group totals */}
+      {/* Group totals — row 1: Sales */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -506,25 +688,49 @@ function GroupSummary({ data }: { data: GroupData }) {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Check</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Labor</CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {totals.checks > 0 ? formatCurrency(totals.net_sales / totals.checks) : '—'}
-            </div>
+            {enrichmentLoading ? (
+              <div className="h-8 bg-muted rounded animate-pulse" />
+            ) : et ? (
+              <>
+                <div className={`text-2xl font-bold ${laborPctColor(et.labor_pct)}`}>
+                  {et.labor_pct > 0 ? `${et.labor_pct.toFixed(1)}%` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(et.labor_cost)} &middot; {et.total_hours.toFixed(0)}h &middot; {et.employee_count} staff
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No data</div>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Bev Mix</CardTitle>
-            <Wine className="h-4 w-4 text-purple-500" />
+            <CardTitle className="text-sm font-medium">Comps</CardTitle>
+            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{bevPct.toFixed(0)}%</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {formatCurrency(totals.beverage_sales)} of {formatCurrency(totals.food_sales + totals.beverage_sales)}
-            </div>
+            {enrichmentLoading ? (
+              <div className="h-8 bg-muted rounded animate-pulse" />
+            ) : et ? (
+              <>
+                <div className={`text-2xl font-bold ${compPctColor(et.comp_pct)}`}>
+                  {et.comp_pct > 0 ? `${et.comp_pct.toFixed(1)}%` : '0%'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(et.comp_total)}
+                  {et.critical_count > 0 && (
+                    <span className="ml-2">{et.critical_count} critical</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No data</div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -542,9 +748,9 @@ function GroupSummary({ data }: { data: GroupData }) {
                   <th className="pb-2 pr-4 font-medium">Venue</th>
                   <th className="pb-2 pr-4 font-medium text-right">Net Sales</th>
                   <th className="pb-2 pr-4 font-medium text-right">Covers</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Checks</th>
                   <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Target</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Labor %</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Comps</th>
                   <th className="pb-2 font-medium text-center">Status</th>
                 </tr>
               </thead>
@@ -555,17 +761,20 @@ function GroupSummary({ data }: { data: GroupData }) {
                     const net = v.current?.net_sales ?? 0;
                     const covers = v.current?.covers_count ?? 0;
                     const checks = v.current?.checks_count ?? 0;
+                    const ve = venueEnrichMap.get(v.venue_id);
                     return (
                       <tr key={v.venue_id} className="border-b border-border/50 hover:bg-muted/50">
                         <td className="py-2.5 pr-4 font-medium">{v.venue_name}</td>
                         <td className="py-2.5 pr-4 text-right font-medium">{formatCurrency(net)}</td>
                         <td className="py-2.5 pr-4 text-right">{formatNumber(covers)}</td>
-                        <td className="py-2.5 pr-4 text-right">{formatNumber(checks)}</td>
                         <td className="py-2.5 pr-4 text-right">
                           {checks > 0 ? formatCurrency(net / checks) : '—'}
                         </td>
-                        <td className="py-2.5 pr-4 text-right">
-                          {v.pace.revenue_target > 0 ? formatCurrency(v.pace.revenue_target) : '—'}
+                        <td className={`py-2.5 pr-4 text-right ${ve?.labor ? laborPctColor(ve.labor.labor_pct) : ''}`}>
+                          {ve?.labor ? `${ve.labor.labor_pct.toFixed(1)}%` : '—'}
+                        </td>
+                        <td className={`py-2.5 pr-4 text-right ${ve?.comps ? compPctColor(ve.comps.pct) : ''}`}>
+                          {ve?.comps ? `${formatCurrency(ve.comps.total)} (${ve.comps.pct.toFixed(1)}%)` : '—'}
                         </td>
                         <td className="py-2.5 text-center">
                           <PaceBadge status={v.pace.status} />
@@ -578,14 +787,180 @@ function GroupSummary({ data }: { data: GroupData }) {
                   <td className="py-2.5 pr-4">Total</td>
                   <td className="py-2.5 pr-4 text-right">{formatCurrency(totals.net_sales)}</td>
                   <td className="py-2.5 pr-4 text-right">{formatNumber(totals.covers)}</td>
-                  <td className="py-2.5 pr-4 text-right">{formatNumber(totals.checks)}</td>
                   <td className="py-2.5 pr-4 text-right">
                     {totals.checks > 0 ? formatCurrency(totals.net_sales / totals.checks) : '—'}
                   </td>
-                  <td className="py-2.5 pr-4 text-right">
-                    {totals.revenue_target > 0 ? formatCurrency(totals.revenue_target) : '—'}
+                  <td className={`py-2.5 pr-4 text-right ${et ? laborPctColor(et.labor_pct) : ''}`}>
+                    {et ? `${et.labor_pct.toFixed(1)}%` : '—'}
+                  </td>
+                  <td className={`py-2.5 pr-4 text-right ${et ? compPctColor(et.comp_pct) : ''}`}>
+                    {et ? `${formatCurrency(et.comp_total)} (${et.comp_pct.toFixed(1)}%)` : '—'}
                   </td>
                   <td className="py-2.5" />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PERIOD GROUP VIEW
+// ══════════════════════════════════════════════════════════════════════════
+
+function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
+  const { totals, venues = [] } = data;
+  if (!totals) return null;
+
+  const { current, prior, labor_current, variance } = totals;
+
+  return (
+    <div className="space-y-6">
+      {/* Period date range banner */}
+      <div className="text-sm text-muted-foreground">
+        {VIEW_LABELS[data.view]}: {formatDateRange(data.period_start, data.period_end)}
+        <span className="ml-2 text-xs">(vs {formatDateRange(data.prior_start, data.prior_end)})</span>
+      </div>
+
+      {/* Group totals */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <PeriodGaugeCard
+          title="Group Revenue"
+          icon={DollarSign}
+          current={current.net_sales}
+          prior={prior.net_sales}
+          variancePct={variance.net_sales_pct}
+          daysCount={current.days_count}
+        />
+        <PeriodGaugeCard
+          title="Group Covers"
+          icon={Users}
+          current={current.covers_count}
+          prior={prior.covers_count}
+          variancePct={variance.covers_pct}
+          format="number"
+        />
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Labor</CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {labor_current ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {labor_current.labor_pct > 0 ? `${labor_current.labor_pct.toFixed(1)}%` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(labor_current.labor_cost)} &middot; {labor_current.total_hours.toFixed(0)}h
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No labor data</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Comps</CardTitle>
+            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {current.net_sales > 0 ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {((current.comps_total / current.net_sales) * 100).toFixed(1)}%
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(current.comps_total)}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No data</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Per-venue table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Venue Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">Venue</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Net Sales</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Covers</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Labor %</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Comps %</th>
+                  <th className="pb-2 font-medium text-right">Var %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...venues]
+                  .sort((a, b) => b.current.net_sales - a.current.net_sales)
+                  .map((v) => {
+                    const compPct = v.current.net_sales > 0 ? (v.current.comps_total / v.current.net_sales) * 100 : 0;
+                    return (
+                      <tr key={v.venue_id} className="border-b border-border/50 hover:bg-muted/50">
+                        <td className="py-2.5 pr-4 font-medium">{v.venue_name}</td>
+                        <td className="py-2.5 pr-4 text-right font-medium">{formatCurrency(v.current.net_sales)}</td>
+                        <td className="py-2.5 pr-4 text-right">{formatNumber(v.current.covers_count)}</td>
+                        <td className="py-2.5 pr-4 text-right">
+                          {v.current.avg_check > 0 ? formatCurrency(v.current.avg_check) : '—'}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right">
+                          {v.labor_current ? `${v.labor_current.labor_pct.toFixed(1)}%` : '—'}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right">
+                          {compPct > 0 ? `${compPct.toFixed(1)}%` : '—'}
+                        </td>
+                        <td className="py-2.5 text-right">
+                          {v.variance.net_sales_pct != null ? (
+                            <span className="inline-flex items-center gap-0.5">
+                              {v.variance.net_sales_pct >= 0 ? (
+                                <TrendingUp className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-red-500" />
+                              )}
+                              <span className={v.variance.net_sales_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                                {v.variance.net_sales_pct > 0 ? '+' : ''}{v.variance.net_sales_pct.toFixed(1)}%
+                              </span>
+                            </span>
+                          ) : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                {/* Totals row */}
+                <tr className="border-t-2 font-semibold">
+                  <td className="py-2.5 pr-4">Total</td>
+                  <td className="py-2.5 pr-4 text-right">{formatCurrency(current.net_sales)}</td>
+                  <td className="py-2.5 pr-4 text-right">{formatNumber(current.covers_count)}</td>
+                  <td className="py-2.5 pr-4 text-right">
+                    {current.avg_check > 0 ? formatCurrency(current.avg_check) : '—'}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right">
+                    {labor_current ? `${labor_current.labor_pct.toFixed(1)}%` : '—'}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right">
+                    {current.net_sales > 0 ? `${((current.comps_total / current.net_sales) * 100).toFixed(1)}%` : '—'}
+                  </td>
+                  <td className="py-2.5 text-right">
+                    {variance.net_sales_pct != null ? (
+                      <span className={variance.net_sales_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                        {variance.net_sales_pct > 0 ? '+' : ''}{variance.net_sales_pct.toFixed(1)}%
+                      </span>
+                    ) : '—'}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -604,15 +979,50 @@ const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 export default function LivePulsePage() {
   const { selectedVenue, isAllVenues } = useVenue();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // View mode: today (live) or period aggregation
+  const [viewMode, setViewMode] = useState<PulseViewMode>(
+    (['today', 'wtd', 'ptd', 'ytd'].includes(searchParams.get('view') || '')
+      ? searchParams.get('view') as PulseViewMode
+      : 'today')
+  );
+
+  // Today (daily) view state
   const [data, setData] = useState<PaceData | null>(null);
   const [groupData, setGroupData] = useState<GroupData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [checksSheetOpen, setChecksSheetOpen] = useState(false);
+  const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
+  const [checkDetailOpen, setCheckDetailOpen] = useState(false);
+  const [enrichment, setEnrichment] = useState<EnrichmentData | null>(null);
+  const [groupEnrichment, setGroupEnrichment] = useState<GroupEnrichmentData | null>(null);
+  const [enrichmentLoading, setEnrichmentLoading] = useState(false);
 
+  // Period view state
+  const [periodData, setPeriodData] = useState<PeriodResponse | null>(null);
+  const [periodLoading, setPeriodLoading] = useState(false);
+
+  const handleViewChange = (newView: string) => {
+    const v = newView as PulseViewMode;
+    setViewMode(v);
+    const params = new URLSearchParams(searchParams.toString());
+    if (v === 'today') {
+      params.delete('view');
+    } else {
+      params.set('view', v);
+    }
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  // Fetch daily pace data (only in "today" mode)
   const fetchData = useCallback(async () => {
     if (!selectedVenue && !isAllVenues) return;
+    if (viewMode !== 'today') return;
 
     setLoading(true);
     setError(null);
@@ -644,18 +1054,106 @@ export default function LivePulsePage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedVenue, isAllVenues, selectedDate]);
+  }, [selectedVenue, isAllVenues, selectedDate, viewMode]);
 
-  // Fetch on mount, venue change, or date change
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // Fetch labor + comp enrichment (only in "today" mode)
+  const fetchEnrichment = useCallback(async () => {
+    if (!selectedVenue && !isAllVenues) return;
+    if (viewMode !== 'today') return;
+    setEnrichmentLoading(true);
+    try {
+      const venueParam = isAllVenues ? 'all' : selectedVenue!.id;
+      const dateParam = selectedDate ? `&date=${selectedDate}` : `&date=${new Date().toISOString().slice(0, 10)}`;
+      const res = await fetch(`/api/pulse/enrichment?venue_id=${venueParam}${dateParam}`);
+      if (!res.ok) return;
+      const json = await res.json();
+      if (isAllVenues) {
+        setGroupEnrichment(json);
+        setEnrichment(null);
+      } else {
+        setEnrichment(json);
+        setGroupEnrichment(null);
+      }
+    } catch {
+      // Non-critical — labor/comp cards just won't show
+    } finally {
+      setEnrichmentLoading(false);
+    }
+  }, [selectedVenue, isAllVenues, selectedDate, viewMode]);
 
-  // Auto-refresh every 5 minutes
+  // Fetch period aggregation data (WTD/PTD/YTD)
+  const fetchPeriodData = useCallback(async () => {
+    if (!selectedVenue && !isAllVenues) return;
+    if (viewMode === 'today') return;
+
+    setPeriodLoading(true);
+    setError(null);
+
+    try {
+      const venueParam = isAllVenues ? 'all' : selectedVenue!.id;
+      const dateParam = selectedDate || new Date().toISOString().slice(0, 10);
+      const res = await fetch(`/api/pulse/periods?view=${viewMode}&venue_id=${venueParam}&date=${dateParam}`);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      setPeriodData(json);
+      if (!selectedDate && json.date) {
+        setSelectedDate(json.date);
+      }
+      setLastRefreshed(new Date());
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPeriodLoading(false);
+    }
+  }, [selectedVenue, isAllVenues, selectedDate, viewMode]);
+
+  // Fetch on mount, venue change, date change, or view mode change
   useEffect(() => {
+    if (viewMode === 'today') {
+      fetchData();
+      fetchEnrichment();
+    } else {
+      fetchPeriodData();
+    }
+  }, [fetchData, fetchEnrichment, fetchPeriodData, viewMode]);
+
+  // Auto-refresh every 5 minutes (only in "today" mode)
+  useEffect(() => {
+    if (viewMode !== 'today') return;
     const interval = setInterval(fetchData, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [fetchData, viewMode]);
+
+  // Supabase Realtime: instant refresh when new snapshots are written
+  const supabaseRef = useRef(createClient());
+  useEffect(() => {
+    const venueFilter = isAllVenues
+      ? undefined
+      : selectedVenue?.id;
+
+    const channel = supabaseRef.current
+      .channel('pulse-snapshots')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sales_snapshots',
+          ...(venueFilter ? { filter: `venue_id=eq.${venueFilter}` } : {}),
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabaseRef.current.removeChannel(channel);
+    };
+  }, [selectedVenue, isAllVenues, fetchData]);
 
   const handleToday = () => {
     setSelectedDate(null); // null = let server compute today
@@ -687,13 +1185,23 @@ export default function LivePulsePage() {
               Updated {formatTime(lastRefreshed.toISOString())}
             </span>
           )}
+          {selectedVenue && !isAllVenues && viewMode === 'today' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setChecksSheetOpen(true)}
+            >
+              <Receipt className="h-4 w-4 mr-1.5" />
+              Checks
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchData}
-            disabled={loading}
+            onClick={viewMode === 'today' ? fetchData : fetchPeriodData}
+            disabled={loading || periodLoading}
           >
-            {loading ? (
+            {(loading || periodLoading) ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <RefreshCw className="h-4 w-4" />
@@ -702,6 +1210,16 @@ export default function LivePulsePage() {
           <VenueQuickSwitcher />
         </div>
       </div>
+
+      {/* View mode tabs */}
+      <Tabs value={viewMode} onValueChange={handleViewChange}>
+        <TabsList className="grid grid-cols-4 w-full max-w-sm">
+          <TabsTrigger value="today">Today</TabsTrigger>
+          <TabsTrigger value="wtd">WTD</TabsTrigger>
+          <TabsTrigger value="ptd">PTD</TabsTrigger>
+          <TabsTrigger value="ytd">YTD</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* No venue selected */}
       {!selectedVenue && !isAllVenues && (
@@ -722,19 +1240,126 @@ export default function LivePulsePage() {
       )}
 
       {/* Loading state */}
-      {loading && !data && !groupData && (selectedVenue || isAllVenues) && (
+      {((loading || periodLoading) && !data && !groupData && !periodData && (selectedVenue || isAllVenues)) && (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       )}
 
+      {/* ═══ PERIOD VIEWS (WTD / PTD / YTD) ═══ */}
+      {viewMode !== 'today' && periodData && (
+        <>
+          {/* Group period view */}
+          {isAllVenues && periodData.venues && (
+            <PeriodGroupSummary data={periodData} />
+          )}
+
+          {/* Single venue period view */}
+          {!isAllVenues && periodData.venue && (
+            <>
+              {/* Period date range banner */}
+              <div className="text-sm text-muted-foreground">
+                {VIEW_LABELS[viewMode]}: {formatDateRange(periodData.period_start, periodData.period_end)}
+                <span className="ml-2 text-xs">(vs {formatDateRange(periodData.prior_start, periodData.prior_end)})</span>
+              </div>
+
+              {/* Period gauge cards */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <PeriodGaugeCard
+                  title="Net Revenue"
+                  icon={DollarSign}
+                  current={periodData.venue.current.net_sales}
+                  prior={periodData.venue.prior.net_sales}
+                  variancePct={periodData.venue.variance.net_sales_pct}
+                  daysCount={periodData.venue.current.days_count}
+                />
+                <PeriodGaugeCard
+                  title="Covers"
+                  icon={Users}
+                  current={periodData.venue.current.covers_count}
+                  prior={periodData.venue.prior.covers_count}
+                  variancePct={periodData.venue.variance.covers_pct}
+                  format="number"
+                />
+                <PeriodGaugeCard
+                  title="Avg Check"
+                  icon={TrendingUp}
+                  current={periodData.venue.current.avg_check}
+                  prior={periodData.venue.prior.avg_check}
+                  variancePct={periodData.venue.variance.avg_check_pct}
+                />
+                <PeriodCategoryMixCard
+                  foodSales={periodData.venue.current.food_sales}
+                  bevSales={periodData.venue.current.beverage_sales}
+                  priorBevPct={periodData.venue.prior.beverage_pct}
+                />
+              </div>
+
+              {/* Labor + Comps for period */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <LaborCard
+                  labor={periodData.venue.labor_current ? {
+                    total_hours: periodData.venue.labor_current.total_hours,
+                    labor_cost: periodData.venue.labor_current.labor_cost,
+                    labor_pct: periodData.venue.labor_current.labor_pct,
+                    splh: periodData.venue.labor_current.splh,
+                    ot_hours: periodData.venue.labor_current.ot_hours,
+                    covers_per_labor_hour: null,
+                    employee_count: periodData.venue.labor_current.employee_count,
+                    punch_count: 0,
+                    foh: periodData.venue.labor_current.foh_cost > 0 ? { hours: 0, cost: periodData.venue.labor_current.foh_cost, employee_count: 0 } : null,
+                    boh: periodData.venue.labor_current.boh_cost > 0 ? { hours: 0, cost: periodData.venue.labor_current.boh_cost, employee_count: 0 } : null,
+                    other: null,
+                  } : null}
+                />
+                <CompCard
+                  comps={periodData.venue.current.net_sales > 0 ? {
+                    total: periodData.venue.current.comps_total,
+                    pct: (periodData.venue.current.comps_total / periodData.venue.current.net_sales) * 100,
+                    net_sales: periodData.venue.current.net_sales,
+                    exception_count: 0,
+                    critical_count: 0,
+                    warning_count: 0,
+                    top_exceptions: [],
+                  } : null}
+                />
+              </div>
+
+              {/* Period day chart */}
+              {periodData.venue.days.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Daily Revenue vs Prior</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PeriodDayChart days={periodData.venue.days} />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Period daily table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm font-medium">Daily Breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PeriodDayTable days={periodData.venue.days} />
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </>
+      )}
+
+      {/* ═══ TODAY (DAILY) VIEW ═══ */}
+
       {/* Group-wide view */}
-      {isAllVenues && groupData && (
-        <GroupSummary data={groupData} />
+      {viewMode === 'today' && isAllVenues && groupData && (
+        <GroupSummary data={groupData} enrichment={groupEnrichment} enrichmentLoading={enrichmentLoading} />
       )}
 
       {/* Single venue view */}
-      {data && selectedVenue && !isAllVenues && (
+      {viewMode === 'today' && data && selectedVenue && !isAllVenues && (
         <>
           {/* Overall status */}
           <div className="flex items-center gap-3">
@@ -787,6 +1412,12 @@ export default function LivePulsePage() {
             />
           </div>
 
+          {/* Labor + Comps */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <LaborCard labor={enrichment?.labor ?? null} loading={enrichmentLoading} />
+            <CompCard comps={enrichment?.comps ?? null} loading={enrichmentLoading} />
+          </div>
+
           {/* Cumulative chart */}
           {data.snapshots.length > 0 && (
             <Card>
@@ -812,6 +1443,31 @@ export default function LivePulsePage() {
               <SnapshotTable snapshots={data.snapshots} />
             </CardContent>
           </Card>
+        </>
+      )}
+
+      {/* Check drill-down */}
+      {selectedVenue && !isAllVenues && (
+        <>
+          <CheckListSheet
+            isOpen={checksSheetOpen}
+            onClose={() => setChecksSheetOpen(false)}
+            venueId={selectedVenue.id}
+            venueName={selectedVenue.name}
+            date={selectedDate || new Date().toISOString().slice(0, 10)}
+            onSelectCheck={(id) => {
+              setSelectedCheckId(id);
+              setCheckDetailOpen(true);
+            }}
+          />
+          <CheckDetailDialog
+            checkId={selectedCheckId}
+            isOpen={checkDetailOpen}
+            onClose={() => {
+              setCheckDetailOpen(false);
+              setSelectedCheckId(null);
+            }}
+          />
         </>
       )}
     </div>

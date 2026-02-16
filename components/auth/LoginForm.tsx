@@ -30,10 +30,9 @@ export function LoginForm() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Redirect to original page (or dashboard)
+      // Hard navigate so the browser sends the fresh auth cookies
       const redirectTo = searchParams.get('redirect') || '/';
-      router.push(redirectTo);
-      router.refresh();
+      window.location.href = redirectTo;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

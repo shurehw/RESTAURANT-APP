@@ -977,6 +977,197 @@ export async function fetchCompExceptions(
 }
 
 // ============================================================================
+// CHECK DRILL-DOWN (on-demand, user-facing)
+// ============================================================================
+
+export interface CheckSummary {
+  id: string;
+  table_name: string;
+  employee_name: string;
+  guest_count: number;
+  sub_total: number;
+  revenue_total: number;
+  comp_total: number;
+  void_total: number;
+  open_time: string;
+  close_time: string | null;
+  is_open: boolean;
+  payment_total: number;
+  tip_total: number;
+}
+
+/**
+ * Fetch all checks for a venue on a given date.
+ * Single query with LEFT JOIN LATERAL for payment totals (no N+1).
+ * Client-side sorting/filtering — returns all checks in one call.
+ */
+export async function fetchChecksForDate(
+  locationUuids: string[],
+  date: string
+): Promise<CheckSummary[]> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      c.id,
+      c.table_name,
+      c.employee_name,
+      c.guest_count,
+      c.sub_total,
+      c.revenue_total,
+      c.comp_total,
+      c.void_total,
+      c.open_time,
+      c.close_time,
+      (c.close_time IS NULL) as is_open,
+      COALESCE(pay.payment_total, 0) as payment_total,
+      COALESCE(pay.tip_total, 0) as tip_total
+    FROM public.tipsee_checks c
+    LEFT JOIN LATERAL (
+      SELECT
+        SUM(amount) as payment_total,
+        SUM(COALESCE(tip_amount, 0)) as tip_total
+      FROM public.tipsee_payments
+      WHERE check_id = c.id
+    ) pay ON true
+    WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
+    ORDER BY c.open_time DESC`,
+    [locationUuids, date]
+  );
+
+  return result.rows.map(row => {
+    const r = cleanRow(row);
+    return {
+      id: r.id,
+      table_name: r.table_name || 'N/A',
+      employee_name: r.employee_name || 'Unknown',
+      guest_count: r.guest_count || 0,
+      sub_total: r.sub_total || 0,
+      revenue_total: r.revenue_total || 0,
+      comp_total: r.comp_total || 0,
+      void_total: r.void_total || 0,
+      open_time: r.open_time,
+      close_time: r.close_time || null,
+      is_open: r.is_open,
+      payment_total: r.payment_total || 0,
+      tip_total: r.tip_total || 0,
+    } as CheckSummary;
+  });
+}
+
+export interface CheckItemDetail {
+  name: string;
+  category: string;
+  parent_category: string;
+  quantity: number;
+  price: number;
+  comp_total: number;
+  void_value: number;
+  is_beverage: boolean;
+}
+
+export interface CheckPaymentDetail {
+  cc_name: string | null;
+  amount: number;
+  tip_amount: number;
+}
+
+export interface CheckDetail {
+  id: string;
+  table_name: string;
+  employee_name: string;
+  employee_role_name: string;
+  guest_count: number;
+  sub_total: number;
+  revenue_total: number;
+  comp_total: number;
+  void_total: number;
+  open_time: string;
+  close_time: string | null;
+  voidcomp_reason_text: string;
+  items: CheckItemDetail[];
+  payments: CheckPaymentDetail[];
+}
+
+/**
+ * Fetch full detail for a single check: header + items + payments.
+ * Three parallel queries to avoid Cartesian product from JOINs.
+ */
+export async function fetchCheckDetail(
+  checkId: string
+): Promise<CheckDetail | null> {
+  const pool = getTipseePool();
+  const BEV_PATTERNS = ['bev', 'wine', 'beer', 'liquor', 'cocktail'];
+
+  const [checkResult, itemsResult, paymentsResult] = await Promise.all([
+    pool.query(
+      `SELECT id, table_name, employee_name, employee_role_name,
+        guest_count, sub_total, revenue_total, comp_total,
+        void_total, open_time, close_time, voidcomp_reason_text
+      FROM public.tipsee_checks WHERE id = $1`,
+      [checkId]
+    ),
+    pool.query(
+      `SELECT name, category, parent_category, quantity, price,
+        COALESCE(comp_total, 0) as comp_total,
+        COALESCE(void_value, 0) as void_value
+      FROM public.tipsee_check_items
+      WHERE check_id = $1
+      ORDER BY parent_category, name`,
+      [checkId]
+    ),
+    pool.query(
+      `SELECT cc_name, amount, COALESCE(tip_amount, 0) as tip_amount
+      FROM public.tipsee_payments
+      WHERE check_id = $1
+      ORDER BY amount DESC`,
+      [checkId]
+    ),
+  ]);
+
+  if (checkResult.rows.length === 0) return null;
+
+  const c = cleanRow(checkResult.rows[0]);
+
+  return {
+    id: c.id,
+    table_name: c.table_name || 'N/A',
+    employee_name: c.employee_name || 'Unknown',
+    employee_role_name: c.employee_role_name || '',
+    guest_count: c.guest_count || 0,
+    sub_total: c.sub_total || 0,
+    revenue_total: c.revenue_total || 0,
+    comp_total: c.comp_total || 0,
+    void_total: c.void_total || 0,
+    open_time: c.open_time,
+    close_time: c.close_time || null,
+    voidcomp_reason_text: c.voidcomp_reason_text || '',
+    items: itemsResult.rows.map(row => {
+      const r = cleanRow(row);
+      const parentLower = (r.parent_category || '').toLowerCase();
+      return {
+        name: r.name,
+        category: r.category || '',
+        parent_category: r.parent_category || 'Other',
+        quantity: r.quantity || 1,
+        price: r.price || 0,
+        comp_total: r.comp_total || 0,
+        void_value: r.void_value || 0,
+        is_beverage: BEV_PATTERNS.some(p => parentLower.includes(p)),
+      };
+    }),
+    payments: paymentsResult.rows.map(row => {
+      const r = cleanRow(row);
+      return {
+        cc_name: r.cc_name || null,
+        amount: r.amount || 0,
+        tip_amount: r.tip_amount || 0,
+      };
+    }),
+  };
+}
+
+// ============================================================================
 // LABOR DATA (from TipSee punches table via 7Shifts)
 // ============================================================================
 
