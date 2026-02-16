@@ -975,7 +975,7 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════
 
-const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
 
 export default function LivePulsePage() {
   const { selectedVenue, isAllVenues } = useVenue();
