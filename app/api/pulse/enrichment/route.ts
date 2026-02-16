@@ -124,6 +124,42 @@ function buildEnrichmentFromSnapshot(
   return { venue_id: venueId, venue_name: venueName, labor, comps };
 }
 
+async function fetchLaborDayFact(
+  svc: any,
+  venueId: string,
+  date: string,
+  netSales: number,
+  covers: number
+): Promise<VenueEnrichment['labor']> {
+  const { data } = await svc
+    .from('labor_day_facts')
+    .select('*')
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .maybeSingle();
+
+  if (!data || (Number(data.total_hours) === 0 && Number(data.labor_cost) === 0)) return null;
+
+  const totalHours = Number(data.total_hours) || 0;
+  const laborCost = Number(data.labor_cost) || 0;
+  const buildDept = (h: number, c: number, e: number) =>
+    (h > 0 || c > 0) ? { hours: h, cost: c, employee_count: e } : null;
+
+  return {
+    total_hours: totalHours,
+    labor_cost: laborCost,
+    labor_pct: netSales > 0 ? (laborCost / netSales) * 100 : 0,
+    splh: totalHours > 0 ? netSales / totalHours : 0,
+    ot_hours: Number(data.ot_hours) || 0,
+    covers_per_labor_hour: totalHours > 0 ? covers / totalHours : null,
+    employee_count: Number(data.employee_count) || 0,
+    punch_count: Number(data.punch_count) || 0,
+    foh: buildDept(Number(data.foh_hours) || 0, Number(data.foh_cost) || 0, Number(data.foh_employee_count) || 0),
+    boh: buildDept(Number(data.boh_hours) || 0, Number(data.boh_cost) || 0, Number(data.boh_employee_count) || 0),
+    other: buildDept(Number(data.other_hours) || 0, Number(data.other_cost) || 0, Number(data.other_employee_count) || 0),
+  };
+}
+
 async function handleSingleVenue(venueId: string, date: string) {
   try {
     const svc = getServiceClient();
@@ -136,6 +172,17 @@ async function handleSingleVenue(venueId: string, date: string) {
 
     const venueName = venueResult.data?.name || venueId;
     const result = buildEnrichmentFromSnapshot(venueId, venueName, snapshot);
+
+    // Fallback: if snapshot has no labor data, check labor_day_facts (synced ETL)
+    if (!result.labor) {
+      const laborFallback = await fetchLaborDayFact(
+        svc, venueId, date,
+        Number(snapshot?.net_sales) || 0,
+        Number(snapshot?.covers_count) || 0
+      );
+      if (laborFallback) result.labor = laborFallback;
+    }
+
     return NextResponse.json(result);
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch enrichment';
@@ -167,6 +214,20 @@ async function handleGroupEnrichment(date: string) {
     const venues: VenueEnrichment[] = venueIds.map((vid, i) =>
       buildEnrichmentFromSnapshot(vid, nameMap.get(vid) || vid, snapshots[i])
     );
+
+    // Fallback: check labor_day_facts for venues missing labor from snapshot
+    const missingLabor = venues.filter(v => !v.labor);
+    if (missingLabor.length > 0) {
+      const laborFallbacks = await Promise.all(
+        missingLabor.map(v => {
+          const snap = snapshots[venueIds.indexOf(v.venue_id)];
+          return fetchLaborDayFact(svc, v.venue_id, date, Number(snap?.net_sales) || 0, Number(snap?.covers_count) || 0);
+        })
+      );
+      missingLabor.forEach((v, i) => {
+        if (laborFallbacks[i]) v.labor = laborFallbacks[i];
+      });
+    }
 
     // Compute group totals
     let totalLaborCost = 0;
