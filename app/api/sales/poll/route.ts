@@ -127,6 +127,11 @@ async function processVenue(venueId: string): Promise<{
     ? await fetchSimphonyIntraDaySummary(locationUuids, businessDate)
     : await fetchIntraDaySummary(locationUuids, businessDate);
 
+  // Skip if no sales activity yet
+  if (summary.net_sales === 0 && summary.total_checks === 0) {
+    return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'no_sales' };
+  }
+
   // Fetch labor + comp data in parallel (non-blocking — sales snapshot still stores even if these fail)
   const [laborResult, compResult] = await Promise.allSettled([
     fetchLaborSummary(locationUuids[0], businessDate, summary.net_sales, summary.total_covers),
