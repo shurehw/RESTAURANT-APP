@@ -94,6 +94,8 @@ export function CheckListSheet({
   const [simphonyMessage, setSimphonyMessage] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [allLoaded, setAllLoaded] = useState(false);
+  const allLoadedRef = useRef(false);
   const cacheKey = useRef('');
 
   const fetchChecks = (offset: number, append: boolean) => {
@@ -120,7 +122,9 @@ export function CheckListSheet({
           setChecks(prev => append ? [...prev, ...(data.checks || [])] : data.checks || []);
           setPosType(data.pos_type || 'upserve');
           setTotal(data.total || 0);
-          setHasMore(data.has_more || false);
+          const more = data.has_more || false;
+          setHasMore(more);
+          if (!more) { setAllLoaded(true); allLoadedRef.current = true; }
           if (data.message) setSimphonyMessage(data.message);
           if (isInitial) cacheKey.current = `${venueId}-${date}`;
         }
@@ -132,10 +136,39 @@ export function CheckListSheet({
       });
   };
 
+  /** Fetch all checks (limit=0) so client-side search/filter/sort works on the full set */
+  const fetchAllChecks = () => {
+    if (allLoadedRef.current) return;
+    allLoadedRef.current = true;
+    setAllLoaded(true);
+    setLoadingMore(true);
+
+    fetch(`/api/sales/checks?venue_id=${venueId}&date=${date}&limit=0`)
+      .then(res => {
+        if (!res.ok) throw new Error(`Server error (${res.status})`);
+        return res.json();
+      })
+      .then(data => {
+        if (!data.error) {
+          setChecks(data.checks || []);
+          setTotal(data.total || 0);
+          setHasMore(false);
+        }
+      })
+      .catch(() => {
+        // Revert so user can retry
+        allLoadedRef.current = false;
+        setAllLoaded(false);
+      })
+      .finally(() => setLoadingMore(false));
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     const key = `${venueId}-${date}`;
     if (cacheKey.current === key && checks.length > 0) return;
+    allLoadedRef.current = false;
+    setAllLoaded(false);
     fetchChecks(0, false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, venueId, date]);
@@ -185,6 +218,7 @@ export function CheckListSheet({
   }, [filtered]);
 
   const cycleSortField = () => {
+    fetchAllChecks();
     setSortField(prev => {
       const idx = SORT_ORDER.indexOf(prev);
       return SORT_ORDER[(idx + 1) % SORT_ORDER.length];
@@ -192,6 +226,7 @@ export function CheckListSheet({
   };
 
   const toggleFilter = (flag: FilterFlag) => {
+    fetchAllChecks();
     setFilters(prev => {
       const next = new Set(prev);
       if (next.has(flag)) next.delete(flag);
@@ -244,7 +279,7 @@ export function CheckListSheet({
             <Input
               placeholder="Search server or table..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { fetchAllChecks(); setSearch(e.target.value); }}
               className="pl-8 h-9 text-sm"
             />
           </div>
@@ -260,7 +295,7 @@ export function CheckListSheet({
           {uniqueServers.length > 1 && (
             <select
               value={serverFilter}
-              onChange={e => setServerFilter(e.target.value)}
+              onChange={e => { fetchAllChecks(); setServerFilter(e.target.value); }}
               className="h-7 text-[11px] px-2 rounded-md border border-input bg-background text-foreground shrink-0 appearance-none cursor-pointer"
             >
               <option value="">All Servers</option>
@@ -274,7 +309,7 @@ export function CheckListSheet({
           {uniqueTables.length > 1 && (
             <select
               value={tableFilter}
-              onChange={e => setTableFilter(e.target.value)}
+              onChange={e => { fetchAllChecks(); setTableFilter(e.target.value); }}
               className="h-7 text-[11px] px-2 rounded-md border border-input bg-background text-foreground shrink-0 appearance-none cursor-pointer"
             >
               <option value="">All Tables</option>
@@ -385,7 +420,7 @@ export function CheckListSheet({
           ))}
 
           {/* Load more */}
-          {!loading && hasMore && !hasActiveFilters && (
+          {!loading && hasMore && !allLoaded && (
             <button
               onClick={handleLoadMore}
               disabled={loadingMore}

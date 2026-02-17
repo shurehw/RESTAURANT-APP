@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Send, Bot, User, Loader2, RotateCcw } from 'lucide-react';
+import { Send, Terminal, User, Loader2, RotateCcw } from 'lucide-react';
 import { ChatMarkdown } from './ChatMarkdown';
 
 interface Message {
@@ -13,7 +13,7 @@ interface Message {
 
 const INITIAL_MESSAGE: Message = {
   role: 'assistant',
-  content: 'Hello! I\'m your OpsOS assistant. I can query your POS data directly — ask me about sales, servers, menu items, comps, labor, reservations, and more.',
+  content: 'Query portfolio data, generate insights, or initiate actions.',
 };
 
 export function ChatInterface() {
@@ -102,7 +102,7 @@ export function ChatInterface() {
             className="text-xs"
           >
             <RotateCcw className="w-3 h-3 mr-1.5" />
-            New Chat
+            New Session
           </Button>
         </div>
       )}
@@ -117,8 +117,8 @@ export function ChatInterface() {
             }`}
           >
             {message.role === 'assistant' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brass flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+                <Terminal className="w-4 h-4 text-brass" />
               </div>
             )}
 
@@ -126,7 +126,7 @@ export function ChatInterface() {
               className={`rounded-lg px-4 py-3 ${
                 message.role === 'user'
                   ? 'max-w-[70%] bg-opsos-sage-600 text-white'
-                  : 'max-w-[85%] bg-gray-100 text-gray-900'
+                  : 'max-w-[85%] bg-muted text-foreground'
               }`}
             >
               {message.role === 'assistant' ? (
@@ -146,11 +146,11 @@ export function ChatInterface() {
 
         {loading && (
           <div className="flex gap-3 justify-start">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brass flex items-center justify-center">
-              <Bot className="w-5 h-5 text-white" />
+            <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+              <Terminal className="w-4 h-4 text-brass" />
             </div>
-            <div className="bg-gray-100 rounded-lg px-4 py-3">
-              <Loader2 className="w-5 h-5 animate-spin text-brass" />
+            <div className="bg-muted rounded-lg px-4 py-3">
+              <Loader2 className="w-4 h-4 animate-spin text-brass" />
             </div>
           </div>
         )}
@@ -159,14 +159,14 @@ export function ChatInterface() {
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-gray-200 p-4 bg-white">
+      <div className="border-t border-border p-4">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about sales, labor, inventory, budgets..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brass focus:border-transparent"
+            placeholder="Query sales, labor, comps, inventory..."
+            className="flex-1 px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-brass text-sm"
             disabled={loading}
           />
           <Button
@@ -182,28 +182,28 @@ export function ChatInterface() {
         <div className="mt-3 flex flex-wrap gap-2">
           <button
             onClick={() => setInput('What were last night\'s sales?')}
-            className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
+            className="text-xs px-3 py-1 bg-muted hover:bg-muted/80 rounded-full text-muted-foreground hover:text-foreground transition-colors"
             disabled={loading}
           >
             Last night's sales
           </button>
           <button
             onClick={() => setInput('Who was my top server last night?')}
-            className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
+            className="text-xs px-3 py-1 bg-muted hover:bg-muted/80 rounded-full text-muted-foreground hover:text-foreground transition-colors"
             disabled={loading}
           >
             Top server
           </button>
           <button
             onClick={() => setInput('Show me comps from last night')}
-            className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
+            className="text-xs px-3 py-1 bg-muted hover:bg-muted/80 rounded-full text-muted-foreground hover:text-foreground transition-colors"
             disabled={loading}
           >
             Comp summary
           </button>
           <button
             onClick={() => setInput('What were my top selling items this week?')}
-            className="text-xs px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-700"
+            className="text-xs px-3 py-1 bg-muted hover:bg-muted/80 rounded-full text-muted-foreground hover:text-foreground transition-colors"
             disabled={loading}
           >
             Top menu items

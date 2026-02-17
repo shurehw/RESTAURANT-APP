@@ -129,8 +129,8 @@ export function PeriodCategoryMixCard({
 
         {total > 0 && (
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-            <div className="bg-orange-500 transition-all" style={{ width: `${foodPct}%` }} />
-            <div className="bg-purple-500 transition-all" style={{ width: `${bevPct}%` }} />
+            <div className="bg-opsos-brass transition-all" style={{ width: `${foodPct}%` }} />
+            <div className="bg-opsos-sage transition-all" style={{ width: `${bevPct}%` }} />
           </div>
         )}
 

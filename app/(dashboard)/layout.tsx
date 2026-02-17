@@ -90,7 +90,7 @@ export default async function DashboardLayout({
           <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
 
-        {/* Floating Chat Widget - Always Available */}
+        {/* Command Panel */}
         <FloatingChatWidget />
       </div>
     </VenueProvider>

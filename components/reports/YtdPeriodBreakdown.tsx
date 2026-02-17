@@ -123,12 +123,12 @@ export function YtdPeriodBreakdown({ periods }: { periods: YtdPeriodRow[] }) {
           <Area
             type="monotone"
             dataKey="Current Year"
-            stroke="#10b981"
+            stroke="#FF5A1F"
             strokeWidth={2.5}
-            fill="#10b981"
+            fill="#FF5A1F"
             fillOpacity={0.08}
-            dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#10b981' }}
+            dot={{ r: 4, fill: '#FF5A1F', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#FF5A1F' }}
           />
         </ComposedChart>
       </ResponsiveContainer>
@@ -137,11 +137,11 @@ export function YtdPeriodBreakdown({ periods }: { periods: YtdPeriodRow[] }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+            <div className="w-4 h-0.5 bg-opsos-brass rounded" />
             <span>Current Year</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-opsos-sage-400" />
             <span>Prior Year</span>
           </div>
         </div>

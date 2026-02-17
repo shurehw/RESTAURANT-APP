@@ -4,6 +4,7 @@
  */
 
 import { Pool } from 'pg';
+import { getServiceClient } from '@/lib/supabase/service';
 
 // TipSee database configuration
 const TIPSEE_CONFIG = {
@@ -480,6 +481,73 @@ export async function fetchNightlyReport(
   };
 }
 
+/**
+ * Build a NightlyReportData from venue_day_facts (Supabase).
+ * Used for Avero venues which don't have data in tipsee_checks/tipsee_check_items.
+ * Returns summary-level data with empty detail arrays (Avero has no server/item breakdown).
+ */
+export async function fetchNightlyReportFromFacts(
+  date: string,
+  venueId: string
+): Promise<NightlyReportData> {
+  const supabase = getServiceClient();
+
+  const { data: fact } = await (supabase as any)
+    .from('venue_day_facts')
+    .select('*')
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .maybeSingle();
+
+  const summary = fact
+    ? {
+        trading_day: date,
+        total_checks: fact.checks_count || 0,
+        total_covers: fact.covers_count || 0,
+        net_sales: parseFloat(fact.net_sales) || 0,
+        sub_total: parseFloat(fact.net_sales) || 0,
+        total_tax: parseFloat(fact.taxes_total) || 0,
+        total_comps: parseFloat(fact.comps_total) || 0,
+        total_voids: parseFloat(fact.voids_total) || 0,
+      }
+    : {
+        trading_day: date,
+        total_checks: 0,
+        total_covers: 0,
+        net_sales: 0,
+        sub_total: 0,
+        total_tax: 0,
+        total_comps: 0,
+        total_voids: 0,
+      };
+
+  // Build category breakdown from facts if available
+  const salesByCategory: NightlyReportData['salesByCategory'] = [];
+  if (fact) {
+    const food = parseFloat(fact.food_sales) || 0;
+    const bev = parseFloat(fact.beverage_sales) || 0;
+    const gross = parseFloat(fact.gross_sales) || 0;
+    const other = Math.max(0, gross - food - bev);
+    if (food > 0) salesByCategory.push({ category: 'Food', gross_sales: food, comps: 0, voids: 0, net_sales: food });
+    if (bev > 0) salesByCategory.push({ category: 'Beverage', gross_sales: bev, comps: 0, voids: 0, net_sales: bev });
+    if (other > 0) salesByCategory.push({ category: 'Other', gross_sales: other, comps: 0, voids: 0, net_sales: other });
+  }
+
+  return {
+    date,
+    summary: summary as NightlyReportData['summary'],
+    salesByCategory,
+    salesBySubcategory: [],
+    servers: [],
+    menuItems: [],
+    discounts: [],
+    detailedComps: [],
+    logbook: null,
+    notableGuests: [],
+    peopleWeKnow: [],
+  };
+}
+
 export interface TipseeLocation {
   name: string;
   uuid: string;
@@ -584,11 +652,11 @@ export async function fetchIntraDaySummary(
 
 /**
  * Detect POS type for a set of location UUIDs.
- * Returns 'simphony' | 'upserve' (default).
+ * Returns 'simphony' | 'upserve' | 'avero'.
  */
 export async function getPosTypeForLocations(
   locationUuids: string[]
-): Promise<'simphony' | 'upserve'> {
+): Promise<'simphony' | 'upserve' | 'avero'> {
   if (locationUuids.length === 0) return 'upserve';
 
   const pool = getTipseePool();
@@ -599,8 +667,10 @@ export async function getPosTypeForLocations(
     [locationUuids]
   );
 
-  if (result.rows.length > 0 && result.rows[0].pos_type === 'simphony') {
-    return 'simphony';
+  if (result.rows.length > 0) {
+    const pt = result.rows[0].pos_type;
+    if (pt === 'simphony') return 'simphony';
+    if (pt === 'avero') return 'avero';
   }
   return 'upserve';
 }
@@ -1077,15 +1147,7 @@ export async function fetchChecksForDate(
 ): Promise<{ checks: CheckSummary[]; total: number }> {
   const pool = getTipseePool();
 
-  const [countResult, result] = await Promise.all([
-    pool.query(
-      `SELECT COUNT(*) as total
-      FROM public.tipsee_checks
-      WHERE location_uuid = ANY($1) AND trading_day = $2`,
-      [locationUuids, date]
-    ),
-    pool.query(
-      `SELECT
+  const baseSql = `SELECT
         c.id,
         c.table_name,
         c.employee_name,
@@ -1108,10 +1170,21 @@ export async function fetchChecksForDate(
         WHERE check_id = c.id
       ) pay ON true
       WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
-      ORDER BY c.open_time DESC
-      LIMIT $3 OFFSET $4`,
-      [locationUuids, date, limit, offset]
+      ORDER BY c.open_time DESC`;
+
+  // limit=0 means fetch all (no LIMIT/OFFSET)
+  const checksQuery = limit > 0
+    ? pool.query(`${baseSql} LIMIT $3 OFFSET $4`, [locationUuids, date, limit, offset])
+    : pool.query(baseSql, [locationUuids, date]);
+
+  const [countResult, result] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*) as total
+      FROM public.tipsee_checks
+      WHERE location_uuid = ANY($1) AND trading_day = $2`,
+      [locationUuids, date]
     ),
+    checksQuery,
   ]);
 
   const total = parseInt(countResult.rows[0]?.total || '0', 10);

@@ -1,11 +1,11 @@
 /**
- * OpsOS AI Assistant Page
- * Natural language interface for analyzing operations
+ * OpsOS Command — Full View
+ * System interface for querying portfolio data, generating insights, initiating actions.
  */
 
 import { ChatInterface } from '@/components/chatbot/ChatInterface';
 import { Card } from '@/components/ui/card';
-import { Bot } from 'lucide-react';
+import { Terminal } from 'lucide-react';
 
 export default function AssistantPage() {
   return (
@@ -13,19 +13,19 @@ export default function AssistantPage() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-brass flex items-center justify-center">
-            <Bot className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+            <Terminal className="w-5 h-5 text-brass" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">AI Assistant</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Ask questions about your sales, labor, inventory, and operations
+            <h1 className="text-3xl font-bold tracking-tight">OpsOS Command</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Query portfolio data, generate insights, initiate actions.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Chat Interface */}
+      {/* Command Interface */}
       <Card className="flex-1 flex flex-col overflow-hidden">
         <ChatInterface />
       </Card>

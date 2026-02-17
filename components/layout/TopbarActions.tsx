@@ -4,6 +4,7 @@ import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
 import { VendorOnboardingLinkDisplay } from './VendorOnboardingLinkDisplay';
 import { IntegrationStatus } from './IntegrationStatus';
+import { CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { useEffect } from 'react';
 
@@ -100,6 +101,9 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
           </select>
         </div>
       )}
+
+      {/* Command Panel Trigger */}
+      <CommandTrigger />
 
       {/* Team Settings */}
       <button

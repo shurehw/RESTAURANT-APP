@@ -545,15 +545,22 @@ export async function syncVenueDay(
       [tipseeLocationUuid, businessDate]
     );
 
-    const summary = summaryResult.rows[0] || {
-      total_checks: 0,
-      total_covers: 0,
-      gross_sales: 0,
-      net_sales: 0,
-      total_tax: 0,
-      total_comps: 0,
-      total_voids: 0,
-    };
+    const rawSummary = summaryResult.rows[0];
+    // Skip dates with no POS data — do NOT create $0 placeholder rows
+    if (!rawSummary || (parseFloat(rawSummary.net_sales) === 0 && parseInt(rawSummary.total_checks) === 0)) {
+      await (supabase as any).from('etl_runs').update({
+        status: 'success', finished_at: new Date().toISOString(),
+        rows_extracted: 0, rows_loaded: 0,
+      }).eq('id', etlRunId);
+
+      return {
+        success: true, etl_run_id: etlRunId, venue_id: venueId,
+        business_date: businessDate, rows_extracted: 0, rows_loaded: 0,
+        duration_ms: Date.now() - startTime,
+      };
+    }
+
+    const summary = rawSummary;
     rowsExtracted += summaryResult.rowCount || 0;
 
     // 2. Extract category breakdown

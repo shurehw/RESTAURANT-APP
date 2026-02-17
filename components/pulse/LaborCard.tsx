@@ -122,7 +122,7 @@ export function LaborCard({ labor, loading, netSales }: { labor: LaborData | nul
             <div className="flex flex-wrap gap-x-3 text-[11px] text-muted-foreground mb-1">
               {fohCost > 0 && (
                 <span>
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-opsos-brass mr-1" />
                   FOH {fmt(fohCost)}
                   {netSales && netSales > 0 && (
                     <span className="ml-0.5 font-medium text-foreground">({((fohCost / netSales) * 100).toFixed(1)}%)</span>
@@ -131,7 +131,7 @@ export function LaborCard({ labor, loading, netSales }: { labor: LaborData | nul
               )}
               {bohCost > 0 && (
                 <span>
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-500 mr-1" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-opsos-sage mr-1" />
                   BOH {fmt(bohCost)}
                   {netSales && netSales > 0 && (
                     <span className="ml-0.5 font-medium text-foreground">({((bohCost / netSales) * 100).toFixed(1)}%)</span>
@@ -151,13 +151,13 @@ export function LaborCard({ labor, loading, netSales }: { labor: LaborData | nul
             <div className="h-2 rounded-full bg-muted overflow-hidden flex">
               {fohPct > 0 && (
                 <div
-                  className="bg-blue-500 h-full transition-all"
+                  className="bg-opsos-brass h-full transition-all"
                   style={{ width: `${fohPct}%` }}
                 />
               )}
               {bohPct > 0 && (
                 <div
-                  className="bg-orange-500 h-full transition-all"
+                  className="bg-opsos-sage h-full transition-all"
                   style={{ width: `${bohPct}%` }}
                 />
               )}

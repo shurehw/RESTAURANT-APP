@@ -71,8 +71,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '50', 10), 200);
-    const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0', 10);
+    const rawLimit = parseInt(request.nextUrl.searchParams.get('limit') || '50', 10);
+    const limit = rawLimit === 0 ? 0 : Math.min(rawLimit, 200); // 0 = fetch all
+    const offset = limit === 0 ? 0 : parseInt(request.nextUrl.searchParams.get('offset') || '0', 10);
 
     const { checks, total } = await fetchChecksForDate(locationUuids, date, limit, offset);
     return NextResponse.json({

@@ -355,16 +355,20 @@ function buildWeekBreakdown(days: PeriodDayRow[], periodStart: string): PtdWeekR
         end_date: wEnd.toISOString().split('T')[0],
         net_sales: 0,
         covers: 0,
-        prior_net_sales: 0,
-        prior_covers: 0,
+        prior_net_sales: null,
+        prior_covers: null,
       });
     }
 
     const w = weeks.get(weekNum)!;
     w.net_sales += d.net_sales;
     w.covers += d.covers_count;
-    w.prior_net_sales = (w.prior_net_sales || 0) + (d.prior_net_sales || 0);
-    w.prior_covers = (w.prior_covers || 0) + (d.prior_covers || 0);
+    if (d.prior_net_sales != null) {
+      w.prior_net_sales = (w.prior_net_sales || 0) + d.prior_net_sales;
+    }
+    if (d.prior_covers != null) {
+      w.prior_covers = (w.prior_covers || 0) + d.prior_covers;
+    }
   }
 
   return Array.from(weeks.values()).sort((a, b) => a.week - b.week);

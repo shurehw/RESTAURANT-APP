@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchNightlyReport, fetchTipseeLocations } from '@/lib/database/tipsee';
+import { fetchNightlyReport, fetchNightlyReportFromFacts, fetchTipseeLocations, getPosTypeForLocations } from '@/lib/database/tipsee';
 import { getServiceClient } from '@/lib/supabase/service';
 
 // Default location (The Nice Guy)
@@ -51,7 +51,29 @@ export async function GET(request: NextRequest) {
       console.log(`[nightly] Cache MISS for ${location.substring(0, 8)} ${date} - fetching live`);
     }
 
-    // Fallback to live TipSee query
+    // Check POS type — Avero venues use venue_day_facts instead of TipSee Upserve tables
+    const posType = await getPosTypeForLocations([location]);
+    if (posType === 'avero') {
+      // Resolve venue_id from TipSee location UUID
+      const supabaseClient = getServiceClient();
+      const { data: mapping } = await (supabaseClient as any)
+        .from('venue_tipsee_mapping')
+        .select('venue_id')
+        .eq('tipsee_location_uuid', location)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (mapping?.venue_id) {
+        const report = await fetchNightlyReportFromFacts(date, mapping.venue_id);
+        return NextResponse.json({
+          ...report,
+          _cached: false,
+          _source: 'venue_day_facts',
+        });
+      }
+    }
+
+    // Fallback to live TipSee query (Upserve / Simphony)
     const report = await fetchNightlyReport(date, location);
     return NextResponse.json({
       ...report,

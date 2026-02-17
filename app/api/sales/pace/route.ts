@@ -169,7 +169,9 @@ async function handleGroupView(request: NextRequest) {
       revenue_target: venues.reduce((sum, v) => sum + (v.pace?.revenue_target ?? 0), 0),
       covers_target: venues.reduce((sum, v) => sum + (v.pace?.covers_target ?? 0), 0),
       sdlw_net: venues.reduce((sum, v) => sum + (v.sdlw?.net_sales ?? 0), 0),
+      sdlw_covers: venues.reduce((sum, v) => sum + (v.sdlw?.covers_count ?? 0), 0),
       sdly_net: venues.reduce((sum, v) => sum + (v.sdly?.net_sales ?? 0), 0),
+      sdly_covers: venues.reduce((sum, v) => sum + (v.sdly?.covers_count ?? 0), 0),
     };
 
     return NextResponse.json({ date, venues, totals });

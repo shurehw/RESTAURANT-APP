@@ -20,7 +20,6 @@ import {
   Users,
   TrendingUp,
   TrendingDown,
-  Activity,
   Clock,
   Loader2,
   RefreshCw,
@@ -145,6 +144,9 @@ interface GroupData {
     revenue_target: number;
     covers_target: number;
     sdlw_net: number;
+    sdlw_covers: number;
+    sdly_net: number;
+    sdly_covers: number;
   };
 }
 
@@ -358,12 +360,6 @@ function formatDateRange(startStr: string, endStr: string): string {
   return `${startFmt} – ${endFmt}`;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  on_pace: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', label: 'On Pace' },
-  warning: { bg: 'bg-amber-500/10', text: 'text-amber-500', label: 'Warning' },
-  critical: { bg: 'bg-red-500/10', text: 'text-red-500', label: 'Critical' },
-  no_target: { bg: 'bg-gray-500/10', text: 'text-gray-400', label: 'No Target' },
-};
 
 // ══════════════════════════════════════════════════════════════════════════
 // COMPONENTS
@@ -437,16 +433,6 @@ function DateSelector({
   );
 }
 
-function PaceBadge({ status }: { status: string }) {
-  const config = STATUS_COLORS[status] || STATUS_COLORS.no_target;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${config.bg} ${config.text}`}>
-      <Activity className="h-3 w-3" />
-      {config.label}
-    </span>
-  );
-}
-
 function ComparisonLine({ label, value, current, fmt }: { label: string; value: number; current: number; fmt: (v: number) => string }) {
   return (
     <div className="flex items-center gap-1 text-xs">
@@ -469,7 +455,6 @@ function GaugeCard({
   current,
   target,
   pct,
-  status,
   sdlw,
   sdly,
   format = 'currency',
@@ -480,14 +465,12 @@ function GaugeCard({
   current: number;
   target: number;
   pct: number | null;
-  status: string;
   sdlw: number | null;
   sdly: number | null;
   format?: 'currency' | 'number';
   targetSource?: 'forecast' | 'sdlw' | 'none';
 }) {
   const fmt = format === 'currency' ? formatCurrency : formatNumber;
-  const config = STATUS_COLORS[status] || STATUS_COLORS.no_target;
   const progressPct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
   const targetLabel = targetSource === 'forecast' ? 'forecast' : 'SDLW';
 
@@ -495,7 +478,7 @@ function GaugeCard({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={`h-4 w-4 ${config.text}`} />
+        <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{fmt(current)}</div>
@@ -508,11 +491,7 @@ function GaugeCard({
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  status === 'critical' ? 'bg-red-500' :
-                  status === 'warning' ? 'bg-amber-500' :
-                  'bg-emerald-500'
-                }`}
+                className="h-full rounded-full transition-all duration-500 bg-opsos-brass"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -559,7 +538,7 @@ function CategoryMixCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <UtensilsCrossed className="h-3.5 w-3.5 text-orange-500" />
+              <UtensilsCrossed className="h-3.5 w-3.5 text-opsos-brass" />
               <span>Food</span>
             </div>
             <div className="text-right">
@@ -569,7 +548,7 @@ function CategoryMixCard({
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <Wine className="h-3.5 w-3.5 text-purple-500" />
+              <Wine className="h-3.5 w-3.5 text-opsos-sage" />
               <span>Beverage</span>
             </div>
             <div className="text-right">
@@ -581,8 +560,8 @@ function CategoryMixCard({
 
         {total > 0 && (
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-            <div className="bg-orange-500 transition-all" style={{ width: `${foodPct}%` }} />
-            <div className="bg-purple-500 transition-all" style={{ width: `${bevPct}%` }} />
+            <div className="bg-opsos-brass transition-all" style={{ width: `${foodPct}%` }} />
+            <div className="bg-opsos-sage transition-all" style={{ width: `${bevPct}%` }} />
           </div>
         )}
 
@@ -761,13 +740,13 @@ function ServiceChart({
             <ReferenceLine
               yAxisId="revenue"
               y={sdlwRevenue}
-              stroke="#8b5cf6"
+              stroke="#64748B"
               strokeDasharray="4 4"
               label={{
                 value: `SDLW ${formatCurrency(sdlwRevenue)}`,
                 position: 'insideBottomRight',
                 fontSize: 10,
-                fill: '#8b5cf6',
+                fill: '#64748B',
               }}
             />
           )}
@@ -775,23 +754,23 @@ function ServiceChart({
             yAxisId="revenue"
             type="monotone"
             dataKey="revenue"
-            stroke="#10b981"
+            stroke="#FF5A1F"
             strokeWidth={2.5}
-            fill="#10b981"
+            fill="#FF5A1F"
             fillOpacity={0.08}
             dot={false}
-            activeDot={{ r: 4, fill: '#10b981' }}
+            activeDot={{ r: 4, fill: '#FF5A1F' }}
           />
           {hasLabor && (
             <Line
               yAxisId="labor"
               type="monotone"
               dataKey="labor"
-              stroke="#f59e0b"
+              stroke="#94A3B8"
               strokeWidth={2}
               strokeDasharray="4 2"
               dot={false}
-              activeDot={{ r: 3, fill: '#f59e0b' }}
+              activeDot={{ r: 3, fill: '#94A3B8' }}
             />
           )}
         </ComposedChart>
@@ -799,12 +778,12 @@ function ServiceChart({
 
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+          <div className="w-4 h-0.5 bg-opsos-brass rounded" />
           <span>Revenue</span>
         </div>
         {hasLabor && (
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 border-t-2 border-dashed border-amber-500" />
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-opsos-sage-400" />
             <span>Labor</span>
           </div>
         )}
@@ -816,7 +795,7 @@ function ServiceChart({
         )}
         {sdlwRevenue != null && sdlwRevenue > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 border-t-2 border-dashed border-purple-500" />
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-opsos-sage" />
             <span>SDLW EOD</span>
           </div>
         )}
@@ -863,17 +842,14 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totals.net_sales)}</div>
-            {totals.sdlw_net > 0 && (
-              <div className="mt-1 flex items-center gap-1 text-xs">
-                <span className="text-muted-foreground">SDLW:</span>
-                <span className="font-medium">{formatCurrency(totals.sdlw_net)}</span>
-                {totals.net_sales >= totals.sdlw_net ? (
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 text-red-500" />
-                )}
-              </div>
-            )}
+            <div className="mt-1 space-y-0.5">
+              {totals.sdlw_net > 0 && (
+                <ComparisonLine label="SDLW" value={totals.sdlw_net} current={totals.net_sales} fmt={formatCurrency} />
+              )}
+              {totals.sdly_net > 0 && (
+                <ComparisonLine label="SDLY" value={totals.sdly_net} current={totals.net_sales} fmt={formatCurrency} />
+              )}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -883,8 +859,14 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(totals.covers)}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {formatNumber(totals.checks)} checks
+            <div className="mt-1 space-y-0.5">
+              <div className="text-xs text-muted-foreground">{formatNumber(totals.checks)} checks</div>
+              {totals.sdlw_covers > 0 && (
+                <ComparisonLine label="SDLW" value={totals.sdlw_covers} current={totals.covers} fmt={formatNumber} />
+              )}
+              {totals.sdly_covers > 0 && (
+                <ComparisonLine label="SDLY" value={totals.sdly_covers} current={totals.covers} fmt={formatNumber} />
+              )}
             </div>
           </CardContent>
         </Card>
@@ -953,7 +935,8 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
                   <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
                   <th className="pb-2 pr-4 font-medium text-right">Labor %</th>
                   <th className="pb-2 pr-4 font-medium text-right">Comps</th>
-                  <th className="pb-2 font-medium text-center">Status</th>
+                  <th className="pb-2 pr-4 font-medium text-right">vs SDLW</th>
+                  <th className="pb-2 font-medium text-right">vs SDLY</th>
                 </tr>
               </thead>
               <tbody>
@@ -964,6 +947,10 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
                     const covers = v.current?.covers_count ?? 0;
                     const checks = v.current?.checks_count ?? 0;
                     const ve = venueEnrichMap.get(v.venue_id);
+                    const sdlwNet = v.sdlw?.net_sales ?? 0;
+                    const sdlyNet = v.sdly?.net_sales ?? 0;
+                    const sdlwVar = sdlwNet > 0 ? ((net - sdlwNet) / sdlwNet) * 100 : null;
+                    const sdlyVar = sdlyNet > 0 ? ((net - sdlyNet) / sdlyNet) * 100 : null;
                     return (
                       <tr key={v.venue_id} className="border-b border-border/50 hover:bg-muted/50">
                         <td className="py-2.5 pr-4 font-medium">{v.venue_name}</td>
@@ -978,8 +965,33 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
                         <td className={`py-2.5 pr-4 text-right ${ve?.comps ? compPctColor(ve.comps.pct) : ''}`}>
                           {ve?.comps ? `${formatCurrency(ve.comps.total)} (${ve.comps.pct.toFixed(1)}%)` : '—'}
                         </td>
-                        <td className="py-2.5 text-center">
-                          <PaceBadge status={v.pace.status} />
+                        <td className="py-2.5 pr-4 text-right">
+                          {sdlwVar != null ? (
+                            <span className="inline-flex items-center gap-0.5">
+                              {sdlwVar >= 0 ? (
+                                <TrendingUp className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-red-500" />
+                              )}
+                              <span className={sdlwVar >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                                {sdlwVar > 0 ? '+' : ''}{sdlwVar.toFixed(1)}%
+                              </span>
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right">
+                          {sdlyVar != null ? (
+                            <span className="inline-flex items-center gap-0.5">
+                              {sdlyVar >= 0 ? (
+                                <TrendingUp className="h-3 w-3 text-emerald-500" />
+                              ) : (
+                                <TrendingDown className="h-3 w-3 text-red-500" />
+                              )}
+                              <span className={sdlyVar >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                                {sdlyVar > 0 ? '+' : ''}{sdlyVar.toFixed(1)}%
+                              </span>
+                            </span>
+                          ) : '—'}
                         </td>
                       </tr>
                     );
@@ -998,7 +1010,22 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
                   <td className={`py-2.5 pr-4 text-right ${et ? compPctColor(et.comp_pct) : ''}`}>
                     {et ? `${formatCurrency(et.comp_total)} (${et.comp_pct.toFixed(1)}%)` : '—'}
                   </td>
-                  <td className="py-2.5" />
+                  <td className="py-2.5 pr-4 text-right">
+                    {totals.sdlw_net > 0 ? (
+                      <span className={totals.net_sales >= totals.sdlw_net ? 'text-emerald-500' : 'text-red-500'}>
+                        {((totals.net_sales - totals.sdlw_net) / totals.sdlw_net * 100) > 0 ? '+' : ''}
+                        {((totals.net_sales - totals.sdlw_net) / totals.sdlw_net * 100).toFixed(1)}%
+                      </span>
+                    ) : '—'}
+                  </td>
+                  <td className="py-2.5 pr-4 text-right">
+                    {totals.sdly_net > 0 ? (
+                      <span className={totals.net_sales >= totals.sdly_net ? 'text-emerald-500' : 'text-red-500'}>
+                        {((totals.net_sales - totals.sdly_net) / totals.sdly_net * 100) > 0 ? '+' : ''}
+                        {((totals.net_sales - totals.sdly_net) / totals.sdly_net * 100).toFixed(1)}%
+                      </span>
+                    ) : '—'}
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1635,7 +1662,7 @@ export default function LivePulsePage() {
                 <PeriodCategoryMixCard
                   foodSales={periodData.venue.current.food_sales}
                   bevSales={periodData.venue.current.beverage_sales}
-                  priorBevPct={periodData.venue.prior.beverage_pct}
+                  priorBevPct={periodData.venue.prior.days_count > 0 ? periodData.venue.prior.beverage_pct : null}
                 />
               </div>
 
@@ -1736,14 +1763,13 @@ export default function LivePulsePage() {
       {viewMode === 'today' && data && selectedVenue && !isAllVenues && (
         <>
           {/* Today context banner */}
-          <div className="rounded-lg bg-muted/50 px-4 py-3 flex items-center justify-between">
-            <PaceBadge status={data.pace.status} />
-            {data.current && (
+          {data.current && (
+            <div className="rounded-lg bg-muted/50 px-4 py-3 flex items-center justify-end">
               <span className="text-xs text-muted-foreground">
                 as of {formatTime(data.current.snapshot_at)}
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Hero gauges */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -1753,7 +1779,6 @@ export default function LivePulsePage() {
               current={data.current?.net_sales ?? 0}
               target={data.pace.revenue_target}
               pct={data.pace.revenue_pct}
-              status={data.pace.revenue_status}
               sdlw={data.sdlw?.net_sales ?? null}
               sdly={data.sdly?.net_sales ?? null}
               targetSource={data.pace.target_source}
@@ -1764,7 +1789,6 @@ export default function LivePulsePage() {
               current={data.current?.covers_count ?? 0}
               target={data.pace.covers_target}
               pct={data.pace.covers_pct}
-              status={data.pace.covers_status}
               sdlw={data.sdlw?.covers_count ?? null}
               sdly={data.sdly?.covers_count ?? null}
               targetSource={data.pace.target_source}
@@ -1776,7 +1800,6 @@ export default function LivePulsePage() {
               current={data.current?.avg_check ?? 0}
               target={0}
               pct={null}
-              status="no_target"
               sdlw={data.sdlw ? data.sdlw.gross_sales / Math.max(data.sdlw.checks_count, 1) : null}
               sdly={data.sdly ? data.sdly.gross_sales / Math.max(data.sdly.checks_count, 1) : null}
             />
