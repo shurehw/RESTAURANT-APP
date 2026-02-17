@@ -67,6 +67,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        {/* PWA standalone detection — must run before paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var s=window.matchMedia('(display-mode:standalone)').matches||window.navigator.standalone;if(s)document.documentElement.classList.add('pwa-standalone')})()`,
+          }}
+        />
         {children}
         <Toaster />
         <script
