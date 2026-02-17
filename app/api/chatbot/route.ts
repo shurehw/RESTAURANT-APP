@@ -155,6 +155,12 @@ DATA SYNC TIMING:
 - If "last night" returns no data, it may not have synced yet — suggest trying the previous day or checking back later
 - Labor punch data may lag 12–24 hours behind sales data
 
+POS SYSTEM NOTES:
+- Most venues use Upserve (full per-check detail: items, servers, payments, tips)
+- Dallas uses Simphony (daily aggregates only — no per-check, server, menu item, or payment detail available)
+- For Simphony venues: daily sales, food/bev split, and comps (total only) are available. Server performance, top items, and payment detail are not.
+- Historical data before May 2025 is available from legacy tables — same metrics, fully queryable
+
 AVAILABLE DATA (via tools):
 
 POS Data (TipSee):

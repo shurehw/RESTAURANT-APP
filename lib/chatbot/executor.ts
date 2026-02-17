@@ -16,6 +16,8 @@ import {
   getReservations,
   getPaymentDetails,
   getLogbook,
+  resolveLocationContext,
+  type LocationContext,
 } from './queries';
 import {
   getBudgetVariance,
@@ -231,23 +233,26 @@ export async function executeTool(
     // All remaining tools require dates
     const dates = parseDates(toolInput);
 
+    // Resolve location context once (cached) for POS-aware queries
+    const locCtx: LocationContext = await resolveLocationContext(ctx.pool, filtered.locationUuids);
+
     switch (toolName) {
       // --- TipSee POS tools ---
       case 'get_daily_sales':
         return formatResults(
-          await getDailySales(ctx.pool, filtered.locationUuids, dates),
+          await getDailySales(ctx.pool, filtered.locationUuids, dates, locCtx),
           toolName
         );
 
       case 'get_sales_by_category':
         return formatResults(
-          await getSalesByCategory(ctx.pool, filtered.locationUuids, dates),
+          await getSalesByCategory(ctx.pool, filtered.locationUuids, dates, locCtx),
           toolName
         );
 
       case 'get_server_performance':
         return formatResults(
-          await getServerPerformance(ctx.pool, filtered.locationUuids, dates),
+          await getServerPerformance(ctx.pool, filtered.locationUuids, dates, locCtx),
           toolName
         );
 
@@ -256,13 +261,13 @@ export async function executeTool(
           await getTopMenuItems(ctx.pool, filtered.locationUuids, {
             ...dates,
             sortBy: toolInput.sort_by === 'quantity' ? 'quantity' : 'revenue',
-          }),
+          }, locCtx),
           toolName
         );
 
       case 'get_comp_summary':
         return formatResults(
-          await getCompSummary(ctx.pool, filtered.locationUuids, dates),
+          await getCompSummary(ctx.pool, filtered.locationUuids, dates, locCtx),
           toolName
         );
 
@@ -280,7 +285,7 @@ export async function executeTool(
 
       case 'get_payment_details':
         return formatResults(
-          await getPaymentDetails(ctx.pool, filtered.locationUuids, dates),
+          await getPaymentDetails(ctx.pool, filtered.locationUuids, dates, locCtx),
           toolName
         );
 
