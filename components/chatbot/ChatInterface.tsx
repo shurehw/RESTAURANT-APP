@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Send, Bot, User, Loader2, RotateCcw } from 'lucide-react';
+import { ChatMarkdown } from './ChatMarkdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -122,13 +123,17 @@ export function ChatInterface() {
             )}
 
             <div
-              className={`max-w-[70%] rounded-lg px-4 py-3 ${
+              className={`rounded-lg px-4 py-3 ${
                 message.role === 'user'
-                  ? 'bg-opsos-sage-600 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                  ? 'max-w-[70%] bg-opsos-sage-600 text-white'
+                  : 'max-w-[85%] bg-gray-100 text-gray-900'
               }`}
             >
-              <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+              {message.role === 'assistant' ? (
+                <ChatMarkdown content={message.content} className="text-sm" />
+              ) : (
+                <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+              )}
             </div>
 
             {message.role === 'user' && (

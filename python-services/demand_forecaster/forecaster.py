@@ -168,6 +168,70 @@ def get_venue_coords(supabase: Client) -> Dict[str, Dict]:
 
 
 # ============================================================================
+# DARK-DAY EXCLUSION: VENUE CLOSED WEEKDAYS
+# ============================================================================
+
+def get_venue_closed_days(supabase: Client) -> Dict[str, List[int]]:
+    """
+    Load closed weekdays per venue from location_config.
+    Returns {venue_id: [iso_weekday, ...]} where 0=Monday, 6=Sunday.
+    Venues without a location_config entry are assumed open every day.
+    """
+    response = supabase.table("location_config").select(
+        "venue_id, closed_weekdays"
+    ).eq("is_active", True).not_.is_("closed_weekdays", "null").execute()
+
+    closed = {}
+    for row in response.data or []:
+        days = row.get("closed_weekdays") or []
+        if days:
+            closed[row["venue_id"]] = [int(d) for d in days]
+
+    return closed
+
+
+def filter_closed_days(df: pd.DataFrame, closed_weekdays: List[int]) -> pd.DataFrame:
+    """
+    Remove rows falling on closed weekdays from training data.
+    closed_weekdays: list of ISO weekday ints (0=Monday, 6=Sunday).
+    """
+    if not closed_weekdays:
+        return df
+    df = df.copy()
+    df["ds"] = pd.to_datetime(df["ds"])
+    before = len(df)
+    df = df[~df["ds"].dt.dayofweek.isin(closed_weekdays)]
+    removed = before - len(df)
+    if removed > 0:
+        day_names = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+        closed_names = [day_names[d] for d in closed_weekdays]
+        print(f"  Dark-day filter: removed {removed} rows for closed days ({', '.join(closed_names)})")
+    return df
+
+
+def zero_closed_day_forecasts(fc: pd.DataFrame, closed_weekdays: List[int]) -> pd.DataFrame:
+    """
+    Zero out forecast rows that fall on closed weekdays.
+    Sets yhat, yhat_lower, yhat_upper to 0 for dark days.
+    """
+    if not closed_weekdays:
+        return fc
+    fc = fc.copy()
+    mask = fc["ds"].dt.dayofweek.isin(closed_weekdays)
+    zeroed = mask.sum()
+    if zeroed > 0:
+        fc.loc[mask, ["yhat", "yhat_lower", "yhat_upper"]] = 0
+        if "trend" in fc.columns:
+            fc.loc[mask, "trend"] = 0
+        if "revenue" in fc.columns:
+            fc.loc[mask, "revenue"] = 0
+        day_names = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+        closed_names = [day_names[d] for d in closed_weekdays]
+        print(f"  Dark-day zeroed: {zeroed} forecast rows ({', '.join(closed_names)})")
+    return fc
+
+
+# ============================================================================
 # DATA RETRIEVAL
 # ============================================================================
 
@@ -793,6 +857,9 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
     venue_coords = get_venue_coords(supabase)
     print(f"[INFO] Venues with coordinates: {len(venue_coords)}")
 
+    venue_closed_days = get_venue_closed_days(supabase)
+    print(f"[INFO] Venues with dark days: {len(venue_closed_days)}")
+
     mappings = get_venue_mappings(supabase, venue_id)
     print(f"[INFO] Venues to forecast: {len(mappings)}")
 
@@ -814,6 +881,8 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
         venue_class = mapping.get("venue_class")
         coords = venue_coords.get(vid)
 
+        closed_days = venue_closed_days.get(vid, [])
+
         print(f"\n{'-' * 50}")
         print(f"[VENUE] {location_name}")
         print(f"  venue_id: {vid}")
@@ -821,6 +890,9 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
             print(f"  class: {venue_class}")
         if coords:
             print(f"  coords: {coords['lat']}, {coords['lon']} ({coords['tz']})")
+        if closed_days:
+            day_names = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+            print(f"  dark days: {', '.join(day_names[d] for d in closed_days)}")
 
         try:
             # Detect POS type and get historical data
@@ -837,14 +909,24 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                 continue
             print(f"  History: {training_days_raw} days ({df['ds'].min()} to {df['ds'].max()})")
 
-            # Route to appropriate model tier
-            config = model_router(training_days_raw, venue_class, has_coords=coords is not None)
+            # Filter closed weekdays from training data before tier routing
+            if closed_days:
+                df = filter_closed_days(df, closed_days)
+                if len(df) == 0:
+                    print(f"  [SKIP] No data remaining after dark-day filter")
+                    venues_skipped += 1
+                    continue
+
+            # Route to appropriate model tier (using post-filter count)
+            training_days_effective = len(df)
+            config = model_router(training_days_effective, venue_class, has_coords=coords is not None)
             print(f"  -> {config}")
             tier_counts[config.tier] = tier_counts.get(config.tier, 0) + 1
 
             # --- TIER D: Naive fallback ---
             if not config.use_prophet:
                 fc_covers = naive_dow_forecast(df, forecast_days)
+                fc_covers = zero_closed_day_forecasts(fc_covers, closed_days)
                 avg_checks = compute_avg_check_per_dow(df)
                 fc_with_revenue = forecast_revenue(fc_covers, avg_checks)
 
@@ -927,6 +1009,9 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                 for d, v in sorted(avg_checks.items()) if v > 0
             ))
             fc_with_revenue = forecast_revenue(fc_covers, avg_checks)
+
+            # Zero out closed weekdays in forecast output
+            fc_with_revenue = zero_closed_day_forecasts(fc_with_revenue, closed_days)
 
             # Build reso lookup for metadata
             reso_lookup = {}

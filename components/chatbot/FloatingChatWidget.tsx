@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Send, Bot, User, Loader2, X, Maximize2, Minimize2, MessageCircle, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
+import { ChatMarkdown } from './ChatMarkdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -166,13 +167,17 @@ export function FloatingChatWidget() {
                 )}
 
                 <div
-                  className={`max-w-[70%] rounded-lg px-4 py-3 ${
+                  className={`rounded-lg px-4 py-3 ${
                     message.role === 'user'
-                      ? 'bg-opsos-sage-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'max-w-[70%] bg-opsos-sage-600 text-white'
+                      : 'max-w-[85%] bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                  {message.role === 'assistant' ? (
+                    <ChatMarkdown content={message.content} className="text-sm" />
+                  ) : (
+                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                  )}
                 </div>
 
                 {message.role === 'user' && (
@@ -284,13 +289,17 @@ export function FloatingChatWidget() {
             )}
 
             <div
-              className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
+              className={`rounded-lg px-3 py-2 text-sm ${
                 message.role === 'user'
-                  ? 'bg-opsos-sage-600 text-white'
-                  : 'bg-white text-gray-900 shadow-sm'
+                  ? 'max-w-[75%] bg-opsos-sage-600 text-white'
+                  : 'max-w-[90%] bg-white text-gray-900 shadow-sm'
               }`}
             >
-              <div className="whitespace-pre-wrap">{message.content}</div>
+              {message.role === 'assistant' ? (
+                <ChatMarkdown content={message.content} className="text-sm" />
+              ) : (
+                <div className="whitespace-pre-wrap">{message.content}</div>
+              )}
             </div>
 
             {message.role === 'user' && (

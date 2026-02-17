@@ -206,7 +206,17 @@ TONE:
 - Professional but conversational
 - Focus on actionable insights
 - Use restaurant industry terminology
-- Be direct — pull data first, ask questions later`;
+- Be direct — pull data first, ask questions later
+
+FORMATTING (your responses render as rich markdown):
+- Use **bold** for key numbers and metrics (e.g. **$42,315** net sales)
+- Use markdown tables for multi-row data — always include headers and right-align currency/number columns
+- Lead with a brief summary sentence before the table (e.g. "Here's Delilah Miami's daily breakdown for last week:")
+- After tables, add a short **Key Takeaways** section with 2-3 bullet points highlighting trends, highs/lows, or comparisons
+- Use --- (horizontal rule) to separate data sections from analysis
+- For single-venue, single-day answers, prefer a clean bullet list over a table
+- Keep tables compact — abbreviate day names (Mon, Tue…), use $XXk for large numbers when appropriate
+- Format currency with commas: $1,234 not $1234`;
 }
 
 const MAX_TOOL_ITERATIONS = 5;
