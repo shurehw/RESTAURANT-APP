@@ -35,6 +35,7 @@ export interface SalesSnapshot {
   labor_ot_hours: number;
   labor_foh_cost: number;
   labor_boh_cost: number;
+  labor_other_cost: number;
   // Comp enrichment (populated by poll)
   comp_exception_count: number;
   comp_critical_count: number;
@@ -157,6 +158,7 @@ export async function storeSalesSnapshot(snapshot: {
   labor_ot_hours?: number;
   labor_foh_cost?: number;
   labor_boh_cost?: number;
+  labor_other_cost?: number;
   // Comp enrichment (optional)
   comp_exception_count?: number;
   comp_critical_count?: number;
@@ -238,20 +240,22 @@ export async function getForecastForDate(
     .select('covers_predicted, revenue_predicted, covers_lower, covers_upper')
     .eq('venue_id', venueId)
     .eq('business_date', date)
-    .maybeSingle();
+    .order('covers_predicted', { ascending: false })
+    .limit(1);
 
   if (error) {
     console.error('Failed to fetch forecast:', error.message);
     return null;
   }
 
-  if (!data) return null;
+  const row = data?.[0];
+  if (!row) return null;
 
   return {
-    covers_predicted: parseFloat(data.covers_predicted) || 0,
-    revenue_predicted: parseFloat(data.revenue_predicted) || 0,
-    covers_lower: parseFloat(data.covers_lower) || 0,
-    covers_upper: parseFloat(data.covers_upper) || 0,
+    covers_predicted: parseFloat(row.covers_predicted) || 0,
+    revenue_predicted: parseFloat(row.revenue_predicted) || 0,
+    covers_lower: parseFloat(row.covers_lower) || 0,
+    covers_upper: parseFloat(row.covers_upper) || 0,
   };
 }
 
@@ -665,6 +669,7 @@ function normalizeSnapshot(row: any): SalesSnapshot {
     labor_ot_hours: parseFloat(row.labor_ot_hours) || 0,
     labor_foh_cost: parseFloat(row.labor_foh_cost) || 0,
     labor_boh_cost: parseFloat(row.labor_boh_cost) || 0,
+    labor_other_cost: parseFloat(row.labor_other_cost) || 0,
     // Comp enrichment
     comp_exception_count: parseInt(row.comp_exception_count) || 0,
     comp_critical_count: parseInt(row.comp_critical_count) || 0,

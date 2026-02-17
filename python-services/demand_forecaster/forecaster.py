@@ -27,8 +27,12 @@ from sklearn.linear_model import Ridge
 from supabase import create_client, Client
 from prophet import Prophet
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Load env from project root (two levels up from this file)
+_project_root = Path(__file__).resolve().parent.parent.parent
+load_dotenv(_project_root / ".env")
+load_dotenv(_project_root / ".env.local", override=True)
 
 # Configuration
 FORECAST_DAYS = int(os.getenv("FORECAST_DAYS", "42"))
@@ -167,8 +171,12 @@ def get_venue_coords(supabase: Client) -> Dict[str, Dict]:
 # DATA RETRIEVAL
 # ============================================================================
 
-def get_historical_data(conn, location_uuid: str) -> pd.DataFrame:
-    """Get daily covers + revenue + reservation data from TipSee."""
+def get_historical_data(conn, location_uuid: str, location_name: str = "") -> pd.DataFrame:
+    """Get daily covers + revenue + reservation data from TipSee.
+
+    Queries by both location_uuid and location name to capture older records
+    where location_uuid may be NULL.
+    """
     sql = """
     WITH pos_data AS (
         SELECT
@@ -176,7 +184,7 @@ def get_historical_data(conn, location_uuid: str) -> pd.DataFrame:
             SUM(guest_count)::int AS covers,
             SUM(revenue_total)::numeric(14,2) AS net_sales
         FROM public.tipsee_checks
-        WHERE location_uuid = %s
+        WHERE (location_uuid = %s OR location = %s)
         GROUP BY trading_day::date
     ),
     reso_data AS (
@@ -200,7 +208,40 @@ def get_historical_data(conn, location_uuid: str) -> pd.DataFrame:
     WHERE p.covers > %s
     ORDER BY p.ds
     """
-    return pd.read_sql(sql, conn, params=(location_uuid, location_uuid, MIN_COVERS_THRESHOLD))
+    return pd.read_sql(sql, conn, params=(location_uuid, location_name, location_uuid, MIN_COVERS_THRESHOLD))
+
+
+def get_pos_type(conn, location_uuid: str) -> str:
+    """Detect POS type (upserve or simphony) from general_locations."""
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT pos_type FROM public.general_locations WHERE uuid = %s AND pos_type IS NOT NULL LIMIT 1",
+            (location_uuid,)
+        )
+        row = cur.fetchone()
+        cur.close()
+        return row[0] if row else "upserve"
+    except Exception:
+        return "upserve"
+
+
+def get_historical_data_simphony(conn, location_uuid: str) -> pd.DataFrame:
+    """Get daily covers + revenue from TipSee Simphony sales (Dallas)."""
+    sql = """
+    SELECT
+        trading_day::date AS ds,
+        SUM(guest_count)::int AS covers,
+        SUM(net_sales)::numeric(14,2) AS net_sales,
+        0 AS reso_count,
+        0 AS reso_covers
+    FROM public.tipsee_simphony_sales
+    WHERE location_uuid = %s
+    GROUP BY trading_day::date
+    HAVING SUM(guest_count) > %s
+    ORDER BY ds
+    """
+    return pd.read_sql(sql, conn, params=(location_uuid, MIN_COVERS_THRESHOLD))
 
 
 def get_future_reservations(conn, location_uuid: str, days: int = FORECAST_DAYS) -> pd.DataFrame:
@@ -782,9 +823,18 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
             print(f"  coords: {coords['lat']}, {coords['lon']} ({coords['tz']})")
 
         try:
-            # Get historical data
-            df = get_historical_data(tipsee_conn, location_uuid)
+            # Detect POS type and get historical data
+            pos_type = get_pos_type(tipsee_conn, location_uuid) if location_uuid else "upserve"
+            if pos_type == "simphony":
+                print(f"  POS: Simphony")
+                df = get_historical_data_simphony(tipsee_conn, location_uuid)
+            else:
+                df = get_historical_data(tipsee_conn, location_uuid, location_name or "")
             training_days_raw = len(df)
+            if training_days_raw == 0:
+                print(f"  [SKIP] No historical data found for location_uuid={location_uuid} or name={location_name}")
+                venues_skipped += 1
+                continue
             print(f"  History: {training_days_raw} days ({df['ds'].min()} to {df['ds'].max()})")
 
             # Route to appropriate model tier
