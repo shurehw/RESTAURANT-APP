@@ -622,8 +622,8 @@ export async function fetchSimphonyIntraDaySummary(
       COALESCE(SUM(guest_count), 0) as total_covers,
       COALESCE(SUM(gross_sales), 0) as gross_sales,
       COALESCE(SUM(net_sales), 0) as net_sales,
-      COALESCE(SUM(discount_total), 0) as comps_total,
-      COALESCE(SUM(void_total), 0) as voids_total,
+      ABS(COALESCE(SUM(discount_total), 0)) as comps_total,
+      ABS(COALESCE(SUM(void_total), 0)) as voids_total,
       COALESCE(SUM(CASE
         WHEN LOWER(COALESCE(revenue_center_name, '')) LIKE '%bar%'
           OR (revenue_center_name IS NULL AND revenue_center_number = 2)

@@ -219,8 +219,8 @@ export async function syncVenueDaySimphony(
         COALESCE(SUM(gross_sales), 0) as gross_sales,
         COALESCE(SUM(net_sales), 0) as net_sales,
         COALESCE(SUM(tax_total), 0) as total_tax,
-        COALESCE(SUM(discount_total), 0) as total_comps,
-        COALESCE(SUM(void_total), 0) as total_voids,
+        ABS(COALESCE(SUM(discount_total), 0)) as total_comps,
+        ABS(COALESCE(SUM(void_total), 0)) as total_voids,
         COALESCE(SUM(CASE
           WHEN LOWER(COALESCE(revenue_center_name, '')) LIKE '%bar%'
             OR (revenue_center_name IS NULL AND revenue_center_number = 2)

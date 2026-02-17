@@ -88,12 +88,12 @@ function buildEnrichmentFromSnapshot(
   const laborCost = Number(snapshot.labor_cost) || 0;
   const laborHours = Number(snapshot.labor_hours) || 0;
   const covers = Number(snapshot.covers_count) || 0;
-  const compsTotal = Number(snapshot.comps_total) || 0;
+  const compsTotal = Math.max(0, Number(snapshot.comps_total) || 0);
   const fohCost = Number(snapshot.labor_foh_cost) || 0;
   const bohCost = Number(snapshot.labor_boh_cost) || 0;
   const otherCost = Number(snapshot.labor_other_cost) || Math.max(0, laborCost - fohCost - bohCost);
 
-  // Labor % denominator = net sales + comps (not gross/tax)
+  // Labor % denominator = net sales + comps (not gross/tax); clamp comps >= 0
   const laborRevBase = netSales + compsTotal;
 
   // Build labor (only if we have actual labor data)
@@ -150,7 +150,7 @@ async function fetchLaborDayFact(
 
   const totalHours = Number(data.total_hours) || 0;
   const laborCost = Number(data.labor_cost) || 0;
-  const laborRevBase = netSales + compsTotal;
+  const laborRevBase = netSales + Math.max(0, compsTotal);
   const buildDept = (h: number, c: number, e: number) =>
     (h > 0 || c > 0) ? { hours: h, cost: c, employee_count: e } : null;
 
