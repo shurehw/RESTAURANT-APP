@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import {
   ComposedChart,
   Area,
@@ -32,13 +33,30 @@ function getDayLabel(dateStr: string): string {
 }
 
 export function PeriodDayChart({ days }: { days: PeriodDayRow[] }) {
+  const [cumulative, setCumulative] = useState(false);
+
+  const { dailyData, cumulativeData } = useMemo(() => {
+    let cumCurrent = 0;
+    let cumPrior = 0;
+    const daily: { day: string; Current: number; Prior: number }[] = [];
+    const cum: { day: string; Current: number; Prior: number }[] = [];
+
+    for (const d of days) {
+      const day = getDayLabel(d.business_date);
+      const current = d.net_sales;
+      const prior = d.prior_net_sales || 0;
+      daily.push({ day, Current: current, Prior: prior });
+      cumCurrent += current;
+      cumPrior += prior;
+      cum.push({ day, Current: cumCurrent, Prior: cumPrior });
+    }
+
+    return { dailyData: daily, cumulativeData: cum };
+  }, [days]);
+
   if (days.length === 0) return null;
 
-  const chartData = days.map(d => ({
-    day: getDayLabel(d.business_date),
-    Current: d.net_sales,
-    Prior: d.prior_net_sales || 0,
-  }));
+  const chartData = cumulative ? cumulativeData : dailyData;
 
   return (
     <div className="space-y-2">
@@ -89,14 +107,34 @@ export function PeriodDayChart({ days }: { days: PeriodDayRow[] }) {
           />
         </ComposedChart>
       </ResponsiveContainer>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
-          <span>Current</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+            <span>Current</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
+            <span>Prior</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
-          <span>Prior</span>
+        <div className="inline-flex rounded-md border border-border text-xs">
+          <button
+            onClick={() => setCumulative(false)}
+            className={`px-2.5 py-1 rounded-l-md transition-colors ${
+              !cumulative ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Daily
+          </button>
+          <button
+            onClick={() => setCumulative(true)}
+            className={`px-2.5 py-1 rounded-r-md border-l border-border transition-colors ${
+              cumulative ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Cumulative
+          </button>
         </div>
       </div>
     </div>

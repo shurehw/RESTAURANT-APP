@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import {
   ComposedChart,
@@ -40,6 +41,26 @@ function formatDateRange(start: string, end: string): string {
 }
 
 export function YtdPeriodBreakdown({ periods }: { periods: YtdPeriodRow[] }) {
+  const [cumulative, setCumulative] = useState(false);
+
+  const { periodData, cumulativeData } = useMemo(() => {
+    let cumCurrent = 0;
+    let cumPrior = 0;
+    const perPeriod: { label: string; 'Current Year': number; 'Prior Year': number }[] = [];
+    const cum: { label: string; 'Current Year': number; 'Prior Year': number }[] = [];
+
+    for (const p of periods) {
+      const current = p.net_sales;
+      const prior = p.prior_net_sales || 0;
+      perPeriod.push({ label: p.label, 'Current Year': current, 'Prior Year': prior });
+      cumCurrent += current;
+      cumPrior += prior;
+      cum.push({ label: p.label, 'Current Year': cumCurrent, 'Prior Year': cumPrior });
+    }
+
+    return { periodData: perPeriod, cumulativeData: cum };
+  }, [periods]);
+
   if (periods.length === 0) {
     return (
       <div className="text-sm text-muted-foreground text-center py-8">
@@ -59,11 +80,7 @@ export function YtdPeriodBreakdown({ periods }: { periods: YtdPeriodRow[] }) {
     { net_sales: 0, covers: 0, prior_net_sales: 0, prior_covers: 0 }
   );
 
-  const chartData = periods.map(p => ({
-    label: p.label,
-    'Current Year': p.net_sales,
-    'Prior Year': p.prior_net_sales || 0,
-  }));
+  const chartData = cumulative ? cumulativeData : periodData;
 
   return (
     <div className="space-y-4">
@@ -116,15 +133,35 @@ export function YtdPeriodBreakdown({ periods }: { periods: YtdPeriodRow[] }) {
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
-          <span>Current Year</span>
+      {/* Legend + Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+            <span>Current Year</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
+            <span>Prior Year</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
-          <span>Prior Year</span>
+        <div className="inline-flex rounded-md border border-border text-xs">
+          <button
+            onClick={() => setCumulative(false)}
+            className={`px-2.5 py-1 rounded-l-md transition-colors ${
+              !cumulative ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Period
+          </button>
+          <button
+            onClick={() => setCumulative(true)}
+            className={`px-2.5 py-1 rounded-r-md border-l border-border transition-colors ${
+              cumulative ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Cumulative
+          </button>
         </div>
       </div>
 

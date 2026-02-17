@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import {
   ComposedChart,
@@ -40,6 +41,26 @@ function formatDateRange(start: string, end: string): string {
 }
 
 export function PeriodWeekBreakdown({ weeks, priorLabel = 'vs LP' }: { weeks: PtdWeekRow[]; priorLabel?: string }) {
+  const [cumulative, setCumulative] = useState(false);
+
+  const { weeklyData, cumulativeData } = useMemo(() => {
+    let cumCurrent = 0;
+    let cumPrior = 0;
+    const weekly: { label: string; 'Current Period': number; 'Prior Period': number }[] = [];
+    const cum: { label: string; 'Current Period': number; 'Prior Period': number }[] = [];
+
+    for (const w of weeks) {
+      const current = w.net_sales;
+      const prior = w.prior_net_sales || 0;
+      weekly.push({ label: w.label, 'Current Period': current, 'Prior Period': prior });
+      cumCurrent += current;
+      cumPrior += prior;
+      cum.push({ label: w.label, 'Current Period': cumCurrent, 'Prior Period': cumPrior });
+    }
+
+    return { weeklyData: weekly, cumulativeData: cum };
+  }, [weeks]);
+
   if (weeks.length === 0) {
     return (
       <div className="text-sm text-muted-foreground text-center py-8">
@@ -59,11 +80,7 @@ export function PeriodWeekBreakdown({ weeks, priorLabel = 'vs LP' }: { weeks: Pt
     { net_sales: 0, covers: 0, prior_net_sales: 0, prior_covers: 0 }
   );
 
-  const chartData = weeks.map(w => ({
-    label: w.label,
-    'Current Period': w.net_sales,
-    'Prior Period': w.prior_net_sales || 0,
-  }));
+  const chartData = cumulative ? cumulativeData : weeklyData;
 
   return (
     <div className="space-y-4">
@@ -116,15 +133,35 @@ export function PeriodWeekBreakdown({ weeks, priorLabel = 'vs LP' }: { weeks: Pt
         </ComposedChart>
       </ResponsiveContainer>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
-          <span>Current Period</span>
+      {/* Legend + Toggle */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+            <span>Current Period</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
+            <span>Prior Period</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
-          <span>Prior Period</span>
+        <div className="inline-flex rounded-md border border-border text-xs">
+          <button
+            onClick={() => setCumulative(false)}
+            className={`px-2.5 py-1 rounded-l-md transition-colors ${
+              !cumulative ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Weekly
+          </button>
+          <button
+            onClick={() => setCumulative(true)}
+            className={`px-2.5 py-1 rounded-r-md border-l border-border transition-colors ${
+              cumulative ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Cumulative
+          </button>
         </div>
       </div>
 
