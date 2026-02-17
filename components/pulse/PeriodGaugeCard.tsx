@@ -86,12 +86,6 @@ export function PeriodGaugeCard({
           )}
         </div>
 
-        {/* Days count */}
-        {daysCount != null && daysCount > 0 && (
-          <div className="mt-1 text-xs text-muted-foreground">
-            {daysCount} day{daysCount !== 1 ? 's' : ''}
-          </div>
-        )}
       </CardContent>
     </Card>
   );

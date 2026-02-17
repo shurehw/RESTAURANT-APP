@@ -1011,14 +1011,25 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
   })();
 
   return (
-    <div className="space-y-6">
-      {/* Period date range banner */}
-      <div className="text-sm text-muted-foreground">
-        {VIEW_LABELS[data.view]}: {formatDateRange(data.period_start, data.period_end)}
-        <span className="ml-2 text-xs">({data.prior_label || 'vs prior'}: {formatDateRange(data.prior_start, data.prior_end)})</span>
-        {data.secondary_prior_start && data.secondary_prior_end && (
-          <span className="ml-2 text-xs">({data.secondary_prior_label}: {formatDateRange(data.secondary_prior_start, data.secondary_prior_end)})</span>
-        )}
+    <div className="space-y-4">
+      {/* Period context banner */}
+      <div className="rounded-lg bg-muted/50 px-4 py-3">
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm font-medium">
+            {VIEW_LABELS[data.view]}: {formatDateRange(data.period_start, data.period_end)}
+          </span>
+          {current.days_count > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {current.days_count} day{current.days_count !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          {data.prior_label || 'vs prior'}: {formatDateRange(data.prior_start, data.prior_end)}
+          {data.secondary_prior_start && data.secondary_prior_end && (
+            <span className="ml-3">{data.secondary_prior_label}: {formatDateRange(data.secondary_prior_start, data.secondary_prior_end)}</span>
+          )}
+        </div>
       </div>
 
       {/* Group totals */}
@@ -1435,26 +1446,56 @@ export default function LivePulsePage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4">
+      {/* Row 1 — Title + live status */}
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Live Pulse</h1>
           <p className="text-muted-foreground text-sm">
             {isAllVenues ? 'Group-wide sales overview' : 'Real-time sales pace vs. forecast'}
           </p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          {lastRefreshed && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Updated {formatTime(lastRefreshed.toISOString())}
+            </span>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={viewMode === 'today' ? fetchData : fetchPeriodData}
+            disabled={loading || periodLoading}
+          >
+            {(loading || periodLoading) ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Row 2 — Venue switcher */}
+      <VenueQuickSwitcher />
+
+      {/* Row 3 — Toolbar: tabs left, date controls right */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-3">
+        <Tabs value={viewMode} onValueChange={handleViewChange}>
+          <TabsList>
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="wtd">WTD</TabsTrigger>
+            <TabsTrigger value="ptd">PTD</TabsTrigger>
+            <TabsTrigger value="ytd">YTD</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2">
           <DateSelector
             selectedDate={selectedDate}
             onDateChange={handleDateChange}
             onToday={handleToday}
           />
-          {lastRefreshed && (
-            <span className="text-xs text-muted-foreground">
-              Updated {formatTime(lastRefreshed.toISOString())}
-            </span>
-          )}
           {selectedVenue && !isAllVenues && viewMode === 'today' && (
             <Button
               variant="outline"
@@ -1465,31 +1506,8 @@ export default function LivePulsePage() {
               Checks
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={viewMode === 'today' ? fetchData : fetchPeriodData}
-            disabled={loading || periodLoading}
-          >
-            {(loading || periodLoading) ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
-          <VenueQuickSwitcher />
         </div>
       </div>
-
-      {/* View mode tabs */}
-      <Tabs value={viewMode} onValueChange={handleViewChange}>
-        <TabsList className="grid grid-cols-4 w-full max-w-sm">
-          <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="wtd">WTD</TabsTrigger>
-          <TabsTrigger value="ptd">PTD</TabsTrigger>
-          <TabsTrigger value="ytd">YTD</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {/* No venue selected */}
       {!selectedVenue && !isAllVenues && (
@@ -1527,13 +1545,24 @@ export default function LivePulsePage() {
           {/* Single venue period view */}
           {!isAllVenues && periodData.venue && (
             <>
-              {/* Period date range banner */}
-              <div className="text-sm text-muted-foreground">
-                {VIEW_LABELS[viewMode]}: {formatDateRange(periodData.period_start, periodData.period_end)}
-                <span className="ml-2 text-xs">({periodData.prior_label || 'vs prior'}: {formatDateRange(periodData.prior_start, periodData.prior_end)})</span>
-                {periodData.secondary_prior_start && periodData.secondary_prior_end && (
-                  <span className="ml-2 text-xs">({periodData.secondary_prior_label}: {formatDateRange(periodData.secondary_prior_start, periodData.secondary_prior_end)})</span>
-                )}
+              {/* Period context banner */}
+              <div className="rounded-lg bg-muted/50 px-4 py-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm font-medium">
+                    {VIEW_LABELS[viewMode]}: {formatDateRange(periodData.period_start, periodData.period_end)}
+                  </span>
+                  {periodData.venue.current.days_count > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      {periodData.venue.current.days_count} day{periodData.venue.current.days_count !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {periodData.prior_label || 'vs prior'}: {formatDateRange(periodData.prior_start, periodData.prior_end)}
+                  {periodData.secondary_prior_start && periodData.secondary_prior_end && (
+                    <span className="ml-3">{periodData.secondary_prior_label}: {formatDateRange(periodData.secondary_prior_start, periodData.secondary_prior_end)}</span>
+                  )}
+                </div>
               </div>
 
               {/* Period gauge cards */}
@@ -1676,11 +1705,11 @@ export default function LivePulsePage() {
       {/* Single venue view */}
       {viewMode === 'today' && data && selectedVenue && !isAllVenues && (
         <>
-          {/* Overall status */}
-          <div className="flex items-center gap-3">
+          {/* Today context banner */}
+          <div className="rounded-lg bg-muted/50 px-4 py-3 flex items-center justify-between">
             <PaceBadge status={data.pace.status} />
             {data.current && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 as of {formatTime(data.current.snapshot_at)}
               </span>
             )}

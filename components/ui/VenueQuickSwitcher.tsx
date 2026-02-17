@@ -26,7 +26,7 @@ export function VenueQuickSwitcher({ className = '' }: VenueQuickSwitcherProps) 
   };
 
   return (
-    <div className={`flex flex-wrap gap-2 pb-2 border-b border-border ${className}`}>
+    <div className={`flex flex-wrap gap-2 ${className}`}>
       <Button
         variant={isAllVenues ? "default" : "outline"}
         size="sm"
