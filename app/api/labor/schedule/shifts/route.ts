@@ -44,24 +44,65 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ positions: data });
     }
 
-    // Return change log (manager_feedback) for a venue/week
+    // Return change log directly from shift_assignments (is_modified=true)
+    // Uses admin client to bypass RLS, and reads from shift_assignments which is
+    // always reliably updated (manager_feedback inserts were silently failing via RLS).
     if (sp.get('changes_only') === 'true' && venueId) {
       const weekStart = sp.get('week_start');
-      const weekEnd = sp.get('week_end');
-      let query = supabase
-        .from('manager_feedback')
-        .select('id, feedback_type, business_date, original_recommendation, manager_decision, reason, created_at')
+      const admin = createAdminClient();
+
+      // Find the schedule for this venue+week
+      const { data: sched } = await admin
+        .from('weekly_schedules')
+        .select('id')
         .eq('venue_id', venueId)
-        .eq('feedback_type', 'override')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .eq('week_start_date', weekStart || '')
+        .maybeSingle();
 
-      if (weekStart) query = query.gte('business_date', weekStart);
-      if (weekEnd) query = query.lte('business_date', weekEnd);
+      if (!sched) return NextResponse.json({ changes: [] });
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return NextResponse.json({ changes: data });
+      // Get all modified/cancelled shifts for this schedule
+      const { data: shifts, error: shiftErr } = await admin
+        .from('shift_assignments')
+        .select('id, business_date, status, scheduled_hours, is_modified, modification_reason, modified_at, employee:employees(first_name, last_name), position:positions(name)')
+        .eq('schedule_id', sched.id)
+        .eq('is_modified', true)
+        .order('modified_at', { ascending: false })
+        .limit(100);
+
+      if (shiftErr) throw shiftErr;
+
+      // Map shift_assignments to ChangeEntry format expected by ScheduleChangeLog
+      const changes = (shifts || []).map((s: any) => {
+        const empName = s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : null;
+        const posName = s.position?.name || null;
+        const reason = s.modification_reason || '';
+        let originalRec: any;
+        let managerDec: any;
+
+        if (s.status === 'cancelled') {
+          originalRec = { action: 'shift_scheduled', employee_name: empName, position_name: posName, scheduled_hours: s.scheduled_hours };
+          managerDec = { action: 'shift_removed' };
+        } else if (reason.startsWith('[Added]')) {
+          originalRec = { action: 'no_shift_scheduled' };
+          managerDec = { action: 'added_shift', shift_type: 'dinner', scheduled_hours: s.scheduled_hours };
+        } else {
+          originalRec = { employee_name: empName, position_name: posName };
+          managerDec = { employee_name: empName };
+        }
+
+        return {
+          id: s.id,
+          feedback_type: 'override',
+          business_date: s.business_date,
+          original_recommendation: JSON.stringify(originalRec),
+          manager_decision: JSON.stringify(managerDec),
+          reason,
+          created_at: s.modified_at || new Date().toISOString(),
+        };
+      });
+
+      return NextResponse.json({ changes });
     }
 
     return NextResponse.json({ error: 'Missing query parameters' }, { status: 400 });
