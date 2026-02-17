@@ -103,16 +103,16 @@ BEGIN
   END IF;
 
   -- =====================================================
-  -- Delilah Las Vegas — closed Monday (matches other Delilahs)
+  -- Delilah Las Vegas — open 7 days (brunch on weekends)
   -- =====================================================
   SELECT id INTO v_venue_id FROM venues WHERE name ILIKE '%Delilah%Las Vegas%' LIMIT 1;
   IF v_venue_id IS NOT NULL THEN
     INSERT INTO location_config (venue_id, closed_weekdays)
-    VALUES (v_venue_id, '{0}')
+    VALUES (v_venue_id, '{}')
     ON CONFLICT (venue_id) DO UPDATE SET
       closed_weekdays = EXCLUDED.closed_weekdays,
       updated_at = NOW();
-    RAISE NOTICE 'Seeded location_config for Delilah Las Vegas (closed Mon)';
+    RAISE NOTICE 'Seeded location_config for Delilah Las Vegas (open 7 days)';
   END IF;
 
   -- =====================================================
