@@ -89,6 +89,7 @@ function buildEnrichmentFromSnapshot(
   const compsTotal = Number(snapshot.comps_total) || 0;
   const fohCost = Number(snapshot.labor_foh_cost) || 0;
   const bohCost = Number(snapshot.labor_boh_cost) || 0;
+  const otherCost = Math.max(0, laborCost - fohCost - bohCost);
 
   // Labor % denominator = net sales + comps (not gross/tax)
   const laborRevBase = netSales + compsTotal;
@@ -105,7 +106,7 @@ function buildEnrichmentFromSnapshot(
     punch_count: 0, // Not stored in snapshot
     foh: fohCost > 0 ? { hours: 0, cost: fohCost, employee_count: 0 } : null,
     boh: bohCost > 0 ? { hours: 0, cost: bohCost, employee_count: 0 } : null,
-    other: null,
+    other: otherCost > 0 ? { hours: 0, cost: otherCost, employee_count: 0 } : null,
   } : null;
 
   // Build comps
