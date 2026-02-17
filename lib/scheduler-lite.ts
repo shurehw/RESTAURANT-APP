@@ -1,61 +1,247 @@
 /**
  * Lightweight TypeScript scheduler for Vercel (no Python dependency).
- * Uses covers from demand_forecasts table (ML model per-venue, per-date predictions).
- * Falls back to DOW_FALLBACK if no forecast data found for a date.
+ *
+ * Demand-driven staggered wave scheduling:
+ * - Headcount sized from peak-hour demand (covers × peakPct / cplh)
+ * - Staff spread across early / main / late shift waves
+ * - Shorter, targeted shifts replace one long block per person
+ * - Uses covers from demand_forecasts table (ML model per-venue, per-date).
+ * - Falls back to DOW_FALLBACK if no forecast data found for a date.
  */
 
-import { createClient, createAdminClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 
 // Fallback DOW covers used only when demand_forecasts has no data for a date
-// (Delilah LA P75+10% baseline from historical server_day_facts)
 const DOW_FALLBACK: Record<number, { covers: number; revenue: number }> = {
   0: { covers: 627, revenue: 75000 },  // Sun
-  1: { covers: 0, revenue: 0 },        // Mon (closed)
-  2: { covers: 120, revenue: 15000 },   // Tue
-  3: { covers: 196, revenue: 22000 },   // Wed
-  4: { covers: 223, revenue: 28000 },   // Thu
-  5: { covers: 541, revenue: 65000 },   // Fri
-  6: { covers: 675, revenue: 80000 },   // Sat
+  1: { covers: 0,   revenue: 0 },      // Mon (closed)
+  2: { covers: 120, revenue: 15000 },  // Tue
+  3: { covers: 196, revenue: 22000 },  // Wed
+  4: { covers: 223, revenue: 28000 },  // Thu
+  5: { covers: 541, revenue: 65000 },  // Fri
+  6: { covers: 675, revenue: 80000 },  // Sat
 };
 
-// Position configs: CPLH, shift times, calculation method
-interface PosConfig {
-  cplh?: number;
-  ratio?: number;
-  fixed?: boolean;
-  shiftHours: number;
-  start: string;
-  end: string;
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type ShiftType = 'breakfast' | 'lunch' | 'dinner' | 'late_night';
+
+interface ShiftTemplate {
+  label: string;   // 'early' | 'main' | 'late' | 'prep' | 'day' | 'night' etc.
+  type: ShiftType; // stored in shift_assignments.shift_type
+  start: string;   // HH:MM (24h)
+  end: string;     // HH:MM (24h — may be < start for midnight-crossing shifts)
+  hours: number;   // shift length in decimal hours
 }
 
+interface PosConfig {
+  cplh?: number;          // covers per labor hour (variable-demand positions)
+  ratio?: number;         // daily covers per 1 employee (host, dishwasher)
+  fixed?: boolean;        // always schedule 1 person regardless of covers
+  peakPct: number;        // fraction of daily covers in the single busiest hour
+  templates: ShiftTemplate[]; // [early, main, late] wave definitions
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+/** 22% of daily covers typically land in the single busiest dinner hour */
+const PEAK_PCT = 0.22;
+
+/**
+ * Position wave configs for a dinner-focused restaurant.
+ * Each position lists 1–3 shift templates (early / main / late waves).
+ * Staff headcount at peak drives how many of each wave to schedule.
+ */
 const POS_CONFIG: Record<string, PosConfig> = {
-  'Server':            { cplh: 18,  shiftHours: 6.5,  start: '16:30', end: '23:00' },
-  'Bartender':         { cplh: 30,  shiftHours: 8.5,  start: '15:00', end: '23:30' },
-  'Busser':            { cplh: 35,  shiftHours: 6.5,  start: '16:30', end: '23:00' },
-  'Food Runner':       { cplh: 30,  shiftHours: 6.0,  start: '17:00', end: '23:00' },
-  'Host':              { ratio: 250, shiftHours: 6.0,  start: '16:30', end: '22:30' },
-  'Line Cook':         { cplh: 22,  shiftHours: 8.0,  start: '15:00', end: '23:00' },
-  'Prep Cook':         { cplh: 50,  shiftHours: 7.0,  start: '14:00', end: '21:00' },
-  'Dishwasher':        { ratio: 200, shiftHours: 8.5,  start: '15:00', end: '23:30' },
-  'Sous Chef':         { fixed: true, shiftHours: 9.0,  start: '14:00', end: '23:00' },
-  'Executive Chef':    { fixed: true, shiftHours: 8.0,  start: '15:00', end: '23:00' },
-  'General Manager':   { fixed: true, shiftHours: 10.0, start: '14:00', end: '00:00' },
-  'Assistant Manager': { fixed: true, shiftHours: 9.0,  start: '15:00', end: '00:00' },
-  'Shift Manager':     { cplh: 100, shiftHours: 8.0,  start: '16:00', end: '00:00' },
+  // ── Front of House ──────────────────────────────────────────────────────
+  'Server': {
+    cplh: 18,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
+      { label: 'main',  type: 'dinner',     start: '17:30', end: '22:00', hours: 4.5 },
+      { label: 'late',  type: 'late_night', start: '19:00', end: '23:30', hours: 4.5 },
+    ],
+  },
+  'Bartender': {
+    cplh: 30,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'day',   type: 'lunch',      start: '14:00', end: '20:00', hours: 6.0 },
+      { label: 'night', type: 'late_night', start: '18:00', end: '00:00', hours: 6.0 },
+    ],
+  },
+  'Busser': {
+    cplh: 35,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
+      { label: 'late',  type: 'late_night', start: '18:30', end: '23:00', hours: 4.5 },
+    ],
+  },
+  'Food Runner': {
+    cplh: 30,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'early', type: 'dinner',     start: '17:00', end: '21:00', hours: 4.0 },
+      { label: 'late',  type: 'late_night', start: '18:30', end: '23:00', hours: 4.5 },
+    ],
+  },
+  'Host': {
+    ratio: 250,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
+      { label: 'late',  type: 'late_night', start: '18:00', end: '23:00', hours: 5.0 },
+    ],
+  },
+
+  // ── Back of House ───────────────────────────────────────────────────────
+  'Line Cook': {
+    cplh: 22,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'prep',  type: 'lunch',      start: '13:00', end: '19:00', hours: 6.0 },
+      { label: 'early', type: 'dinner',     start: '15:00', end: '21:00', hours: 6.0 },
+      { label: 'late',  type: 'late_night', start: '17:00', end: '23:00', hours: 6.0 },
+    ],
+  },
+  'Prep Cook': {
+    cplh: 50,
+    peakPct: 0.15, // prep demand peaks before service
+    templates: [
+      { label: 'am', type: 'breakfast', start: '09:00', end: '15:00', hours: 6.0 },
+      { label: 'pm', type: 'lunch',     start: '12:00', end: '18:00', hours: 6.0 },
+    ],
+  },
+  'Dishwasher': {
+    ratio: 200,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'early', type: 'dinner',     start: '15:00', end: '21:00', hours: 6.0 },
+      { label: 'late',  type: 'late_night', start: '18:00', end: '00:00', hours: 6.0 },
+    ],
+  },
+
+  // ── Management (fixed: 1 per schedule day) ──────────────────────────────
+  'Sous Chef': {
+    fixed: true,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'main', type: 'dinner', start: '12:00', end: '22:00', hours: 10.0 },
+    ],
+  },
+  'Executive Chef': {
+    fixed: true,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'main', type: 'dinner', start: '11:00', end: '21:00', hours: 10.0 },
+    ],
+  },
+  'General Manager': {
+    fixed: true,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'main', type: 'dinner', start: '13:00', end: '23:00', hours: 10.0 },
+    ],
+  },
+  'Assistant Manager': {
+    fixed: true,
+    peakPct: PEAK_PCT,
+    // Two waves for full coverage: one for opening, one for close
+    templates: [
+      { label: 'early', type: 'dinner',     start: '14:00', end: '22:00', hours: 8.0 },
+      { label: 'late',  type: 'late_night', start: '17:00', end: '01:00', hours: 8.0 },
+    ],
+  },
+  'Shift Manager': {
+    cplh: 100,
+    peakPct: PEAK_PCT,
+    templates: [
+      { label: 'main', type: 'dinner', start: '16:00', end: '00:00', hours: 8.0 },
+    ],
+  },
 };
 
-function calcNeeded(covers: number, config: PosConfig): number {
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** How many staff are needed to cover the peak hour for this position */
+function calcPeakStaff(covers: number, config: PosConfig): number {
   if (covers === 0) return 0;
   if (config.fixed) return 1;
-  if (config.ratio) return Math.ceil(covers / config.ratio);
-  if (config.cplh) return Math.ceil(covers / (config.cplh * config.shiftHours));
+  if (config.ratio) return Math.max(1, Math.ceil(covers / config.ratio));
+  if (config.cplh)  return Math.max(1, Math.ceil(covers * config.peakPct / config.cplh));
   return 0;
 }
+
+/**
+ * Split peakStaff across the position's wave templates.
+ * Fixed positions always get 1 person per template (for full-day coverage).
+ * Variable positions: ~40/60 for 2 templates, ~25/50/25 for 3 templates.
+ */
+function distributeWaves(
+  peakStaff: number,
+  config: PosConfig,
+): { template: ShiftTemplate; count: number }[] {
+  const { templates, fixed } = config;
+
+  if (peakStaff === 0) return [];
+
+  // Fixed positions: 1 person per template (e.g., AM + PM manager)
+  if (fixed) {
+    return templates.map(t => ({ template: t, count: 1 }));
+  }
+
+  // Single template — all staff go here
+  if (templates.length === 1) {
+    return [{ template: templates[0], count: peakStaff }];
+  }
+
+  // Two templates: 40% early / 60% late
+  if (templates.length === 2) {
+    const earlyCount = Math.max(1, Math.floor(peakStaff * 0.4));
+    const lateCount  = peakStaff - earlyCount;
+    const result: { template: ShiftTemplate; count: number }[] = [];
+    if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
+    if (lateCount  > 0) result.push({ template: templates[1], count: lateCount });
+    return result;
+  }
+
+  // Three templates: 25% early / 50% main / 25% late
+  if (peakStaff === 1) {
+    // Single staff member → use middle (main) wave
+    return [{ template: templates[1], count: 1 }];
+  }
+  if (peakStaff === 2) {
+    // 1 early + 1 late (skip main — gives spread coverage)
+    return [
+      { template: templates[0], count: 1 },
+      { template: templates[2], count: 1 },
+    ];
+  }
+  const earlyCount = Math.max(1, Math.floor(peakStaff * 0.25));
+  const lateCount  = Math.max(1, Math.floor(peakStaff * 0.25));
+  const mainCount  = peakStaff - earlyCount - lateCount;
+  const result: { template: ShiftTemplate; count: number }[] = [];
+  if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
+  if (mainCount  > 0) result.push({ template: templates[1], count: mainCount });
+  if (lateCount  > 0) result.push({ template: templates[2], count: lateCount });
+  return result;
+}
+
+/** Returns the date string for the day after `date` (for midnight-crossing shifts) */
+function nextDay(date: string): string {
+  const d = new Date(date + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+// ── Main Scheduler ────────────────────────────────────────────────────────────
 
 export async function generateScheduleTS(
   venueId: string,
   weekStart: string,
-  save: boolean
+  save: boolean,
 ): Promise<{ scheduleId: string | null; shiftCount: number; totalHours: number; totalCost: number }> {
   const admin = createAdminClient();
 
@@ -77,11 +263,11 @@ export async function generateScheduleTS(
 
   if (!employees || employees.length === 0) throw new Error('No active employees found');
 
-  // Build position map
-  const posMap = new Map(positions.map(p => [p.id, p]));
+  // Build lookup maps
+  const posMap     = new Map(positions.map(p => [p.id, p]));
   const posNameMap = new Map(positions.map(p => [p.name, p]));
 
-  // Group employees by position name
+  // Group employees by their position name
   const empByPos = new Map<string, typeof employees>();
   for (const emp of employees) {
     const pos = posMap.get(emp.primary_position_id);
@@ -91,21 +277,16 @@ export async function generateScheduleTS(
     empByPos.set(pos.name, list);
   }
 
-  // Generate 7 days of the week
+  // Build the 7 days of the week
   const startDate = new Date(weekStart + 'T00:00:00Z');
   const weekDays: { date: string; dow: number }[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(startDate);
     d.setUTCDate(d.getUTCDate() + i);
-    weekDays.push({
-      date: d.toISOString().split('T')[0],
-      dow: d.getUTCDay(),
-    });
+    weekDays.push({ date: d.toISOString().split('T')[0], dow: d.getUTCDay() });
   }
 
-  // Fetch covers from demand_forecasts for this venue + week.
-  // Multiple forecast runs may exist per date — use only the most recently generated
-  // one per business_date (order by forecast_date DESC, keep first seen per date).
+  // Fetch covers from demand_forecasts (latest run per business_date)
   const dateCoversMap: Record<string, { covers: number; revenue: number }> = {};
   const { data: forecasts } = await admin
     .from('demand_forecasts')
@@ -113,11 +294,10 @@ export async function generateScheduleTS(
     .eq('venue_id', venueId)
     .in('business_date', weekDays.map(d => d.date))
     .order('business_date')
-    .order('forecast_date', { ascending: false }); // latest forecast run first
+    .order('forecast_date', { ascending: false });
 
   for (const f of forecasts || []) {
-    // Skip if we already have the latest forecast for this date
-    if (dateCoversMap[f.business_date]) continue;
+    if (dateCoversMap[f.business_date]) continue; // keep latest forecast only
     dateCoversMap[f.business_date] = {
       covers: Number(f.covers_predicted) || 0,
       revenue: Number(f.revenue_predicted) || 0,
@@ -126,7 +306,7 @@ export async function generateScheduleTS(
 
   const hasForecastData = Object.keys(dateCoversMap).length > 0;
 
-  // Delete existing schedule for this week/venue
+  // Delete any existing schedule for this venue + week
   if (save) {
     const { data: existing } = await admin
       .from('weekly_schedules')
@@ -140,31 +320,30 @@ export async function generateScheduleTS(
     }
   }
 
-  // Track hours per employee for the week
+  // Track per-employee hours and worked days for the week
   const empHours = new Map<string, number>();
-  const empDays = new Map<string, Set<string>>();
+  const empDays  = new Map<string, Set<string>>();
   const shifts: any[] = [];
   let totalHours = 0;
-  let totalCost = 0;
-  let totalCovers = 0;
+  let totalCost  = 0;
+  let totalCovers  = 0;
   let totalRevenue = 0;
 
-  // For each day, calculate requirements and assign
+  // ── Per-day scheduling ──────────────────────────────────────────────────
   for (const day of weekDays) {
-    // Use demand_forecasts if available, else fall back to DOW_FALLBACK
     const forecast = hasForecastData
       ? (dateCoversMap[day.date] ?? null)
       : (DOW_FALLBACK[day.dow] ?? null);
 
-    if (!forecast || forecast.covers === 0) continue; // no forecast or closed day
+    if (!forecast || forecast.covers === 0) continue;
 
-    totalCovers += forecast.covers;
+    totalCovers  += forecast.covers;
     totalRevenue += forecast.revenue;
 
-    // Calculate needs per position
+    // ── Per-position wave assignment ──────────────────────────────────────
     for (const [posName, config] of Object.entries(POS_CONFIG)) {
-      const needed = calcNeeded(forecast.covers, config);
-      if (needed === 0) continue;
+      const peakStaff = calcPeakStaff(forecast.covers, config);
+      if (peakStaff === 0) continue;
 
       const posInfo = posNameMap.get(posName);
       if (!posInfo) continue;
@@ -172,67 +351,81 @@ export async function generateScheduleTS(
       const pool = empByPos.get(posName) || [];
       if (pool.length === 0) continue;
 
-      // Sort by hours worked (least hours first for balance)
-      pool.sort((a, b) => (empHours.get(a.id) || 0) - (empHours.get(b.id) || 0));
+      const waves = distributeWaves(peakStaff, config);
 
-      let assigned = 0;
-      for (const emp of pool) {
-        if (assigned >= needed) break;
+      // ── Per-wave assignment ─────────────────────────────────────────────
+      for (const wave of waves) {
+        // Sort by fewest hours worked first (load balancing)
+        pool.sort((a, b) => (empHours.get(a.id) || 0) - (empHours.get(b.id) || 0));
 
-        // Skip if already worked this day
-        const days = empDays.get(emp.id) || new Set();
-        if (days.has(day.date)) continue;
+        let waveAssigned = 0;
 
-        // Skip if over weekly hours
-        const currentHours = empHours.get(emp.id) || 0;
-        if (!config.fixed && currentHours + config.shiftHours > (emp.max_hours_per_week || 40)) continue;
+        for (const emp of pool) {
+          if (waveAssigned >= wave.count) break;
 
-        // Assign shift
-        shifts.push({
-          venue_id: venueId,
-          employee_id: emp.id,
-          position_id: posInfo.id,
-          business_date: day.date,
-          shift_type: 'dinner',
-          scheduled_start: `${day.date}T${config.start}:00`,
-          scheduled_end: `${day.date}T${config.end}:00`,
-          scheduled_hours: config.shiftHours,
-          hourly_rate: posInfo.base_hourly_rate,
-          scheduled_cost: config.shiftHours * posInfo.base_hourly_rate,
-          status: 'scheduled',
-        });
+          // Skip if already scheduled on this day
+          const days = empDays.get(emp.id) || new Set<string>();
+          if (days.has(day.date)) continue;
 
-        empHours.set(emp.id, currentHours + config.shiftHours);
-        days.add(day.date);
-        empDays.set(emp.id, days);
-        totalHours += config.shiftHours;
-        totalCost += config.shiftHours * posInfo.base_hourly_rate;
-        assigned++;
+          // Skip if shift would push over weekly hour cap (non-fixed positions)
+          const currentHours = empHours.get(emp.id) || 0;
+          if (!config.fixed && currentHours + wave.template.hours > (emp.max_hours_per_week || 40)) continue;
+
+          // Determine end date (handles shifts that cross midnight)
+          const endDate = wave.template.end <= wave.template.start
+            ? nextDay(day.date)
+            : day.date;
+
+          const shiftCost = wave.template.hours * posInfo.base_hourly_rate;
+
+          shifts.push({
+            venue_id:         venueId,
+            employee_id:      emp.id,
+            position_id:      posInfo.id,
+            business_date:    day.date,
+            shift_type:       wave.template.type,
+            scheduled_start:  `${day.date}T${wave.template.start}:00`,
+            scheduled_end:    `${endDate}T${wave.template.end}:00`,
+            scheduled_hours:  wave.template.hours,
+            hourly_rate:      posInfo.base_hourly_rate,
+            scheduled_cost:   shiftCost,
+            status:           'scheduled',
+          });
+
+          empHours.set(emp.id, currentHours + wave.template.hours);
+          days.add(day.date);
+          empDays.set(emp.id, days);
+          totalHours += wave.template.hours;
+          totalCost  += shiftCost;
+          waveAssigned++;
+        }
       }
     }
   }
 
+  // ── Save to DB ────────────────────────────────────────────────────────────
   let scheduleId: string | null = null;
 
   if (save && shifts.length > 0) {
     const weekEnd = new Date(startDate);
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
 
-    // Create schedule record
     const { data: sched, error: schedErr } = await admin
       .from('weekly_schedules')
       .insert({
-        venue_id: venueId,
-        week_start_date: weekStart,
-        week_end_date: weekEnd.toISOString().split('T')[0],
-        status: 'draft',
-        total_labor_hours: Math.round(totalHours * 100) / 100,
-        total_labor_cost: Math.round(totalCost * 100) / 100,
-        overall_cplh: totalHours > 0 ? Math.round((totalCovers / totalHours) * 100) / 100 : 0,
-        projected_revenue: totalRevenue,
+        venue_id:            venueId,
+        week_start_date:     weekStart,
+        week_end_date:       weekEnd.toISOString().split('T')[0],
+        status:              'draft',
+        total_labor_hours:   Math.round(totalHours * 100) / 100,
+        total_labor_cost:    Math.round(totalCost * 100) / 100,
+        overall_cplh:        totalHours > 0
+                               ? Math.round((totalCovers / totalHours) * 100) / 100
+                               : 0,
+        projected_revenue:   totalRevenue,
         service_quality_score: 0.4,
-        optimization_mode: 'balanced',
-        auto_generated: true,
+        optimization_mode:   'balanced',
+        auto_generated:      true,
       })
       .select('id')
       .single();
@@ -240,12 +433,13 @@ export async function generateScheduleTS(
     if (schedErr) throw schedErr;
     scheduleId = sched.id;
 
-    // Insert shifts in batches
-    const shiftsWithScheduleId = shifts.map(s => ({ ...s, schedule_id: scheduleId }));
+    // Insert shifts in batches of 50
+    const shiftsWithId = shifts.map(s => ({ ...s, schedule_id: scheduleId }));
     const batchSize = 50;
-    for (let i = 0; i < shiftsWithScheduleId.length; i += batchSize) {
-      const batch = shiftsWithScheduleId.slice(i, i + batchSize);
-      const { error: shiftErr } = await admin.from('shift_assignments').insert(batch);
+    for (let i = 0; i < shiftsWithId.length; i += batchSize) {
+      const { error: shiftErr } = await admin
+        .from('shift_assignments')
+        .insert(shiftsWithId.slice(i, i + batchSize));
       if (shiftErr) throw shiftErr;
     }
   }
