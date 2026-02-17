@@ -89,7 +89,7 @@ function buildEnrichmentFromSnapshot(
   const compsTotal = Number(snapshot.comps_total) || 0;
   const fohCost = Number(snapshot.labor_foh_cost) || 0;
   const bohCost = Number(snapshot.labor_boh_cost) || 0;
-  const otherCost = Math.max(0, laborCost - fohCost - bohCost);
+  const otherCost = Number(snapshot.labor_other_cost) || Math.max(0, laborCost - fohCost - bohCost);
 
   // Labor % denominator = net sales + comps (not gross/tax)
   const laborRevBase = netSales + compsTotal;

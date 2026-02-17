@@ -187,6 +187,7 @@ async function processVenue(venueId: string): Promise<{
     labor_ot_hours: labor?.ot_hours ?? 0,
     labor_foh_cost: labor?.foh?.cost ?? 0,
     labor_boh_cost: labor?.boh?.cost ?? 0,
+    labor_other_cost: labor?.other?.cost ?? 0,
     // Comp enrichment
     comp_exception_count: compData?.summary.exception_count ?? 0,
     comp_critical_count: compData?.summary.critical_count ?? 0,
