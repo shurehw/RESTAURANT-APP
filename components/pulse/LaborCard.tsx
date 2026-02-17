@@ -30,7 +30,7 @@ function laborColor(_pct: number): string {
   return 'text-foreground';
 }
 
-export function LaborCard({ labor, loading }: { labor: LaborData | null; loading?: boolean }) {
+export function LaborCard({ labor, loading, netSales }: { labor: LaborData | null; loading?: boolean; netSales?: number }) {
   if (loading) {
     return (
       <Card>
@@ -118,8 +118,18 @@ export function LaborCard({ labor, loading }: { labor: LaborData | null; loading
         {totalDeptCost > 0 && (
           <div className="mt-3">
             <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
-              <span>FOH {fmt(fohCost)}</span>
-              <span>BOH {fmt(bohCost)}</span>
+              <span>
+                FOH {fmt(fohCost)}
+                {netSales && netSales > 0 && (
+                  <span className="ml-1 font-medium text-foreground">({((fohCost / netSales) * 100).toFixed(1)}%)</span>
+                )}
+              </span>
+              <span>
+                {netSales && netSales > 0 && (
+                  <span className="mr-1 font-medium text-foreground">({((bohCost / netSales) * 100).toFixed(1)}%)</span>
+                )}
+                BOH {fmt(bohCost)}
+              </span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden flex">
               <div

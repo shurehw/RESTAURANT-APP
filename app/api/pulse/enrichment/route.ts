@@ -90,12 +90,15 @@ function buildEnrichmentFromSnapshot(
   const fohCost = Number(snapshot.labor_foh_cost) || 0;
   const bohCost = Number(snapshot.labor_boh_cost) || 0;
 
+  // Labor % denominator = net sales + comps (not gross/tax)
+  const laborRevBase = netSales + compsTotal;
+
   // Build labor (only if we have actual labor data)
   const labor = laborHours > 0 || laborCost > 0 ? {
     total_hours: laborHours,
     labor_cost: laborCost,
-    labor_pct: netSales > 0 ? (laborCost / netSales) * 100 : 0,
-    splh: laborHours > 0 ? netSales / laborHours : 0,
+    labor_pct: laborRevBase > 0 ? (laborCost / laborRevBase) * 100 : 0,
+    splh: laborHours > 0 ? laborRevBase / laborHours : 0,
     ot_hours: Number(snapshot.labor_ot_hours) || 0,
     covers_per_labor_hour: laborHours > 0 ? covers / laborHours : null,
     employee_count: Number(snapshot.labor_employee_count) || 0,
@@ -129,7 +132,8 @@ async function fetchLaborDayFact(
   venueId: string,
   date: string,
   netSales: number,
-  covers: number
+  covers: number,
+  compsTotal: number = 0
 ): Promise<VenueEnrichment['labor']> {
   const { data } = await svc
     .from('labor_day_facts')
@@ -142,14 +146,15 @@ async function fetchLaborDayFact(
 
   const totalHours = Number(data.total_hours) || 0;
   const laborCost = Number(data.labor_cost) || 0;
+  const laborRevBase = netSales + compsTotal;
   const buildDept = (h: number, c: number, e: number) =>
     (h > 0 || c > 0) ? { hours: h, cost: c, employee_count: e } : null;
 
   return {
     total_hours: totalHours,
     labor_cost: laborCost,
-    labor_pct: netSales > 0 ? (laborCost / netSales) * 100 : 0,
-    splh: totalHours > 0 ? netSales / totalHours : 0,
+    labor_pct: laborRevBase > 0 ? (laborCost / laborRevBase) * 100 : 0,
+    splh: totalHours > 0 ? laborRevBase / totalHours : 0,
     ot_hours: Number(data.ot_hours) || 0,
     covers_per_labor_hour: totalHours > 0 ? covers / totalHours : null,
     employee_count: Number(data.employee_count) || 0,
@@ -177,7 +182,8 @@ async function handleSingleVenue(venueId: string, date: string) {
     if (!result.labor) {
       const netSales = Number(snapshot?.net_sales) || 0;
       const covers = Number(snapshot?.covers_count) || 0;
-      result.labor = await fetchLaborDayFact(svc, venueId, date, netSales, covers);
+      const comps = Number(snapshot?.comps_total) || 0;
+      result.labor = await fetchLaborDayFact(svc, venueId, date, netSales, covers, comps);
     }
 
     return NextResponse.json(result);
@@ -218,7 +224,7 @@ async function handleGroupEnrichment(date: string) {
       const laborFallbacks = await Promise.all(
         missingLabor.map(v => {
           const snap = snapshots[venueIds.indexOf(v.venue_id)];
-          return fetchLaborDayFact(svc, v.venue_id, date, Number(snap?.net_sales) || 0, Number(snap?.covers_count) || 0);
+          return fetchLaborDayFact(svc, v.venue_id, date, Number(snap?.net_sales) || 0, Number(snap?.covers_count) || 0, Number(snap?.comps_total) || 0);
         })
       );
       missingLabor.forEach((v, i) => {

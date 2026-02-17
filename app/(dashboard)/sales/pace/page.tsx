@@ -1324,6 +1324,7 @@ export default function LivePulsePage() {
                     boh: periodData.venue.labor_current.boh_cost > 0 ? { hours: 0, cost: periodData.venue.labor_current.boh_cost, employee_count: 0 } : null,
                     other: null,
                   } : null}
+                  netSales={periodData.venue.current.net_sales + periodData.venue.current.comps_total}
                 />
                 <CompCard
                   comps={periodData.venue.current.net_sales > 0 ? {
@@ -1429,7 +1430,7 @@ export default function LivePulsePage() {
 
           {/* Labor + Comps */}
           <div className="grid gap-4 md:grid-cols-2">
-            <LaborCard labor={enrichment?.labor ?? null} loading={enrichmentLoading} />
+            <LaborCard labor={enrichment?.labor ?? null} loading={enrichmentLoading} netSales={(data.current?.net_sales ?? 0) + (data.current?.comps_total ?? 0)} />
             <CompCard comps={enrichment?.comps ?? null} loading={enrichmentLoading} />
           </div>
 
