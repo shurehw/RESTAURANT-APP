@@ -321,9 +321,14 @@ function formatNumber(value: number): string {
 }
 
 function formatTime(isoString: string): string {
-  return new Date(isoString).toLocaleTimeString('en-US', {
+  const d = new Date(isoString);
+  // Round to nearest hour
+  if (d.getMinutes() >= 30) {
+    d.setHours(d.getHours() + 1);
+  }
+  d.setMinutes(0, 0, 0);
+  return d.toLocaleTimeString('en-US', {
     hour: 'numeric',
-    minute: '2-digit',
     hour12: true,
   });
 }
@@ -572,6 +577,7 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
     );
   }
 
+  // Sorted newest-first; delta = difference from the previous (older) snapshot
   const sorted = [...snapshots].reverse();
 
   return (
@@ -581,6 +587,7 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
           <tr className="border-b text-left text-muted-foreground">
             <th className="pb-2 pr-4 font-medium">Time</th>
             <th className="pb-2 pr-4 font-medium text-right">Net Sales</th>
+            <th className="pb-2 pr-4 font-medium text-right">$ Change</th>
             <th className="pb-2 pr-4 font-medium text-right">Covers</th>
             <th className="pb-2 pr-4 font-medium text-right">Checks</th>
             <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
@@ -589,26 +596,41 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
           </tr>
         </thead>
         <tbody>
-          {sorted.map((s) => (
-            <tr key={s.id} className="border-b border-border/50 hover:bg-muted/50">
-              <td className="py-2 pr-4">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-3 w-3 text-muted-foreground" />
-                  {formatTime(s.snapshot_at)}
-                </div>
-              </td>
-              <td className="py-2 pr-4 text-right font-medium">{formatCurrency(s.net_sales)}</td>
-              <td className="py-2 pr-4 text-right">{formatNumber(s.covers_count)}</td>
-              <td className="py-2 pr-4 text-right">{formatNumber(s.checks_count)}</td>
-              <td className="py-2 pr-4 text-right">
-                {s.avg_check != null ? formatCurrency(s.avg_check) : '—'}
-              </td>
-              <td className="py-2 pr-4 text-right">
-                {s.bev_pct != null ? `${s.bev_pct.toFixed(0)}%` : '—'}
-              </td>
-              <td className="py-2 text-right">{formatCurrency(s.comps_total)}</td>
-            </tr>
-          ))}
+          {sorted.map((s, i) => {
+            // Next item in sorted (newest-first) is the previous snapshot chronologically
+            const prev = i < sorted.length - 1 ? sorted[i + 1] : null;
+            const delta = prev != null ? s.net_sales - prev.net_sales : null;
+
+            return (
+              <tr key={s.id} className="border-b border-border/50 hover:bg-muted/50">
+                <td className="py-2 pr-4">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    {formatTime(s.snapshot_at)}
+                  </div>
+                </td>
+                <td className="py-2 pr-4 text-right font-medium">{formatCurrency(s.net_sales)}</td>
+                <td className="py-2 pr-4 text-right tabular-nums">
+                  {delta != null ? (
+                    <span className={delta > 0 ? 'text-emerald-500' : delta < 0 ? 'text-red-500' : 'text-muted-foreground'}>
+                      {delta > 0 ? '+' : ''}{formatCurrency(delta)}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="py-2 pr-4 text-right">{formatNumber(s.covers_count)}</td>
+                <td className="py-2 pr-4 text-right">{formatNumber(s.checks_count)}</td>
+                <td className="py-2 pr-4 text-right">
+                  {s.avg_check != null ? formatCurrency(s.avg_check) : '—'}
+                </td>
+                <td className="py-2 pr-4 text-right">
+                  {s.bev_pct != null ? `${s.bev_pct.toFixed(0)}%` : '—'}
+                </td>
+                <td className="py-2 text-right">{formatCurrency(s.comps_total)}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
