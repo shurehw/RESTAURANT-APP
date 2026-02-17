@@ -97,6 +97,13 @@ export function LaborCard({ labor, loading }: { labor: LaborData | null; loading
             <span className="font-medium text-foreground">{labor.employee_count}</span>
             <span>staff</span>
           </div>
+          {labor.covers_per_labor_hour != null && labor.covers_per_labor_hour > 0 && (
+            <div className="flex items-center gap-1 text-muted-foreground col-span-2">
+              <span>CPLH:</span>
+              <span className="font-medium text-foreground">{labor.covers_per_labor_hour.toFixed(1)}</span>
+              <span>covers/labor hr</span>
+            </div>
+          )}
         </div>
 
         {/* OT warning */}

@@ -13,13 +13,12 @@ import {
   getLatestSnapshot,
   getForecastForDate,
   getSDLWFacts,
+  getSDLYFacts,
   getSalesPaceSettings,
   getActiveSalesPaceVenues,
-  computeProjectedEOD,
   computePaceStatus,
   getVenueTimezone,
   getBusinessDateForTimezone,
-  getNowInTimezone,
 } from '@/lib/database/sales-pace';
 import { getServiceClient } from '@/lib/supabase/service';
 
@@ -63,34 +62,28 @@ export async function GET(request: NextRequest) {
 // SINGLE VENUE
 // ══════════════════════════════════════════════════════════════════════════
 
-async function buildVenuePace(venueId: string, date: string, tz: string) {
-  const [settings, snapshots, latest, forecast, sdlw] = await Promise.all([
+async function buildVenuePace(venueId: string, date: string, _tz: string) {
+  const [settings, snapshots, latest, forecast, sdlw, sdly] = await Promise.all([
     getSalesPaceSettings(venueId),
     getSnapshotsForDate(venueId, date),
     getLatestSnapshot(venueId, date),
     getForecastForDate(venueId, date),
     getSDLWFacts(venueId, date),
+    getSDLYFacts(venueId, date),
   ]);
-
-  const startHour = settings?.service_start_hour ?? 11;
-  const endHour = settings?.service_end_hour ?? 3;
-  const venueNow = getNowInTimezone(tz);
 
   const currentNetSales = latest?.net_sales ?? 0;
   const currentCovers = latest?.covers_count ?? 0;
 
-  const projectedRevenue = currentNetSales > 0
-    ? computeProjectedEOD(currentNetSales, startHour, endHour, venueNow)
-    : 0;
-  const projectedCovers = currentCovers > 0
-    ? computeProjectedEOD(currentCovers, startHour, endHour, venueNow)
-    : 0;
-
+  // Target = demand forecast, falling back to SDLW
+  const hasForecast = forecast?.revenue_predicted != null;
   const revenueTarget = forecast?.revenue_predicted ?? sdlw?.net_sales ?? 0;
   const coversTarget = forecast?.covers_predicted ?? sdlw?.covers_count ?? 0;
+  const targetSource: 'forecast' | 'sdlw' | 'none' = hasForecast ? 'forecast' : (sdlw ? 'sdlw' : 'none');
 
-  const revenueStatus = computePaceStatus(projectedRevenue, revenueTarget, settings);
-  const coversStatus = computePaceStatus(projectedCovers, coversTarget, settings);
+  // Compare actuals directly against forecast (no linear projection)
+  const revenueStatus = computePaceStatus(currentNetSales, revenueTarget, settings);
+  const coversStatus = computePaceStatus(currentCovers, coversTarget, settings);
 
   const statusPriority: Record<string, number> = { critical: 3, warning: 2, on_pace: 1, no_target: 0 };
   const overallStatus = statusPriority[revenueStatus] >= statusPriority[coversStatus]
@@ -103,6 +96,7 @@ async function buildVenuePace(venueId: string, date: string, tz: string) {
     snapshots,
     forecast,
     sdlw,
+    sdly,
     settings: settings ? {
       service_start_hour: settings.service_start_hour,
       service_end_hour: settings.service_end_hour,
@@ -112,13 +106,12 @@ async function buildVenuePace(venueId: string, date: string, tz: string) {
     pace: {
       revenue_pct: revenueTarget > 0 ? Math.round((currentNetSales / revenueTarget) * 100) : null,
       covers_pct: coversTarget > 0 ? Math.round((currentCovers / coversTarget) * 100) : null,
-      projected_revenue: projectedRevenue,
-      projected_covers: projectedCovers,
       revenue_target: revenueTarget,
       covers_target: coversTarget,
       revenue_status: revenueStatus,
       covers_status: coversStatus,
       status: overallStatus,
+      target_source: targetSource,
     },
   };
 }
@@ -176,6 +169,7 @@ async function handleGroupView(request: NextRequest) {
       revenue_target: venues.reduce((sum, v) => sum + (v.pace?.revenue_target ?? 0), 0),
       covers_target: venues.reduce((sum, v) => sum + (v.pace?.covers_target ?? 0), 0),
       sdlw_net: venues.reduce((sum, v) => sum + (v.sdlw?.net_sales ?? 0), 0),
+      sdly_net: venues.reduce((sum, v) => sum + (v.sdly?.net_sales ?? 0), 0),
     };
 
     return NextResponse.json({ date, venues, totals });

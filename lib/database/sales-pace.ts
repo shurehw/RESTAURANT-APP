@@ -290,56 +290,51 @@ export async function getSDLWFacts(
   };
 }
 
+export async function getSDLYFacts(
+  venueId: string,
+  date: string
+): Promise<SDLWData | null> {
+  // Same DOW last year = 364 days back (52 weeks)
+  const current = new Date(date + 'T12:00:00');
+  const sdly = new Date(current);
+  sdly.setDate(sdly.getDate() - 364);
+  const sdlyStr = sdly.toISOString().split('T')[0];
+
+  const supabase = getServiceClient();
+  const { data, error } = await (supabase as any)
+    .from('venue_day_facts')
+    .select('gross_sales, net_sales, covers_count, checks_count, food_sales, beverage_sales')
+    .eq('venue_id', venueId)
+    .eq('business_date', sdlyStr)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Failed to fetch SDLY facts:', error.message);
+    return null;
+  }
+
+  if (!data) return null;
+
+  return {
+    gross_sales: parseFloat(data.gross_sales) || 0,
+    net_sales: parseFloat(data.net_sales) || 0,
+    covers_count: parseInt(data.covers_count) || 0,
+    checks_count: parseInt(data.checks_count) || 0,
+    food_sales: parseFloat(data.food_sales) || 0,
+    beverage_sales: parseFloat(data.beverage_sales) || 0,
+  };
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // PACE COMPUTATION
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Calculate projected end-of-day revenue based on current velocity.
- * Uses elapsed % of total service hours to extrapolate.
- */
-export function computeProjectedEOD(
-  currentTotal: number,
-  serviceStartHour: number,
-  serviceEndHour: number,
-  now?: Date
-): number {
-  const current = now || new Date();
-  const currentMinutes = current.getHours() * 60 + current.getMinutes();
-
-  // Total service minutes (handle overnight)
-  let totalMinutes: number;
-  if (serviceStartHour <= serviceEndHour) {
-    totalMinutes = (serviceEndHour - serviceStartHour) * 60;
-  } else {
-    totalMinutes = (24 - serviceStartHour + serviceEndHour) * 60;
-  }
-
-  // Elapsed minutes since service start
-  let elapsedMinutes: number;
-  const startMinutes = serviceStartHour * 60;
-  if (serviceStartHour <= serviceEndHour) {
-    elapsedMinutes = currentMinutes - startMinutes;
-  } else {
-    if (currentMinutes >= startMinutes) {
-      elapsedMinutes = currentMinutes - startMinutes;
-    } else {
-      elapsedMinutes = (24 * 60 - startMinutes) + currentMinutes;
-    }
-  }
-
-  // Clamp to valid range
-  elapsedMinutes = Math.max(1, Math.min(elapsedMinutes, totalMinutes));
-
-  const elapsedPct = elapsedMinutes / totalMinutes;
-  return Math.round(currentTotal / elapsedPct);
-}
-
-/**
- * Determine pace status based on projected EOD vs target.
+ * Determine pace status by comparing actual vs forecast target.
+ * Warning/critical thresholds define how far below the forecast triggers an alert.
  */
 export function computePaceStatus(
-  projectedEOD: number,
+  actual: number,
   target: number,
   settings: SalesPaceSettings | null
 ): PaceStatus {
@@ -348,7 +343,7 @@ export function computePaceStatus(
   const warningPct = settings?.pace_warning_pct ?? 15;
   const criticalPct = settings?.pace_critical_pct ?? 25;
 
-  const pctOfTarget = (projectedEOD / target) * 100;
+  const pctOfTarget = (actual / target) * 100;
   const pctBelow = 100 - pctOfTarget;
 
   if (pctBelow >= criticalPct) return 'critical';

@@ -80,6 +80,14 @@ interface PaceData {
     food_sales: number;
     beverage_sales: number;
   } | null;
+  sdly: {
+    gross_sales: number;
+    net_sales: number;
+    covers_count: number;
+    checks_count: number;
+    food_sales: number;
+    beverage_sales: number;
+  } | null;
   settings: {
     service_start_hour: number;
     service_end_hour: number;
@@ -89,13 +97,12 @@ interface PaceData {
   pace: {
     revenue_pct: number | null;
     covers_pct: number | null;
-    projected_revenue: number;
-    projected_covers: number;
     revenue_target: number;
     covers_target: number;
     revenue_status: string;
     covers_status: string;
     status: string;
+    target_source: 'forecast' | 'sdlw' | 'none';
   };
 }
 
@@ -374,30 +381,49 @@ function PaceBadge({ status }: { status: string }) {
   );
 }
 
+function ComparisonLine({ label, value, current, fmt }: { label: string; value: number; current: number; fmt: (v: number) => string }) {
+  return (
+    <div className="flex items-center gap-1 text-xs">
+      <span className="text-muted-foreground">{label}:</span>
+      <span className="font-medium">{fmt(value)}</span>
+      {current > 0 && (
+        current >= value ? (
+          <TrendingUp className="h-3 w-3 text-emerald-500" />
+        ) : (
+          <TrendingDown className="h-3 w-3 text-red-500" />
+        )
+      )}
+    </div>
+  );
+}
+
 function GaugeCard({
   title,
   icon: Icon,
   current,
   target,
-  projected,
   pct,
   status,
   sdlw,
+  sdly,
   format = 'currency',
+  targetSource = 'forecast',
 }: {
   title: string;
   icon: any;
   current: number;
   target: number;
-  projected: number;
   pct: number | null;
   status: string;
   sdlw: number | null;
+  sdly: number | null;
   format?: 'currency' | 'number';
+  targetSource?: 'forecast' | 'sdlw' | 'none';
 }) {
   const fmt = format === 'currency' ? formatCurrency : formatNumber;
   const config = STATUS_COLORS[status] || STATUS_COLORS.no_target;
   const progressPct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+  const targetLabel = targetSource === 'forecast' ? 'forecast' : 'SDLW';
 
   return (
     <Card>
@@ -411,7 +437,7 @@ function GaugeCard({
         {target > 0 && (
           <div className="mt-3 space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{pct != null ? `${pct}%` : '—'} of target</span>
+              <span>{pct != null ? `${pct}% of ${targetLabel}` : '—'}</span>
               <span>{fmt(target)}</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
@@ -427,27 +453,14 @@ function GaugeCard({
           </div>
         )}
 
-        {projected > 0 && (
-          <div className="mt-2 text-xs text-muted-foreground">
-            Projected EOD: <span className="font-medium text-foreground">{fmt(projected)}</span>
-          </div>
-        )}
-
-        {sdlw != null && sdlw > 0 && (
-          <div className="mt-1 flex items-center gap-1 text-xs">
-            <span className="text-muted-foreground">SDLW:</span>
-            <span className="font-medium">{fmt(sdlw)}</span>
-            {current > 0 && (
-              <>
-                {current >= sdlw ? (
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                ) : (
-                  <TrendingDown className="h-3 w-3 text-red-500" />
-                )}
-              </>
-            )}
-          </div>
-        )}
+        <div className="mt-1 space-y-0.5">
+          {sdlw != null && sdlw > 0 && (
+            <ComparisonLine label="SDLW" value={sdlw} current={current} fmt={fmt} />
+          )}
+          {sdly != null && sdly > 0 && (
+            <ComparisonLine label="SDLY" value={sdly} current={current} fmt={fmt} />
+          )}
+        </div>
       </CardContent>
     </Card>
   );
@@ -1378,20 +1391,22 @@ export default function LivePulsePage() {
               icon={DollarSign}
               current={data.current?.net_sales ?? 0}
               target={data.pace.revenue_target}
-              projected={data.pace.projected_revenue}
               pct={data.pace.revenue_pct}
               status={data.pace.revenue_status}
               sdlw={data.sdlw?.net_sales ?? null}
+              sdly={data.sdly?.net_sales ?? null}
+              targetSource={data.pace.target_source}
             />
             <GaugeCard
               title="Covers"
               icon={Users}
               current={data.current?.covers_count ?? 0}
               target={data.pace.covers_target}
-              projected={data.pace.projected_covers}
               pct={data.pace.covers_pct}
               status={data.pace.covers_status}
               sdlw={data.sdlw?.covers_count ?? null}
+              sdly={data.sdly?.covers_count ?? null}
+              targetSource={data.pace.target_source}
               format="number"
             />
             <GaugeCard
@@ -1399,10 +1414,10 @@ export default function LivePulsePage() {
               icon={TrendingUp}
               current={data.current?.avg_check ?? 0}
               target={0}
-              projected={0}
               pct={null}
               status="no_target"
               sdlw={data.sdlw ? data.sdlw.gross_sales / Math.max(data.sdlw.checks_count, 1) : null}
+              sdly={data.sdly ? data.sdly.gross_sales / Math.max(data.sdly.checks_count, 1) : null}
             />
             <CategoryMixCard
               foodSales={data.current?.food_sales ?? 0}
