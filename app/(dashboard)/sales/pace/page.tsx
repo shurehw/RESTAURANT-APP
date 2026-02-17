@@ -665,6 +665,7 @@ function ServiceChart({
               tickLine={false}
               axisLine={false}
               width={50}
+              domain={[0, Math.ceil(revenueMax * 1.15)]}
             />
           )}
           <RechartsTooltip
@@ -1467,7 +1468,9 @@ export default function LivePulsePage() {
                     labor_pct: periodData.venue.labor_current.labor_pct,
                     splh: periodData.venue.labor_current.splh,
                     ot_hours: periodData.venue.labor_current.ot_hours,
-                    covers_per_labor_hour: null,
+                    covers_per_labor_hour: periodData.venue.labor_current.total_hours > 0
+                      ? periodData.venue.current.covers_count / periodData.venue.labor_current.total_hours
+                      : null,
                     employee_count: periodData.venue.labor_current.employee_count,
                     punch_count: 0,
                     foh: periodData.venue.labor_current.foh_cost > 0 ? { hours: 0, cost: periodData.venue.labor_current.foh_cost, employee_count: 0 } : null,
