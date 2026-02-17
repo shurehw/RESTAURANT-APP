@@ -104,6 +104,7 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
     }
   }, [selectedVenue?.id]);
   const [approving, setApproving] = useState(false);
+  const [reopening, setReopening] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   // Edit dialog state
@@ -244,6 +245,34 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
       toast.error('Failed to approve schedule');
     } finally {
       setApproving(false);
+    }
+  };
+
+  const handleReopenSchedule = async () => {
+    if (!schedule) return;
+    const confirmed = window.confirm(
+      'Reopen this published schedule for editing?\n\nIt will be set back to Draft so you can make changes, then re-approve.'
+    );
+    if (!confirmed) return;
+
+    setReopening(true);
+    try {
+      const response = await fetch('/api/labor/schedule/generate', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ schedule_id: schedule.id, status: 'draft' }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Schedule reopened for editing');
+        window.location.href = `/labor/schedule?week=${weekStart}&venue=${venueId}`;
+      } else {
+        toast.error(data.message || 'Failed to reopen schedule');
+      }
+    } catch {
+      toast.error('Failed to reopen schedule');
+    } finally {
+      setReopening(false);
     }
   };
 
@@ -487,6 +516,18 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
                 </Button>
               </>
             )}
+            {schedule.status === 'published' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReopenSchedule}
+                disabled={reopening}
+                className="border-amber-300 text-amber-700 hover:bg-amber-50"
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                {reopening ? 'Reopening...' : 'Reopen for Edits'}
+              </Button>
+            )}
           </div>
         </div>
       </Card>
@@ -498,6 +539,16 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
           <span>
             This schedule is a <strong>draft</strong>. Click any shift to edit it, or use the + button to add shifts.
             When ready, click <strong>Approve & Publish</strong> to finalize. All changes are tracked.
+          </span>
+        </div>
+      )}
+
+      {/* Info banner for published schedules */}
+      {schedule.status === 'published' && (
+        <div className="flex items-start gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+          <Lock className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            This schedule is <strong>published</strong>. To make changes, click <strong>Reopen for Edits</strong> — it will return to Draft so you can modify shifts and re-approve.
           </span>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertRole, assertVenueAccess } from '@/lib/tenant';
@@ -159,14 +159,15 @@ export async function PATCH(request: NextRequest) {
 
     if (updateErr) throw updateErr;
 
-    // Log to manager_feedback for model learning
+    // Log to manager_feedback for model learning (admin client bypasses RLS)
     const newValues: Record<string, any> = {};
     if (validated.employee_id) newValues.employee_id = validated.employee_id;
     if (validated.scheduled_start) newValues.scheduled_start = validated.scheduled_start;
     if (validated.scheduled_end) newValues.scheduled_end = validated.scheduled_end;
     if (validated.scheduled_hours) newValues.scheduled_hours = validated.scheduled_hours;
 
-    await supabase.from('manager_feedback').insert({
+    const admin = createAdminClient();
+    await admin.from('manager_feedback').insert({
       venue_id: original.schedule.venue_id,
       manager_id: user.id,
       feedback_type: 'override',
@@ -350,8 +351,9 @@ export async function DELETE(request: NextRequest) {
 
     if (updateErr) throw updateErr;
 
-    // Log to manager_feedback
-    await supabase.from('manager_feedback').insert({
+    // Log to manager_feedback (admin client bypasses RLS)
+    const admin = createAdminClient();
+    await admin.from('manager_feedback').insert({
       venue_id: original.schedule.venue_id,
       manager_id: user.id,
       feedback_type: 'override',

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant';
@@ -121,7 +121,8 @@ export async function PATCH(request: NextRequest) {
       if (validated.status === 'published') updates.published_at = new Date().toISOString();
     }
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS (auth validated above)
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('weekly_schedules')
       .update(updates)
@@ -130,6 +131,6 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) throw error;
-    return NextResponse.json({ schedule: data });
+    return NextResponse.json({ success: true, schedule: data });
   });
 }
