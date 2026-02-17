@@ -21,7 +21,8 @@ import {
   LaborDayFact,
 } from '@/lib/database/sales-pace';
 import { getServiceClient } from '@/lib/supabase/service';
-import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear } from '@/lib/fiscal-calendar';
+import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear, getSamePeriodLastYear } from '@/lib/fiscal-calendar';
+import { fetchCompsByReasonForRange, type CompByReason } from '@/lib/database/tipsee';
 import type { PtdWeekRow } from '@/components/reports/PeriodWeekBreakdown';
 import type { YtdPeriodRow } from '@/components/reports/YtdPeriodBreakdown';
 
@@ -64,21 +65,48 @@ interface PeriodDayRow {
   prior_covers: number | null;
 }
 
+interface VarianceSet {
+  net_sales_pct: number | null;
+  covers_pct: number | null;
+  avg_check_pct: number | null;
+  labor_pct_delta: number | null;
+  comp_pct_delta: number | null;
+}
+
 interface VenuePeriodData {
   venue_id: string;
   venue_name: string;
   current: PeriodAggregation;
   prior: PeriodAggregation;
+  secondary_prior: PeriodAggregation | null;
   labor_current: PeriodLaborAggregation | null;
   labor_prior: PeriodLaborAggregation | null;
-  variance: {
-    net_sales_pct: number | null;
-    covers_pct: number | null;
-    avg_check_pct: number | null;
-    labor_pct_delta: number | null;
-    comp_pct_delta: number | null;
-  };
+  variance: VarianceSet;
+  secondary_variance: VarianceSet | null;
   days: PeriodDayRow[];
+  comp_by_reason?: CompByReason[];
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════════
+
+async function getTipseeLocationUuids(venueIds: string[]): Promise<Map<string, string[]>> {
+  const svc = getServiceClient();
+  const { data } = await (svc as any)
+    .from('venue_tipsee_mapping')
+    .select('venue_id, tipsee_location_uuid')
+    .in('venue_id', venueIds)
+    .eq('is_active', true);
+
+  const map = new Map<string, string[]>();
+  for (const row of data || []) {
+    if (!row.tipsee_location_uuid) continue;
+    const existing = map.get(row.venue_id) || [];
+    existing.push(row.tipsee_location_uuid);
+    map.set(row.venue_id, existing);
+  }
+  return map;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -101,21 +129,37 @@ function shiftDate(dateStr: string, days: number): string {
   return d.toISOString().split('T')[0];
 }
 
-function computeDateRanges(
-  view: PulseViewMode,
-  anchorDate: string,
-  fiscalConfig: { calendarType: any; fyStartDate: string | null }
-): {
+interface DateRanges {
   currentStart: string;
   currentEnd: string;
   priorStart: string;
   priorEnd: string;
-} {
+  priorLabel: string;
+  secondaryPriorStart: string | null;
+  secondaryPriorEnd: string | null;
+  secondaryPriorLabel: string | null;
+}
+
+function computeDateRanges(
+  view: PulseViewMode,
+  anchorDate: string,
+  fiscalConfig: { calendarType: any; fyStartDate: string | null }
+): DateRanges {
   if (view === 'wtd') {
     const currentStart = getWeekStart(anchorDate);
     const priorStart = shiftDate(currentStart, -7);
     const priorEnd = shiftDate(anchorDate, -7);
-    return { currentStart, currentEnd: anchorDate, priorStart, priorEnd };
+
+    // Secondary: Same Week Last Year (52 weeks back = 364 days)
+    const secStart = shiftDate(currentStart, -364);
+    const secEnd = shiftDate(anchorDate, -364);
+
+    return {
+      currentStart, currentEnd: anchorDate, priorStart, priorEnd,
+      priorLabel: 'vs LW',
+      secondaryPriorStart: secStart, secondaryPriorEnd: secEnd,
+      secondaryPriorLabel: 'vs SWLY',
+    };
   }
 
   if (view === 'ptd') {
@@ -129,13 +173,21 @@ function computeDateRanges(
     const anchorDateObj = new Date(anchorParts[0], anchorParts[1] - 1, anchorParts[2]);
     const daysIntoPeriod = Math.floor((anchorDateObj.getTime() - periodStartDate.getTime()) / (24 * 60 * 60 * 1000));
 
-    // Previous period
+    // Primary: Previous period (vs LP)
     const prevPeriodLastDay = shiftDate(currentStart, -1);
     const prevPeriodInfo = getFiscalPeriod(prevPeriodLastDay, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
     const priorStart = prevPeriodInfo.periodStartDate;
     const priorEnd = shiftDate(priorStart, daysIntoPeriod);
 
-    return { currentStart, currentEnd: anchorDate, priorStart, priorEnd };
+    // Secondary: Same Period Last Year (vs SPLY)
+    const sply = getSamePeriodLastYear(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
+
+    return {
+      currentStart, currentEnd: anchorDate, priorStart, priorEnd,
+      priorLabel: 'vs LP',
+      secondaryPriorStart: sply.startDate, secondaryPriorEnd: sply.endDate,
+      secondaryPriorLabel: 'vs SPLY',
+    };
   }
 
   // YTD — use getFiscalYearStart to find the correct FY start
@@ -161,6 +213,10 @@ function computeDateRanges(
     currentEnd: anchorDate,
     priorStart,
     priorEnd,
+    priorLabel: 'vs LY',
+    secondaryPriorStart: null,
+    secondaryPriorEnd: null,
+    secondaryPriorLabel: null,
   };
 }
 
@@ -417,13 +473,23 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
   const ranges = computeDateRanges(view, anchorDate, fiscalConfig);
   const fiscalPeriod = getFiscalPeriod(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
 
-  // Fetch all data in parallel
-  const [currentFacts, priorFacts, currentLabor, priorLabor] = await Promise.all([
+  // Fetch all data in parallel (including secondary prior if applicable)
+  const fetchPromises: Promise<VenueDayFact[]>[] = [
     getVenueDayFactsForRange([venueId], ranges.currentStart, ranges.currentEnd),
     getVenueDayFactsForRange([venueId], ranges.priorStart, ranges.priorEnd),
-    getLaborDayFactsForRange([venueId], ranges.currentStart, ranges.currentEnd),
-    getLaborDayFactsForRange([venueId], ranges.priorStart, ranges.priorEnd),
-  ]);
+    getLaborDayFactsForRange([venueId], ranges.currentStart, ranges.currentEnd) as any,
+    getLaborDayFactsForRange([venueId], ranges.priorStart, ranges.priorEnd) as any,
+  ];
+  if (ranges.secondaryPriorStart && ranges.secondaryPriorEnd) {
+    fetchPromises.push(getVenueDayFactsForRange([venueId], ranges.secondaryPriorStart, ranges.secondaryPriorEnd));
+  }
+
+  const results = await Promise.all(fetchPromises);
+  const currentFacts = results[0];
+  const priorFacts = results[1];
+  const currentLabor = results[2] as unknown as LaborDayFact[];
+  const priorLabor = results[3] as unknown as LaborDayFact[];
+  const secondaryPriorFacts = results[4] || null;
 
   // Check if today is in the current period — merge live snapshot if so
   const today = new Date().toISOString().split('T')[0];
@@ -468,22 +534,36 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
   const variance = computeVariance(current, prior, laborCurrent, laborPrior);
   const days = buildDaysArray(currentFacts, priorFacts, ranges.currentStart, ranges.priorStart);
 
+  // Secondary prior
+  const secondaryPrior = secondaryPriorFacts ? aggregateFacts(secondaryPriorFacts) : null;
+  const secondaryVariance = secondaryPrior ? computeVariance(current, secondaryPrior, null, null) : null;
+
+  // Fetch comp reasons from TipSee for current period
+  const locationMap = await getTipseeLocationUuids([venueId]);
+  const locationUuids = locationMap.get(venueId) || [];
+  const compByReason = locationUuids.length > 0
+    ? await fetchCompsByReasonForRange(locationUuids, ranges.currentStart, ranges.currentEnd)
+    : [];
+
   const venueData: VenuePeriodData = {
     venue_id: venueId,
     venue_name: venueName,
     current,
     prior,
+    secondary_prior: secondaryPrior,
     labor_current: laborCurrent,
     labor_prior: laborPrior,
     variance,
+    secondary_variance: secondaryVariance,
     days,
+    comp_by_reason: compByReason,
   };
 
   // Build breakdowns
   const ptd_weeks = view === 'ptd' ? buildWeekBreakdown(days, ranges.currentStart) : undefined;
   const ytd_periods = view === 'ytd' ? buildPeriodBreakdown(days, ranges.currentStart, fiscalConfig.calendarType) : undefined;
 
-  console.log(`[pulse/periods] ${view} venue=${venueId} date=${anchorDate} range=${ranges.currentStart}→${ranges.currentEnd} prior=${ranges.priorStart}→${ranges.priorEnd} currentFacts=${currentFacts.length} priorFacts=${priorFacts.length} days=${days.length} ptd_weeks=${ptd_weeks?.length ?? '-'} ytd_periods=${ytd_periods?.length ?? '-'} fiscal=${fiscalConfig.calendarType}`);
+  console.log(`[pulse/periods] ${view} venue=${venueId} date=${anchorDate} range=${ranges.currentStart}→${ranges.currentEnd} prior=${ranges.priorStart}→${ranges.priorEnd} sec=${ranges.secondaryPriorStart ?? 'none'}→${ranges.secondaryPriorEnd ?? 'none'} currentFacts=${currentFacts.length} priorFacts=${priorFacts.length} secFacts=${secondaryPriorFacts?.length ?? 0} compReasons=${compByReason.length} days=${days.length} ptd_weeks=${ptd_weeks?.length ?? '-'} ytd_periods=${ytd_periods?.length ?? '-'} fiscal=${fiscalConfig.calendarType}`);
 
   return NextResponse.json({
     view,
@@ -492,6 +572,10 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
     period_end: ranges.currentEnd,
     prior_start: ranges.priorStart,
     prior_end: ranges.priorEnd,
+    prior_label: ranges.priorLabel,
+    secondary_prior_start: ranges.secondaryPriorStart,
+    secondary_prior_end: ranges.secondaryPriorEnd,
+    secondary_prior_label: ranges.secondaryPriorLabel,
     venue: venueData,
     ...(ptd_weeks && { ptd_weeks }),
     ...(ytd_periods && { ytd_periods }),
@@ -501,15 +585,6 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
       fiscal_period: fiscalPeriod.fiscalPeriod,
       period_start_date: fiscalPeriod.periodStartDate,
       period_end_date: fiscalPeriod.periodEndDate,
-    },
-    _debug: {
-      currentFactsCount: currentFacts.length,
-      priorFactsCount: priorFacts.length,
-      daysCount: days.length,
-      ptdWeeksCount: ptd_weeks?.length,
-      ytdPeriodsCount: ytd_periods?.length,
-      calendarType: fiscalConfig.calendarType,
-      fyStartDate: fiscalConfig.fyStartDate,
     },
   });
 }
@@ -536,13 +611,23 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
   const ranges = computeDateRanges(view, anchorDate, fiscalConfig);
   const fiscalPeriod = getFiscalPeriod(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
 
-  // Single batch query for all venues
-  const [allCurrentFacts, allPriorFacts, allCurrentLabor, allPriorLabor] = await Promise.all([
+  // Single batch query for all venues (including secondary prior if applicable)
+  const groupFetchPromises: Promise<any[]>[] = [
     getVenueDayFactsForRange(venueIds, ranges.currentStart, ranges.currentEnd),
     getVenueDayFactsForRange(venueIds, ranges.priorStart, ranges.priorEnd),
     getLaborDayFactsForRange(venueIds, ranges.currentStart, ranges.currentEnd),
     getLaborDayFactsForRange(venueIds, ranges.priorStart, ranges.priorEnd),
-  ]);
+  ];
+  if (ranges.secondaryPriorStart && ranges.secondaryPriorEnd) {
+    groupFetchPromises.push(getVenueDayFactsForRange(venueIds, ranges.secondaryPriorStart, ranges.secondaryPriorEnd));
+  }
+
+  const groupResults = await Promise.all(groupFetchPromises);
+  const allCurrentFacts: VenueDayFact[] = groupResults[0];
+  const allPriorFacts: VenueDayFact[] = groupResults[1];
+  const allCurrentLabor: LaborDayFact[] = groupResults[2];
+  const allPriorLabor: LaborDayFact[] = groupResults[3];
+  const allSecondaryPriorFacts: VenueDayFact[] | null = groupResults[4] || null;
 
   // Check if today's live data should be merged
   const today = new Date().toISOString().split('T')[0];
@@ -590,8 +675,27 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
     }
   }
 
+  // Fetch comp reasons from TipSee for all venues in one batch
+  const locationMap = await getTipseeLocationUuids(venueIds);
+  const allLocationUuids = Array.from(locationMap.values()).flat();
+  const allCompsByReason = allLocationUuids.length > 0
+    ? await fetchCompsByReasonForRange(allLocationUuids, ranges.currentStart, ranges.currentEnd)
+    : [];
+
+  // Build a per-venue comp reason lookup: we need per-venue location UUIDs to filter
+  // Since fetchCompsByReasonForRange returns aggregated results, we need per-venue queries
+  // For efficiency, do parallel per-venue comp queries
+  const venueCompReasons = await Promise.all(
+    venueIds.map(vid => {
+      const uuids = locationMap.get(vid) || [];
+      return uuids.length > 0
+        ? fetchCompsByReasonForRange(uuids, ranges.currentStart, ranges.currentEnd)
+        : Promise.resolve([]);
+    })
+  );
+
   // Aggregate per venue
-  const venues: VenuePeriodData[] = venueIds.map(vid => {
+  const venues: VenuePeriodData[] = venueIds.map((vid, idx) => {
     const currentFacts = allCurrentFacts.filter(f => f.venue_id === vid);
     const priorFacts = allPriorFacts.filter(f => f.venue_id === vid);
     const currentLabor = allCurrentLabor.filter(f => f.venue_id === vid);
@@ -604,15 +708,23 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
     const variance = computeVariance(current, prior, laborCurrent, laborPrior);
     const days = buildDaysArray(currentFacts, priorFacts, ranges.currentStart, ranges.priorStart);
 
+    // Secondary prior
+    const secFacts = allSecondaryPriorFacts?.filter(f => f.venue_id === vid) || null;
+    const secPrior = secFacts && secFacts.length > 0 ? aggregateFacts(secFacts) : null;
+    const secVariance = secPrior ? computeVariance(current, secPrior, null, null) : null;
+
     return {
       venue_id: vid,
       venue_name: nameMap.get(vid) || vid,
       current,
       prior,
+      secondary_prior: secPrior,
       labor_current: laborCurrent,
       labor_prior: laborPrior,
       variance,
+      secondary_variance: secVariance,
       days,
+      comp_by_reason: venueCompReasons[idx],
     };
   });
 
@@ -622,6 +734,26 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
   const groupLaborCurrent = aggregateLabor(allCurrentLabor, groupCurrentFacts.net_sales);
   const groupLaborPrior = aggregateLabor(allPriorLabor, groupPriorFacts.net_sales);
   const groupVariance = computeVariance(groupCurrentFacts, groupPriorFacts, groupLaborCurrent, groupLaborPrior);
+
+  // Group secondary prior
+  const groupSecondaryPrior = allSecondaryPriorFacts && allSecondaryPriorFacts.length > 0
+    ? aggregateFacts(allSecondaryPriorFacts) : null;
+  const groupSecondaryVariance = groupSecondaryPrior
+    ? computeVariance(groupCurrentFacts, groupSecondaryPrior, null, null) : null;
+
+  // Aggregate comp reasons across all venues
+  const reasonMap = new Map<string, { count: number; total: number }>();
+  for (const v of venues) {
+    for (const r of v.comp_by_reason || []) {
+      const existing = reasonMap.get(r.reason) || { count: 0, total: 0 };
+      existing.count += r.count;
+      existing.total += r.total;
+      reasonMap.set(r.reason, existing);
+    }
+  }
+  const groupCompByReason: CompByReason[] = [...reasonMap.entries()]
+    .map(([reason, { count, total }]) => ({ reason, count, total }))
+    .sort((a, b) => b.total - a.total);
 
   // Build group-level breakdowns by merging all venue days
   let ptd_weeks: PtdWeekRow[] | undefined;
@@ -636,7 +768,7 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
   }
 
   const totalDays = venues.reduce((s, v) => s + v.days.length, 0);
-  console.log(`[pulse/periods] ${view} group venues=${venues.length} range=${ranges.currentStart}→${ranges.currentEnd} prior=${ranges.priorStart}→${ranges.priorEnd} currentFacts=${allCurrentFacts.length} totalDays=${totalDays} ptd_weeks=${ptd_weeks?.length ?? '-'} ytd_periods=${ytd_periods?.length ?? '-'} fiscal=${fiscalConfig.calendarType}`);
+  console.log(`[pulse/periods] ${view} group venues=${venues.length} range=${ranges.currentStart}→${ranges.currentEnd} prior=${ranges.priorStart}→${ranges.priorEnd} sec=${ranges.secondaryPriorStart ?? 'none'}→${ranges.secondaryPriorEnd ?? 'none'} currentFacts=${allCurrentFacts.length} secFacts=${allSecondaryPriorFacts?.length ?? 0} totalDays=${totalDays} ptd_weeks=${ptd_weeks?.length ?? '-'} ytd_periods=${ytd_periods?.length ?? '-'} fiscal=${fiscalConfig.calendarType}`);
 
   return NextResponse.json({
     view,
@@ -645,13 +777,20 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
     period_end: ranges.currentEnd,
     prior_start: ranges.priorStart,
     prior_end: ranges.priorEnd,
+    prior_label: ranges.priorLabel,
+    secondary_prior_start: ranges.secondaryPriorStart,
+    secondary_prior_end: ranges.secondaryPriorEnd,
+    secondary_prior_label: ranges.secondaryPriorLabel,
     venues,
     totals: {
       current: groupCurrentFacts,
       prior: groupPriorFacts,
+      secondary_prior: groupSecondaryPrior,
       labor_current: groupLaborCurrent,
       labor_prior: groupLaborPrior,
       variance: groupVariance,
+      secondary_variance: groupSecondaryVariance,
+      comp_by_reason: groupCompByReason,
     },
     ...(ptd_weeks && { ptd_weeks }),
     ...(ytd_periods && { ytd_periods }),
@@ -661,16 +800,6 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
       fiscal_period: fiscalPeriod.fiscalPeriod,
       period_start_date: fiscalPeriod.periodStartDate,
       period_end_date: fiscalPeriod.periodEndDate,
-    },
-    _debug: {
-      venueCount: venues.length,
-      currentFactsCount: allCurrentFacts.length,
-      priorFactsCount: allPriorFacts.length,
-      totalVenueDays: totalDays,
-      ptdWeeksCount: ptd_weeks?.length,
-      ytdPeriodsCount: ytd_periods?.length,
-      calendarType: fiscalConfig.calendarType,
-      fyStartDate: fiscalConfig.fyStartDate,
     },
   });
 }

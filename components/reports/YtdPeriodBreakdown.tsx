@@ -1,6 +1,16 @@
 'use client';
 
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 
 export interface YtdPeriodRow {
   period: number;
@@ -15,6 +25,9 @@ export interface YtdPeriodRow {
 
 const fmtCurrency = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+const fmtAxis = (v: number) =>
+  v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`;
 
 const fmtNumber = (n: number) => n.toLocaleString('en-US');
 
@@ -46,46 +59,71 @@ export function YtdPeriodBreakdown({ periods }: { periods: YtdPeriodRow[] }) {
     { net_sales: 0, covers: 0, prior_net_sales: 0, prior_covers: 0 }
   );
 
-  const maxSales = Math.max(...periods.map(p => Math.max(p.net_sales, p.prior_net_sales || 0)), 1);
+  const chartData = periods.map(p => ({
+    label: p.label,
+    'Current Year': p.net_sales,
+    'Prior Year': p.prior_net_sales || 0,
+  }));
 
   return (
     <div className="space-y-4">
-      {/* Bar Chart */}
-      <div className="flex items-end gap-1 h-36">
-        {periods.map((p) => {
-          const currentPct = (p.net_sales / maxSales) * 100;
-          const priorPct = p.prior_net_sales ? (p.prior_net_sales / maxSales) * 100 : 0;
-
-          return (
-            <div key={p.period} className="flex-1 flex flex-col items-center gap-px">
-              <div className="flex items-end gap-px w-full justify-center" style={{ height: '100%' }}>
-                {priorPct > 0 && (
-                  <div
-                    className="bg-muted-foreground/20 rounded-t flex-1 max-w-6 transition-all"
-                    style={{ height: `${priorPct}%`, minHeight: 2 }}
-                    title={`LY: ${p.prior_net_sales != null ? fmtCurrency(p.prior_net_sales) : 'N/A'}`}
-                  />
-                )}
-                <div
-                  className="bg-emerald-500 rounded-t flex-1 max-w-6 transition-all"
-                  style={{ height: `${currentPct}%`, minHeight: currentPct > 0 ? 2 : 0 }}
-                  title={`${p.label}: ${fmtCurrency(p.net_sales)}`}
-                />
-              </div>
-              <span className="text-[10px] text-muted-foreground font-medium mt-1">{p.label}</span>
-            </div>
-          );
-        })}
-      </div>
+      {/* Line Chart */}
+      <ResponsiveContainer width="100%" height={240}>
+        <ComposedChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tickLine={false}
+            axisLine={false}
+          />
+          <YAxis
+            tickFormatter={fmtAxis}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tickLine={false}
+            axisLine={false}
+            width={52}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '0.5rem',
+              fontSize: '12px',
+            }}
+            formatter={(value: number) => [fmtCurrency(value)]}
+            labelStyle={{ fontWeight: 600 }}
+          />
+          <Line
+            type="monotone"
+            dataKey="Prior Year"
+            stroke="#94a3b8"
+            strokeWidth={2}
+            strokeDasharray="6 3"
+            dot={{ r: 4, fill: '#94a3b8', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#94a3b8' }}
+          />
+          <Area
+            type="monotone"
+            dataKey="Current Year"
+            stroke="#10b981"
+            strokeWidth={2.5}
+            fill="#10b981"
+            fillOpacity={0.08}
+            dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#10b981' }}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
 
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-emerald-500" />
+          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
           <span>Current Year</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-muted-foreground/20" />
+          <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400" />
           <span>Prior Year</span>
         </div>
       </div>

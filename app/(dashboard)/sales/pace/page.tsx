@@ -234,21 +234,32 @@ interface PeriodDayRow {
   prior_covers: number | null;
 }
 
+interface VarianceSet {
+  net_sales_pct: number | null;
+  covers_pct: number | null;
+  avg_check_pct: number | null;
+  labor_pct_delta: number | null;
+  comp_pct_delta: number | null;
+}
+
+interface CompByReason {
+  reason: string;
+  count: number;
+  total: number;
+}
+
 interface VenuePeriodData {
   venue_id: string;
   venue_name: string;
   current: PeriodAggregation;
   prior: PeriodAggregation;
+  secondary_prior: PeriodAggregation | null;
   labor_current: PeriodLaborAggregation | null;
   labor_prior: PeriodLaborAggregation | null;
-  variance: {
-    net_sales_pct: number | null;
-    covers_pct: number | null;
-    avg_check_pct: number | null;
-    labor_pct_delta: number | null;
-    comp_pct_delta: number | null;
-  };
+  variance: VarianceSet;
+  secondary_variance: VarianceSet | null;
   days: PeriodDayRow[];
+  comp_by_reason?: CompByReason[];
 }
 
 interface PeriodResponse {
@@ -258,20 +269,21 @@ interface PeriodResponse {
   period_end: string;
   prior_start: string;
   prior_end: string;
+  prior_label?: string;
+  secondary_prior_start?: string | null;
+  secondary_prior_end?: string | null;
+  secondary_prior_label?: string | null;
   venue?: VenuePeriodData;
   venues?: VenuePeriodData[];
   totals?: {
     current: PeriodAggregation;
     prior: PeriodAggregation;
+    secondary_prior: PeriodAggregation | null;
     labor_current: PeriodLaborAggregation | null;
     labor_prior: PeriodLaborAggregation | null;
-    variance: {
-      net_sales_pct: number | null;
-      covers_pct: number | null;
-      avg_check_pct: number | null;
-      labor_pct_delta: number | null;
-      comp_pct_delta: number | null;
-    };
+    variance: VarianceSet;
+    secondary_variance: VarianceSet | null;
+    comp_by_reason?: CompByReason[];
   };
   fiscal?: {
     calendar_type: string;
@@ -637,7 +649,7 @@ function ServiceChart({
 
   return (
     <div className="space-y-2">
-      <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
           <XAxis
@@ -981,7 +993,10 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
       {/* Period date range banner */}
       <div className="text-sm text-muted-foreground">
         {VIEW_LABELS[data.view]}: {formatDateRange(data.period_start, data.period_end)}
-        <span className="ml-2 text-xs">(vs {formatDateRange(data.prior_start, data.prior_end)})</span>
+        <span className="ml-2 text-xs">({data.prior_label || 'vs prior'}: {formatDateRange(data.prior_start, data.prior_end)})</span>
+        {data.secondary_prior_start && data.secondary_prior_end && (
+          <span className="ml-2 text-xs">({data.secondary_prior_label}: {formatDateRange(data.secondary_prior_start, data.secondary_prior_end)})</span>
+        )}
       </div>
 
       {/* Group totals */}
@@ -992,6 +1007,10 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
           current={current.net_sales}
           prior={prior.net_sales}
           variancePct={variance.net_sales_pct}
+          priorLabel={data.prior_label || 'vs prior'}
+          secondaryPrior={totals.secondary_prior?.net_sales}
+          secondaryVariancePct={totals.secondary_variance?.net_sales_pct}
+          secondaryLabel={data.secondary_prior_label}
           daysCount={current.days_count}
         />
         <PeriodGaugeCard
@@ -1000,6 +1019,10 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
           current={current.covers_count}
           prior={prior.covers_count}
           variancePct={variance.covers_pct}
+          priorLabel={data.prior_label || 'vs prior'}
+          secondaryPrior={totals.secondary_prior?.covers_count}
+          secondaryVariancePct={totals.secondary_variance?.covers_pct}
+          secondaryLabel={data.secondary_prior_label}
           format="number"
         />
         <Card>
@@ -1022,26 +1045,18 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Comps</CardTitle>
-            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {current.net_sales > 0 ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {((current.comps_total / current.net_sales) * 100).toFixed(1)}%
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {formatCurrency(current.comps_total)}
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">No data</div>
-            )}
-          </CardContent>
-        </Card>
+        <CompCard
+          comps={current.net_sales > 0 ? {
+            total: current.comps_total,
+            pct: (current.comps_total / current.net_sales) * 100,
+            net_sales: current.net_sales,
+            exception_count: 0,
+            critical_count: 0,
+            warning_count: 0,
+            top_exceptions: [],
+            by_reason: totals.comp_by_reason,
+          } : null}
+        />
       </div>
 
       {/* Per-venue table */}
@@ -1060,7 +1075,10 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
                   <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
                   <th className="pb-2 pr-4 font-medium text-right">Labor %</th>
                   <th className="pb-2 pr-4 font-medium text-right">Comps %</th>
-                  <th className="pb-2 font-medium text-right">Var %</th>
+                  <th className="pb-2 pr-4 font-medium text-right">{data.prior_label || 'Var %'}</th>
+                  {data.secondary_prior_label && (
+                    <th className="pb-2 font-medium text-right">{data.secondary_prior_label}</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -1082,7 +1100,7 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
                         <td className="py-2.5 pr-4 text-right">
                           {compPct > 0 ? `${compPct.toFixed(1)}%` : '—'}
                         </td>
-                        <td className="py-2.5 text-right">
+                        <td className="py-2.5 pr-4 text-right">
                           {v.variance.net_sales_pct != null ? (
                             <span className="inline-flex items-center gap-0.5">
                               {v.variance.net_sales_pct >= 0 ? (
@@ -1096,6 +1114,22 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
                             </span>
                           ) : '—'}
                         </td>
+                        {data.secondary_prior_label && (
+                          <td className="py-2.5 text-right">
+                            {v.secondary_variance?.net_sales_pct != null ? (
+                              <span className="inline-flex items-center gap-0.5">
+                                {v.secondary_variance.net_sales_pct >= 0 ? (
+                                  <TrendingUp className="h-3 w-3 text-emerald-500" />
+                                ) : (
+                                  <TrendingDown className="h-3 w-3 text-red-500" />
+                                )}
+                                <span className={v.secondary_variance.net_sales_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                                  {v.secondary_variance.net_sales_pct > 0 ? '+' : ''}{v.secondary_variance.net_sales_pct.toFixed(1)}%
+                                </span>
+                              </span>
+                            ) : '—'}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -1113,13 +1147,22 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
                   <td className="py-2.5 pr-4 text-right">
                     {current.net_sales > 0 ? `${((current.comps_total / current.net_sales) * 100).toFixed(1)}%` : '—'}
                   </td>
-                  <td className="py-2.5 text-right">
+                  <td className="py-2.5 pr-4 text-right">
                     {variance.net_sales_pct != null ? (
                       <span className={variance.net_sales_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}>
                         {variance.net_sales_pct > 0 ? '+' : ''}{variance.net_sales_pct.toFixed(1)}%
                       </span>
                     ) : '—'}
                   </td>
+                  {data.secondary_prior_label && (
+                    <td className="py-2.5 text-right">
+                      {totals.secondary_variance?.net_sales_pct != null ? (
+                        <span className={totals.secondary_variance.net_sales_pct >= 0 ? 'text-emerald-500' : 'text-red-500'}>
+                          {totals.secondary_variance.net_sales_pct > 0 ? '+' : ''}{totals.secondary_variance.net_sales_pct.toFixed(1)}%
+                        </span>
+                      ) : '—'}
+                    </td>
+                  )}
                 </tr>
               </tbody>
             </table>
@@ -1465,7 +1508,10 @@ export default function LivePulsePage() {
               {/* Period date range banner */}
               <div className="text-sm text-muted-foreground">
                 {VIEW_LABELS[viewMode]}: {formatDateRange(periodData.period_start, periodData.period_end)}
-                <span className="ml-2 text-xs">(vs {formatDateRange(periodData.prior_start, periodData.prior_end)})</span>
+                <span className="ml-2 text-xs">({periodData.prior_label || 'vs prior'}: {formatDateRange(periodData.prior_start, periodData.prior_end)})</span>
+                {periodData.secondary_prior_start && periodData.secondary_prior_end && (
+                  <span className="ml-2 text-xs">({periodData.secondary_prior_label}: {formatDateRange(periodData.secondary_prior_start, periodData.secondary_prior_end)})</span>
+                )}
               </div>
 
               {/* Period gauge cards */}
@@ -1476,6 +1522,10 @@ export default function LivePulsePage() {
                   current={periodData.venue.current.net_sales}
                   prior={periodData.venue.prior.net_sales}
                   variancePct={periodData.venue.variance.net_sales_pct}
+                  priorLabel={periodData.prior_label || 'vs prior'}
+                  secondaryPrior={periodData.venue.secondary_prior?.net_sales}
+                  secondaryVariancePct={periodData.venue.secondary_variance?.net_sales_pct}
+                  secondaryLabel={periodData.secondary_prior_label}
                   daysCount={periodData.venue.current.days_count}
                 />
                 <PeriodGaugeCard
@@ -1484,6 +1534,10 @@ export default function LivePulsePage() {
                   current={periodData.venue.current.covers_count}
                   prior={periodData.venue.prior.covers_count}
                   variancePct={periodData.venue.variance.covers_pct}
+                  priorLabel={periodData.prior_label || 'vs prior'}
+                  secondaryPrior={periodData.venue.secondary_prior?.covers_count}
+                  secondaryVariancePct={periodData.venue.secondary_variance?.covers_pct}
+                  secondaryLabel={periodData.secondary_prior_label}
                   format="number"
                 />
                 <PeriodGaugeCard
@@ -1492,6 +1546,10 @@ export default function LivePulsePage() {
                   current={periodData.venue.current.avg_check}
                   prior={periodData.venue.prior.avg_check}
                   variancePct={periodData.venue.variance.avg_check_pct}
+                  priorLabel={periodData.prior_label || 'vs prior'}
+                  secondaryPrior={periodData.venue.secondary_prior?.avg_check}
+                  secondaryVariancePct={periodData.venue.secondary_variance?.avg_check_pct}
+                  secondaryLabel={periodData.secondary_prior_label}
                 />
                 <PeriodCategoryMixCard
                   foodSales={periodData.venue.current.food_sales}
@@ -1529,6 +1587,7 @@ export default function LivePulsePage() {
                     critical_count: 0,
                     warning_count: 0,
                     top_exceptions: [],
+                    by_reason: periodData.venue.comp_by_reason,
                   } : null}
                 />
               </div>
