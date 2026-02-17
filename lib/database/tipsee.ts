@@ -1003,39 +1003,52 @@ export interface CheckSummary {
  */
 export async function fetchChecksForDate(
   locationUuids: string[],
-  date: string
-): Promise<CheckSummary[]> {
+  date: string,
+  limit = 50,
+  offset = 0
+): Promise<{ checks: CheckSummary[]; total: number }> {
   const pool = getTipseePool();
 
-  const result = await pool.query(
-    `SELECT
-      c.id,
-      c.table_name,
-      c.employee_name,
-      c.guest_count,
-      c.sub_total,
-      c.revenue_total,
-      c.comp_total,
-      c.void_total,
-      c.open_time,
-      c.close_time,
-      (c.close_time IS NULL) as is_open,
-      COALESCE(pay.payment_total, 0) as payment_total,
-      COALESCE(pay.tip_total, 0) as tip_total
-    FROM public.tipsee_checks c
-    LEFT JOIN LATERAL (
-      SELECT
-        SUM(amount) as payment_total,
-        SUM(COALESCE(tip_amount, 0)) as tip_total
-      FROM public.tipsee_payments
-      WHERE check_id = c.id
-    ) pay ON true
-    WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
-    ORDER BY c.open_time DESC`,
-    [locationUuids, date]
-  );
+  const [countResult, result] = await Promise.all([
+    pool.query(
+      `SELECT COUNT(*) as total
+      FROM public.tipsee_checks
+      WHERE location_uuid = ANY($1) AND trading_day = $2`,
+      [locationUuids, date]
+    ),
+    pool.query(
+      `SELECT
+        c.id,
+        c.table_name,
+        c.employee_name,
+        c.guest_count,
+        c.sub_total,
+        c.revenue_total,
+        c.comp_total,
+        c.void_total,
+        c.open_time,
+        c.close_time,
+        (c.close_time IS NULL) as is_open,
+        COALESCE(pay.payment_total, 0) as payment_total,
+        COALESCE(pay.tip_total, 0) as tip_total
+      FROM public.tipsee_checks c
+      LEFT JOIN LATERAL (
+        SELECT
+          SUM(amount) as payment_total,
+          SUM(COALESCE(tip_amount, 0)) as tip_total
+        FROM public.tipsee_payments
+        WHERE check_id = c.id
+      ) pay ON true
+      WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
+      ORDER BY c.open_time DESC
+      LIMIT $3 OFFSET $4`,
+      [locationUuids, date, limit, offset]
+    ),
+  ]);
 
-  return result.rows.map(row => {
+  const total = parseInt(countResult.rows[0]?.total || '0', 10);
+
+  const checks = result.rows.map(row => {
     const r = cleanRow(row);
     return {
       id: r.id,
@@ -1053,6 +1066,8 @@ export async function fetchChecksForDate(
       tip_total: r.tip_total || 0,
     } as CheckSummary;
   });
+
+  return { checks, total };
 }
 
 export interface CheckItemDetail {

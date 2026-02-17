@@ -15,9 +15,7 @@ import { getServiceClient } from '@/lib/supabase/service';
 import {
   getActiveSalesPaceVenues,
   getLatestSnapshot,
-  getTipseeMappingForVenue,
 } from '@/lib/database/sales-pace';
-import { fetchLaborSummary } from '@/lib/database/tipsee';
 
 export interface VenueEnrichment {
   venue_id: string;
@@ -162,38 +160,6 @@ async function fetchLaborDayFact(
   };
 }
 
-async function fetchLiveTipSeeLabor(
-  venueId: string,
-  date: string,
-  netSales: number,
-  covers: number
-): Promise<VenueEnrichment['labor']> {
-  try {
-    const locationUuids = await getTipseeMappingForVenue(venueId);
-    if (locationUuids.length === 0) return null;
-
-    const labor = await fetchLaborSummary(locationUuids[0], date, netSales, covers);
-    if (!labor) return null;
-
-    return {
-      total_hours: labor.total_hours,
-      labor_cost: labor.labor_cost,
-      labor_pct: labor.labor_pct,
-      splh: labor.splh,
-      ot_hours: labor.ot_hours,
-      covers_per_labor_hour: labor.covers_per_labor_hour,
-      employee_count: labor.employee_count,
-      punch_count: labor.punch_count,
-      foh: labor.foh,
-      boh: labor.boh,
-      other: labor.other,
-    };
-  } catch (err) {
-    console.error('Live TipSee labor fetch failed:', err);
-    return null;
-  }
-}
-
 async function handleSingleVenue(venueId: string, date: string) {
   try {
     const svc = getServiceClient();
@@ -207,17 +173,11 @@ async function handleSingleVenue(venueId: string, date: string) {
     const venueName = venueResult.data?.name || venueId;
     const result = buildEnrichmentFromSnapshot(venueId, venueName, snapshot);
 
-    // Fallback chain: snapshot → labor_day_facts → live TipSee query
+    // Fallback: if snapshot has no labor, check labor_day_facts (populated by sales poll)
     if (!result.labor) {
       const netSales = Number(snapshot?.net_sales) || 0;
       const covers = Number(snapshot?.covers_count) || 0;
-
-      const laborFallback = await fetchLaborDayFact(svc, venueId, date, netSales, covers);
-      if (laborFallback) {
-        result.labor = laborFallback;
-      } else {
-        result.labor = await fetchLiveTipSeeLabor(venueId, date, netSales, covers);
-      }
+      result.labor = await fetchLaborDayFact(svc, venueId, date, netSales, covers);
     }
 
     return NextResponse.json(result);
@@ -252,10 +212,9 @@ async function handleGroupEnrichment(date: string) {
       buildEnrichmentFromSnapshot(vid, nameMap.get(vid) || vid, snapshots[i])
     );
 
-    // Fallback chain: snapshot → labor_day_facts → live TipSee
+    // Fallback: for venues missing labor in snapshot, check labor_day_facts
     const missingLabor = venues.filter(v => !v.labor);
     if (missingLabor.length > 0) {
-      // Try labor_day_facts first
       const laborFallbacks = await Promise.all(
         missingLabor.map(v => {
           const snap = snapshots[venueIds.indexOf(v.venue_id)];
@@ -265,21 +224,6 @@ async function handleGroupEnrichment(date: string) {
       missingLabor.forEach((v, i) => {
         if (laborFallbacks[i]) v.labor = laborFallbacks[i];
       });
-
-      // For any still missing, try live TipSee query
-      const stillMissing = venues.filter(v => !v.labor);
-      if (stillMissing.length > 0) {
-        const liveFallbacks = await Promise.allSettled(
-          stillMissing.map(v => {
-            const snap = snapshots[venueIds.indexOf(v.venue_id)];
-            return fetchLiveTipSeeLabor(v.venue_id, date, Number(snap?.net_sales) || 0, Number(snap?.covers_count) || 0);
-          })
-        );
-        stillMissing.forEach((v, i) => {
-          const r = liveFallbacks[i];
-          if (r.status === 'fulfilled' && r.value) v.labor = r.value;
-        });
-      }
     }
 
     // Compute group totals

@@ -17,6 +17,7 @@ import {
   getActiveSalesPaceVenues,
   getSalesPaceSettings,
   storeSalesSnapshot,
+  upsertLaborDayFact,
   getTipseeMappingForVenue,
   getVenueTimezone,
   getBusinessDateForTimezone,
@@ -192,6 +193,11 @@ async function processVenue(venueId: string): Promise<{
     comp_warning_count: compData?.summary.warning_count ?? 0,
     comp_top_exceptions: topExceptions,
   });
+
+  // Sync labor into labor_day_facts (keeps Supabase as source of truth)
+  if (labor) {
+    await upsertLaborDayFact(venueId, businessDate, labor, summary.net_sales, summary.total_covers);
+  }
 
   return {
     snapshot_stored: true,

@@ -18,6 +18,9 @@ import {
   Loader2,
   ArrowUpDown,
   Search,
+  AlertTriangle,
+  Ban,
+  CircleDot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -46,7 +49,18 @@ interface CheckListSheetProps {
   onSelectCheck: (checkId: string) => void;
 }
 
-type SortField = 'time' | 'total' | 'table';
+type SortField = 'time' | 'total' | 'table' | 'tips' | 'covers';
+type FilterFlag = 'open' | 'comps' | 'voids';
+
+const SORT_LABELS: Record<SortField, string> = {
+  time: 'Time',
+  total: 'Total',
+  table: 'Table',
+  tips: 'Tips',
+  covers: 'Covers',
+};
+
+const SORT_ORDER: SortField[] = ['time', 'total', 'tips', 'covers', 'table'];
 
 const fmt = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -56,6 +70,8 @@ const fmtTime = (iso: string) => {
     return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   } catch { return ''; }
 };
+
+const PAGE_SIZE = 50;
 
 export function CheckListSheet({
   isOpen,
@@ -67,40 +83,70 @@ export function CheckListSheet({
 }: CheckListSheetProps) {
   const [checks, setChecks] = useState<CheckSummary[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>('time');
+  const [filters, setFilters] = useState<Set<FilterFlag>>(new Set());
   const [posType, setPosType] = useState<string>('upserve');
   const [simphonyMessage, setSimphonyMessage] = useState<string | null>(null);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const cacheKey = useRef('');
+
+  const fetchChecks = (offset: number, append: boolean) => {
+    const isInitial = !append;
+    if (isInitial) {
+      setLoading(true);
+      setError(null);
+      setSimphonyMessage(null);
+    } else {
+      setLoadingMore(true);
+    }
+
+    fetch(`/api/sales/checks?venue_id=${venueId}&date=${date}&limit=${PAGE_SIZE}&offset=${offset}`)
+      .then(res => {
+        if (!res.ok) throw new Error(`Server error (${res.status})`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('Unexpected response from server');
+        return res.json();
+      })
+      .then(data => {
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setChecks(prev => append ? [...prev, ...(data.checks || [])] : data.checks || []);
+          setPosType(data.pos_type || 'upserve');
+          setTotal(data.total || 0);
+          setHasMore(data.has_more || false);
+          if (data.message) setSimphonyMessage(data.message);
+          if (isInitial) cacheKey.current = `${venueId}-${date}`;
+        }
+      })
+      .catch(e => setError(e.message))
+      .finally(() => {
+        if (isInitial) setLoading(false);
+        else setLoadingMore(false);
+      });
+  };
 
   useEffect(() => {
     if (!isOpen) return;
     const key = `${venueId}-${date}`;
     if (cacheKey.current === key && checks.length > 0) return;
+    fetchChecks(0, false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, venueId, date]);
 
-    setLoading(true);
-    setError(null);
-    setSimphonyMessage(null);
-
-    fetch(`/api/sales/checks?venue_id=${venueId}&date=${date}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setChecks(data.checks || []);
-          setPosType(data.pos_type || 'upserve');
-          if (data.message) setSimphonyMessage(data.message);
-          cacheKey.current = key;
-        }
-      })
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [isOpen, venueId, date, checks.length]);
+  const handleLoadMore = () => {
+    if (loadingMore || !hasMore) return;
+    fetchChecks(checks.length, true);
+  };
 
   const filtered = useMemo(() => {
     let list = checks;
+
+    // Text search
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -109,12 +155,21 @@ export function CheckListSheet({
           c.table_name.toLowerCase().includes(q)
       );
     }
+
+    // Quick filters
+    if (filters.has('open')) list = list.filter(c => c.is_open);
+    if (filters.has('comps')) list = list.filter(c => c.comp_total > 0);
+    if (filters.has('voids')) list = list.filter(c => c.void_total > 0);
+
+    // Sort
     return [...list].sort((a, b) => {
       if (sortField === 'total') return b.revenue_total - a.revenue_total;
+      if (sortField === 'tips') return b.tip_total - a.tip_total;
+      if (sortField === 'covers') return b.guest_count - a.guest_count;
       if (sortField === 'table') return a.table_name.localeCompare(b.table_name);
       return new Date(b.open_time).getTime() - new Date(a.open_time).getTime();
     });
-  }, [checks, search, sortField]);
+  }, [checks, search, filters, sortField]);
 
   const totals = useMemo(() => {
     const revenue = filtered.reduce((s, c) => s + c.revenue_total, 0);
@@ -125,11 +180,26 @@ export function CheckListSheet({
 
   const cycleSortField = () => {
     setSortField(prev => {
-      if (prev === 'time') return 'total';
-      if (prev === 'total') return 'table';
-      return 'time';
+      const idx = SORT_ORDER.indexOf(prev);
+      return SORT_ORDER[(idx + 1) % SORT_ORDER.length];
     });
   };
+
+  const toggleFilter = (flag: FilterFlag) => {
+    setFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(flag)) next.delete(flag);
+      else next.add(flag);
+      return next;
+    });
+  };
+
+  // Counts for filter badges
+  const filterCounts = useMemo(() => ({
+    open: checks.filter(c => c.is_open).length,
+    comps: checks.filter(c => c.comp_total > 0).length,
+    voids: checks.filter(c => c.void_total > 0).length,
+  }), [checks]);
 
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose()}>
@@ -141,7 +211,7 @@ export function CheckListSheet({
               Checks
               {!loading && (
                 <Badge variant="default" className="text-xs">
-                  {totals.count}
+                  {search || filters.size > 0 ? `${totals.count} of ${total}` : `${checks.length} of ${total}`}
                 </Badge>
               )}
             </SheetTitle>
@@ -152,7 +222,7 @@ export function CheckListSheet({
         </SheetHeader>
 
         {/* Search + sort bar */}
-        <div className="px-4 pb-2 flex items-center gap-2">
+        <div className="px-4 pb-1 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -164,8 +234,45 @@ export function CheckListSheet({
           </div>
           <Button variant="outline" size="sm" onClick={cycleSortField} className="h-9 text-xs whitespace-nowrap">
             <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
-            {sortField === 'time' ? 'Time' : sortField === 'total' ? 'Total' : 'Table'}
+            {SORT_LABELS[sortField]}
           </Button>
+        </div>
+
+        {/* Filter chips */}
+        <div className="px-4 pb-2 flex items-center gap-1.5 overflow-x-auto">
+          {filterCounts.open > 0 && (
+            <Button
+              variant={filters.has('open') ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => toggleFilter('open')}
+              className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
+            >
+              <CircleDot className="h-3 w-3" />
+              Open ({filterCounts.open})
+            </Button>
+          )}
+          {filterCounts.comps > 0 && (
+            <Button
+              variant={filters.has('comps') ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => toggleFilter('comps')}
+              className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
+            >
+              <AlertTriangle className="h-3 w-3" />
+              Comps ({filterCounts.comps})
+            </Button>
+          )}
+          {filterCounts.voids > 0 && (
+            <Button
+              variant={filters.has('voids') ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => toggleFilter('voids')}
+              className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
+            >
+              <Ban className="h-3 w-3" />
+              Voids ({filterCounts.voids})
+            </Button>
+          )}
         </div>
 
         {/* Content */}
@@ -231,6 +338,21 @@ export function CheckListSheet({
               </div>
             </button>
           ))}
+
+          {/* Load more */}
+          {!loading && hasMore && !search && filters.size === 0 && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
+            >
+              {loadingMore ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>Load more ({total - checks.length} remaining)</>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Summary footer */}

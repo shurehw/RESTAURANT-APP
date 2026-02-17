@@ -66,15 +66,23 @@ export async function GET(request: NextRequest) {
         checks: [],
         pos_type: 'simphony',
         count: 0,
+        total: 0,
         message: 'Individual check data is not available for Simphony POS venues',
       });
     }
 
-    const checks = await fetchChecksForDate(locationUuids, date);
+    const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '50', 10), 200);
+    const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0', 10);
+
+    const { checks, total } = await fetchChecksForDate(locationUuids, date, limit, offset);
     return NextResponse.json({
       checks,
       pos_type: 'upserve',
       count: checks.length,
+      total,
+      limit,
+      offset,
+      has_more: offset + checks.length < total,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to fetch checks';

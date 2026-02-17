@@ -534,6 +534,57 @@ export async function getLaborDayFactsForRange(
   }));
 }
 
+/**
+ * Upsert a row into labor_day_facts from a LaborSummary.
+ * Called by sales/poll after each successful labor fetch so that
+ * enrichment reads hit local Supabase instead of live TipSee.
+ */
+export async function upsertLaborDayFact(
+  venueId: string,
+  businessDate: string,
+  labor: {
+    total_hours: number;
+    labor_cost: number;
+    ot_hours: number;
+    employee_count: number;
+    punch_count: number;
+    foh?: { hours: number; cost: number; employee_count: number } | null;
+    boh?: { hours: number; cost: number; employee_count: number } | null;
+    other?: { hours: number; cost: number; employee_count: number } | null;
+  },
+  netSales: number,
+  covers: number
+): Promise<void> {
+  const svc = getServiceClient();
+  const { error } = await (svc as any)
+    .from('labor_day_facts')
+    .upsert({
+      venue_id: venueId,
+      business_date: businessDate,
+      total_hours: labor.total_hours,
+      labor_cost: labor.labor_cost,
+      ot_hours: labor.ot_hours,
+      employee_count: labor.employee_count,
+      punch_count: labor.punch_count,
+      net_sales: netSales,
+      covers: covers,
+      foh_hours: labor.foh?.hours ?? 0,
+      foh_cost: labor.foh?.cost ?? 0,
+      foh_employee_count: labor.foh?.employee_count ?? 0,
+      boh_hours: labor.boh?.hours ?? 0,
+      boh_cost: labor.boh?.cost ?? 0,
+      boh_employee_count: labor.boh?.employee_count ?? 0,
+      other_hours: labor.other?.hours ?? 0,
+      other_cost: labor.other?.cost ?? 0,
+      other_employee_count: labor.other?.employee_count ?? 0,
+      last_synced_at: new Date().toISOString(),
+    }, { onConflict: 'venue_id,business_date' });
+
+  if (error) {
+    console.error(`Failed to upsert labor_day_facts for ${venueId}/${businessDate}:`, error.message);
+  }
+}
+
 const VALID_CALENDAR_TYPES: FiscalCalendarType[] = ['standard', '4-4-5', '4-5-4', '5-4-4'];
 
 /**

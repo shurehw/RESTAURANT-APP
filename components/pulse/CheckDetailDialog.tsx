@@ -87,7 +87,12 @@ export function CheckDetailDialog({ checkId, isOpen, onClose }: CheckDetailDialo
     setDetail(null);
 
     fetch(`/api/sales/checks?check_id=${checkId}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`Server error (${res.status})`);
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('Unexpected response from server');
+        return res.json();
+      })
       .then(data => {
         if (data.error) {
           setError(data.error);
