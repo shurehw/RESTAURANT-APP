@@ -957,6 +957,25 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
 
   const { current, prior, labor_current, variance } = totals;
 
+  // Merge days across all venues for WTD daily chart
+  const mergedDays: PeriodDayRow[] = (() => {
+    const dayMap = new Map<string, PeriodDayRow>();
+    for (const v of venues) {
+      for (const d of v.days) {
+        const existing = dayMap.get(d.business_date);
+        if (existing) {
+          existing.net_sales += d.net_sales;
+          existing.covers_count += d.covers_count;
+          existing.prior_net_sales = (existing.prior_net_sales || 0) + (d.prior_net_sales || 0);
+          existing.prior_covers = (existing.prior_covers || 0) + (d.prior_covers || 0);
+        } else {
+          dayMap.set(d.business_date, { ...d });
+        }
+      }
+    }
+    return Array.from(dayMap.values()).sort((a, b) => a.business_date.localeCompare(b.business_date));
+  })();
+
   return (
     <div className="space-y-6">
       {/* Period date range banner */}
@@ -1107,6 +1126,28 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* WTD: daily chart + table (merged across venues) */}
+      {data.view === 'wtd' && mergedDays.length > 0 && (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Daily Revenue vs Prior</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PeriodDayChart days={mergedDays} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Daily Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PeriodDayTable days={mergedDays} />
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* PTD: week breakdown */}
       {data.view === 'ptd' && data.ptd_weeks && data.ptd_weeks.length > 0 && (

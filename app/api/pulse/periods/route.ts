@@ -483,6 +483,8 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
   const ptd_weeks = view === 'ptd' ? buildWeekBreakdown(days, ranges.currentStart) : undefined;
   const ytd_periods = view === 'ytd' ? buildPeriodBreakdown(days, ranges.currentStart, fiscalConfig.calendarType) : undefined;
 
+  console.log(`[pulse/periods] ${view} venue=${venueId} date=${anchorDate} range=${ranges.currentStart}→${ranges.currentEnd} prior=${ranges.priorStart}→${ranges.priorEnd} currentFacts=${currentFacts.length} priorFacts=${priorFacts.length} days=${days.length} ptd_weeks=${ptd_weeks?.length ?? '-'} ytd_periods=${ytd_periods?.length ?? '-'} fiscal=${fiscalConfig.calendarType}`);
+
   return NextResponse.json({
     view,
     date: anchorDate,
@@ -499,6 +501,15 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
       fiscal_period: fiscalPeriod.fiscalPeriod,
       period_start_date: fiscalPeriod.periodStartDate,
       period_end_date: fiscalPeriod.periodEndDate,
+    },
+    _debug: {
+      currentFactsCount: currentFacts.length,
+      priorFactsCount: priorFacts.length,
+      daysCount: days.length,
+      ptdWeeksCount: ptd_weeks?.length,
+      ytdPeriodsCount: ytd_periods?.length,
+      calendarType: fiscalConfig.calendarType,
+      fyStartDate: fiscalConfig.fyStartDate,
     },
   });
 }
@@ -624,6 +635,9 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
     }
   }
 
+  const totalDays = venues.reduce((s, v) => s + v.days.length, 0);
+  console.log(`[pulse/periods] ${view} group venues=${venues.length} range=${ranges.currentStart}→${ranges.currentEnd} prior=${ranges.priorStart}→${ranges.priorEnd} currentFacts=${allCurrentFacts.length} totalDays=${totalDays} ptd_weeks=${ptd_weeks?.length ?? '-'} ytd_periods=${ytd_periods?.length ?? '-'} fiscal=${fiscalConfig.calendarType}`);
+
   return NextResponse.json({
     view,
     date: anchorDate,
@@ -647,6 +661,16 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
       fiscal_period: fiscalPeriod.fiscalPeriod,
       period_start_date: fiscalPeriod.periodStartDate,
       period_end_date: fiscalPeriod.periodEndDate,
+    },
+    _debug: {
+      venueCount: venues.length,
+      currentFactsCount: allCurrentFacts.length,
+      priorFactsCount: allPriorFacts.length,
+      totalVenueDays: totalDays,
+      ptdWeeksCount: ptd_weeks?.length,
+      ytdPeriodsCount: ytd_periods?.length,
+      calendarType: fiscalConfig.calendarType,
+      fyStartDate: fiscalConfig.fyStartDate,
     },
   });
 }
