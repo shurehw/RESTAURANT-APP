@@ -41,6 +41,18 @@ import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/Perio
 import { PeriodDayChart } from '@/components/pulse/PeriodDayChart';
 import { PeriodDayTable } from '@/components/pulse/PeriodDayTable';
 import { Briefcase, ShieldAlert } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ReferenceLine,
+  ResponsiveContainer,
+  Area,
+  ComposedChart,
+} from 'recharts';
 
 // ══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -61,6 +73,9 @@ interface SalesSnapshot {
   voids_total: number;
   avg_check: number | null;
   bev_pct: number | null;
+  // Labor enrichment (from poll)
+  labor_cost: number;
+  labor_hours: number;
 }
 
 interface PaceData {
@@ -582,7 +597,7 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
   );
 }
 
-function CumulativeChart({
+function ServiceChart({
   snapshots,
   forecastRevenue,
   sdlwRevenue,
@@ -593,43 +608,148 @@ function CumulativeChart({
 }) {
   if (snapshots.length === 0) return null;
 
-  const maxValue = Math.max(
+  const hasLabor = snapshots.some((s) => s.labor_cost > 0);
+
+  const chartData = snapshots.map((s) => ({
+    time: new Date(s.snapshot_at).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }),
+    revenue: s.net_sales,
+    labor: hasLabor ? s.labor_cost : undefined,
+  }));
+
+  const revenueMax = Math.max(
     ...snapshots.map((s) => s.net_sales),
     forecastRevenue || 0,
     sdlwRevenue || 0,
-    1
   );
 
-  const barWidth = Math.max(4, Math.min(20, Math.floor(600 / snapshots.length)));
+  const tickFormatter = (v: number) =>
+    v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`;
 
   return (
     <div className="space-y-2">
-      <div className="flex items-end gap-px h-40 overflow-x-auto">
-        {snapshots.map((s, i) => {
-          const heightPct = (s.net_sales / maxValue) * 100;
-          const isLatest = i === snapshots.length - 1;
-          return (
-            <div key={s.id} className="flex flex-col items-center" style={{ minWidth: barWidth }}>
-              <div
-                className={`rounded-t transition-all ${isLatest ? 'bg-emerald-500' : 'bg-emerald-500/40'}`}
-                style={{ width: barWidth - 1, height: `${heightPct}%` }}
-                title={`${formatTime(s.snapshot_at)}: ${formatCurrency(s.net_sales)}`}
-              />
-            </div>
-          );
-        })}
-      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+          <XAxis
+            dataKey="time"
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tickLine={false}
+            axisLine={false}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            yAxisId="revenue"
+            tickFormatter={tickFormatter}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+            tickLine={false}
+            axisLine={false}
+            width={50}
+            domain={[0, Math.ceil(revenueMax * 1.15)]}
+          />
+          {hasLabor && (
+            <YAxis
+              yAxisId="labor"
+              orientation="right"
+              tickFormatter={tickFormatter}
+              tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+              tickLine={false}
+              axisLine={false}
+              width={50}
+            />
+          )}
+          <RechartsTooltip
+            contentStyle={{
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '0.5rem',
+              fontSize: '12px',
+            }}
+            formatter={(value: number, name: string) => [
+              formatCurrency(value),
+              name === 'revenue' ? 'Revenue' : 'Labor',
+            ]}
+            labelStyle={{ fontWeight: 600 }}
+          />
+          {forecastRevenue != null && forecastRevenue > 0 && (
+            <ReferenceLine
+              yAxisId="revenue"
+              y={forecastRevenue}
+              stroke="hsl(var(--muted-foreground))"
+              strokeDasharray="6 3"
+              label={{
+                value: `Forecast ${formatCurrency(forecastRevenue)}`,
+                position: 'insideTopRight',
+                fontSize: 10,
+                fill: 'hsl(var(--muted-foreground))',
+              }}
+            />
+          )}
+          {sdlwRevenue != null && sdlwRevenue > 0 && (
+            <ReferenceLine
+              yAxisId="revenue"
+              y={sdlwRevenue}
+              stroke="#8b5cf6"
+              strokeDasharray="4 4"
+              label={{
+                value: `SDLW ${formatCurrency(sdlwRevenue)}`,
+                position: 'insideBottomRight',
+                fontSize: 10,
+                fill: '#8b5cf6',
+              }}
+            />
+          )}
+          <Area
+            yAxisId="revenue"
+            type="monotone"
+            dataKey="revenue"
+            stroke="#10b981"
+            strokeWidth={2.5}
+            fill="#10b981"
+            fillOpacity={0.08}
+            dot={false}
+            activeDot={{ r: 4, fill: '#10b981' }}
+          />
+          {hasLabor && (
+            <Line
+              yAxisId="labor"
+              type="monotone"
+              dataKey="labor"
+              stroke="#f59e0b"
+              strokeWidth={2}
+              strokeDasharray="4 2"
+              dot={false}
+              activeDot={{ r: 3, fill: '#f59e0b' }}
+            />
+          )}
+        </ComposedChart>
+      </ResponsiveContainer>
 
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-emerald-500" />
-          <span>Actual</span>
+          <div className="w-4 h-0.5 bg-emerald-500 rounded" />
+          <span>Revenue</span>
         </div>
+        {hasLabor && (
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-amber-500" />
+            <span>Labor</span>
+          </div>
+        )}
         {forecastRevenue != null && forecastRevenue > 0 && (
-          <span>Forecast EOD: {formatCurrency(forecastRevenue)}</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-muted-foreground" />
+            <span>Forecast EOD</span>
+          </div>
         )}
         {sdlwRevenue != null && sdlwRevenue > 0 && (
-          <span>SDLW EOD: {formatCurrency(sdlwRevenue)}</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-purple-500" />
+            <span>SDLW EOD</span>
+          </div>
         )}
       </div>
     </div>
@@ -1434,14 +1554,14 @@ export default function LivePulsePage() {
             <CompCard comps={enrichment?.comps ?? null} loading={enrichmentLoading} />
           </div>
 
-          {/* Cumulative chart */}
+          {/* Service chart */}
           {data.snapshots.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm font-medium">Revenue Over Service</CardTitle>
               </CardHeader>
               <CardContent>
-                <CumulativeChart
+                <ServiceChart
                   snapshots={data.snapshots}
                   forecastRevenue={data.forecast?.revenue_predicted ?? null}
                   sdlwRevenue={data.sdlw?.net_sales ?? null}

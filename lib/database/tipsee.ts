@@ -655,6 +655,42 @@ export async function fetchSimphonyIntraDaySummary(
 }
 
 // ============================================================================
+// COMP BY REASON — Breakdown of comps grouped by voidcomp_reason_text
+// ============================================================================
+
+export interface CompByReason {
+  reason: string;
+  count: number;
+  total: number;
+}
+
+export async function fetchCompsByReason(
+  locationUuids: string[],
+  date: string
+): Promise<CompByReason[]> {
+  if (locationUuids.length === 0) return [];
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      COALESCE(NULLIF(TRIM(voidcomp_reason_text), ''), 'No Reason') as reason,
+      COUNT(*)::int as count,
+      COALESCE(SUM(comp_total), 0) as total
+    FROM public.tipsee_checks
+    WHERE location_uuid = ANY($1) AND trading_day = $2 AND comp_total > 0
+    GROUP BY COALESCE(NULLIF(TRIM(voidcomp_reason_text), ''), 'No Reason')
+    ORDER BY total DESC`,
+    [locationUuids, date]
+  );
+
+  return result.rows.map(r => ({
+    reason: r.reason,
+    count: parseInt(r.count) || 0,
+    total: parseFloat(r.total) || 0,
+  }));
+}
+
+// ============================================================================
 // COMP EXCEPTION DETECTION
 // Based on h.wood Group Comps, Voids and Discounts SOP
 // ============================================================================

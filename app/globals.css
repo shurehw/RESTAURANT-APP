@@ -129,6 +129,13 @@
     --sal: env(safe-area-inset-left, 0px);
   }
 
+  /* PWA standalone mode — hide sidebar and topbar */
+  @media (display-mode: standalone) {
+    [data-pwa-hide] {
+      display: none !important;
+    }
+  }
+
   /* Focus visible outline */
   *:focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;

@@ -1,13 +1,13 @@
-// Pulse PWA Service Worker v2
+// Pulse PWA Service Worker v3
 // Network-first for API (live data), stale-while-revalidate for shell, offline fallback
 
-const CACHE_VERSION = 'pulse-v2';
-const API_CACHE = 'pulse-api-v2';
+const CACHE_VERSION = 'pulse-v4';
+const API_CACHE = 'pulse-api-v4';
 const MAX_API_ENTRIES = 50;
 const OFFLINE_URL = '/offline.html';
 
+// Only precache assets that don't require auth (no /sales/pace — it's behind login)
 const SHELL_ASSETS = [
-  '/pulse',
   '/offline.html',
   '/icons/pulse-192.png',
   '/icons/pulse-512.png',

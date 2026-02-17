@@ -16,6 +16,7 @@ import {
   getActiveSalesPaceVenues,
   getLatestSnapshot,
 } from '@/lib/database/sales-pace';
+import { fetchCompsByReason } from '@/lib/database/tipsee';
 
 export interface VenueEnrichment {
   venue_id: string;
@@ -47,6 +48,7 @@ export interface VenueEnrichment {
       comp_total: number;
       message: string;
     }>;
+    by_reason: Array<{ reason: string; count: number; total: number }>;
   } | null;
 }
 
@@ -123,6 +125,7 @@ function buildEnrichmentFromSnapshot(
     critical_count: Number(snapshot.comp_critical_count) || 0,
     warning_count: Number(snapshot.comp_warning_count) || 0,
     top_exceptions: topExceptions,
+    by_reason: [] as Array<{ reason: string; count: number; total: number }>,
   };
 
   return { venue_id: venueId, venue_name: venueName, labor, comps };
@@ -166,26 +169,49 @@ async function fetchLaborDayFact(
   };
 }
 
+async function getTipseeLocationUuids(svc: any, venueIds: string[]): Promise<Map<string, string[]>> {
+  const { data } = await (svc as any)
+    .from('venue_tipsee_mapping')
+    .select('venue_id, tipsee_location_uuid')
+    .in('venue_id', venueIds)
+    .eq('is_active', true);
+
+  const map = new Map<string, string[]>();
+  for (const row of data || []) {
+    if (!row.tipsee_location_uuid) continue;
+    const existing = map.get(row.venue_id) || [];
+    existing.push(row.tipsee_location_uuid);
+    map.set(row.venue_id, existing);
+  }
+  return map;
+}
+
 async function handleSingleVenue(venueId: string, date: string) {
   try {
     const svc = getServiceClient();
 
-    // Fetch venue name + latest snapshot in parallel
-    const [venueResult, snapshot] = await Promise.all([
+    // Fetch venue name + latest snapshot + tipsee mapping in parallel
+    const [venueResult, snapshot, locationMap] = await Promise.all([
       (svc as any).from('venues').select('name').eq('id', venueId).single(),
       getLatestSnapshot(venueId, date),
+      getTipseeLocationUuids(svc, [venueId]),
     ]);
 
     const venueName = venueResult.data?.name || venueId;
     const result = buildEnrichmentFromSnapshot(venueId, venueName, snapshot);
 
-    // Fallback: if snapshot has no labor, check labor_day_facts (populated by sales poll)
-    if (!result.labor) {
-      const netSales = Number(snapshot?.net_sales) || 0;
-      const covers = Number(snapshot?.covers_count) || 0;
-      const comps = Number(snapshot?.comps_total) || 0;
-      result.labor = await fetchLaborDayFact(svc, venueId, date, netSales, covers, comps);
-    }
+    // Fetch comp breakdown by reason from TipSee
+    const locationUuids = locationMap.get(venueId) || [];
+    const [laborFallback, compsByReason] = await Promise.all([
+      // Fallback: if snapshot has no labor, check labor_day_facts
+      !result.labor
+        ? fetchLaborDayFact(svc, venueId, date, Number(snapshot?.net_sales) || 0, Number(snapshot?.covers_count) || 0, Number(snapshot?.comps_total) || 0)
+        : Promise.resolve(null),
+      locationUuids.length > 0 ? fetchCompsByReason(locationUuids, date) : Promise.resolve([]),
+    ]);
+
+    if (laborFallback) result.labor = laborFallback;
+    if (result.comps) result.comps.by_reason = compsByReason;
 
     return NextResponse.json(result);
   } catch (error: unknown) {
@@ -219,19 +245,33 @@ async function handleGroupEnrichment(date: string) {
       buildEnrichmentFromSnapshot(vid, nameMap.get(vid) || vid, snapshots[i])
     );
 
-    // Fallback: for venues missing labor in snapshot, check labor_day_facts
+    // Fetch tipsee location UUIDs for comp-by-reason
+    const locationMap = await getTipseeLocationUuids(svc, venueIds);
+
+    // Parallel: labor fallbacks + comp-by-reason for all venues
     const missingLabor = venues.filter(v => !v.labor);
-    if (missingLabor.length > 0) {
-      const laborFallbacks = await Promise.all(
+    const [laborFallbacks, ...compReasonResults] = await Promise.all([
+      Promise.all(
         missingLabor.map(v => {
           const snap = snapshots[venueIds.indexOf(v.venue_id)];
           return fetchLaborDayFact(svc, v.venue_id, date, Number(snap?.net_sales) || 0, Number(snap?.covers_count) || 0, Number(snap?.comps_total) || 0);
         })
-      );
-      missingLabor.forEach((v, i) => {
-        if (laborFallbacks[i]) v.labor = laborFallbacks[i];
-      });
-    }
+      ),
+      ...venueIds.map(vid => {
+        const uuids = locationMap.get(vid) || [];
+        return uuids.length > 0 ? fetchCompsByReason(uuids, date) : Promise.resolve([]);
+      }),
+    ]);
+
+    missingLabor.forEach((v, i) => {
+      if (laborFallbacks[i]) v.labor = laborFallbacks[i];
+    });
+
+    // Attach comp-by-reason to each venue
+    venueIds.forEach((vid, i) => {
+      const venue = venues[i];
+      if (venue.comps) venue.comps.by_reason = compReasonResults[i] || [];
+    });
 
     // Compute group totals
     let totalLaborCost = 0;
@@ -258,6 +298,20 @@ async function handleGroupEnrichment(date: string) {
       }
     }
 
+    // Aggregate comp-by-reason across all venues
+    const reasonMap = new Map<string, { count: number; total: number }>();
+    for (const v of venues) {
+      for (const r of v.comps?.by_reason || []) {
+        const existing = reasonMap.get(r.reason) || { count: 0, total: 0 };
+        existing.count += r.count;
+        existing.total += r.total;
+        reasonMap.set(r.reason, existing);
+      }
+    }
+    const groupByReason = [...reasonMap.entries()]
+      .map(([reason, { count, total }]) => ({ reason, count, total }))
+      .sort((a, b) => b.total - a.total);
+
     const totals = {
       labor_cost: totalLaborCost,
       labor_pct: groupNetSales > 0 ? (totalLaborCost / groupNetSales) * 100 : 0,
@@ -270,6 +324,7 @@ async function handleGroupEnrichment(date: string) {
       exception_count: totalExceptions,
       critical_count: totalCritical,
       net_sales: groupNetSales,
+      comp_by_reason: groupByReason,
     };
 
     return NextResponse.json({ venues, totals });

@@ -1,11 +1,12 @@
 /**
  * Pulse PWA Layout
- * Minimal chrome — no sidebar, no chatbot, just venue context + content.
+ * Minimal chrome — no sidebar, just venue context + content.
  * Used when the app is installed as a standalone PWA.
  */
 
 import { createClient } from '@/lib/supabase/server';
 import { VenueProvider } from '@/components/providers/VenueProvider';
+import { FloatingChatWidget } from '@/components/chatbot/FloatingChatWidget';
 import { Activity } from 'lucide-react';
 
 export const metadata = {
@@ -39,6 +40,9 @@ export default async function PwaLayout({
 
         {/* Content */}
         <main className="flex-1 p-4" style={{ paddingBottom: 'var(--sab)' }}>{children}</main>
+
+        {/* AI Assistant */}
+        <FloatingChatWidget />
       </div>
     </VenueProvider>
   );

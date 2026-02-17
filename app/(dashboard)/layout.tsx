@@ -66,21 +66,25 @@ export default async function DashboardLayout({
           Skip to main content
         </a>
 
-        {/* Sidebar */}
-        <MobileSidebar
-          criticalViolationCount={criticalViolationCount}
-          organizationSlug={organization?.slug}
-          userRole={userRole}
-        />
+        {/* Sidebar — hidden in PWA standalone mode */}
+        <div data-pwa-hide>
+          <MobileSidebar
+            criticalViolationCount={criticalViolationCount}
+            organizationSlug={organization?.slug}
+            userRole={userRole}
+          />
+        </div>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Topbar */}
-          <Topbar
-            venues={venues || []}
-            organizationSlug={organization?.slug}
-            organizationName={organization?.name}
-          />
+          {/* Topbar — hidden in PWA standalone mode */}
+          <div data-pwa-hide>
+            <Topbar
+              venues={venues || []}
+              organizationSlug={organization?.slug}
+              organizationName={organization?.name}
+            />
+          </div>
 
           {/* Page Content */}
           <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>

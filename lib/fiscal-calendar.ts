@@ -175,3 +175,76 @@ export function getSamePeriodLastYear(
     endDate: lyEquivalentDate.toISOString().split('T')[0],
   };
 }
+
+/**
+ * Get the fiscal year start date that applies to a given date.
+ * For standard calendars returns Jan 1 of that year.
+ * For 4-4-5 / 4-5-4 / 5-4-4 returns the FY start derived from fyStartDate.
+ */
+export function getFiscalYearStart(
+  date: string | Date,
+  calendarType: FiscalCalendarType,
+  fyStartDate: string | null
+): string {
+  const targetDate = typeof date === 'string' ? new Date(date) : date;
+
+  if (calendarType === 'standard' || !fyStartDate) {
+    return `${targetDate.getFullYear()}-01-01`;
+  }
+
+  let fyStart = new Date(fyStartDate);
+  while (targetDate < fyStart) {
+    fyStart.setFullYear(fyStart.getFullYear() - 1);
+  }
+  const nextYearStart = new Date(fyStart);
+  nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
+  while (targetDate >= nextYearStart) {
+    fyStart.setFullYear(fyStart.getFullYear() + 1);
+    nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
+  }
+
+  return fyStart.toISOString().split('T')[0];
+}
+
+/**
+ * Enumerate all 12 periods in a fiscal year.
+ * For standard calendar, returns calendar months.
+ * For 4-4-5 etc., walks the week pattern to compute period boundaries.
+ */
+export function getAllPeriodsInFiscalYear(
+  fyStartDate: string,
+  calendarType: FiscalCalendarType
+): Array<{ period: number; startDate: string; endDate: string; weeksInPeriod: number }> {
+  if (calendarType === 'standard') {
+    const year = new Date(fyStartDate).getFullYear();
+    return Array.from({ length: 12 }, (_, i) => {
+      const start = new Date(year, i, 1);
+      const end = new Date(year, i + 1, 0);
+      const weeks = Math.ceil((end.getDate()) / 7);
+      return {
+        period: i + 1,
+        startDate: start.toISOString().split('T')[0],
+        endDate: end.toISOString().split('T')[0],
+        weeksInPeriod: weeks,
+      };
+    });
+  }
+
+  const pattern = WEEK_PATTERNS[calendarType];
+  const periods: Array<{ period: number; startDate: string; endDate: string; weeksInPeriod: number }> = [];
+  const cursor = new Date(fyStartDate);
+
+  for (let q = 0; q < 4; q++) {
+    for (let p = 0; p < 3; p++) {
+      const periodNum = q * 3 + p + 1;
+      const weeksInPeriod = pattern[p];
+      const startDate = cursor.toISOString().split('T')[0];
+      cursor.setDate(cursor.getDate() + weeksInPeriod * 7 - 1);
+      const endDate = cursor.toISOString().split('T')[0];
+      periods.push({ period: periodNum, startDate, endDate, weeksInPeriod });
+      cursor.setDate(cursor.getDate() + 1); // move to next period start
+    }
+  }
+
+  return periods;
+}

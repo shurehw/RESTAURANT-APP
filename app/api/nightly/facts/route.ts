@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
-import { getFiscalPeriod, FiscalCalendarType } from '@/lib/fiscal-calendar';
+import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear, getSamePeriodLastYear, FiscalCalendarType } from '@/lib/fiscal-calendar';
 import { fetchLaborSummary } from '@/lib/database/tipsee'; // Fallback for live query
 
 export async function GET(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const action = searchParams.get('action');
   const date = searchParams.get('date');
   const venueId = searchParams.get('venue_id');
-  const viewMode = searchParams.get('view') || 'nightly'; // 'nightly' | 'wtd' | 'ptd'
+  const viewMode = searchParams.get('view') || 'nightly'; // 'nightly' | 'wtd' | 'ptd' | 'ytd'
 
   const supabase = getServiceClient();
 
@@ -145,6 +145,36 @@ export async function GET(request: NextRequest) {
     const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
     const lastWeekSameDayStr = sdlwDateStr;
 
+    // SWLY (Same Week Last Year): Same Mon→DOW range but ~52 weeks back
+    const swlyWeekStart = new Date(weekStartDate);
+    swlyWeekStart.setFullYear(swlyWeekStart.getFullYear() - 1);
+    // Align to Monday of that week (year shift may land on different DOW)
+    const swlyDow = swlyWeekStart.getDay();
+    const swlyDaysFromMon = swlyDow === 0 ? 6 : swlyDow - 1;
+    swlyWeekStart.setDate(swlyWeekStart.getDate() - swlyDaysFromMon);
+    const swlyWeekStartStr = swlyWeekStart.toISOString().split('T')[0];
+    // Same number of days into the week
+    const swlyWeekEnd = new Date(swlyWeekStart);
+    swlyWeekEnd.setDate(swlyWeekEnd.getDate() + daysFromMonday);
+    const swlyWeekEndStr = swlyWeekEnd.toISOString().split('T')[0];
+
+    // PTD SPLY (Same Period Last Year): for year-over-year period comparison
+    const ptdSply = getSamePeriodLastYear(date, fiscalCalendarType, fiscalYearStartDate);
+
+    // YTD (Year-to-Date): FY start → selected date
+    const fyStartStr = getFiscalYearStart(date, fiscalCalendarType, fiscalYearStartDate);
+
+    // YTD prior year: same FY start last year → equivalent date last year
+    const fyStartParts = fyStartStr.split('-').map(Number);
+    const fyStartDateObj = new Date(fyStartParts[0], fyStartParts[1] - 1, fyStartParts[2]);
+    const daysIntoFY = Math.floor((targetDate.getTime() - fyStartDateObj.getTime()) / (24 * 60 * 60 * 1000));
+    const lyFyStartDateObj = new Date(fyStartDateObj);
+    lyFyStartDateObj.setFullYear(lyFyStartDateObj.getFullYear() - 1);
+    const lyFyStartStr = lyFyStartDateObj.toISOString().split('T')[0];
+    const lyFyEndDateObj = new Date(lyFyStartDateObj);
+    lyFyEndDateObj.setDate(lyFyEndDateObj.getDate() + daysIntoFY);
+    const lyFyEndStr = lyFyEndDateObj.toISOString().split('T')[0];
+
     // ══════════════════════════════════════════════════════════════════════════
     // CONDITIONAL QUERY FETCHING (Performance Optimization)
     // ══════════════════════════════════════════════════════════════════════════
@@ -250,9 +280,41 @@ export async function GET(request: NextRequest) {
         .eq('venue_id', venueId)
         .gte('business_date', lastWeekWeekStartStr)
         .lte('business_date', lastWeekSameDayStr),
+
+      // 13. SWLY - Same Week Last Year (Mon→DOW, ~52 weeks back)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', swlyWeekStartStr)
+        .lte('business_date', swlyWeekEndStr),
+
+      // 14. PTD Same Period Last Year (for SPLY comparison)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', ptdSply.startDate)
+        .lte('business_date', ptdSply.endDate),
+
+      // 15. YTD This Year (for YTD variance)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', fyStartStr)
+        .lte('business_date', date),
+
+      // 16. YTD Last Year (for YTD variance)
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', lyFyStartStr)
+        .lte('business_date', lyFyEndStr),
     ];
 
-    // Period aggregation queries (only when WTD/PTD view active - 8 queries)
+    // Period aggregation queries (only when WTD/PTD/YTD view active)
     const wtdQueries = viewMode === 'wtd' || viewMode === 'ptd' ? [
       // 13. Server WTD
       (supabase as any)
@@ -319,13 +381,84 @@ export async function GET(request: NextRequest) {
         .eq('venue_id', venueId)
         .gte('business_date', periodStartStr)
         .lte('business_date', date),
+
+      // 21. PTD daily facts (for week breakdown) - current period
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('business_date, net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', periodStartStr)
+        .lte('business_date', date)
+        .order('business_date'),
+
+      // 22. PTD daily facts (for week breakdown) - previous period
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('business_date, net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', prevPeriodStartStr)
+        .lte('business_date', prevPeriodEndStr)
+        .order('business_date'),
+    ] : [];
+
+    // YTD aggregation queries (only when YTD view active)
+    const ytdQueries = viewMode === 'ytd' ? [
+      // Server YTD
+      (supabase as any)
+        .from('server_day_facts')
+        .select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date')
+        .eq('venue_id', venueId)
+        .gte('business_date', fyStartStr)
+        .lte('business_date', date),
+
+      // Category YTD
+      (supabase as any)
+        .from('category_day_facts')
+        .select('category, gross_sales, comps_total, voids_total, quantity_sold')
+        .eq('venue_id', venueId)
+        .gte('business_date', fyStartStr)
+        .lte('business_date', date),
+
+      // Items YTD
+      (supabase as any)
+        .from('item_day_facts')
+        .select('menu_item_name, gross_sales, quantity_sold, parent_category')
+        .eq('venue_id', venueId)
+        .gte('business_date', fyStartStr)
+        .lte('business_date', date),
+
+      // Labor YTD
+      (supabase as any)
+        .from('labor_day_facts')
+        .select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', fyStartStr)
+        .lte('business_date', date),
+
+      // YTD daily facts (for period breakdown) - current year
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('business_date, net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', fyStartStr)
+        .lte('business_date', date)
+        .order('business_date'),
+
+      // YTD daily facts (for period breakdown) - prior year
+      (supabase as any)
+        .from('venue_day_facts')
+        .select('business_date, net_sales, covers_count')
+        .eq('venue_id', venueId)
+        .gte('business_date', lyFyStartStr)
+        .lte('business_date', lyFyEndStr)
+        .order('business_date'),
     ] : [];
 
     // Combine and execute all queries
-    const allQueries = [...coreQueries, ...wtdQueries, ...ptdQueries];
+    const allQueries = [...coreQueries, ...wtdQueries, ...ptdQueries, ...ytdQueries];
     const results = await Promise.all(allQueries);
 
-    // Destructure results (always have 12 core, optionally 4 WTD, optionally 4 PTD)
+    // Destructure results (always have 16 core, optionally 4 WTD, optionally 6 PTD, optionally 6 YTD)
     const [
       venueDayResult,
       categoryResult,
@@ -339,19 +472,36 @@ export async function GET(request: NextRequest) {
       ptdLastWeekResult,
       wtdThisWeekResult,
       wtdLastWeekResult,
+      swlyResult,          // 13. Same Week Last Year
+      ptdSplyResult,       // 14. PTD Same Period Last Year
+      ytdThisYearResult,   // 15. YTD This Year
+      ytdLastYearResult,   // 16. YTD Last Year
     ] = results;
 
-    // WTD results (if fetched)
-    const serverWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[12] : { data: [] };
-    const categoryWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[13] : { data: [] };
-    const itemWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[14] : { data: [] };
-    const laborWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[15] : { data: [] };
+    // WTD results (if fetched) - start at index 16
+    const wtdOffset = 16;
+    const serverWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset] : { data: [] };
+    const categoryWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset + 1] : { data: [] };
+    const itemWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset + 2] : { data: [] };
+    const laborWtdResult = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset + 3] : { data: [] };
 
-    // PTD results (if fetched)
-    const serverPtdResult = viewMode === 'ptd' ? results[16] : { data: [] };
-    const categoryPtdResult = viewMode === 'ptd' ? results[17] : { data: [] };
-    const itemPtdResult = viewMode === 'ptd' ? results[18] : { data: [] };
-    const laborPtdResult = viewMode === 'ptd' ? results[19] : { data: [] };
+    // PTD results (if fetched) - offset after WTD queries
+    const ptdOffset = wtdOffset + (viewMode === 'wtd' || viewMode === 'ptd' ? 4 : 0);
+    const serverPtdResult = viewMode === 'ptd' ? results[ptdOffset] : { data: [] };
+    const categoryPtdResult = viewMode === 'ptd' ? results[ptdOffset + 1] : { data: [] };
+    const itemPtdResult = viewMode === 'ptd' ? results[ptdOffset + 2] : { data: [] };
+    const laborPtdResult = viewMode === 'ptd' ? results[ptdOffset + 3] : { data: [] };
+    const ptdDailyCurrentResult = viewMode === 'ptd' ? results[ptdOffset + 4] : { data: [] };
+    const ptdDailyPriorResult = viewMode === 'ptd' ? results[ptdOffset + 5] : { data: [] };
+
+    // YTD results (if fetched) - offset after PTD queries
+    const ytdOffset = ptdOffset + (viewMode === 'ptd' ? 6 : 0);
+    const serverYtdResult = viewMode === 'ytd' ? results[ytdOffset] : { data: [] };
+    const categoryYtdResult = viewMode === 'ytd' ? results[ytdOffset + 1] : { data: [] };
+    const itemYtdResult = viewMode === 'ytd' ? results[ytdOffset + 2] : { data: [] };
+    const laborYtdResult = viewMode === 'ytd' ? results[ytdOffset + 3] : { data: [] };
+    const ytdDailyCurrentResult = viewMode === 'ytd' ? results[ytdOffset + 4] : { data: [] };
+    const ytdDailyPriorResult = viewMode === 'ytd' ? results[ytdOffset + 5] : { data: [] };
 
     // Check if we have data
     const summary = venueDayResult.data as any;
@@ -436,8 +586,33 @@ export async function GET(request: NextRequest) {
     const sdlw = sdlwResult.data as any;
     const sdly = sdlyResult.data as any;
 
+    // Aggregate PTD SPLY totals
+    const ptdSplyTotals = (ptdSplyResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+
+    // Aggregate YTD totals
+    const ytdThisYear = (ytdThisYearResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+    const ytdLastYear = (ytdLastYearResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+
     // Aggregate PTD totals
-    const ptdThisWeek = (ptdThisWeekResult.data || []).reduce(
+    const ptdCurrent = (ptdThisWeekResult.data || []).reduce(
       (acc: { net_sales: number; covers: number }, row: any) => ({
         net_sales: acc.net_sales + (row.net_sales || 0),
         covers: acc.covers + (row.covers_count || 0),
@@ -461,6 +636,13 @@ export async function GET(request: NextRequest) {
       { net_sales: 0, covers: 0 }
     );
     const wtdLastWeek = (wtdLastWeekResult.data || []).reduce(
+      (acc: { net_sales: number; covers: number }, row: any) => ({
+        net_sales: acc.net_sales + (row.net_sales || 0),
+        covers: acc.covers + (row.covers_count || 0),
+      }),
+      { net_sales: 0, covers: 0 }
+    );
+    const swlyTotals = (swlyResult.data || []).reduce(
       (acc: { net_sales: number; covers: number }, row: any) => ({
         net_sales: acc.net_sales + (row.net_sales || 0),
         covers: acc.covers + (row.covers_count || 0),
@@ -660,9 +842,158 @@ export async function GET(request: NextRequest) {
     );
     const laborPtd = aggregateLabor(
       laborPtdResult.data || [],
-      ptdThisWeek.net_sales,
-      ptdThisWeek.covers
+      ptdCurrent.net_sales,
+      ptdCurrent.covers
     );
+
+    // YTD aggregations
+    const serversYtd = aggregateServerData(serverYtdResult.data || []);
+    const categoriesYtd = aggregateCategories(categoryYtdResult.data || []);
+    const itemsYtd = aggregateItems(itemYtdResult.data || []);
+    const laborYtd = aggregateLabor(
+      laborYtdResult.data || [],
+      ytdThisYear.net_sales,
+      ytdThisYear.covers
+    );
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // PTD WEEK BREAKDOWN (bucket daily facts into 7-day weeks within period)
+    // ══════════════════════════════════════════════════════════════════════════
+    let ptdWeeks: any[] = [];
+    if (viewMode === 'ptd') {
+      const currentDays = (ptdDailyCurrentResult.data || []) as any[];
+      const priorDays = (ptdDailyPriorResult.data || []) as any[];
+
+      // Determine weeks in this period from fiscal calendar
+      const periodInfo = getFiscalPeriod(date, fiscalCalendarType, fiscalYearStartDate);
+      const prevInfo = getFiscalPeriod(
+        new Date(new Date(periodInfo.periodStartDate).getTime() - 86400000).toISOString().split('T')[0],
+        fiscalCalendarType,
+        fiscalYearStartDate
+      );
+
+      // Build week buckets for current period
+      const pStartParts = periodStartStr.split('-').map(Number);
+      const pStart = new Date(pStartParts[0], pStartParts[1] - 1, pStartParts[2]);
+      const ppStartParts = prevPeriodStartStr.split('-').map(Number);
+      const ppStart = new Date(ppStartParts[0], ppStartParts[1] - 1, ppStartParts[2]);
+
+      // Figure out how many weeks in the period (from fiscal pattern)
+      const pattern = fiscalCalendarType === 'standard'
+        ? [4, 4, 5]
+        : (fiscalCalendarType === '4-4-5' ? [4, 4, 5] : fiscalCalendarType === '4-5-4' ? [4, 5, 4] : [5, 4, 4]);
+      const periodInQuarter = ((periodInfo.fiscalPeriod - 1) % 3);
+      const weeksInPeriod = fiscalCalendarType === 'standard' ? Math.ceil((new Date(periodInfo.periodEndDate).getDate()) / 7) : pattern[periodInQuarter];
+      const prevPeriodInQuarter = ((prevInfo.fiscalPeriod - 1) % 3);
+      const weeksInPrevPeriod = fiscalCalendarType === 'standard' ? Math.ceil((new Date(prevInfo.periodEndDate).getDate()) / 7) : pattern[prevPeriodInQuarter];
+
+      for (let w = 0; w < weeksInPeriod; w++) {
+        const weekStart = new Date(pStart);
+        weekStart.setDate(weekStart.getDate() + w * 7);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const wsStr = weekStart.toISOString().split('T')[0];
+        const weStr = weekEnd.toISOString().split('T')[0];
+
+        const weekSales = currentDays
+          .filter((d: any) => d.business_date >= wsStr && d.business_date <= weStr)
+          .reduce((sum: number, d: any) => sum + (d.net_sales || 0), 0);
+        const weekCovers = currentDays
+          .filter((d: any) => d.business_date >= wsStr && d.business_date <= weStr)
+          .reduce((sum: number, d: any) => sum + (d.covers_count || 0), 0);
+
+        // Prior period same week
+        let priorSales: number | null = null;
+        let priorCovers: number | null = null;
+        if (w < weeksInPrevPeriod) {
+          const priorWeekStart = new Date(ppStart);
+          priorWeekStart.setDate(priorWeekStart.getDate() + w * 7);
+          const priorWeekEnd = new Date(priorWeekStart);
+          priorWeekEnd.setDate(priorWeekEnd.getDate() + 6);
+          const pwsStr = priorWeekStart.toISOString().split('T')[0];
+          const pweStr = priorWeekEnd.toISOString().split('T')[0];
+
+          priorSales = priorDays
+            .filter((d: any) => d.business_date >= pwsStr && d.business_date <= pweStr)
+            .reduce((sum: number, d: any) => sum + (d.net_sales || 0), 0);
+          priorCovers = priorDays
+            .filter((d: any) => d.business_date >= pwsStr && d.business_date <= pweStr)
+            .reduce((sum: number, d: any) => sum + (d.covers_count || 0), 0);
+        }
+
+        ptdWeeks.push({
+          week: w + 1,
+          label: `Week ${w + 1}`,
+          start_date: wsStr,
+          end_date: weStr > date ? date : weStr,
+          net_sales: weekSales,
+          covers: weekCovers,
+          prior_net_sales: priorSales,
+          prior_covers: priorCovers,
+        });
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // YTD PERIOD BREAKDOWN (bucket daily facts into fiscal periods)
+    // ══════════════════════════════════════════════════════════════════════════
+    let ytdPeriods: any[] = [];
+    if (viewMode === 'ytd') {
+      const currentDays = (ytdDailyCurrentResult.data || []) as any[];
+      const priorDays = (ytdDailyPriorResult.data || []) as any[];
+
+      const allPeriods = getAllPeriodsInFiscalYear(fyStartStr, fiscalCalendarType);
+      const lyAllPeriods = getAllPeriodsInFiscalYear(lyFyStartStr, fiscalCalendarType);
+
+      for (let i = 0; i < allPeriods.length; i++) {
+        const period = allPeriods[i];
+        // Only include periods that have started (period start <= date)
+        if (period.startDate > date) break;
+
+        const effectiveEnd = period.endDate > date ? date : period.endDate;
+
+        const periodSales = currentDays
+          .filter((d: any) => d.business_date >= period.startDate && d.business_date <= effectiveEnd)
+          .reduce((sum: number, d: any) => sum + (d.net_sales || 0), 0);
+        const periodCovers = currentDays
+          .filter((d: any) => d.business_date >= period.startDate && d.business_date <= effectiveEnd)
+          .reduce((sum: number, d: any) => sum + (d.covers_count || 0), 0);
+
+        // Prior year same period
+        let priorSales: number | null = null;
+        let priorCovers: number | null = null;
+        if (i < lyAllPeriods.length) {
+          const lyPeriod = lyAllPeriods[i];
+          // For current (incomplete) period, only compare equivalent days
+          const lyEffectiveEnd = period.endDate > date
+            ? (() => {
+                const daysIntoPd = Math.floor((new Date(effectiveEnd).getTime() - new Date(period.startDate).getTime()) / 86400000);
+                const lyEnd = new Date(lyPeriod.startDate);
+                lyEnd.setDate(lyEnd.getDate() + daysIntoPd);
+                return lyEnd.toISOString().split('T')[0];
+              })()
+            : lyPeriod.endDate;
+
+          priorSales = priorDays
+            .filter((d: any) => d.business_date >= lyPeriod.startDate && d.business_date <= lyEffectiveEnd)
+            .reduce((sum: number, d: any) => sum + (d.net_sales || 0), 0);
+          priorCovers = priorDays
+            .filter((d: any) => d.business_date >= lyPeriod.startDate && d.business_date <= lyEffectiveEnd)
+            .reduce((sum: number, d: any) => sum + (d.covers_count || 0), 0);
+        }
+
+        ytdPeriods.push({
+          period: period.period,
+          label: `P${period.period}`,
+          start_date: period.startDate,
+          end_date: effectiveEnd,
+          net_sales: periodSales,
+          covers: periodCovers,
+          prior_net_sales: priorSales,
+          prior_covers: priorCovers,
+        });
+      }
+    }
 
     // Format response to match existing NightlyReportData structure
     const response = {
@@ -753,12 +1084,12 @@ export async function GET(request: NextRequest) {
         vs_sdly_pct: calcVariance(actualNetSales, sdly?.net_sales),
         vs_sdly_covers_pct: calcVariance(actualCovers, sdly?.covers_count),
         // PTD (Period-to-Date): fiscal period start → selected date vs same period last week
-        ptd_net_sales: ptdThisWeek.net_sales,
-        ptd_covers: ptdThisWeek.covers,
+        ptd_net_sales: ptdCurrent.net_sales,
+        ptd_covers: ptdCurrent.covers,
         ptd_lw_net_sales: ptdLastWeek.net_sales,
         ptd_lw_covers: ptdLastWeek.covers,
-        vs_ptd_pct: calcVariance(ptdThisWeek.net_sales, ptdLastWeek.net_sales),
-        vs_ptd_covers_pct: calcVariance(ptdThisWeek.covers, ptdLastWeek.covers),
+        vs_ptd_pct: calcVariance(ptdCurrent.net_sales, ptdLastWeek.net_sales),
+        vs_ptd_covers_pct: calcVariance(ptdCurrent.covers, ptdLastWeek.covers),
         // WTD (Week-to-Date): calendar week Monday → selected date vs same days last week
         wtd_net_sales: wtdThisWeek.net_sales,
         wtd_covers: wtdThisWeek.covers,
@@ -766,12 +1097,33 @@ export async function GET(request: NextRequest) {
         wtd_lw_covers: wtdLastWeek.covers,
         vs_wtd_pct: calcVariance(wtdThisWeek.net_sales, wtdLastWeek.net_sales),
         vs_wtd_covers_pct: calcVariance(wtdThisWeek.covers, wtdLastWeek.covers),
+        // SWLY (Same Week Last Year)
+        wtd_swly_net_sales: swlyTotals.net_sales,
+        wtd_swly_covers: swlyTotals.covers,
+        vs_wtd_swly_pct: calcVariance(wtdThisWeek.net_sales, swlyTotals.net_sales),
+        vs_wtd_swly_covers_pct: calcVariance(wtdThisWeek.covers, swlyTotals.covers),
+        // PTD vs Same Period Last Year (SPLY)
+        ptd_sply_net_sales: ptdSplyTotals.net_sales,
+        ptd_sply_covers: ptdSplyTotals.covers,
+        vs_ptd_sply_pct: calcVariance(ptdCurrent.net_sales, ptdSplyTotals.net_sales),
+        vs_ptd_sply_covers_pct: calcVariance(ptdCurrent.covers, ptdSplyTotals.covers),
+        // YTD (Year-to-Date): FY start → selected date vs same period last year
+        ytd_net_sales: ytdThisYear.net_sales,
+        ytd_covers: ytdThisYear.covers,
+        ytd_ly_net_sales: ytdLastYear.net_sales,
+        ytd_ly_covers: ytdLastYear.covers,
+        vs_ytd_pct: calcVariance(ytdThisYear.net_sales, ytdLastYear.net_sales),
+        vs_ytd_covers_pct: calcVariance(ytdThisYear.covers, ytdLastYear.covers),
         // Debug: date ranges being queried
         _debug: {
           wtd_range: `${weekStartStr} → ${date}`,
           wtd_lw_range: `${lastWeekWeekStartStr} → ${lastWeekSameDayStr}`,
+          wtd_swly_range: `${swlyWeekStartStr} → ${swlyWeekEndStr}`,
           ptd_range: `${periodStartStr} → ${date}`,
           ptd_lp_range: `${prevPeriodStartStr} → ${prevPeriodEndStr}`,
+          ptd_sply_range: `${ptdSply.startDate} → ${ptdSply.endDate}`,
+          ytd_range: `${fyStartStr} → ${date}`,
+          ytd_ly_range: `${lyFyStartStr} → ${lyFyEndStr}`,
           days_into_period: daysIntoPeriod,
         },
       },
@@ -800,9 +1152,19 @@ export async function GET(request: NextRequest) {
       items_wtd: itemsWtd,
       items_ptd: itemsPtd,
 
-      // Aggregated labor metrics for WTD and PTD
+      // Aggregated labor metrics for WTD, PTD, and YTD
       labor_wtd: laborWtd,
       labor_ptd: laborPtd,
+
+      // YTD aggregations
+      servers_ytd: serversYtd,
+      categories_ytd: categoriesYtd,
+      items_ytd: itemsYtd,
+      labor_ytd: laborYtd,
+
+      // Period breakdowns
+      ptd_weeks: ptdWeeks,
+      ytd_periods: ytdPeriods,
     };
 
     return NextResponse.json(response);

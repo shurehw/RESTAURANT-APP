@@ -296,4 +296,86 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
       },
     },
   },
+
+  // --- REAL-TIME / PULSE TOOLS ---
+
+  {
+    name: 'get_live_sales_pace',
+    description:
+      'Get live, real-time sales pace for tonight (or today). Returns current revenue, covers, checks, food/bev split, projected end-of-day, comparison vs same day last week, and pace status (on_pace/warning/critical). Use for "how are we pacing?", "how\'s tonight going?", "what are we projected to close at?", or "are we ahead of last week?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        venue: {
+          ...VENUE_PARAM,
+          description:
+            'Venue name to check pace for. REQUIRED — live pace is per-venue.',
+        },
+      },
+      required: ['venue'],
+    },
+  },
+  {
+    name: 'get_check_detail',
+    description:
+      'Look up a specific check by ID and return full details: server, table, guest count, items (food & beverage), payments, tips, comps, and voids. Use when the user wants to see what was on a particular check or needs item-level detail.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        check_id: {
+          type: 'string',
+          description: 'The check ID to look up.',
+        },
+      },
+      required: ['check_id'],
+    },
+  },
+  {
+    name: 'search_checks',
+    description:
+      'Search checks for a venue on a given date. Returns a list of checks with server name, table, guest count, revenue, comps, tips, and open/closed status. Use to find checks by server or table (e.g. "show me all of John\'s checks tonight", "what checks are on table 5?"), or to browse all checks.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        date: {
+          type: 'string',
+          description: 'Date in YYYY-MM-DD format. Use today\'s date for current service.',
+        },
+        server_name: {
+          type: 'string',
+          description: 'Filter by server/employee name (partial match). E.g. "John", "Sarah".',
+        },
+        table_name: {
+          type: 'string',
+          description: 'Filter by table name (partial match). E.g. "Table 5", "Bar".',
+        },
+        venue: {
+          ...VENUE_PARAM,
+          description: 'Venue name. REQUIRED for check searches.',
+        },
+      },
+      required: ['date', 'venue'],
+    },
+  },
+  {
+    name: 'get_period_comparison',
+    description:
+      'Get period-to-date performance with prior period comparison. Supports WTD (week-to-date), PTD (period-to-date), and YTD (year-to-date). Returns net sales, covers, avg check, food/bev split, comps, labor, and variance percentages vs the same window in the prior period. Use for "how\'s our week going?", "are we up or down this period?", "what\'s our YTD vs last year?"',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        view: {
+          type: 'string',
+          enum: ['wtd', 'ptd', 'ytd'],
+          description: 'Period type: wtd (week-to-date), ptd (period-to-date), or ytd (year-to-date).',
+        },
+        date: {
+          type: 'string',
+          description: 'Anchor date in YYYY-MM-DD. Defaults to today.',
+        },
+        venue: VENUE_PARAM,
+      },
+      required: ['view'],
+    },
+  },
 ];

@@ -23,7 +23,14 @@ import {
   getDemandForecasts,
   getInvoices,
   getCurrentInventory,
+  getLiveSalesPace,
+  getPeriodComparison,
 } from './supabase-queries';
+import {
+  fetchCheckDetail,
+  fetchChecksForDate,
+} from '@/lib/database/tipsee';
+import { getTipseeMappingForVenue } from '@/lib/database/sales-pace';
 
 type VenueMapEntry = { venueId: string; locationUuid: string };
 
@@ -157,6 +164,68 @@ export async function executeTool(
           }),
           toolName
         );
+
+      case 'get_live_sales_pace': {
+        if (filtered.venueIds.length === 0) {
+          return 'Error: Could not resolve venue. Please specify which venue to check pace for.';
+        }
+        // Use first matched venue for live pace
+        return formatResults(
+          await getLiveSalesPace(filtered.venueIds[0]),
+          toolName
+        );
+      }
+
+      case 'get_check_detail': {
+        const checkId = toolInput.check_id;
+        if (!checkId) return 'Error: check_id is required.';
+        const detail = await fetchCheckDetail(checkId);
+        if (!detail) return `No check found with ID "${checkId}".`;
+        return JSON.stringify(detail, null, 2);
+      }
+
+      case 'search_checks': {
+        if (filtered.venueIds.length === 0) {
+          return 'Error: Could not resolve venue for check search.';
+        }
+        const date = toolInput.date;
+        if (!date) return 'Error: date is required for check search.';
+
+        // Get TipSee location UUIDs for the venue
+        const locationUuids = await getTipseeMappingForVenue(filtered.venueIds[0]);
+        if (locationUuids.length === 0) {
+          return 'No TipSee mapping found for this venue. Check data is not available.';
+        }
+
+        const { checks } = await fetchChecksForDate(locationUuids, date, 50, 0);
+        let results = checks;
+
+        // Apply optional server/table filters
+        if (toolInput.server_name) {
+          const q = toolInput.server_name.toLowerCase();
+          results = results.filter((c: any) => c.employee_name.toLowerCase().includes(q));
+        }
+        if (toolInput.table_name) {
+          const q = toolInput.table_name.toLowerCase();
+          results = results.filter((c: any) => c.table_name.toLowerCase().includes(q));
+        }
+
+        return formatResults(results, toolName);
+      }
+
+      case 'get_period_comparison': {
+        const view = toolInput.view;
+        if (!view || !['wtd', 'ptd', 'ytd'].includes(view)) {
+          return 'Error: view must be wtd, ptd, or ytd.';
+        }
+        return formatResults(
+          await getPeriodComparison(filtered.venueIds, {
+            view,
+            date: toolInput.date,
+          }),
+          toolName
+        );
+      }
     }
 
     // All remaining tools require dates

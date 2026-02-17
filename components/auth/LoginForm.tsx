@@ -57,8 +57,9 @@ export function LoginForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-md px-4 py-3 text-base"
           placeholder="you@example.com"
+          autoComplete="email"
           required
         />
       </div>
@@ -72,13 +73,14 @@ export function LoginForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full border rounded px-3 py-2"
+          className="w-full border rounded-md px-4 py-3 text-base"
           placeholder="••••••••"
+          autoComplete="current-password"
           required
         />
       </div>
 
-      <Button type="submit" className="w-full" disabled={loading}>
+      <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>
     </form>

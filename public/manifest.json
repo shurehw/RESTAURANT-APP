@@ -2,7 +2,7 @@
   "name": "Pulse — Live Sales",
   "short_name": "Pulse",
   "description": "Real-time sales pace during service",
-  "start_url": "/pulse",
+  "start_url": "/sales/pace",
   "scope": "/",
   "id": "/pulse",
   "display": "standalone",

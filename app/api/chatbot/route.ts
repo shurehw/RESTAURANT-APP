@@ -175,6 +175,12 @@ Internal Operations Data:
 - Invoices: vendor invoices, amounts, approval status
 - Inventory: current on-hand quantities, costs, values
 
+Real-Time / Pulse Data:
+- Live sales pace: current revenue, covers, checks, food/bev split, pace vs forecast and same-day-last-week (SDLW), projected end-of-day. Use for "how are we pacing tonight?" or "are we ahead of last week?"
+- Check detail: full item-level detail for a specific check (items, payments, tips, comps, voids)
+- Check search: browse or filter checks by date, server, or table for a venue. Use for "show me Sarah's checks" or "what's on table 5?"
+- Period comparison: WTD (week-to-date), PTD (period-to-date), YTD (year-to-date) performance vs the same window in the prior period. Use for "how's our week going?" or "are we up or down YTD?"
+
 WORKFLOW:
 1. When the user asks a data question, ALWAYS call the appropriate tool(s) IMMEDIATELY — do not ask the user to clarify dates or venues if you can reasonably infer them
 2. Use the data returned to provide a precise, data-backed answer
@@ -189,9 +195,12 @@ ANALYSIS GUIDELINES:
 
 GUARDRAILS:
 - Never fabricate data — only reference data returned by tools
-- If a tool returns no data, say so clearly
+- If a tool returns no data, say so clearly and suggest possible reasons (data hasn't synced yet, venue not mapped, date too far back, etc.)
+- If the question is outside your data scope (e.g. marketing, HR, accounting journal entries), say so and suggest what you CAN help with
 - Always cite the date range used
 - Flag assumptions clearly
+- For live pace questions, note that data refreshes every 5 minutes during service hours
+- If multiple tool calls return errors, summarize the issue concisely rather than showing raw error messages
 
 TONE:
 - Professional but conversational
@@ -300,7 +309,7 @@ export async function POST(req: NextRequest) {
       system: systemPrompt,
       messages,
       tools: CHATBOT_TOOLS,
-      max_tokens: 2500,
+      max_tokens: 3000,
       temperature: 0.3,
     });
 
@@ -338,7 +347,7 @@ export async function POST(req: NextRequest) {
         system: systemPrompt,
         messages,
         tools: CHATBOT_TOOLS,
-        max_tokens: 2500,
+        max_tokens: 3000,
         temperature: 0.3,
       });
     }

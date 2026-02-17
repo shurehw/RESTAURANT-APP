@@ -1,6 +1,7 @@
 /**
  * app/login/page.tsx
  * Login page with email/password authentication
+ * PWA-aware: safe area padding, larger touch targets in standalone mode
  */
 
 import { Suspense } from 'react';
@@ -10,30 +11,35 @@ import { Shield, Lock, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
+    <div
+      className="min-h-screen flex items-center justify-center bg-[#0f172a] px-4"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-xl">
         <div>
           <h1 className="text-3xl font-bold text-center">OpsOS</h1>
-          <h2 className="mt-2 text-xl text-center text-gray-600">
-            Restaurant Operations
-          </h2>
+          <p className="mt-1 text-sm text-center text-gray-500">Pulse</p>
         </div>
 
         <Suspense>
           <LoginForm />
         </Suspense>
 
-        <div className="text-center text-sm">
+        {/* Sign up link — hidden in PWA standalone */}
+        <div className="text-center text-sm" data-pwa-hide>
           <p className="text-muted-foreground">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup" className="text-primary hover:underline">
               Sign up
             </Link>
           </p>
         </div>
 
-        {/* Security Badges */}
-        <div className="pt-6 border-t border-gray-200">
+        {/* Security Badges — hidden in PWA standalone */}
+        <div className="pt-6 border-t border-gray-200" data-pwa-hide>
           <div className="flex items-center justify-center gap-6 text-xs text-gray-600">
             <div className="flex items-center gap-1.5">
               <Shield className="w-4 h-4 text-green-600" />

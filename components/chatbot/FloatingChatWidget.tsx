@@ -92,7 +92,8 @@ export function FloatingChatWidget() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-brass hover:bg-brass/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-50"
+        className="fixed right-4 sm:right-6 w-14 h-14 bg-brass hover:bg-brass/90 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-50"
+        style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Open AI Assistant"
       >
         <MessageCircle className="w-6 h-6" />
@@ -102,8 +103,8 @@ export function FloatingChatWidget() {
 
   if (isExpanded) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <Card className="w-full max-w-4xl h-[80vh] flex flex-col">
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
+        <Card className="w-full sm:max-w-4xl h-full sm:h-[80vh] sm:rounded-lg rounded-none flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-3">
@@ -222,9 +223,12 @@ export function FloatingChatWidget() {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[600px] flex flex-col shadow-2xl z-50">
+    <Card
+      className="fixed right-0 sm:right-6 w-full sm:w-96 h-[calc(100vh-3.5rem)] sm:h-[600px] flex flex-col shadow-2xl z-50 rounded-none sm:rounded-lg"
+      style={{ bottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-white rounded-t-lg">
+      <div className="flex items-center justify-between p-4 border-b bg-white sm:rounded-t-lg">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-brass flex items-center justify-center">
             <Bot className="w-5 h-5 text-white" />
@@ -312,7 +316,7 @@ export function FloatingChatWidget() {
       </div>
 
       {/* Input */}
-      <div className="border-t p-3 bg-white rounded-b-lg">
+      <div className="border-t p-3 bg-white sm:rounded-b-lg" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
             type="text"

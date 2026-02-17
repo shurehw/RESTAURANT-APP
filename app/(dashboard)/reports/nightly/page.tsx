@@ -47,6 +47,8 @@ import { LaborAttestation } from '@/components/attestation/LaborAttestation';
 import { CompResolutionPanel } from '@/components/attestation/CompResolutionPanel';
 import { AttestationFooter } from '@/components/attestation/AttestationFooter';
 import { ServerDetailModal } from '@/components/reports/ServerDetailModal';
+import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
+import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
 import type { NightlyReportPayload } from '@/lib/attestation/types';
 
 interface NightlyReportData {
@@ -250,6 +252,23 @@ interface FactsSummary {
     wtd_lw_covers: number | null;
     vs_wtd_pct: number | null;
     vs_wtd_covers_pct: number | null;
+    // SWLY (Same Week Last Year)
+    wtd_swly_net_sales: number | null;
+    wtd_swly_covers: number | null;
+    vs_wtd_swly_pct: number | null;
+    vs_wtd_swly_covers_pct: number | null;
+    // PTD vs SPLY (Same Period Last Year)
+    ptd_sply_net_sales: number | null;
+    ptd_sply_covers: number | null;
+    vs_ptd_sply_pct: number | null;
+    vs_ptd_sply_covers_pct: number | null;
+    // YTD (Year-to-Date)
+    ytd_net_sales: number | null;
+    ytd_covers: number | null;
+    ytd_ly_net_sales: number | null;
+    ytd_ly_covers: number | null;
+    vs_ytd_pct: number | null;
+    vs_ytd_covers_pct: number | null;
   };
   // Aggregated server performance
   servers_wtd?: Array<{
@@ -266,6 +285,19 @@ interface FactsSummary {
     days_worked: number;
   }>;
   servers_ptd?: Array<{
+    employee_name: string;
+    employee_role_name: string;
+    tickets: number;
+    covers: number;
+    net_sales: number;
+    avg_ticket: number;
+    avg_turn_mins: number;
+    avg_per_cover: number;
+    tip_pct: number | null;
+    total_tips: number;
+    days_worked: number;
+  }>;
+  servers_ytd?: Array<{
     employee_name: string;
     employee_role_name: string;
     tickets: number;
@@ -333,6 +365,54 @@ interface FactsSummary {
     boh: { hours: number; cost: number; employee_count: number } | null;
     other: { hours: number; cost: number; employee_count: number } | null;
   } | null;
+  // YTD aggregations
+  categories_ytd?: Array<{
+    category: string;
+    gross_sales: number;
+    comps: number;
+    voids: number;
+    net_sales: number;
+    quantity: number;
+  }>;
+  items_ytd?: Array<{
+    name: string;
+    qty: number;
+    net_total: number;
+    category: string;
+  }>;
+  labor_ytd?: {
+    total_hours: number;
+    labor_cost: number;
+    labor_pct: number;
+    splh: number;
+    ot_hours: number;
+    covers_per_labor_hour: number | null;
+    employee_count: number;
+    foh: { hours: number; cost: number; employee_count: number } | null;
+    boh: { hours: number; cost: number; employee_count: number } | null;
+    other: { hours: number; cost: number; employee_count: number } | null;
+  } | null;
+  // Period breakdowns
+  ptd_weeks?: Array<{
+    week: number;
+    label: string;
+    start_date: string;
+    end_date: string;
+    net_sales: number;
+    covers: number;
+    prior_net_sales: number | null;
+    prior_covers: number | null;
+  }>;
+  ytd_periods?: Array<{
+    period: number;
+    label: string;
+    start_date: string;
+    end_date: string;
+    net_sales: number;
+    covers: number;
+    prior_net_sales: number | null;
+    prior_covers: number | null;
+  }>;
   // Fiscal calendar info
   fiscal?: {
     calendar_type: string;
@@ -383,8 +463,9 @@ export default function NightlyReportPage() {
   const router = useRouter();
 
   // Global view mode state (synchronized with URL)
-  const [viewMode, setViewMode] = useState<'nightly' | 'wtd' | 'ptd'>(
-    (searchParams.get('view') as 'nightly' | 'wtd' | 'ptd') || 'nightly'
+  type ViewMode = 'nightly' | 'wtd' | 'ptd' | 'ytd';
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    (searchParams.get('view') as ViewMode) || 'nightly'
   );
 
   const [date, setDate] = useState(() => {
@@ -413,25 +494,28 @@ export default function NightlyReportPage() {
   const [loadingHealth, setLoadingHealth] = useState<boolean>(false);
 
   // Handler for view mode changes (updates URL)
-  function handleViewChange(newView: 'nightly' | 'wtd' | 'ptd') {
+  function handleViewChange(newView: ViewMode) {
     setViewMode(newView);
     const params = new URLSearchParams(searchParams.toString());
     params.set('view', newView);
     router.push(`?${params.toString()}`, { scroll: false });
   }
 
-  // Helper: Get period start date for WTD/PTD
-  function getPeriodStart(endDate: string, mode: 'wtd' | 'ptd'): string {
+  // Helper: Get period start date for WTD/PTD/YTD
+  function getPeriodStart(endDate: string, mode: 'wtd' | 'ptd' | 'ytd'): string {
     if (mode === 'wtd') {
-      // Calculate Monday of current week
       const dateObj = new Date(endDate + 'T00:00:00');
       const dayOfWeek = dateObj.getDay();
       const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
       const monday = new Date(dateObj);
       monday.setDate(monday.getDate() - daysFromMonday);
       return monday.toISOString().split('T')[0];
+    } else if (mode === 'ytd') {
+      // YTD: Use FY start from fiscal info, fallback to Jan 1
+      return factsSummary?.fiscal?.fy_start_date
+        ? factsSummary.fiscal.fy_start_date
+        : `${endDate.split('-')[0]}-01-01`;
     } else {
-      // PTD: Use fiscal period start from factsSummary
       return factsSummary?.fiscal?.period_start_date || endDate;
     }
   }
@@ -451,7 +535,9 @@ export default function NightlyReportPage() {
       ? report?.servers
       : viewMode === 'wtd'
         ? factsSummary?.servers_wtd
-        : factsSummary?.servers_ptd;
+        : viewMode === 'ptd'
+          ? factsSummary?.servers_ptd
+          : factsSummary?.servers_ytd;
     if (!servers?.length) return null;
     const count = servers.length;
     const withTips = servers.filter((s) => s.tip_pct != null && s.tip_pct !== undefined);
@@ -590,6 +676,19 @@ export default function NightlyReportPage() {
                 variance: factsData.variance,
                 servers_wtd: factsData.servers_wtd,
                 servers_ptd: factsData.servers_ptd,
+                servers_ytd: factsData.servers_ytd,
+                categories_wtd: factsData.categories_wtd,
+                categories_ptd: factsData.categories_ptd,
+                categories_ytd: factsData.categories_ytd,
+                items_wtd: factsData.items_wtd,
+                items_ptd: factsData.items_ptd,
+                items_ytd: factsData.items_ytd,
+                labor_wtd: factsData.labor_wtd,
+                labor_ptd: factsData.labor_ptd,
+                labor_ytd: factsData.labor_ytd,
+                ptd_weeks: factsData.ptd_weeks,
+                ytd_periods: factsData.ytd_periods,
+                fiscal: factsData.fiscal,
               });
               setFactsError(null);
             } else {
@@ -718,12 +817,18 @@ export default function NightlyReportPage() {
             variance: factsData.variance,
             servers_wtd: factsData.servers_wtd,
             servers_ptd: factsData.servers_ptd,
+            servers_ytd: factsData.servers_ytd,
             categories_wtd: factsData.categories_wtd,
             categories_ptd: factsData.categories_ptd,
+            categories_ytd: factsData.categories_ytd,
             items_wtd: factsData.items_wtd,
             items_ptd: factsData.items_ptd,
+            items_ytd: factsData.items_ytd,
             labor_wtd: factsData.labor_wtd,
             labor_ptd: factsData.labor_ptd,
+            labor_ytd: factsData.labor_ytd,
+            ptd_weeks: factsData.ptd_weeks,
+            ytd_periods: factsData.ytd_periods,
             fiscal: factsData.fiscal,
           });
           setFactsError(null);
@@ -818,11 +923,12 @@ export default function NightlyReportPage() {
           </div>
 
           {/* Global View Mode Switcher */}
-          <Tabs value={viewMode} onValueChange={(v) => handleViewChange(v as 'nightly' | 'wtd' | 'ptd')}>
-            <TabsList className="grid grid-cols-3 w-full max-w-md">
+          <Tabs value={viewMode} onValueChange={(v) => handleViewChange(v as ViewMode)}>
+            <TabsList className="grid grid-cols-4 w-full max-w-lg">
               <TabsTrigger value="nightly">Nightly</TabsTrigger>
-              <TabsTrigger value="wtd">Week to Date</TabsTrigger>
-              <TabsTrigger value="ptd">Period to Date</TabsTrigger>
+              <TabsTrigger value="wtd">WTD</TabsTrigger>
+              <TabsTrigger value="ptd">PTD</TabsTrigger>
+              <TabsTrigger value="ytd">YTD</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -835,8 +941,18 @@ export default function NightlyReportPage() {
       {viewMode !== 'nightly' && factsSummary && (
         <Card className="p-4 mb-4 bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
           <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-            {viewMode === 'wtd' ? 'Week to Date' : 'Period to Date'}:
+            {viewMode === 'wtd' ? 'Week to Date' : viewMode === 'ptd' ? 'Period to Date' : 'Year to Date'}:
             {' '}{formatDateDisplay(getPeriodStart(date, viewMode))} → {formatDateDisplay(date)}
+            {viewMode === 'ptd' && factsSummary?.fiscal && (
+              <span className="ml-2 text-blue-700 dark:text-blue-300">
+                (P{factsSummary.fiscal.fiscal_period} FY{factsSummary.fiscal.fiscal_year})
+              </span>
+            )}
+            {viewMode === 'ytd' && factsSummary?.fiscal && (
+              <span className="ml-2 text-blue-700 dark:text-blue-300">
+                (FY{factsSummary.fiscal.fiscal_year} · {factsSummary.fiscal.calendar_type})
+              </span>
+            )}
           </p>
         </Card>
       )}
@@ -921,27 +1037,57 @@ export default function NightlyReportPage() {
                   )}
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {/* Net Sales with variance - recalculate using live TipSee data */}
+                  {/* Net Sales with variance - mode-aware comparisons */}
                   {(() => {
                     // Select data source based on view mode
                     const liveNetSales = viewMode === 'nightly'
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_net_sales || 0)
-                        : (factsSummary?.variance?.ptd_net_sales || 0);
+                        : viewMode === 'ptd'
+                          ? (factsSummary?.variance?.ptd_net_sales || 0)
+                          : (factsSummary?.variance?.ytd_net_sales || 0);
                     const liveCovers = viewMode === 'nightly'
                       ? (report.summary.total_covers || 0)
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_covers || 0)
-                        : (factsSummary?.variance?.ptd_covers || 0);
-                    const calcVar = (actual: number, comparison: number | null | undefined) => {
-                      if (!comparison || comparison === 0) return null;
-                      return ((actual - comparison) / comparison) * 100;
-                    };
-                    const sdlwSalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdlw_net_sales);
-                    const sdlySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdly_net_sales);
-                    const sdlwCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdlw_covers);
-                    const sdlyCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdly_covers);
+                        : viewMode === 'ptd'
+                          ? (factsSummary?.variance?.ptd_covers || 0)
+                          : (factsSummary?.variance?.ytd_covers || 0);
+
+                    // Mode-appropriate variance labels
+                    let primaryLabel: string, primarySalesPct: number | null | undefined, primaryCoversPct: number | null | undefined;
+                    let secondaryLabel: string | null = null, secondarySalesPct: number | null | undefined, secondaryCoversPct: number | null | undefined;
+
+                    if (viewMode === 'nightly') {
+                      const calcVar = (actual: number, comp: number | null | undefined) =>
+                        comp && comp > 0 ? ((actual - comp) / comp) * 100 : null;
+                      primaryLabel = 'SDLW';
+                      primarySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdlw_net_sales);
+                      primaryCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdlw_covers);
+                      secondaryLabel = 'SDLY';
+                      secondarySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdly_net_sales);
+                      secondaryCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdly_covers);
+                    } else if (viewMode === 'wtd') {
+                      primaryLabel = 'vs LW';
+                      primarySalesPct = factsSummary?.variance?.vs_wtd_pct;
+                      primaryCoversPct = factsSummary?.variance?.vs_wtd_covers_pct;
+                      secondaryLabel = 'vs SWLY';
+                      secondarySalesPct = factsSummary?.variance?.vs_wtd_swly_pct;
+                      secondaryCoversPct = factsSummary?.variance?.vs_wtd_swly_covers_pct;
+                    } else if (viewMode === 'ptd') {
+                      primaryLabel = 'vs LP';
+                      primarySalesPct = factsSummary?.variance?.vs_ptd_pct;
+                      primaryCoversPct = factsSummary?.variance?.vs_ptd_covers_pct;
+                      secondaryLabel = 'vs SPLY';
+                      secondarySalesPct = factsSummary?.variance?.vs_ptd_sply_pct;
+                      secondaryCoversPct = factsSummary?.variance?.vs_ptd_sply_covers_pct;
+                    } else {
+                      // YTD
+                      primaryLabel = 'vs LY';
+                      primarySalesPct = factsSummary?.variance?.vs_ytd_pct;
+                      primaryCoversPct = factsSummary?.variance?.vs_ytd_covers_pct;
+                    }
 
                     return (
                       <>
@@ -951,8 +1097,8 @@ export default function NightlyReportPage() {
                           </div>
                           <div className="text-xs text-muted-foreground uppercase">Net Sales</div>
                           <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <VarianceBadge value={sdlwSalesPct} label="SDLW" />
-                            <VarianceBadge value={sdlySalesPct} label="SDLY" />
+                            <VarianceBadge value={primarySalesPct ?? null} label={primaryLabel} />
+                            {secondaryLabel && <VarianceBadge value={secondarySalesPct ?? null} label={secondaryLabel} />}
                           </div>
                         </div>
                         {/* Covers with variance */}
@@ -962,66 +1108,100 @@ export default function NightlyReportPage() {
                           </div>
                           <div className="text-xs text-muted-foreground uppercase">Covers</div>
                           <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <VarianceBadge value={sdlwCoversPct} label="SDLW" />
-                            <VarianceBadge value={sdlyCoversPct} label="SDLY" />
+                            <VarianceBadge value={primaryCoversPct ?? null} label={primaryLabel} />
+                            {secondaryLabel && <VarianceBadge value={secondaryCoversPct ?? null} label={secondaryLabel} />}
                           </div>
                         </div>
                       </>
                     );
                   })()}
-                  {/* SDLW context */}
-                  {factsSummary?.variance?.sdlw_net_sales && (
+                  {/* Comparison context cards - mode-aware */}
+                  {viewMode === 'nightly' && (
+                    <>
+                      {factsSummary?.variance?.sdlw_net_sales != null && factsSummary.variance.sdlw_net_sales > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                            {formatCurrency(factsSummary.variance.sdlw_net_sales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">SDLW</div>
+                          <div className="text-xs text-muted-foreground">
+                            {factsSummary.variance.sdlw_covers} covers
+                          </div>
+                        </div>
+                      )}
+                      {factsSummary?.variance?.sdly_net_sales != null && factsSummary.variance.sdly_net_sales > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                            {formatCurrency(factsSummary.variance.sdly_net_sales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">SDLY</div>
+                          <div className="text-xs text-muted-foreground">
+                            {factsSummary.variance.sdly_covers} covers
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {viewMode === 'wtd' && (
+                    <>
+                      {factsSummary?.variance?.wtd_lw_net_sales != null && factsSummary.variance.wtd_lw_net_sales > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                            {formatCurrency(factsSummary.variance.wtd_lw_net_sales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Last Week</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatNumber(factsSummary.variance.wtd_lw_covers || 0)} covers
+                          </div>
+                        </div>
+                      )}
+                      {factsSummary?.variance?.wtd_swly_net_sales != null && factsSummary.variance.wtd_swly_net_sales > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                            {formatCurrency(factsSummary.variance.wtd_swly_net_sales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">SWLY</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatNumber(factsSummary.variance.wtd_swly_covers || 0)} covers
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {viewMode === 'ptd' && (
+                    <>
+                      {factsSummary?.variance?.ptd_lw_net_sales != null && factsSummary.variance.ptd_lw_net_sales > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                            {formatCurrency(factsSummary.variance.ptd_lw_net_sales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">Last Period</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatNumber(factsSummary.variance.ptd_lw_covers || 0)} covers
+                          </div>
+                        </div>
+                      )}
+                      {factsSummary?.variance?.ptd_sply_net_sales != null && factsSummary.variance.ptd_sply_net_sales > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
+                            {formatCurrency(factsSummary.variance.ptd_sply_net_sales)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">SPLY</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatNumber(factsSummary.variance.ptd_sply_covers || 0)} covers
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {viewMode === 'ytd' && factsSummary?.variance?.ytd_ly_net_sales != null && factsSummary.variance.ytd_ly_net_sales > 0 && (
                     <div className="space-y-1">
                       <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary?.variance?.sdlw_net_sales)}
+                        {formatCurrency(factsSummary.variance.ytd_ly_net_sales)}
                       </div>
-                      <div className="text-xs text-muted-foreground uppercase">SDLW</div>
+                      <div className="text-xs text-muted-foreground uppercase">Last Year</div>
                       <div className="text-xs text-muted-foreground">
-                        {factsSummary?.variance?.sdlw_covers} covers
-                      </div>
-                    </div>
-                  )}
-                  {/* SDLY context */}
-                  {factsSummary?.variance?.sdly_net_sales && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary?.variance?.sdly_net_sales)}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">SDLY</div>
-                      <div className="text-xs text-muted-foreground">
-                        {factsSummary?.variance?.sdly_covers} covers
-                      </div>
-                    </div>
-                  )}
-                  {/* WTD (Week-to-Date) - Calendar week Mon→Today */}
-                  {factsSummary?.variance?.wtd_net_sales != null && factsSummary?.variance?.wtd_net_sales > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary?.variance?.wtd_net_sales)}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">WTD</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary?.variance?.wtd_covers || 0)} covers
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary?.variance?.vs_wtd_pct} label="$" />
-                        <VarianceBadge value={factsSummary?.variance?.vs_wtd_covers_pct} label="cvrs" />
-                      </div>
-                    </div>
-                  )}
-                  {/* PTD (Period-to-Date) - Fiscal period start→Today */}
-                  {factsSummary?.variance?.ptd_net_sales != null && factsSummary?.variance?.ptd_net_sales > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums">
-                        {formatCurrency(factsSummary?.variance?.ptd_net_sales)}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">PTD</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary?.variance?.ptd_covers || 0)} covers
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1">
-                        <VarianceBadge value={factsSummary?.variance?.vs_ptd_pct} label="$" />
-                        <VarianceBadge value={factsSummary?.variance?.vs_ptd_covers_pct} label="cvrs" />
+                        {formatNumber(factsSummary.variance.ytd_ly_covers || 0)} covers
                       </div>
                     </div>
                   )}
@@ -1031,7 +1211,9 @@ export default function NightlyReportPage() {
                       ? factsSummary?.labor
                       : viewMode === 'wtd'
                         ? factsSummary?.labor_wtd
-                        : factsSummary?.labor_ptd;
+                        : viewMode === 'ptd'
+                          ? factsSummary?.labor_ptd
+                          : factsSummary?.labor_ytd;
 
                     if (!laborPreview) return null;
 
@@ -1042,7 +1224,7 @@ export default function NightlyReportPage() {
                         </div>
                         <div className="text-xs text-muted-foreground uppercase">Labor %</div>
                         <div className="text-xs text-muted-foreground">
-                          SPLH: {formatCurrency(laborPreview.splh || 0)}
+                          SPLH: {formatCurrency(laborPreview.splh || 0)} · CPLH: {laborPreview.covers_per_labor_hour ? laborPreview.covers_per_labor_hour.toFixed(1) : '—'}
                         </div>
                       </div>
                     );
@@ -1053,7 +1235,9 @@ export default function NightlyReportPage() {
                       ? (report.salesByCategory || [])
                       : viewMode === 'wtd'
                         ? (factsSummary?.categories_wtd || [])
-                        : (factsSummary?.categories_ptd || []);
+                        : viewMode === 'ptd'
+                          ? (factsSummary?.categories_ptd || [])
+                          : (factsSummary?.categories_ytd || []);
 
                     const isBevCategory = (cat: string) => {
                       const lower = (cat || '').toLowerCase();
@@ -1077,7 +1261,9 @@ export default function NightlyReportPage() {
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_net_sales || 0)
-                        : (factsSummary?.variance?.ptd_net_sales || 0);
+                        : viewMode === 'ptd'
+                          ? (factsSummary?.variance?.ptd_net_sales || 0)
+                          : (factsSummary?.variance?.ytd_net_sales || 0);
 
                     const foodSales = actualNetSales * (foodPct / 100);
                     const bevSales = actualNetSales * (bevPct / 100);
@@ -1109,6 +1295,30 @@ export default function NightlyReportPage() {
               </CardContent>
             </Card>
 
+          {/* PTD Week Breakdown */}
+          {viewMode === 'ptd' && factsSummary?.ptd_weeks && factsSummary.ptd_weeks.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">Period Week Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <PeriodWeekBreakdown weeks={factsSummary.ptd_weeks} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* YTD Period Breakdown */}
+          {viewMode === 'ytd' && factsSummary?.ytd_periods && factsSummary.ytd_periods.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">Year-to-Date Period Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <YtdPeriodBreakdown periods={factsSummary.ytd_periods} />
+              </CardContent>
+            </Card>
+          )}
+
           {/* Revenue Attestation — inline after revenue summary */}
           {att.attestation && (
             <div className="border-l-2 border-brass/30 pl-4 ml-2">
@@ -1129,7 +1339,9 @@ export default function NightlyReportPage() {
               ? factsSummary?.labor
               : viewMode === 'wtd'
                 ? factsSummary?.labor_wtd
-                : factsSummary?.labor_ptd;
+                : viewMode === 'ptd'
+                  ? factsSummary?.labor_ptd
+                  : factsSummary?.labor_ytd;
 
             if (!labor) return null;
 
@@ -1137,12 +1349,14 @@ export default function NightlyReportPage() {
             const avgRate = labor.total_hours > 0 ? labor.labor_cost / labor.total_hours : 0;
             const otCost = labor.ot_hours * avgRate * 1.5;
 
-            // Use period-appropriate covers for cost per cover calculation
+            // Use period-appropriate covers for cost per cover and CPLH calculation
             const periodCovers = viewMode === 'nightly'
               ? report.summary.total_covers
               : viewMode === 'wtd'
                 ? (factsSummary?.variance?.wtd_covers || 0)
-                : (factsSummary?.variance?.ptd_covers || 0);
+                : viewMode === 'ptd'
+                  ? (factsSummary?.variance?.ptd_covers || 0)
+                  : (factsSummary?.variance?.ytd_covers || 0);
             const costPerCover = periodCovers > 0 ? labor.labor_cost / periodCovers : 0;
             const hasOT = labor.ot_hours > 0;
 
@@ -1240,7 +1454,9 @@ export default function NightlyReportPage() {
                       ? (report.summary.net_sales || 0)
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_net_sales || 0)
-                        : (factsSummary?.variance?.ptd_net_sales || 0);
+                        : viewMode === 'ptd'
+                          ? (factsSummary?.variance?.ptd_net_sales || 0)
+                          : (factsSummary?.variance?.ytd_net_sales || 0);
                     // % of sales labels
                     const fohPct = netSales > 0 ? (fohCost / netSales) * 100 : 0;
                     const bohPct = netSales > 0 ? (bohCost / netSales) * 100 : 0;
@@ -1736,7 +1952,9 @@ export default function NightlyReportPage() {
                     ? report.servers
                     : viewMode === 'wtd'
                       ? factsSummary?.servers_wtd || []
-                      : factsSummary?.servers_ptd || [];
+                      : viewMode === 'ptd'
+                        ? factsSummary?.servers_ptd || []
+                        : factsSummary?.servers_ytd || [];
                   const showDays = viewMode !== 'nightly';
 
                   if (serverData.length === 0) {
@@ -1812,7 +2030,9 @@ export default function NightlyReportPage() {
                     ? report.menuItems
                     : viewMode === 'wtd'
                       ? (factsSummary?.items_wtd || [])
-                      : (factsSummary?.items_ptd || []);
+                      : viewMode === 'ptd'
+                        ? (factsSummary?.items_ptd || [])
+                        : (factsSummary?.items_ytd || []);
 
                   if (menuItems.length === 0) {
                     return (
@@ -2219,7 +2439,7 @@ export default function NightlyReportPage() {
             date={date}
             venueName={selectedVenue?.name || ''}
             venueId={selectedVenue?.id || ''}
-            periodLabel={viewMode === 'nightly' ? 'Tonight' : viewMode === 'wtd' ? 'Week to Date' : 'Period to Date'}
+            periodLabel={viewMode === 'nightly' ? 'Tonight' : viewMode === 'wtd' ? 'Week to Date' : viewMode === 'ptd' ? 'Period to Date' : 'Year to Date'}
             isOpen={serverModalOpen}
             onClose={() => {
               setServerModalOpen(false);

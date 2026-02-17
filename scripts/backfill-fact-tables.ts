@@ -11,6 +11,11 @@
  *   npx ts-node scripts/backfill-fact-tables.ts --venue-id abc-123
  */
 
+import 'dotenv/config';
+// Load .env.local for local script execution
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+
 import { backfillDateRange, getVenueTipseeMappings } from '../lib/etl/tipsee-sync';
 
 async function main() {

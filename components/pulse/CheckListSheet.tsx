@@ -88,6 +88,8 @@ export function CheckListSheet({
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>('time');
   const [filters, setFilters] = useState<Set<FilterFlag>>(new Set());
+  const [serverFilter, setServerFilter] = useState<string>('');
+  const [tableFilter, setTableFilter] = useState<string>('');
   const [posType, setPosType] = useState<string>('upserve');
   const [simphonyMessage, setSimphonyMessage] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -161,6 +163,10 @@ export function CheckListSheet({
     if (filters.has('comps')) list = list.filter(c => c.comp_total > 0);
     if (filters.has('voids')) list = list.filter(c => c.void_total > 0);
 
+    // Server / table filters
+    if (serverFilter) list = list.filter(c => c.employee_name === serverFilter);
+    if (tableFilter) list = list.filter(c => c.table_name === tableFilter);
+
     // Sort
     return [...list].sort((a, b) => {
       if (sortField === 'total') return b.revenue_total - a.revenue_total;
@@ -169,7 +175,7 @@ export function CheckListSheet({
       if (sortField === 'table') return a.table_name.localeCompare(b.table_name);
       return new Date(b.open_time).getTime() - new Date(a.open_time).getTime();
     });
-  }, [checks, search, filters, sortField]);
+  }, [checks, search, filters, serverFilter, tableFilter, sortField]);
 
   const totals = useMemo(() => {
     const revenue = filtered.reduce((s, c) => s + c.revenue_total, 0);
@@ -201,6 +207,16 @@ export function CheckListSheet({
     voids: checks.filter(c => c.void_total > 0).length,
   }), [checks]);
 
+  // Unique servers and tables for dropdown filters
+  const uniqueServers = useMemo(() =>
+    [...new Set(checks.map(c => c.employee_name))].sort(),
+  [checks]);
+  const uniqueTables = useMemo(() =>
+    [...new Set(checks.map(c => c.table_name))].sort(),
+  [checks]);
+
+  const hasActiveFilters = search || filters.size > 0 || serverFilter || tableFilter;
+
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose()}>
       <SheetContent side="bottom" className="max-h-[85vh] flex flex-col p-0">
@@ -211,7 +227,7 @@ export function CheckListSheet({
               Checks
               {!loading && (
                 <Badge variant="default" className="text-xs">
-                  {search || filters.size > 0 ? `${totals.count} of ${total}` : `${checks.length} of ${total}`}
+                  {hasActiveFilters ? `${totals.count} of ${total}` : `${checks.length} of ${total}`}
                 </Badge>
               )}
             </SheetTitle>
@@ -238,8 +254,37 @@ export function CheckListSheet({
           </Button>
         </div>
 
-        {/* Filter chips */}
+        {/* Filters row */}
         <div className="px-4 pb-2 flex items-center gap-1.5 overflow-x-auto">
+          {/* Server dropdown */}
+          {uniqueServers.length > 1 && (
+            <select
+              value={serverFilter}
+              onChange={e => setServerFilter(e.target.value)}
+              className="h-7 text-[11px] px-2 rounded-md border border-input bg-background text-foreground shrink-0 appearance-none cursor-pointer"
+            >
+              <option value="">All Servers</option>
+              {uniqueServers.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Table dropdown */}
+          {uniqueTables.length > 1 && (
+            <select
+              value={tableFilter}
+              onChange={e => setTableFilter(e.target.value)}
+              className="h-7 text-[11px] px-2 rounded-md border border-input bg-background text-foreground shrink-0 appearance-none cursor-pointer"
+            >
+              <option value="">All Tables</option>
+              {uniqueTables.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          )}
+
+          {/* Status chips */}
           {filterCounts.open > 0 && (
             <Button
               variant={filters.has('open') ? 'default' : 'outline'}
@@ -340,7 +385,7 @@ export function CheckListSheet({
           ))}
 
           {/* Load more */}
-          {!loading && hasMore && !search && filters.size === 0 && (
+          {!loading && hasMore && !hasActiveFilters && (
             <button
               onClick={handleLoadMore}
               disabled={loadingMore}

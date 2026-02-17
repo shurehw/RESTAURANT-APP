@@ -12,6 +12,12 @@ interface CompException {
   message: string;
 }
 
+interface CompByReason {
+  reason: string;
+  count: number;
+  total: number;
+}
+
 interface CompData {
   total: number;
   pct: number;
@@ -20,6 +26,7 @@ interface CompData {
   critical_count: number;
   warning_count: number;
   top_exceptions: CompException[];
+  by_reason?: CompByReason[];
 }
 
 const fmt = (n: number) =>
@@ -82,6 +89,37 @@ export function CompCard({ comps, loading }: { comps: CompData | null; loading?:
           <span>of {fmt(comps.net_sales)} net</span>
         </div>
 
+        {/* Comp breakdown by reason */}
+        {comps.by_reason && comps.by_reason.length > 0 && comps.total > 0 && (
+          <div className="mt-3">
+            <div className="space-y-1">
+              {comps.by_reason.slice(0, 5).map((r, i) => {
+                const pct = comps.net_sales > 0 ? (r.total / comps.net_sales) * 100 : 0;
+                return (
+                  <div key={i} className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground truncate mr-2">{r.reason}</span>
+                    <span className="font-medium text-foreground whitespace-nowrap">
+                      {fmt(r.total)} <span className="text-muted-foreground font-normal">({pct.toFixed(0)}%)</span>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            {/* Stacked bar */}
+            {comps.total > 0 && (
+              <div className="h-2 rounded-full bg-muted overflow-hidden flex mt-1.5">
+                {comps.by_reason.slice(0, 5).map((r, i) => {
+                  const pct = (r.total / comps.total) * 100;
+                  const colors = ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-blue-400', 'bg-gray-400'];
+                  return pct > 0 ? (
+                    <div key={i} className={`${colors[i]} h-full transition-all`} style={{ width: `${pct}%` }} />
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Exception counts */}
         {comps.exception_count > 0 && (
           <div className="flex items-center gap-2 mt-2">
@@ -112,7 +150,7 @@ export function CompCard({ comps, loading }: { comps: CompData | null; loading?:
           </div>
         )}
 
-        {comps.exception_count === 0 && comps.total > 0 && (
+        {comps.exception_count === 0 && comps.total > 0 && !comps.by_reason?.length && (
           <div className="mt-2 text-xs text-muted-foreground">No exceptions</div>
         )}
       </CardContent>
