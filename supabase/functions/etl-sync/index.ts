@@ -391,7 +391,7 @@ async function syncVenueDay(
         COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0) as total_hours,
         COALESCE(SUM(
           EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
-          COALESCE(hourly_wage, 0) / 100
+          CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END
         ), 0) as labor_cost
       FROM public.tipsee_7shifts_punches
       WHERE location_uuid = ${tipseeLocationUuid}
@@ -451,7 +451,7 @@ async function syncVenueDay(
           COUNT(*) as punch_count,
           COUNT(DISTINCT user_id) as employee_count,
           COALESCE(SUM(total_hours), 0) as total_hours,
-          COALESCE(SUM(total_hours * hourly_wage / 100), 0) as labor_cost
+          COALESCE(SUM(total_hours * CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END), 0) as labor_cost
         FROM public.punches
         WHERE location_uuid = ${tipseeLocationUuid}
           AND trading_day = ${businessDate}
@@ -515,7 +515,7 @@ async function syncVenueDay(
             CASE WHEN d.name = 'FOH' THEN 'FOH' WHEN d.name = 'BOH' THEN 'BOH' ELSE 'Other' END as dept_group,
             COUNT(DISTINCT p.user_id) as employee_count,
             COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
-            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 * COALESCE(p.hourly_wage, 0) / 100), 0) as labor_cost
+            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 * CASE WHEN COALESCE(p.hourly_wage, 0) > 100 THEN COALESCE(p.hourly_wage, 0) / 100.0 ELSE COALESCE(p.hourly_wage, 0) END), 0) as labor_cost
           FROM public.tipsee_7shifts_punches p
           LEFT JOIN (SELECT DISTINCT ON (id) id, name FROM public.departments) d ON d.id = p.department_id
           WHERE p.location_uuid = ${tipseeLocationUuid} AND p.clocked_in::date = ${businessDate}::date

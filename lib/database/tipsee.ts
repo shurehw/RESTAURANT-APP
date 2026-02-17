@@ -1257,7 +1257,9 @@ export async function fetchLaborSummary(
   const pool = getTipseePool();
 
   try {
-    // Primary: tipsee_7shifts_punches (hourly_wage in cents on the row)
+    // Primary: tipsee_7shifts_punches
+    // hourly_wage is in cents for some venues (e.g. 2500 = $25) and dollars for others (e.g. 25 = $25)
+    // Normalize: values > 100 are cents (divide by 100), values <= 100 are already dollars
     const result = await pool.query(
       `SELECT
         COUNT(*) as punch_count,
@@ -1265,7 +1267,7 @@ export async function fetchLaborSummary(
         COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0) as total_hours,
         COALESCE(SUM(
           EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
-          COALESCE(hourly_wage, 0) / 100
+          CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END
         ), 0) as labor_cost
       FROM public.tipsee_7shifts_punches
       WHERE location_uuid = $1
@@ -1316,7 +1318,7 @@ export async function fetchLaborSummary(
           COUNT(*) as punch_count,
           COUNT(DISTINCT user_id) as employee_count,
           COALESCE(SUM(total_hours), 0) as total_hours,
-          COALESCE(SUM(total_hours * hourly_wage / 100), 0) as labor_cost
+          COALESCE(SUM(total_hours * CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END), 0) as labor_cost
         FROM public.punches
         WHERE location_uuid = $1
           AND trading_day = $2
@@ -1386,7 +1388,7 @@ export async function fetchLaborSummary(
           COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
           COALESCE(SUM(
             EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
-            COALESCE(p.hourly_wage, 0) / 100
+            CASE WHEN COALESCE(p.hourly_wage, 0) > 100 THEN COALESCE(p.hourly_wage, 0) / 100.0 ELSE COALESCE(p.hourly_wage, 0) END
           ), 0) as labor_cost
         FROM public.tipsee_7shifts_punches p
         LEFT JOIN (SELECT DISTINCT ON (id) id, name FROM public.departments) d

@@ -178,7 +178,7 @@ export async function getLaborSummary(
       ROUND(COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0)::numeric, 1) as total_hours,
       ROUND(COALESCE(SUM(
         EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
-        COALESCE(hourly_wage, 0) / 100
+        CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END
       ), 0)::numeric, 2) as labor_cost
     FROM public.tipsee_7shifts_punches
     WHERE location_uuid = ANY($1::uuid[])
