@@ -156,7 +156,7 @@ export async function getVenueTipseeMappings(): Promise<Array<{
 /**
  * Detect POS type for a location UUID
  */
-async function getPosType(pool: Pool, locationUuid: string): Promise<'simphony' | 'upserve'> {
+async function getPosType(pool: Pool, locationUuid: string): Promise<'simphony' | 'upserve' | 'avero'> {
   if (!locationUuid) return 'upserve';
   try {
     const result = await pool.query(
@@ -164,7 +164,10 @@ async function getPosType(pool: Pool, locationUuid: string): Promise<'simphony' 
        WHERE uuid = $1 AND pos_type IS NOT NULL LIMIT 1`,
       [locationUuid]
     );
-    return result.rows[0]?.pos_type === 'simphony' ? 'simphony' : 'upserve';
+    const posType = result.rows[0]?.pos_type;
+    if (posType === 'simphony') return 'simphony';
+    if (posType === 'avero') return 'avero';
+    return 'upserve';
   } catch {
     return 'upserve';
   }
@@ -293,6 +296,164 @@ export async function syncVenueDaySimphony(
         source_total_comps: parseFloat(row.total_comps) || 0,
         source_total_voids: parseFloat(row.total_voids) || 0,
         raw_hash: computeHash(row),
+        etl_run_id: etlRunId,
+        extracted_at: new Date().toISOString(),
+      }, { onConflict: 'venue_id,business_date,source_system' });
+    rowsLoaded++;
+
+    await (supabase as any).from('etl_runs').update({
+      status: 'success', finished_at: new Date().toISOString(),
+      rows_extracted: rowsExtracted, rows_loaded: rowsLoaded,
+    }).eq('id', etlRunId);
+
+    return {
+      success: true, etl_run_id: etlRunId, venue_id: venueId,
+      business_date: businessDate, rows_extracted: rowsExtracted,
+      rows_loaded: rowsLoaded, duration_ms: Date.now() - startTime,
+    };
+
+  } catch (error: any) {
+    await (supabase as any).from('etl_runs').update({
+      status: 'failed', finished_at: new Date().toISOString(),
+      rows_extracted: rowsExtracted, rows_loaded: rowsLoaded,
+      error_message: error.message,
+    }).eq('id', etlRunId);
+
+    return {
+      success: false, etl_run_id: etlRunId, venue_id: venueId,
+      business_date: businessDate, rows_extracted: rowsExtracted,
+      rows_loaded: rowsLoaded, duration_ms: Date.now() - startTime,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Extract and load data for an Avero POS venue and date
+ * Uses new_tipsee_avero_sales (net_sales, covers) + avero_log (comps, gross)
+ */
+export async function syncVenueDayAvero(
+  venueId: string,
+  tipseeLocationUuid: string,
+  businessDate: string
+): Promise<SyncResult> {
+  const startTime = Date.now();
+  const supabase = getServiceClient();
+  const pool = getTipseePool();
+
+  let rowsExtracted = 0;
+  let rowsLoaded = 0;
+
+  const { data: etlRun, error: etlError } = await (supabase as any)
+    .from('etl_runs')
+    .insert({
+      source: 'tipsee_avero',
+      venue_id: venueId,
+      business_date: businessDate,
+      status: 'running',
+    })
+    .select()
+    .single();
+
+  if (etlError || !etlRun) {
+    return {
+      success: false,
+      etl_run_id: '',
+      venue_id: venueId,
+      business_date: businessDate,
+      rows_extracted: 0,
+      rows_loaded: 0,
+      duration_ms: Date.now() - startTime,
+      error: `Failed to create ETL run: ${etlError?.message}`,
+    };
+  }
+
+  const etlRunId = etlRun.id as string;
+
+  try {
+    // 1. Sales data from new_tipsee_avero_sales
+    const salesResult = await pool.query(
+      `SELECT
+        COALESCE(SUM(net_sales), 0) as net_sales,
+        COALESCE(SUM(cover_count), 0) as total_covers
+      FROM public.new_tipsee_avero_sales
+      WHERE location_uuid = $1 AND date = $2 AND is_deleted IS NOT TRUE`,
+      [tipseeLocationUuid, businessDate]
+    );
+
+    // 2. Comp + gross data from avero_log
+    const logResult = await pool.query(
+      `SELECT
+        COALESCE(SUM(gross_sales), 0) as gross_sales,
+        COALESCE(SUM(comp), 0) as total_comps
+      FROM public.avero_log
+      WHERE location_uuid = $1 AND date = $2`,
+      [tipseeLocationUuid, businessDate]
+    );
+
+    const sales = salesResult.rows[0];
+    const log = logResult.rows[0];
+    rowsExtracted = (salesResult.rowCount || 0) + (logResult.rowCount || 0);
+
+    const netSales = parseFloat(sales?.net_sales) || 0;
+    const covers = parseInt(sales?.total_covers) || 0;
+    const grossSales = parseFloat(log?.gross_sales) || 0;
+    const comps = parseFloat(log?.total_comps) || 0;
+
+    if (netSales === 0 && covers === 0) {
+      await (supabase as any).from('etl_runs').update({
+        status: 'success', finished_at: new Date().toISOString(),
+        rows_extracted: 0, rows_loaded: 0,
+      }).eq('id', etlRunId);
+      return {
+        success: true, etl_run_id: etlRunId, venue_id: venueId,
+        business_date: businessDate, rows_extracted: 0,
+        rows_loaded: 0, duration_ms: Date.now() - startTime,
+      };
+    }
+
+    // Upsert venue_day_facts — Avero has no food/bev split, no checks, no voids
+    const { error: upsertError } = await (supabase as any)
+      .from('venue_day_facts')
+      .upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        gross_sales: grossSales || netSales,
+        net_sales: netSales,
+        food_sales: 0,
+        beverage_sales: 0,
+        wine_sales: 0,
+        liquor_sales: 0,
+        beer_sales: 0,
+        other_sales: 0,
+        comps_total: comps,
+        voids_total: 0,
+        taxes_total: 0,
+        tips_total: 0,
+        checks_count: 0,
+        covers_count: covers,
+        items_sold: 0,
+        is_complete: true,
+        last_synced_at: new Date().toISOString(),
+      }, { onConflict: 'venue_id,business_date' });
+
+    if (upsertError) throw upsertError;
+    rowsLoaded++;
+
+    // Staging row for audit trail
+    await (supabase as any).from('etl_staging')
+      .upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        source_system: 'tipsee_avero',
+        source_gross_sales: grossSales,
+        source_net_sales: netSales,
+        source_total_checks: 0,
+        source_total_covers: covers,
+        source_total_tax: 0,
+        source_total_comps: comps,
+        source_total_voids: 0,
+        raw_hash: computeHash({ netSales, grossSales, covers, comps }),
         etl_run_id: etlRunId,
         extracted_at: new Date().toISOString(),
       }, { onConflict: 'venue_id,business_date,source_system' });
@@ -669,9 +830,14 @@ export async function syncAllVenuesForDate(businessDate: string): Promise<SyncRe
     const posType = await getPosType(pool, mapping.tipsee_location_uuid);
     console.log(`Syncing ${mapping.venue_name} for ${businessDate} (${posType})...`);
 
-    const result = posType === 'simphony'
-      ? await syncVenueDaySimphony(mapping.venue_id, mapping.tipsee_location_uuid, businessDate)
-      : await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, businessDate);
+    let result: SyncResult;
+    if (posType === 'simphony') {
+      result = await syncVenueDaySimphony(mapping.venue_id, mapping.tipsee_location_uuid, businessDate);
+    } else if (posType === 'avero') {
+      result = await syncVenueDayAvero(mapping.venue_id, mapping.tipsee_location_uuid, businessDate);
+    } else {
+      result = await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, businessDate);
+    }
 
     results.push(result);
     console.log(`  ${result.success ? '✓' : '✗'} ${result.rows_loaded} rows in ${result.duration_ms}ms`);
@@ -714,7 +880,7 @@ export async function backfillDateRange(
     : mappings;
 
   // Pre-detect POS types for all venues
-  const posTypes = new Map<string, 'simphony' | 'upserve'>();
+  const posTypes = new Map<string, 'simphony' | 'upserve' | 'avero'>();
   for (const m of filteredMappings) {
     posTypes.set(m.venue_id, await getPosType(pool, m.tipsee_location_uuid));
   }
@@ -732,9 +898,14 @@ export async function backfillDateRange(
     for (const mapping of filteredMappings) {
       total++;
       const posType = posTypes.get(mapping.venue_id) || 'upserve';
-      const result = posType === 'simphony'
-        ? await syncVenueDaySimphony(mapping.venue_id, mapping.tipsee_location_uuid, dateStr)
-        : await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      let result: SyncResult;
+      if (posType === 'simphony') {
+        result = await syncVenueDaySimphony(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      } else if (posType === 'avero') {
+        result = await syncVenueDayAvero(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      } else {
+        result = await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      }
 
       if (result.success) {
         successful++;

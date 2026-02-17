@@ -78,7 +78,10 @@ async function getPosType(locationUuid) {
       `SELECT pos_type FROM public.general_locations WHERE uuid = $1 AND pos_type IS NOT NULL LIMIT 1`,
       [locationUuid]
     );
-    return result.rows[0]?.pos_type === 'simphony' ? 'simphony' : 'upserve';
+    const posType = result.rows[0]?.pos_type;
+    if (posType === 'simphony') return 'simphony';
+    if (posType === 'avero') return 'avero';
+    return 'upserve';
   } catch {
     return 'upserve';
   }
@@ -149,6 +152,83 @@ async function syncVenueDaySimphony(venueId, tipseeLocationUuid, businessDate) {
     const covers = parseInt(row.total_covers) || 0;
 
     // Labor (same logic as Upserve — 7shifts punches are POS-independent)
+    await syncLaborForVenue(venueId, tipseeLocationUuid, businessDate, netSales, covers);
+    rowsLoaded++;
+
+    return { success: true, rowsLoaded, net_sales: netSales, duration: Date.now() - startTime };
+  } catch (error) {
+    return { success: false, error: error.message, rowsLoaded: 0, net_sales: 0, duration: Date.now() - startTime };
+  }
+}
+
+// Avero venue sync (new_tipsee_avero_sales + avero_log tables)
+async function syncVenueDayAvero(venueId, tipseeLocationUuid, businessDate) {
+  const startTime = Date.now();
+  let rowsLoaded = 0;
+
+  try {
+    // 1. Sales data from new_tipsee_avero_sales
+    const salesResult = await tipseePool.query(
+      `SELECT
+        COALESCE(SUM(net_sales), 0) as net_sales,
+        COALESCE(SUM(cover_count), 0) as total_covers
+      FROM public.new_tipsee_avero_sales
+      WHERE location_uuid = $1 AND date = $2 AND is_deleted IS NOT TRUE`,
+      [tipseeLocationUuid, businessDate]
+    );
+
+    // 2. Comp + gross data from avero_log
+    const logResult = await tipseePool.query(
+      `SELECT
+        COALESCE(SUM(gross_sales), 0) as gross_sales,
+        COALESCE(SUM(comp), 0) as total_comps
+      FROM public.avero_log
+      WHERE location_uuid = $1 AND date = $2`,
+      [tipseeLocationUuid, businessDate]
+    );
+
+    const sales = salesResult.rows[0];
+    const log = logResult.rows[0];
+
+    const netSales = parseFloat(sales?.net_sales) || 0;
+    const covers = parseInt(sales?.total_covers) || 0;
+    const grossSales = parseFloat(log?.gross_sales) || 0;
+    const comps = parseFloat(log?.total_comps) || 0;
+
+    if (netSales === 0 && covers === 0) {
+      return { success: true, rowsLoaded: 0, net_sales: 0, duration: Date.now() - startTime };
+    }
+
+    // 3. Upsert venue_day_facts
+    // Avero has no food/bev split, no checks, no voids, no tips
+    const { error: upsertError } = await supabase
+      .from('venue_day_facts')
+      .upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        gross_sales: grossSales || netSales, // fall back to net if avero_log has no data
+        net_sales: netSales,
+        food_sales: 0,
+        beverage_sales: 0,
+        wine_sales: 0,
+        liquor_sales: 0,
+        beer_sales: 0,
+        other_sales: 0,
+        comps_total: comps,
+        voids_total: 0,
+        taxes_total: 0,
+        tips_total: 0,
+        checks_count: 0, // Avero doesn't provide check count
+        covers_count: covers,
+        items_sold: 0,
+        is_complete: true,
+        last_synced_at: new Date().toISOString(),
+      }, { onConflict: 'venue_id,business_date' });
+
+    if (upsertError) throw upsertError;
+    rowsLoaded++;
+
+    // 4. Labor (7shifts — POS-independent, some Avero venues have it)
     await syncLaborForVenue(venueId, tipseeLocationUuid, businessDate, netSales, covers);
     rowsLoaded++;
 
@@ -452,7 +532,11 @@ async function backfill(startDate, endDate) {
   for (const m of mappings) {
     posTypes.set(m.venue_id, await getPosType(m.tipsee_location_uuid));
   }
-  console.log(`Venues: ${mappings.map(v => `${v.venue_name}${posTypes.get(v.venue_id) === 'simphony' ? ' [Simphony]' : ''}`).join(', ')}`);
+  console.log(`Venues: ${mappings.map(v => {
+    const pt = posTypes.get(v.venue_id);
+    const tag = pt === 'simphony' ? ' [Simphony]' : pt === 'avero' ? ' [Avero]' : '';
+    return `${v.venue_name}${tag}`;
+  }).join(', ')}`);
 
   // Calculate dates
   const start = new Date(startDate);
@@ -477,9 +561,14 @@ async function backfill(startDate, endDate) {
     for (const mapping of mappings) {
       currentSync++;
       const posType = posTypes.get(mapping.venue_id) || 'upserve';
-      const result = posType === 'simphony'
-        ? await syncVenueDaySimphony(mapping.venue_id, mapping.tipsee_location_uuid, dateStr)
-        : await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      let result;
+      if (posType === 'simphony') {
+        result = await syncVenueDaySimphony(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      } else if (posType === 'avero') {
+        result = await syncVenueDayAvero(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      } else {
+        result = await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, dateStr);
+      }
 
       if (result.success) {
         successful++;
