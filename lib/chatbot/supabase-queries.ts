@@ -18,7 +18,7 @@ import {
   getLaborDayFactsForRange,
   getVenueFiscalConfig,
 } from '@/lib/database/sales-pace';
-import { getFiscalPeriod, getSamePeriodLastYear } from '@/lib/fiscal-calendar';
+import { getFiscalPeriod, getFiscalYearStart, getSamePeriodLastYear } from '@/lib/fiscal-calendar';
 
 const MAX_ROWS = 50;
 
@@ -265,26 +265,18 @@ export async function getPeriodComparison(
     priorStart = prevPeriodInfo.periodStartDate;
     priorEnd = shiftDate(priorStart, daysIntoPeriod);
   } else {
-    // YTD
-    if (fiscalConfig.calendarType === 'standard' || !fiscalConfig.fyStartDate) {
-      const anchorParts = anchorDate.split('-').map(Number);
-      currentStart = `${anchorParts[0]}-01-01`;
-    } else {
-      let fyStart = new Date(fiscalConfig.fyStartDate);
-      const anchorParts = anchorDate.split('-').map(Number);
-      const anchorDateObj = new Date(anchorParts[0], anchorParts[1] - 1, anchorParts[2]);
-      while (anchorDateObj < fyStart) fyStart.setFullYear(fyStart.getFullYear() - 1);
-      const nextYearStart = new Date(fyStart);
-      nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
-      while (anchorDateObj >= nextYearStart) {
-        fyStart.setFullYear(fyStart.getFullYear() + 1);
-        nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
-      }
-      currentStart = fyStart.toISOString().split('T')[0];
-    }
-    const prior = getSamePeriodLastYear(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
-    priorStart = prior.startDate;
-    priorEnd = prior.endDate;
+    // YTD: FY start → anchor date.  Prior = same elapsed days into prior FY.
+    currentStart = getFiscalYearStart(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
+    const csParts = currentStart.split('-').map(Number);
+    const csDate = new Date(csParts[0], csParts[1] - 1, csParts[2]);
+    const anchorParts = anchorDate.split('-').map(Number);
+    const anchorDateObj = new Date(anchorParts[0], anchorParts[1] - 1, anchorParts[2]);
+    const daysIntoFY = Math.floor((anchorDateObj.getTime() - csDate.getTime()) / (24 * 60 * 60 * 1000));
+    const lyFyStart = new Date(csParts[0] - 1, csParts[1] - 1, csParts[2]);
+    priorStart = lyFyStart.toISOString().split('T')[0];
+    const lyEnd = new Date(lyFyStart);
+    lyEnd.setDate(lyEnd.getDate() + daysIntoFY);
+    priorEnd = lyEnd.toISOString().split('T')[0];
   }
 
   const [currentFacts, priorFacts, currentLabor, priorLabor] = await Promise.all([

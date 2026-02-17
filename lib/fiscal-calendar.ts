@@ -122,57 +122,74 @@ export function getFiscalPeriod(
 }
 
 /**
- * Get the same period from last year for comparison
- * Returns the date range for the corresponding fiscal period last year
+ * Get the same period from last year for comparison.
+ * Returns the date range for the corresponding fiscal period last year,
+ * truncated to the same number of elapsed days within the period.
  */
 export function getSamePeriodLastYear(
   date: string | Date,
   calendarType: FiscalCalendarType,
   fyStartDate: string | null
 ): { startDate: string; endDate: string } {
-  if (calendarType === 'standard' || !fyStartDate) {
-    // Standard: go back 1 year
-    const targetDate = typeof date === 'string' ? new Date(date) : date;
-    const lastYear = new Date(targetDate);
-    lastYear.setFullYear(lastYear.getFullYear() - 1);
+  const dateStr = typeof date === 'string' ? date : date.toISOString().split('T')[0];
+  const parts = dateStr.split('-').map(Number);
+  const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
 
-    const dayOfWeek = lastYear.getDay();
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStart = new Date(lastYear);
-    weekStart.setDate(weekStart.getDate() - daysFromMonday);
+  if (calendarType === 'standard' || !fyStartDate) {
+    // Standard calendar: periods are calendar months.
+    // SPLY = same month last year, same number of days into the month.
+    const lyMonthStart = new Date(parts[0] - 1, parts[1] - 1, 1);
+    const daysIntoMonth = parts[2] - 1; // 0-based offset from 1st
+    const lyEnd = new Date(lyMonthStart);
+    lyEnd.setDate(lyEnd.getDate() + daysIntoMonth);
 
     return {
-      startDate: weekStart.toISOString().split('T')[0],
-      endDate: lastYear.toISOString().split('T')[0],
+      startDate: lyMonthStart.toISOString().split('T')[0],
+      endDate: lyEnd.toISOString().split('T')[0],
     };
   }
 
-  // For fiscal calendars, get the same period info and go back one fiscal year
-  const currentPeriod = getFiscalPeriod(date, calendarType, fyStartDate);
+  // Fiscal calendar (4-4-5 / 4-5-4 / 5-4-4):
+  // Find the same-numbered period in the prior fiscal year.
+  const currentPeriod = getFiscalPeriod(dateStr, calendarType, fyStartDate);
 
-  // Calculate last year's FY start
-  const lyFyStart = new Date(fyStartDate);
-  lyFyStart.setFullYear(lyFyStart.getFullYear() - 1);
+  // Resolve the actual FY start for the current date, then go back one year
+  const currentFyStartStr = getFiscalYearStart(dateStr, calendarType, fyStartDate);
+  const cfyParts = currentFyStartStr.split('-').map(Number);
+  const lyFyStart = new Date(cfyParts[0] - 1, cfyParts[1] - 1, cfyParts[2]);
+  const lyFyStartStr = lyFyStart.toISOString().split('T')[0];
 
-  // Find the same period in last year
-  const lastYearPeriod = getFiscalPeriod(
-    currentPeriod.periodStartDate,
-    calendarType,
-    lyFyStart.toISOString().split('T')[0]
-  );
+  // Enumerate all 12 periods in the prior fiscal year
+  const lyPeriods = getAllPeriodsInFiscalYear(lyFyStartStr, calendarType);
+  const lyPeriod = lyPeriods.find(p => p.period === currentPeriod.fiscalPeriod);
 
-  // Calculate the equivalent date within that period
-  const targetDate = typeof date === 'string' ? new Date(date) : date;
+  if (!lyPeriod) {
+    // Fallback: 52 weeks (364 days) back
+    const fbStart = new Date(currentPeriod.periodStartDate);
+    fbStart.setDate(fbStart.getDate() - 364);
+    const fbEnd = new Date(targetDate);
+    fbEnd.setDate(fbEnd.getDate() - 364);
+    return {
+      startDate: fbStart.toISOString().split('T')[0],
+      endDate: fbEnd.toISOString().split('T')[0],
+    };
+  }
+
+  // Calculate how many days into the current period we are
+  const cpParts = currentPeriod.periodStartDate.split('-').map(Number);
+  const cpStart = new Date(cpParts[0], cpParts[1] - 1, cpParts[2]);
   const daysIntoPeriod = Math.floor(
-    (targetDate.getTime() - new Date(currentPeriod.periodStartDate).getTime()) / (24 * 60 * 60 * 1000)
+    (targetDate.getTime() - cpStart.getTime()) / (24 * 60 * 60 * 1000)
   );
 
-  const lyEquivalentDate = new Date(lastYearPeriod.periodStartDate);
-  lyEquivalentDate.setDate(lyEquivalentDate.getDate() + daysIntoPeriod);
+  // Apply same offset to last year's matching period
+  const lpParts = lyPeriod.startDate.split('-').map(Number);
+  const lyEnd = new Date(lpParts[0], lpParts[1] - 1, lpParts[2]);
+  lyEnd.setDate(lyEnd.getDate() + daysIntoPeriod);
 
   return {
-    startDate: lastYearPeriod.periodStartDate,
-    endDate: lyEquivalentDate.toISOString().split('T')[0],
+    startDate: lyPeriod.startDate,
+    endDate: lyEnd.toISOString().split('T')[0],
   };
 }
 

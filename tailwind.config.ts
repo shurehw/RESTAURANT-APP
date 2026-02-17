@@ -1,6 +1,6 @@
 /**
  * OpsOS Tailwind Configuration
- * Design system with vintage ledger meets modern minimalism
+ * Premium tech aesthetic — vibrant orange accent, cool neutrals, monospace headings
  */
 
 import type { Config } from "tailwindcss";
@@ -15,67 +15,67 @@ export default {
   theme: {
     extend: {
       colors: {
-        // OpsOS Brand Palette with Full Shades
+        // OpsOS Brand Palette — Premium Tech
         opsos: {
           slate: {
-            DEFAULT: "#1B1D1F",
-            50: "#F5F5F5",
-            100: "#E8E9E9",
-            200: "#D1D3D4",
-            300: "#A6A9AB",
-            400: "#7B7F82",
-            500: "#505559",
-            600: "#3B3E41",
-            700: "#2D2F32",
-            800: "#1B1D1F",
-            900: "#131416",
+            DEFAULT: "#0A0A0A",
+            50: "#FAFAFA",
+            100: "#F5F5F5",
+            200: "#E5E5E5",
+            300: "#D4D4D4",
+            400: "#A3A3A3",
+            500: "#737373",
+            600: "#525252",
+            700: "#404040",
+            800: "#262626",
+            900: "#171717",
           },
           fog: {
-            DEFAULT: "#F5F5F4",
+            DEFAULT: "#FAFAFA",
             50: "#FFFFFF",
-            100: "#F5F5F4",
-            200: "#E7E7E5",
-            300: "#D9D9D6",
-            400: "#CBCBC7",
+            100: "#FAFAFA",
+            200: "#F5F5F5",
+            300: "#E5E5E5",
+            400: "#D4D4D4",
           },
           brass: {
-            DEFAULT: "#C4A46B",
-            50: "#F8F4EC",
-            100: "#EFE7D5",
-            200: "#E4D4B0",
-            300: "#D9C18B",
-            400: "#CEB37B",
-            500: "#C4A46B",
-            600: "#B69351",
-            700: "#997A43",
-            800: "#7B6235",
-            900: "#5D4A28",
+            DEFAULT: "#FF5A1F",
+            50: "#FFF7ED",
+            100: "#FFEDD5",
+            200: "#FED7AA",
+            300: "#FDBA74",
+            400: "#FB923C",
+            500: "#FF5A1F",
+            600: "#EA4C0C",
+            700: "#C2410C",
+            800: "#9A3412",
+            900: "#7C2D12",
           },
           sage: {
-            DEFAULT: "#92A69C",
-            50: "#F1F4F3",
-            100: "#E3EAE7",
-            200: "#C7D5CF",
-            300: "#ABC0B7",
-            400: "#9FB3A9",
-            500: "#92A69C",
-            600: "#7A9489",
-            700: "#647A71",
-            800: "#4E5F59",
-            900: "#3A4743",
+            DEFAULT: "#64748B",
+            50: "#F8FAFC",
+            100: "#F1F5F9",
+            200: "#E2E8F0",
+            300: "#CBD5E1",
+            400: "#94A3B8",
+            500: "#64748B",
+            600: "#475569",
+            700: "#334155",
+            800: "#1E293B",
+            900: "#0F172A",
           },
           error: {
-            DEFAULT: "#C76864",
-            50: "#FDEEEE",
-            100: "#F9D6D5",
-            200: "#F3ADAB",
-            300: "#ED8481",
-            400: "#DD7672",
-            500: "#C76864",
-            600: "#B24D49",
-            700: "#8E3E3B",
-            800: "#6A2F2D",
-            900: "#461F1E",
+            DEFAULT: "#DC2626",
+            50: "#FEF2F2",
+            100: "#FEE2E2",
+            200: "#FECACA",
+            300: "#FCA5A5",
+            400: "#F87171",
+            500: "#EF4444",
+            600: "#DC2626",
+            700: "#B91C1C",
+            800: "#991B1B",
+            900: "#7F1D1D",
           },
         },
 
@@ -141,9 +141,9 @@ export default {
       },
 
       fontFamily: {
-        sans: ["var(--font-ibm-plex-sans)", "Inter", "system-ui", "sans-serif"],
-        mono: ["var(--font-ibm-plex-mono)", "monospace"],
-        heading: ["Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "monospace"],
+        heading: ["var(--font-jetbrains-mono)", "monospace"],
       },
 
       fontSize: {
@@ -176,9 +176,9 @@ export default {
         xl: "0 20px 25px -5px rgba(27, 29, 31, 0.1), 0 8px 10px -6px rgba(27, 29, 31, 0.1)",
         inner: "inset 0 2px 4px 0 rgba(27, 29, 31, 0.05)",
 
-        // OpsOS custom shadows
-        "brass-sm": "0 1px 2px 0 rgba(196, 164, 107, 0.15)",
-        "brass-md": "0 4px 6px -1px rgba(196, 164, 107, 0.2)",
+        // OpsOS accent shadows
+        "brass-sm": "0 1px 2px 0 rgba(255, 90, 31, 0.15)",
+        "brass-md": "0 4px 6px -1px rgba(255, 90, 31, 0.2)",
       },
 
       spacing: {

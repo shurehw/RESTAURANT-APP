@@ -38,7 +38,7 @@ export function BudgetChart({ data }: BudgetChartProps) {
         />
         <YAxis
           stroke="hsl(var(--muted-foreground))"
-          style={{ fontSize: 12, fontFamily: "var(--font-ibm-plex-mono)" }}
+          style={{ fontSize: 12, fontFamily: "var(--font-jetbrains-mono)" }}
           tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
         />
         <Tooltip
@@ -46,7 +46,7 @@ export function BudgetChart({ data }: BudgetChartProps) {
             backgroundColor: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
             borderRadius: "0.5rem",
-            fontFamily: "var(--font-ibm-plex-mono)",
+            fontFamily: "var(--font-jetbrains-mono)",
           }}
           formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
         />

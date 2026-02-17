@@ -1,6 +1,6 @@
 /**
  * OpsOS Global Styles
- * Design system: Vintage ledger meets modern minimalism
+ * Premium tech aesthetic — white backgrounds, black text, orange accents
  */
 
 @tailwind base;
@@ -8,95 +8,97 @@
 @tailwind utilities;
 
 @layer base {
-  /* OpsOS Design Tokens - Operational Command OS */
+  /* OpsOS Design Tokens — Premium Tech */
   :root {
-    /* Brand Colors (unchanged) */
-    --opsos-slate: #1B1D1F;
-    --opsos-fog: #F5F5F4;
-    --opsos-brass: #C4A46B;
-    --opsos-sage: #92A69C;
-    --opsos-error: #C76864;
+    /* Brand Colors */
+    --opsos-slate: #0A0A0A;
+    --opsos-fog: #FAFAFA;
+    --opsos-brass: #FF5A1F;
+    --opsos-sage: #64748B;
+    --opsos-error: #DC2626;
 
-    /* NEW: Ledger Gold Accent */
-    --ledger-gold: #D4C1A0;
-    --ledger-gold-dark: #B8A485;
+    /* Accent Glow (replaces ledger-gold) */
+    --accent-glow: #FF5A1F;
+    --accent-glow-dark: #EA4C0C;
+    --ledger-gold: var(--opsos-brass);
+    --ledger-gold-dark: var(--accent-glow-dark);
 
-    /* NEW: Paper Backgrounds */
-    --paper-white: #FAF9F6;
-    --paper-gray: #F5F4F1;
+    /* Clean Backgrounds */
+    --paper-white: #FFFFFF;
+    --paper-gray: #FAFAFA;
 
     /* Derived tokens */
     --opsos-slate-light: #F5F5F5;
-    --opsos-slate-dark: #131416;
-    --opsos-brass-light: #F8F4EC;
-    --opsos-brass-dark: #997A43;
-    --opsos-sage-light: #F1F4F3;
-    --opsos-sage-dark: #647A71;
+    --opsos-slate-dark: #050505;
+    --opsos-brass-light: #FFF7ED;
+    --opsos-brass-dark: #C2410C;
+    --opsos-sage-light: #F8FAFC;
+    --opsos-sage-dark: #334155;
 
-    /* NEW: Design System Tokens */
-    --radius-sharp: 4px;
-    --radius-base: 4px;
-    --radius-sm: 2px;
+    /* Design System Tokens */
+    --radius-sharp: 6px;
+    --radius-base: 8px;
+    --radius-sm: 4px;
     --transition-snap: 100ms linear;
     --transition-fast: 80ms linear;
-    --grid-dot-size: 2px;
-    --grid-dot-color: rgba(212, 193, 160, 0.1);
-    --icon-stroke: 1.25px;
+    --grid-dot-size: 1px;
+    --grid-dot-color: rgba(0, 0, 0, 0.03);
+    --icon-stroke: 1.5px;
 
     /* Shadcn compatibility */
-    --background: 0 0% 96%;
-    --foreground: 210 8% 11%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 4%;
     --card: 0 0% 100%;
-    --card-foreground: 210 8% 11%;
+    --card-foreground: 0 0% 4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 210 8% 11%;
-    --primary: 210 8% 11%;
-    --primary-foreground: 0 0% 96%;
-    --secondary: 39 45% 59%;
-    --secondary-foreground: 210 8% 11%;
-    --muted: 0 0% 95%;
-    --muted-foreground: 210 8% 45%;
-    --accent: 39 45% 59%;
-    --accent-foreground: 210 8% 11%;
-    --destructive: 4 45% 60%;
-    --destructive-foreground: 0 0% 96%;
-    --border: 210 8% 90%;
-    --input: 210 8% 85%;
-    --ring: 39 45% 59%;
+    --popover-foreground: 0 0% 4%;
+    --primary: 0 0% 4%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 16 100% 56%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 16 100% 56%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 85%;
+    --ring: 16 100% 56%;
     --radius: 0.5rem;
-    --chart-1: 39 45% 59%;
-    --chart-2: 152 13% 61%;
-    --chart-3: 210 8% 11%;
-    --chart-4: 39 45% 70%;
-    --chart-5: 152 13% 70%;
+    --chart-1: 16 100% 56%;
+    --chart-2: 215 16% 47%;
+    --chart-3: 0 0% 4%;
+    --chart-4: 16 100% 70%;
+    --chart-5: 215 16% 70%;
   }
 
   /* Dark Mode */
   [data-theme='dark'] {
-    --opsos-slate: #F5F5F4;
-    --opsos-fog: #1B1D1F;
-    --opsos-brass: #D9C18B;
-    --opsos-sage: #ABC0B7;
+    --opsos-slate: #F5F5F5;
+    --opsos-fog: #0A0A0A;
+    --opsos-brass: #FB923C;
+    --opsos-sage: #94A3B8;
 
-    --background: 210 8% 11%;
+    --background: 0 0% 4%;
     --foreground: 0 0% 96%;
-    --card: 210 8% 14%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 96%;
-    --popover: 210 8% 14%;
+    --popover: 0 0% 8%;
     --popover-foreground: 0 0% 96%;
     --primary: 0 0% 96%;
-    --primary-foreground: 210 8% 11%;
-    --secondary: 39 35% 65%;
-    --secondary-foreground: 210 8% 11%;
-    --muted: 210 8% 20%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 16 96% 62%;
+    --secondary-foreground: 0 0% 4%;
+    --muted: 0 0% 15%;
     --muted-foreground: 0 0% 65%;
-    --accent: 39 35% 65%;
-    --accent-foreground: 210 8% 11%;
-    --destructive: 4 45% 55%;
+    --accent: 16 96% 62%;
+    --accent-foreground: 0 0% 4%;
+    --destructive: 0 84% 55%;
     --destructive-foreground: 0 0% 96%;
-    --border: 210 8% 25%;
-    --input: 210 8% 25%;
-    --ring: 39 35% 65%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 16 96% 62%;
   }
 
   * {
@@ -106,12 +108,9 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     background-color: var(--paper-white);
-    /* Micro grid texture */
-    background-image: radial-gradient(circle, var(--grid-dot-color) var(--grid-dot-size), transparent var(--grid-dot-size));
-    background-size: 16px 16px;
   }
 
-  /* Typography defaults */
+  /* Typography defaults — headings use monospace tech font */
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading text-foreground;
   }
@@ -150,7 +149,7 @@
 @layer components {
   /* OpsOS Utility Classes */
 
-  /* Brass Accent Border */
+  /* Accent Border */
   .border-brass-accent {
     @apply border-l-2 border-brass;
   }
@@ -159,17 +158,17 @@
     @apply border-t-2 border-brass;
   }
 
-  /* Brass Button */
+  /* Accent Button */
   .btn-brass {
-    @apply bg-brass text-slate hover:bg-brass-dark transition-colors duration-base;
+    @apply bg-brass text-white hover:bg-brass-dark transition-colors duration-base;
   }
 
-  /* Sage Badge */
+  /* Secondary Badge */
   .badge-sage {
     @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-opsos-sage-50 text-opsos-sage-800;
   }
 
-  /* Brass Badge */
+  /* Accent Badge */
   .badge-brass {
     @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-opsos-brass-50 text-opsos-brass-800;
   }
@@ -204,7 +203,7 @@
     @apply bg-muted opacity-50;
   }
 
-  /* Card with Brass Shadow */
+  /* Card with Accent Shadow */
   .card-brass {
     @apply bg-card border border-border rounded-md p-6 shadow-brass-sm hover:shadow-brass-md transition-shadow duration-base;
   }
@@ -219,12 +218,11 @@
     @apply text-h1 font-bold text-foreground mb-2;
   }
 
-  /* Sage Focus Ring */
+  /* Focus Rings */
   .focus-sage {
     @apply focus:ring-2 focus:ring-sage focus:ring-offset-2;
   }
 
-  /* Brass Focus Ring */
   .focus-brass {
     @apply focus:ring-2 focus:ring-brass focus:ring-offset-2;
   }
@@ -299,7 +297,7 @@
   }
 
   .nav-link.active {
-    @apply bg-brass text-opsos-slate-800 border-l-4 border-brass pl-[8px] font-semibold;
+    @apply bg-brass text-white border-l-4 border-brass pl-[8px] font-semibold;
   }
 
   .nav-link:not(.active) {
@@ -325,16 +323,21 @@
 
   /* Glass Effect */
   .glass {
-    @apply bg-background/80 backdrop-blur-sm;
+    @apply bg-white/80 backdrop-blur-md border border-white/20;
   }
 
-  /* Brass Gradient */
+  /* Accent Gradient */
   .bg-brass-gradient {
     background: linear-gradient(135deg, var(--opsos-brass) 0%, var(--opsos-brass-dark) 100%);
   }
 
-  /* Sage Gradient */
+  /* Secondary Gradient */
   .bg-sage-gradient {
     background: linear-gradient(135deg, var(--opsos-sage) 0%, var(--opsos-sage-dark) 100%);
+  }
+
+  /* Accent Glow */
+  .glow-accent {
+    box-shadow: 0 0 20px rgba(255, 90, 31, 0.15), 0 0 40px rgba(255, 90, 31, 0.05);
   }
 }

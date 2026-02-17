@@ -7,8 +7,8 @@
   "id": "/pulse",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FF5A1F",
   "categories": ["business", "food"],
   "icons": [
     {

@@ -2,8 +2,8 @@
 
 /**
  * Ledger Stripe Component
- * Signature OpsOS visual motif: 1px gold rule under section headers
- * Creates operational, ledger-like aesthetic
+ * Signature OpsOS visual motif: 1px accent rule under section headers
+ * Creates clean, operational aesthetic
  */
 
 interface LedgerStripeProps {
@@ -22,7 +22,7 @@ export function LedgerStripe({ className = '', thickness = 'base' }: LedgerStrip
     <div
       className={`w-full ${thicknessMap[thickness]} bg-gradient-to-r from-transparent via-[var(--ledger-gold)] to-transparent ${className}`}
       style={{
-        boxShadow: '0 1px 2px rgba(212, 193, 160, 0.2)',
+        boxShadow: '0 1px 2px rgba(255, 90, 31, 0.15)',
       }}
       aria-hidden="true"
     />

@@ -1,52 +1,51 @@
 /**
  * OpsOS Design Tokens
- * Visual Identity: Operational Command OS
- * Character: Industrial, ledger-like, purposeful
+ * Visual Identity: Premium Tech Aesthetic
+ * Character: Clean, technical, purposeful
  */
 
 export const designTokens = {
-  // Colors - Keep brand colors, add operational accents
+  // Colors - Premium tech palette
   colors: {
-    // Brand (unchanged)
-    primary: '#000000',
-    secondary: '#6B7280',
+    // Brand
+    primary: '#0A0A0A',
+    secondary: '#64748B',
 
     // OpsOS Signature Accent
-    ledgerGold: '#D4C1A0',
-    ledgerGoldDark: '#B8A485',
+    ledgerGold: '#FF5A1F',
+    ledgerGoldDark: '#EA4C0C',
 
     // Backgrounds
-    paperWhite: '#FAF9F6',
-    paperGray: '#F5F4F1',
+    paperWhite: '#FFFFFF',
+    paperGray: '#FAFAFA',
 
     // Functional
     success: '#10B981',
     warning: '#F59E0B',
-    critical: '#EF4444',
+    critical: '#DC2626',
     info: '#3B82F6',
 
-    // Neutrals (warmer)
-    gray50: '#FAFAF8',
-    gray100: '#F5F4F1',
-    gray200: '#EAEAE5',
-    gray300: '#D4D3CE',
-    gray400: '#A8A7A0',
-    gray500: '#6B6A63',
-    gray600: '#4A4944',
-    gray700: '#333330',
-    gray800: '#1F1F1D',
-    gray900: '#0A0A09',
+    // Neutrals (cool)
+    gray50: '#FAFAFA',
+    gray100: '#F5F5F5',
+    gray200: '#E5E5E5',
+    gray300: '#D4D4D4',
+    gray400: '#A3A3A3',
+    gray500: '#737373',
+    gray600: '#525252',
+    gray700: '#404040',
+    gray800: '#262626',
+    gray900: '#171717',
   },
 
-  // Typography - Industrial, command-driven
+  // Typography - Clean tech fonts
   typography: {
-    // Font stack: IBM Plex Sans for operational feel
     fontFamily: {
-      sans: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      mono: '"IBM Plex Mono", Consolas, Monaco, monospace',
+      sans: '"Space Grotesk", system-ui, sans-serif',
+      mono: '"JetBrains Mono", monospace',
     },
 
-    // Scale (more deliberate jumps)
+    // Scale
     fontSize: {
       xs: '0.6875rem',    // 11px - micro labels
       sm: '0.8125rem',    // 13px - secondary
@@ -57,7 +56,7 @@ export const designTokens = {
       '3xl': '2.5rem',    // 40px - dashboard metrics
     },
 
-    // Weight (purposeful hierarchy)
+    // Weight
     fontWeight: {
       normal: '400',
       medium: '500',
@@ -65,14 +64,14 @@ export const designTokens = {
       bold: '700',
     },
 
-    // Line height (tighter for command density)
+    // Line height
     lineHeight: {
       tight: '1.25',
       base: '1.5',
       relaxed: '1.75',
     },
 
-    // Letter spacing (slightly wider for legibility)
+    // Letter spacing
     letterSpacing: {
       tight: '-0.01em',
       normal: '0',
@@ -80,7 +79,7 @@ export const designTokens = {
     },
   },
 
-  // Spacing - More deliberate rhythm
+  // Spacing
   spacing: {
     xs: '0.25rem',    // 4px
     sm: '0.5rem',     // 8px
@@ -91,20 +90,20 @@ export const designTokens = {
     '3xl': '4rem',    // 64px
   },
 
-  // Border Radius - Sharper, more technical
+  // Border Radius - Clean, slightly rounded
   borderRadius: {
     none: '0',
-    sm: '2px',
-    base: '4px',
-    lg: '6px',
+    sm: '4px',
+    base: '6px',
+    lg: '8px',
     full: '9999px',
   },
 
-  // Shadows - Flat, inset borders instead
+  // Shadows
   shadows: {
     none: 'none',
     inset: 'inset 0 0 0 1px rgba(0, 0, 0, 0.08)',
-    insetLedger: 'inset 0 0 0 1px rgba(212, 193, 160, 0.3)',
+    insetAccent: 'inset 0 0 0 1px rgba(255, 90, 31, 0.2)',
     subtle: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
   },
 
@@ -115,9 +114,9 @@ export const designTokens = {
       thick: '2px',
     },
     color: {
-      default: '#EAEAE5',
-      ledger: '#D4C1A0',
-      emphasis: '#333330',
+      default: '#E5E5E5',
+      accent: '#FF5A1F',
+      emphasis: '#0A0A0A',
     },
   },
 
@@ -128,13 +127,13 @@ export const designTokens = {
     slow: '200ms ease-in',
   },
 
-  // Grid - 2px micro grid texture
+  // Grid
   grid: {
-    size: '2px',
-    color: 'rgba(212, 193, 160, 0.1)',
+    size: '1px',
+    color: 'rgba(0, 0, 0, 0.03)',
   },
 
-  // Card padding differentiation
+  // Card padding
   card: {
     primary: '1.5rem',    // 24px
     secondary: '1rem',    // 16px
@@ -154,7 +153,7 @@ export const designTokens = {
 
   // Icon stroke width
   icon: {
-    strokeWidth: '1.25px',
+    strokeWidth: '1.5px',
   },
 } as const;
 
