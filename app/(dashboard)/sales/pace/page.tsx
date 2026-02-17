@@ -40,6 +40,10 @@ import { CompCard } from '@/components/pulse/CompCard';
 import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/PeriodGaugeCard';
 import { PeriodDayChart } from '@/components/pulse/PeriodDayChart';
 import { PeriodDayTable } from '@/components/pulse/PeriodDayTable';
+import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
+import type { PtdWeekRow } from '@/components/reports/PeriodWeekBreakdown';
+import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
+import type { YtdPeriodRow } from '@/components/reports/YtdPeriodBreakdown';
 import { Briefcase, ShieldAlert } from 'lucide-react';
 import {
   LineChart,
@@ -276,6 +280,8 @@ interface PeriodResponse {
     period_start_date: string;
     period_end_date: string;
   };
+  ptd_weeks?: PtdWeekRow[];
+  ytd_periods?: YtdPeriodRow[];
 }
 
 const VIEW_LABELS: Record<PulseViewMode, string> = {
@@ -1100,6 +1106,30 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* PTD: week breakdown */}
+      {data.view === 'ptd' && data.ptd_weeks && data.ptd_weeks.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Weekly Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PeriodWeekBreakdown weeks={data.ptd_weeks} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* YTD: period breakdown */}
+      {data.view === 'ytd' && data.ytd_periods && data.ytd_periods.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Period Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <YtdPeriodBreakdown periods={data.ytd_periods} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -1459,27 +1489,53 @@ export default function LivePulsePage() {
                 />
               </div>
 
-              {/* Period day chart */}
-              {periodData.venue.days.length > 0 && (
+              {/* WTD: daily chart + table */}
+              {viewMode === 'wtd' && (
+                <>
+                  {periodData.venue.days.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm font-medium">Daily Revenue vs Prior</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <PeriodDayChart days={periodData.venue.days} />
+                      </CardContent>
+                    </Card>
+                  )}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Daily Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PeriodDayTable days={periodData.venue.days} />
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {/* PTD: week breakdown */}
+              {viewMode === 'ptd' && periodData.ptd_weeks && periodData.ptd_weeks.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-sm font-medium">Daily Revenue vs Prior</CardTitle>
+                    <CardTitle className="text-sm font-medium">Weekly Breakdown</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <PeriodDayChart days={periodData.venue.days} />
+                    <PeriodWeekBreakdown weeks={periodData.ptd_weeks} />
                   </CardContent>
                 </Card>
               )}
 
-              {/* Period daily table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Daily Breakdown</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <PeriodDayTable days={periodData.venue.days} />
-                </CardContent>
-              </Card>
+              {/* YTD: period breakdown */}
+              {viewMode === 'ytd' && periodData.ytd_periods && periodData.ytd_periods.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Period Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <YtdPeriodBreakdown periods={periodData.ytd_periods} />
+                  </CardContent>
+                </Card>
+              )}
             </>
           )}
         </>

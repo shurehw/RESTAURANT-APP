@@ -1131,7 +1131,7 @@ export async function GET(request: NextRequest) {
       // Fiscal calendar info
       fiscal: {
         calendar_type: fiscalCalendarType,
-        fy_start_date: fiscalYearStartDate,
+        fy_start_date: fyStartStr,
         fiscal_year: fiscalPeriod.fiscalYear,
         fiscal_quarter: fiscalPeriod.fiscalQuarter,
         fiscal_period: fiscalPeriod.fiscalPeriod,

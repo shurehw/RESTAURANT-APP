@@ -21,7 +21,9 @@ import {
   LaborDayFact,
 } from '@/lib/database/sales-pace';
 import { getServiceClient } from '@/lib/supabase/service';
-import { getFiscalPeriod, getSamePeriodLastYear } from '@/lib/fiscal-calendar';
+import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear } from '@/lib/fiscal-calendar';
+import type { PtdWeekRow } from '@/components/reports/PeriodWeekBreakdown';
+import type { YtdPeriodRow } from '@/components/reports/YtdPeriodBreakdown';
 
 // ══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -136,38 +138,29 @@ function computeDateRanges(
     return { currentStart, currentEnd: anchorDate, priorStart, priorEnd };
   }
 
-  // YTD
-  const fiscalPeriod = getFiscalPeriod(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
+  // YTD — use getFiscalYearStart to find the correct FY start
+  const currentStart = getFiscalYearStart(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
 
-  // For standard calendar, year starts Jan 1
-  let currentStart: string;
-  if (fiscalConfig.calendarType === 'standard' || !fiscalConfig.fyStartDate) {
-    const anchorParts = anchorDate.split('-').map(Number);
-    currentStart = `${anchorParts[0]}-01-01`;
-  } else {
-    // Find FY start that applies to this date
-    let fyStart = new Date(fiscalConfig.fyStartDate);
-    const anchorParts = anchorDate.split('-').map(Number);
-    const anchorDateObj = new Date(anchorParts[0], anchorParts[1] - 1, anchorParts[2]);
-    while (anchorDateObj < fyStart) {
-      fyStart.setFullYear(fyStart.getFullYear() - 1);
-    }
-    const nextYearStart = new Date(fyStart);
-    nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
-    while (anchorDateObj >= nextYearStart) {
-      fyStart.setFullYear(fyStart.getFullYear() + 1);
-      nextYearStart.setFullYear(nextYearStart.getFullYear() + 1);
-    }
-    currentStart = fyStart.toISOString().split('T')[0];
-  }
+  // Prior YTD: find LY fiscal year start, then same number of days into that year
+  const currentStartParts = currentStart.split('-').map(Number);
+  const currentStartDate = new Date(currentStartParts[0], currentStartParts[1] - 1, currentStartParts[2]);
+  const lyFyStart = new Date(currentStartDate);
+  lyFyStart.setFullYear(lyFyStart.getFullYear() - 1);
+  const priorStart = lyFyStart.toISOString().split('T')[0];
 
-  const prior = getSamePeriodLastYear(anchorDate, fiscalConfig.calendarType, fiscalConfig.fyStartDate);
+  // Same number of days into the prior fiscal year
+  const anchorParts = anchorDate.split('-').map(Number);
+  const anchorDateObj = new Date(anchorParts[0], anchorParts[1] - 1, anchorParts[2]);
+  const daysIntoFY = Math.floor((anchorDateObj.getTime() - currentStartDate.getTime()) / (24 * 60 * 60 * 1000));
+  const priorEndDate = new Date(lyFyStart);
+  priorEndDate.setDate(priorEndDate.getDate() + daysIntoFY);
+  const priorEnd = priorEndDate.toISOString().split('T')[0];
 
   return {
     currentStart,
     currentEnd: anchorDate,
-    priorStart: prior.startDate,
-    priorEnd: prior.endDate,
+    priorStart,
+    priorEnd,
   };
 }
 
@@ -277,6 +270,102 @@ function buildDaysArray(
       prior_covers: priorRow?.covers_count ?? null,
     };
   });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// BREAKDOWNS
+// ══════════════════════════════════════════════════════════════════════════
+
+function buildWeekBreakdown(days: PeriodDayRow[], periodStart: string): PtdWeekRow[] {
+  const psParts = periodStart.split('-').map(Number);
+  const psDate = new Date(psParts[0], psParts[1] - 1, psParts[2]);
+  const weeks = new Map<number, PtdWeekRow>();
+
+  for (const d of days) {
+    const dParts = d.business_date.split('-').map(Number);
+    const dDate = new Date(dParts[0], dParts[1] - 1, dParts[2]);
+    const dayOffset = Math.floor((dDate.getTime() - psDate.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNum = Math.floor(dayOffset / 7) + 1;
+
+    if (!weeks.has(weekNum)) {
+      const wStart = new Date(psDate);
+      wStart.setDate(wStart.getDate() + (weekNum - 1) * 7);
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wEnd.getDate() + 6);
+      weeks.set(weekNum, {
+        week: weekNum,
+        label: `W${weekNum}`,
+        start_date: wStart.toISOString().split('T')[0],
+        end_date: wEnd.toISOString().split('T')[0],
+        net_sales: 0,
+        covers: 0,
+        prior_net_sales: 0,
+        prior_covers: 0,
+      });
+    }
+
+    const w = weeks.get(weekNum)!;
+    w.net_sales += d.net_sales;
+    w.covers += d.covers_count;
+    w.prior_net_sales = (w.prior_net_sales || 0) + (d.prior_net_sales || 0);
+    w.prior_covers = (w.prior_covers || 0) + (d.prior_covers || 0);
+  }
+
+  return Array.from(weeks.values()).sort((a, b) => a.week - b.week);
+}
+
+function buildPeriodBreakdown(
+  days: PeriodDayRow[],
+  fyStart: string,
+  calendarType: Parameters<typeof getAllPeriodsInFiscalYear>[1]
+): YtdPeriodRow[] {
+  const allPeriods = getAllPeriodsInFiscalYear(fyStart, calendarType);
+  const result: YtdPeriodRow[] = [];
+
+  for (const p of allPeriods) {
+    const pStart = p.startDate;
+    const pEnd = p.endDate;
+
+    // Filter days that fall within this period
+    const periodDays = days.filter(d => d.business_date >= pStart && d.business_date <= pEnd);
+    if (periodDays.length === 0) continue;
+
+    const netSales = periodDays.reduce((s, d) => s + d.net_sales, 0);
+    const covers = periodDays.reduce((s, d) => s + d.covers_count, 0);
+    const priorSales = periodDays.reduce((s, d) => s + (d.prior_net_sales || 0), 0);
+    const priorCovers = periodDays.reduce((s, d) => s + (d.prior_covers || 0), 0);
+
+    result.push({
+      period: p.period,
+      label: `P${p.period}`,
+      start_date: pStart,
+      end_date: pEnd,
+      net_sales: netSales,
+      covers,
+      prior_net_sales: priorSales > 0 ? priorSales : null,
+      prior_covers: priorCovers > 0 ? priorCovers : null,
+    });
+  }
+
+  return result;
+}
+
+function mergeDaysAcrossVenues(venues: VenuePeriodData[]): PeriodDayRow[] {
+  const dayMap = new Map<string, PeriodDayRow>();
+  for (const v of venues) {
+    for (const d of v.days) {
+      const existing = dayMap.get(d.business_date);
+      if (existing) {
+        existing.net_sales += d.net_sales;
+        existing.covers_count += d.covers_count;
+        existing.prior_net_sales = (existing.prior_net_sales || 0) + (d.prior_net_sales || 0);
+        existing.prior_covers = (existing.prior_covers || 0) + (d.prior_covers || 0);
+      } else {
+        dayMap.set(d.business_date, { ...d });
+      }
+    }
+  }
+  return Array.from(dayMap.values()).sort((a, b) => a.business_date.localeCompare(b.business_date));
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -390,6 +479,10 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
     days,
   };
 
+  // Build breakdowns
+  const ptd_weeks = view === 'ptd' ? buildWeekBreakdown(days, ranges.currentStart) : undefined;
+  const ytd_periods = view === 'ytd' ? buildPeriodBreakdown(days, ranges.currentStart, fiscalConfig.calendarType) : undefined;
+
   return NextResponse.json({
     view,
     date: anchorDate,
@@ -398,6 +491,8 @@ async function handleSingleVenue(view: PulseViewMode, venueId: string, anchorDat
     prior_start: ranges.priorStart,
     prior_end: ranges.priorEnd,
     venue: venueData,
+    ...(ptd_weeks && { ptd_weeks }),
+    ...(ytd_periods && { ytd_periods }),
     fiscal: {
       calendar_type: fiscalConfig.calendarType,
       fiscal_year: fiscalPeriod.fiscalYear,
@@ -517,6 +612,18 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
   const groupLaborPrior = aggregateLabor(allPriorLabor, groupPriorFacts.net_sales);
   const groupVariance = computeVariance(groupCurrentFacts, groupPriorFacts, groupLaborCurrent, groupLaborPrior);
 
+  // Build group-level breakdowns by merging all venue days
+  let ptd_weeks: PtdWeekRow[] | undefined;
+  let ytd_periods: YtdPeriodRow[] | undefined;
+  if (view === 'ptd' || view === 'ytd') {
+    const mergedDays = mergeDaysAcrossVenues(venues);
+    if (view === 'ptd') {
+      ptd_weeks = buildWeekBreakdown(mergedDays, ranges.currentStart);
+    } else {
+      ytd_periods = buildPeriodBreakdown(mergedDays, ranges.currentStart, fiscalConfig.calendarType);
+    }
+  }
+
   return NextResponse.json({
     view,
     date: anchorDate,
@@ -532,6 +639,8 @@ async function handleGroup(view: PulseViewMode, anchorDate: string) {
       labor_prior: groupLaborPrior,
       variance: groupVariance,
     },
+    ...(ptd_weeks && { ptd_weeks }),
+    ...(ytd_periods && { ytd_periods }),
     fiscal: {
       calendar_type: fiscalConfig.calendarType,
       fiscal_year: fiscalPeriod.fiscalYear,
