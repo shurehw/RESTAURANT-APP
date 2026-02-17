@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0A0A0A"/>
+  <text x="32" y="42" text-anchor="middle" font-family="monospace" font-size="22" fill="#E8E4DD">
+    <tspan font-weight="700">Ops</tspan><tspan font-weight="400" opacity="0.5">OS</tspan>
+  </text>
+</svg>

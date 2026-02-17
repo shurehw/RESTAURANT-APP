@@ -7,7 +7,7 @@
 import { Suspense } from 'react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import Link from 'next/link';
-import Image from 'next/image';
+import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
 import { Shield, Lock, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -19,22 +19,14 @@ export default function LoginPage() {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <div className="max-w-md w-full space-y-8 bg-white rounded-lg shadow-xl overflow-hidden">
-        {/* Orange accent line */}
-        <div className="h-1 bg-brass" />
+      <div className="max-w-md w-full space-y-8 bg-white border border-opsos-slate-200 overflow-hidden">
+        {/* Accent rule */}
+        <div className="h-0.5 bg-brass" />
 
         <div className="px-8 pt-4 pb-0 space-y-8">
           <div className="flex flex-col items-center">
-            <Image
-              src="/opsos-logo.png"
-              alt="OpsOS"
-              width={120}
-              height={40}
-              className="h-10 w-auto mb-4"
-              priority
-            />
-            <h1 className="text-3xl font-bold text-center font-heading">OpsOS</h1>
-            <p className="mt-1 text-sm text-center text-muted-foreground">Pulse</p>
+            <OpsOSLogo size="xl" className="mb-4" />
+            <p className="text-sm text-center text-muted-foreground">Pulse</p>
           </div>
 
           <Suspense>

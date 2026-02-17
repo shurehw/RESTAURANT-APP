@@ -24,6 +24,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { NavLink } from '@/components/layout/NavLink';
+import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
 import { getNavPermissions, type UserRole } from '@/lib/nav/role-permissions';
 
 interface MobileSidebarProps {
@@ -98,13 +99,8 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
         `}
       >
         {/* Logo */}
-        <div className="h-24 flex items-center justify-center px-4 border-b-2 border-brass bg-white overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/opsos-logo.png"
-            alt="OpsOS logo"
-            className="h-20 w-full object-contain object-center scale-[1.8]"
-          />
+        <div className="h-16 flex items-center justify-center px-4 border-b-2 border-brass bg-white">
+          <OpsOSLogo size="lg" />
         </div>
 
         {/* Navigation */}

@@ -20,10 +20,7 @@ export function LedgerStripe({ className = '', thickness = 'base' }: LedgerStrip
 
   return (
     <div
-      className={`w-full ${thicknessMap[thickness]} bg-gradient-to-r from-transparent via-[var(--ledger-gold)] to-transparent ${className}`}
-      style={{
-        boxShadow: '0 1px 2px rgba(255, 90, 31, 0.15)',
-      }}
+      className={`w-full ${thicknessMap[thickness]} bg-[var(--ledger-gold)] ${className}`}
       aria-hidden="true"
     />
   );
