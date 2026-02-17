@@ -7,7 +7,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { VenueProvider } from '@/components/providers/VenueProvider';
 import { FloatingChatWidget } from '@/components/chatbot/FloatingChatWidget';
-import { Activity } from 'lucide-react';
+import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
 
 export const metadata = {
   title: 'Pulse',
@@ -32,10 +32,7 @@ export default async function PwaLayout({
       <div className="min-h-screen bg-background flex flex-col" style={{ paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
         {/* Thin PWA header */}
         <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center sticky top-0 z-50">
-          <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-emerald-500" />
-            <span className="font-semibold text-sm tracking-tight">Pulse</span>
-          </div>
+          <OpsOSLogo size="sm" />
         </header>
 
         {/* Content */}

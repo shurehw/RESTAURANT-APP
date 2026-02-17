@@ -219,7 +219,7 @@ export function CheckListSheet({
 
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose()}>
-      <SheetContent side="bottom" className="max-h-[85vh] flex flex-col p-0">
+      <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0">
         <SheetHeader className="px-4 pt-4 pb-2">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
@@ -321,7 +321,7 @@ export function CheckListSheet({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-2">
+        <div className="flex-1 overflow-y-auto px-4 pb-2" style={{ paddingBottom: filtered.length > 0 ? undefined : 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}>
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -402,7 +402,7 @@ export function CheckListSheet({
 
         {/* Summary footer */}
         {!loading && filtered.length > 0 && (
-          <div className="border-t border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground bg-muted/30">
+          <div className="border-t border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground bg-muted/30" style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />

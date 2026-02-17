@@ -44,7 +44,6 @@ export function PeriodDayTable({ days }: { days: PeriodDayRow[] }) {
             <th className="pb-2 pr-4 font-medium text-right">Covers</th>
             <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
             <th className="pb-2 pr-4 font-medium text-right">Prior Sales</th>
-            <th className="pb-2 pr-4 font-medium text-right">$ Change</th>
             <th className="pb-2 font-medium text-right">Var %</th>
           </tr>
         </thead>
@@ -52,7 +51,6 @@ export function PeriodDayTable({ days }: { days: PeriodDayRow[] }) {
           {days.map((row) => {
             const { day, date } = formatDateRow(row.business_date);
             const avgCheck = row.covers_count > 0 ? row.net_sales / row.covers_count : 0;
-            const dollarChange = row.prior_net_sales != null ? row.net_sales - row.prior_net_sales : null;
             const varPct = row.prior_net_sales && row.prior_net_sales > 0
               ? ((row.net_sales - row.prior_net_sales) / row.prior_net_sales) * 100
               : null;
@@ -66,15 +64,6 @@ export function PeriodDayTable({ days }: { days: PeriodDayRow[] }) {
                 <td className="py-2 pr-4 text-right">{avgCheck > 0 ? fmtCurrency(avgCheck) : '—'}</td>
                 <td className="py-2 pr-4 text-right text-muted-foreground">
                   {row.prior_net_sales != null ? fmtCurrency(row.prior_net_sales) : '—'}
-                </td>
-                <td className="py-2 pr-4 text-right tabular-nums">
-                  {dollarChange != null ? (
-                    <span className={dollarChange >= 0 ? 'text-emerald-500' : 'text-red-500'}>
-                      {dollarChange > 0 ? '+' : ''}{fmtCurrency(dollarChange)}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
                 </td>
                 <td className="py-2 text-right">
                   {varPct != null ? (

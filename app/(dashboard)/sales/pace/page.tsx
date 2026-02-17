@@ -40,6 +40,7 @@ import { CompCard } from '@/components/pulse/CompCard';
 import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/PeriodGaugeCard';
 import { PeriodDayChart } from '@/components/pulse/PeriodDayChart';
 import { PeriodDayTable } from '@/components/pulse/PeriodDayTable';
+import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
 import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
 import type { PtdWeekRow } from '@/components/reports/PeriodWeekBreakdown';
 import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
@@ -297,7 +298,7 @@ interface PeriodResponse {
 }
 
 const VIEW_LABELS: Record<PulseViewMode, string> = {
-  today: 'Today',
+  today: 'Day',
   wtd: 'Week to Date',
   ptd: 'Period to Date',
   ytd: 'Year to Date',
@@ -1450,7 +1451,11 @@ export default function LivePulsePage() {
       {/* Row 1 — Title + live status */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Live Pulse</h1>
+          <div className="flex items-center gap-2">
+            <OpsOSLogo size="sm" />
+            <span className="text-muted-foreground/40 text-lg font-light">/</span>
+            <h1 className="text-2xl font-bold tracking-tight">Live Pulse</h1>
+          </div>
           <p className="text-muted-foreground text-sm">
             {isAllVenues ? 'Group-wide sales overview' : 'Real-time sales pace vs. forecast'}
           </p>
@@ -1477,19 +1482,19 @@ export default function LivePulsePage() {
         </div>
       </div>
 
-      {/* Row 2 — Venue switcher */}
-      <VenueQuickSwitcher />
-
-      {/* Row 3 — Toolbar: tabs left, date controls right */}
+      {/* Row 2 — Toolbar: venue, tabs, date controls */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-3">
-        <Tabs value={viewMode} onValueChange={handleViewChange}>
-          <TabsList>
-            <TabsTrigger value="today">Today</TabsTrigger>
-            <TabsTrigger value="wtd">WTD</TabsTrigger>
-            <TabsTrigger value="ptd">PTD</TabsTrigger>
-            <TabsTrigger value="ytd">YTD</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-3">
+          <VenueQuickSwitcher />
+          <Tabs value={viewMode} onValueChange={handleViewChange}>
+            <TabsList>
+              <TabsTrigger value="today">Day</TabsTrigger>
+              <TabsTrigger value="wtd">WTD</TabsTrigger>
+              <TabsTrigger value="ptd">PTD</TabsTrigger>
+              <TabsTrigger value="ytd">YTD</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
         <div className="flex items-center gap-2">
           <DateSelector
             selectedDate={selectedDate}
