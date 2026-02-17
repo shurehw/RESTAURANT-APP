@@ -608,7 +608,7 @@ export async function getVenueFiscalConfig(venueId: string): Promise<{
   const { data: settingsData } = await (svc as any)
     .from('organization_settings')
     .select('fiscal_calendar_type, fiscal_year_start_date')
-    .eq('org_id', venueData.organization_id)
+    .eq('organization_id', venueData.organization_id)
     .single();
 
   if (!settingsData) {
