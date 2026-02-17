@@ -833,92 +833,6 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
 
   return (
     <div className="space-y-6">
-      {/* Group totals — row 1: Sales */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Group Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totals.net_sales)}</div>
-            <div className="mt-1 space-y-0.5">
-              {totals.sdlw_net > 0 && (
-                <ComparisonLine label="SDLW" value={totals.sdlw_net} current={totals.net_sales} fmt={formatCurrency} />
-              )}
-              {totals.sdly_net > 0 && (
-                <ComparisonLine label="SDLY" value={totals.sdly_net} current={totals.net_sales} fmt={formatCurrency} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Group Covers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatNumber(totals.covers)}</div>
-            <div className="mt-1 space-y-0.5">
-              <div className="text-xs text-muted-foreground">{formatNumber(totals.checks)} checks</div>
-              {totals.sdlw_covers > 0 && (
-                <ComparisonLine label="SDLW" value={totals.sdlw_covers} current={totals.covers} fmt={formatNumber} />
-              )}
-              {totals.sdly_covers > 0 && (
-                <ComparisonLine label="SDLY" value={totals.sdly_covers} current={totals.covers} fmt={formatNumber} />
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Labor</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {enrichmentLoading ? (
-              <div className="h-8 bg-muted rounded animate-pulse" />
-            ) : et ? (
-              <>
-                <div className={`text-2xl font-bold ${laborPctColor(et.labor_pct)}`}>
-                  {et.labor_pct > 0 ? `${et.labor_pct.toFixed(1)}%` : '—'}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {formatCurrency(et.labor_cost)} &middot; {et.total_hours.toFixed(0)}h &middot; {et.employee_count} staff
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">No data</div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Comps</CardTitle>
-            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {enrichmentLoading ? (
-              <div className="h-8 bg-muted rounded animate-pulse" />
-            ) : et ? (
-              <>
-                <div className={`text-2xl font-bold ${compPctColor(et.comp_pct)}`}>
-                  {et.comp_pct > 0 ? `${et.comp_pct.toFixed(1)}%` : '0%'}
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {formatCurrency(et.comp_total)}
-                  {et.critical_count > 0 && (
-                    <span className="ml-2">{et.critical_count} critical</span>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="text-sm text-muted-foreground">No data</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Per-venue table */}
       <Card>
         <CardHeader>
@@ -1032,6 +946,92 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
           </div>
         </CardContent>
       </Card>
+
+      {/* Group totals — summary cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Group Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totals.net_sales)}</div>
+            <div className="mt-1 space-y-0.5">
+              {totals.sdlw_net > 0 && (
+                <ComparisonLine label="SDLW" value={totals.sdlw_net} current={totals.net_sales} fmt={formatCurrency} />
+              )}
+              {totals.sdly_net > 0 && (
+                <ComparisonLine label="SDLY" value={totals.sdly_net} current={totals.net_sales} fmt={formatCurrency} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Group Covers</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatNumber(totals.covers)}</div>
+            <div className="mt-1 space-y-0.5">
+              <div className="text-xs text-muted-foreground">{formatNumber(totals.checks)} checks</div>
+              {totals.sdlw_covers > 0 && (
+                <ComparisonLine label="SDLW" value={totals.sdlw_covers} current={totals.covers} fmt={formatNumber} />
+              )}
+              {totals.sdly_covers > 0 && (
+                <ComparisonLine label="SDLY" value={totals.sdly_covers} current={totals.covers} fmt={formatNumber} />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Labor</CardTitle>
+            <Briefcase className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {enrichmentLoading ? (
+              <div className="h-8 bg-muted rounded animate-pulse" />
+            ) : et ? (
+              <>
+                <div className={`text-2xl font-bold ${laborPctColor(et.labor_pct)}`}>
+                  {et.labor_pct > 0 ? `${et.labor_pct.toFixed(1)}%` : '—'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(et.labor_cost)} &middot; {et.total_hours.toFixed(0)}h &middot; {et.employee_count} staff
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No data</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Comps</CardTitle>
+            <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {enrichmentLoading ? (
+              <div className="h-8 bg-muted rounded animate-pulse" />
+            ) : et ? (
+              <>
+                <div className={`text-2xl font-bold ${compPctColor(et.comp_pct)}`}>
+                  {et.comp_pct > 0 ? `${et.comp_pct.toFixed(1)}%` : '0%'}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(et.comp_total)}
+                  {et.critical_count > 0 && (
+                    <span className="ml-2">{et.critical_count} critical</span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-muted-foreground">No data</div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
