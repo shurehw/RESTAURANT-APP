@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
 import {
   ComposedChart,
   Area,
@@ -26,8 +25,6 @@ const fmtCurrency = (n: number) =>
 
 const fmtAxis = (v: number) =>
   v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`;
-
-const fmtNumber = (n: number) => n.toLocaleString('en-US');
 
 function getDayLabel(dateStr: string): string {
   const parts = dateStr.split('-').map(Number);
@@ -56,16 +53,6 @@ export function PeriodDayChart({ days }: { days: PeriodDayRow[] }) {
 
     return { dailyData: daily, cumulativeData: cum };
   }, [days]);
-
-  const totals = useMemo(() => days.reduce(
-    (acc, d) => ({
-      net_sales: acc.net_sales + d.net_sales,
-      covers: acc.covers + d.covers_count,
-      prior_net_sales: acc.prior_net_sales + (d.prior_net_sales || 0),
-      prior_covers: acc.prior_covers + (d.prior_covers || 0),
-    }),
-    { net_sales: 0, covers: 0, prior_net_sales: 0, prior_covers: 0 }
-  ), [days]);
 
   if (days.length === 0) return null;
 
@@ -149,104 +136,6 @@ export function PeriodDayChart({ days }: { days: PeriodDayRow[] }) {
             Cumulative
           </button>
         </div>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-muted-foreground">
-              <th className="pb-2 pr-4 font-medium">Day</th>
-              <th className="pb-2 pr-4 font-medium text-right">Net Sales</th>
-              <th className="pb-2 pr-4 font-medium text-right">Covers</th>
-              <th className="pb-2 pr-4 font-medium text-right">Avg Check</th>
-              <th className="pb-2 pr-4 font-medium text-right">Prior Sales</th>
-              <th className="pb-2 pr-4 font-medium text-right">$ Change</th>
-              <th className="pb-2 font-medium text-right">Var %</th>
-            </tr>
-          </thead>
-          <tbody>
-            {days.map((d) => {
-              const dayLabel = getDayLabel(d.business_date);
-              const avgCheck = d.covers_count > 0 ? d.net_sales / d.covers_count : 0;
-              const dollarChange = d.prior_net_sales != null ? d.net_sales - d.prior_net_sales : null;
-              const varPct = d.prior_net_sales && d.prior_net_sales > 0
-                ? ((d.net_sales - d.prior_net_sales) / d.prior_net_sales) * 100
-                : null;
-
-              return (
-                <tr key={d.business_date} className="border-b border-border/50 hover:bg-muted/50">
-                  <td className="py-2 pr-4 font-medium">{dayLabel}</td>
-                  <td className="py-2 pr-4 text-right font-medium tabular-nums">{fmtCurrency(d.net_sales)}</td>
-                  <td className="py-2 pr-4 text-right tabular-nums">{fmtNumber(d.covers_count)}</td>
-                  <td className="py-2 pr-4 text-right tabular-nums">{avgCheck > 0 ? fmtCurrency(avgCheck) : '—'}</td>
-                  <td className="py-2 pr-4 text-right text-muted-foreground tabular-nums">
-                    {d.prior_net_sales != null ? fmtCurrency(d.prior_net_sales) : '—'}
-                  </td>
-                  <td className="py-2 pr-4 text-right tabular-nums">
-                    {dollarChange != null ? (
-                      <span className={dollarChange >= 0 ? 'text-emerald-500' : 'text-red-500'}>
-                        {dollarChange > 0 ? '+' : ''}{fmtCurrency(dollarChange)}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="py-2 text-right">
-                    {varPct != null ? (
-                      <span className="inline-flex items-center gap-0.5">
-                        {varPct >= 0 ? (
-                          <TrendingUp className="h-3 w-3 text-emerald-500" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3 text-red-500" />
-                        )}
-                        <span className={varPct >= 0 ? 'text-emerald-500' : 'text-red-500'}>
-                          {varPct > 0 ? '+' : ''}{varPct.toFixed(1)}%
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-            {/* Totals row */}
-            <tr className="border-t-2 font-semibold">
-              <td className="py-2 pr-4">Total</td>
-              <td className="py-2 pr-4 text-right tabular-nums">{fmtCurrency(totals.net_sales)}</td>
-              <td className="py-2 pr-4 text-right tabular-nums">{fmtNumber(totals.covers)}</td>
-              <td className="py-2 pr-4 text-right tabular-nums">
-                {totals.covers > 0 ? fmtCurrency(totals.net_sales / totals.covers) : '—'}
-              </td>
-              <td className="py-2 pr-4 text-right text-muted-foreground tabular-nums">
-                {totals.prior_net_sales > 0 ? fmtCurrency(totals.prior_net_sales) : '—'}
-              </td>
-              <td className="py-2 pr-4 text-right tabular-nums">
-                {totals.prior_net_sales > 0 ? (
-                  <span className={
-                    (totals.net_sales - totals.prior_net_sales) >= 0
-                      ? 'text-emerald-500' : 'text-red-500'
-                  }>
-                    {(totals.net_sales - totals.prior_net_sales) > 0 ? '+' : ''}
-                    {fmtCurrency(totals.net_sales - totals.prior_net_sales)}
-                  </span>
-                ) : '—'}
-              </td>
-              <td className="py-2 text-right">
-                {totals.prior_net_sales > 0 ? (
-                  <span className={
-                    ((totals.net_sales - totals.prior_net_sales) / totals.prior_net_sales) >= 0
-                      ? 'text-emerald-500' : 'text-red-500'
-                  }>
-                    {((totals.net_sales - totals.prior_net_sales) / totals.prior_net_sales * 100) > 0 ? '+' : ''}
-                    {((totals.net_sales - totals.prior_net_sales) / totals.prior_net_sales * 100).toFixed(1)}%
-                  </span>
-                ) : '—'}
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   );

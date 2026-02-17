@@ -33,6 +33,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CheckListSheet } from '@/components/pulse/CheckListSheet';
 import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
 import { LaborCard } from '@/components/pulse/LaborCard';
@@ -376,8 +378,20 @@ function DateSelector({
   onDateChange: (date: string) => void;
   onToday: () => void;
 }) {
+  const [calOpen, setCalOpen] = useState(false);
+
+  // Parse YYYY-MM-DD → local Date for display & Calendar
+  const dateObj = selectedDate ? (() => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  })() : new Date();
+
+  const displayLabel = dateObj.toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
+
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       <Button
         variant="ghost"
         size="icon"
@@ -386,15 +400,28 @@ function DateSelector({
       >
         <ChevronLeft className="h-4 w-4" />
       </Button>
-      <div className="flex items-center gap-1.5">
-        <CalendarDays className="h-4 w-4 text-muted-foreground" />
-        <input
-          type="date"
-          value={selectedDate || ''}
-          onChange={(e) => onDateChange(e.target.value)}
-          className="bg-transparent border-none text-sm font-medium w-[130px] cursor-pointer focus:outline-none"
-        />
-      </div>
+      <Popover open={calOpen} onOpenChange={setCalOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-sm font-medium px-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            {displayLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="end">
+          <Calendar
+            mode="single"
+            selected={dateObj}
+            onSelect={(day) => {
+              if (day) {
+                const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                onDateChange(iso);
+                setCalOpen(false);
+              }
+            }}
+            defaultMonth={dateObj}
+          />
+        </PopoverContent>
+      </Popover>
       <Button
         variant="ghost"
         size="icon"
@@ -1483,19 +1510,17 @@ export default function LivePulsePage() {
       </div>
 
       {/* Row 2 — Toolbar: venue, tabs, date controls */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b pb-3">
-        <div className="flex items-center gap-3">
-          <VenueQuickSwitcher />
-          <Tabs value={viewMode} onValueChange={handleViewChange}>
-            <TabsList>
-              <TabsTrigger value="today">Day</TabsTrigger>
-              <TabsTrigger value="wtd">WTD</TabsTrigger>
-              <TabsTrigger value="ptd">PTD</TabsTrigger>
-              <TabsTrigger value="ytd">YTD</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+        <VenueQuickSwitcher />
+        <Tabs value={viewMode} onValueChange={handleViewChange}>
+          <TabsList>
+            <TabsTrigger value="today">Day</TabsTrigger>
+            <TabsTrigger value="wtd">WTD</TabsTrigger>
+            <TabsTrigger value="ptd">PTD</TabsTrigger>
+            <TabsTrigger value="ytd">YTD</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2 ml-auto">
           <DateSelector
             selectedDate={selectedDate}
             onDateChange={handleDateChange}
