@@ -141,7 +141,12 @@ export async function PATCH(request: NextRequest) {
     if (validated.employee_id) updates.employee_id = validated.employee_id;
     if (validated.scheduled_start) updates.scheduled_start = validated.scheduled_start;
     if (validated.scheduled_end) updates.scheduled_end = validated.scheduled_end;
-    if (validated.scheduled_hours) updates.scheduled_hours = validated.scheduled_hours;
+    if (validated.scheduled_hours) {
+      updates.scheduled_hours = validated.scheduled_hours;
+      // Recalculate shift cost when hours change
+      const rate = Number(original.hourly_rate || original.position?.base_hourly_rate || 0);
+      updates.scheduled_cost = validated.scheduled_hours * rate;
+    }
     if (validated.status) updates.status = validated.status;
 
     // Apply update
@@ -180,6 +185,22 @@ export async function PATCH(request: NextRequest) {
       }),
       reason: `[${validated.reason_category || 'Other'}] ${validated.reason}`,
     });
+
+    // Recalculate schedule totals
+    const { data: allShifts } = await supabase
+      .from('shift_assignments')
+      .select('scheduled_hours, scheduled_cost')
+      .eq('schedule_id', original.schedule_id)
+      .neq('status', 'cancelled');
+
+    if (allShifts) {
+      const totalHours = allShifts.reduce((s, sh) => s + Number(sh.scheduled_hours || 0), 0);
+      const totalCost = allShifts.reduce((s, sh) => s + Number(sh.scheduled_cost || 0), 0);
+      await supabase
+        .from('weekly_schedules')
+        .update({ total_labor_hours: totalHours, total_labor_cost: totalCost, updated_at: new Date().toISOString() })
+        .eq('id', original.schedule_id);
+    }
 
     return NextResponse.json({ success: true, shift: updated });
   });

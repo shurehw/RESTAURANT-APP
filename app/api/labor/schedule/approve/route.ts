@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertRole } from '@/lib/tenant';
@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = validate(approveSchema, body);
 
-    const supabase = await createClient();
+    // Use admin client to bypass RLS (auth already validated above via requireUser + assertRole)
+    const supabase = createAdminClient();
 
     // Verify schedule exists and is in draft status
     const { data: schedule, error: schedErr } = await supabase
