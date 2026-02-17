@@ -86,13 +86,23 @@ interface PositionInfo {
 interface Props {
   schedule: Schedule | null;
   venueId: string;
+  venueName?: string;
   weekStart: string;
+  forecastCovers?: Record<string, { covers: number; revenue: number }>;
 }
 
-export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart }: Props) {
+export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, forecastCovers = {} }: Props) {
   const { selectedVenue } = useVenue();
-  const venueId = selectedVenue?.id || fallbackVenueId;
   const [generating, setGenerating] = useState(false);
+
+  // When the user picks a different venue from the dropdown, navigate to that venue's schedule.
+  // venueId is the authoritative URL prop (from server) — use it for all API calls.
+  useEffect(() => {
+    if (!selectedVenue?.id) return;
+    if (selectedVenue.id !== venueId) {
+      window.location.href = `/labor/schedule?week=${weekStart}&venue=${selectedVenue.id}`;
+    }
+  }, [selectedVenue?.id]);
   const [approving, setApproving] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -193,7 +203,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
 
       if (data.success) {
         toast.success('Schedule generated');
-        window.location.reload();
+        window.location.href = `/labor/schedule?week=${weekStart}&venue=${venueId}`;
       } else {
         toast.error(data.message || data.error || 'Schedule generation failed');
       }
@@ -225,7 +235,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
 
       if (data.success) {
         toast.success(`Schedule approved and published (${data.changes_count || 0} changes tracked)`);
-        window.location.reload();
+        window.location.href = `/labor/schedule?week=${weekStart}&venue=${venueId}`;
       } else {
         toast.error(data.message || 'Approval failed');
       }
@@ -282,8 +292,8 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
   };
 
   const handleShiftSaved = () => {
-    // Reload to get fresh data
-    window.location.reload();
+    // Reload to get fresh data, preserving venue in URL
+    window.location.href = `/labor/schedule?week=${weekStart}&venue=${venueId}`;
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
@@ -291,7 +301,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
     const newDate = new Date(current);
     newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
     const newWeekStart = newDate.toISOString().split('T')[0];
-    window.location.href = `/labor/schedule?week=${newWeekStart}`;
+    window.location.href = `/labor/schedule?week=${newWeekStart}&venue=${venueId}`;
   };
 
   // --- No schedule state ---
@@ -320,7 +330,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
                   const day = d.getDay();
                   const diff = day === 0 ? -6 : 1 - day;
                   d.setDate(d.getDate() + diff);
-                  window.location.href = `/labor/schedule?week=${d.toISOString().split('T')[0]}`;
+                  window.location.href = `/labor/schedule?week=${d.toISOString().split('T')[0]}&venue=${venueId}`;
                 }
               }}
             />
@@ -333,6 +343,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
             No Schedule Generated
           </h3>
           <p className="text-gray-600 mb-6">
+            {venueName && <><span className="font-medium">{venueName}</span> — </>}
             Generate an optimized schedule for the week of {formatDate(weekStart)}
           </p>
           <Button onClick={handleGenerateSchedule} disabled={generating} size="lg">
@@ -355,6 +366,12 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
       <Card className="p-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-4 flex-wrap">
+            {/* Venue label */}
+            {venueName && (
+              <span className="text-sm font-semibold text-opsos-sage-700 border border-opsos-sage-300 rounded px-2 py-1 bg-opsos-sage-50">
+                {venueName}
+              </span>
+            )}
             {/* Week Navigation */}
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigateWeek('prev')}>
@@ -376,7 +393,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
                     const day = d.getDay();
                     const diff = day === 0 ? -6 : 1 - day;
                     d.setDate(d.getDate() + diff);
-                    window.location.href = `/labor/schedule?week=${d.toISOString().split('T')[0]}`;
+                    window.location.href = `/labor/schedule?week=${d.toISOString().split('T')[0]}&venue=${venueId}`;
                   }
                 }}
               />
@@ -486,7 +503,7 @@ export function ScheduleCalendar({ schedule, venueId: fallbackVenueId, weekStart
       )}
 
       {/* Covers Projection */}
-      <CoversProjection shifts={activeShifts} weekDays={weekDays} schedule={schedule} />
+      <CoversProjection shifts={activeShifts} weekDays={weekDays} schedule={schedule} forecastCovers={forecastCovers} />
 
       {/* Calendar Grid */}
       <div className="bg-white border rounded-lg overflow-hidden">
@@ -631,56 +648,62 @@ function formatDate(dateStr: string): string {
   });
 }
 
-// Server CPLH used by the scheduler (dinner period)
-const SERVER_CPLH = 18.0;
-
 function CoversProjection({
   shifts,
   weekDays,
   schedule,
+  forecastCovers,
 }: {
   shifts: Shift[];
   weekDays: { date: string; dayName: string; dateStr: string }[];
   schedule: Schedule;
+  forecastCovers: Record<string, { covers: number; revenue: number }>;
 }) {
-  // Compute per-day stats from shift data
+  const hasForecast = Object.keys(forecastCovers).length > 0;
+
+  // Compute per-day stats from actual schedule shifts + demand_forecasts covers
   const dailyStats = weekDays.map((day) => {
     const dayShifts = shifts.filter((s) => s.business_date === day.date);
     const serverShifts = dayShifts.filter((s) => s.position?.name === 'Server');
     const bartenderShifts = dayShifts.filter((s) => s.position?.name === 'Bartender');
     const fohShifts = dayShifts.filter((s) => s.position?.category === 'front_of_house');
     const bohShifts = dayShifts.filter((s) => s.position?.category === 'back_of_house');
-    const mgtShifts = dayShifts.filter((s) => s.position?.category === 'management');
 
-    const serverHours = serverShifts.reduce((sum, s) => sum + s.scheduled_hours, 0);
-    const projectedCovers = Math.round(serverHours * SERVER_CPLH);
+    // Use demand_forecasts covers_predicted (the ML model value), not a back-calculation
+    const fc = forecastCovers[day.date];
+    const forecastedCovers = fc?.covers ?? 0;
+    const forecastedRevenue = fc?.revenue ?? 0;
 
     return {
       date: day.date,
       dayName: day.dayName,
       dateStr: day.dateStr,
-      projectedCovers,
+      forecastedCovers,
+      forecastedRevenue,
       serverCount: serverShifts.length,
       bartenderCount: bartenderShifts.length,
       fohCount: fohShifts.length,
       bohCount: bohShifts.length,
-      mgtCount: mgtShifts.length,
       totalStaff: dayShifts.length,
       totalHours: dayShifts.reduce((sum, s) => sum + s.scheduled_hours, 0),
     };
   });
 
-  const totalCovers = dailyStats.reduce((sum, d) => sum + d.projectedCovers, 0);
+  const totalCovers = dailyStats.reduce((sum, d) => sum + d.forecastedCovers, 0);
+  const totalRevenue = dailyStats.reduce((sum, d) => sum + d.forecastedRevenue, 0);
   const totalStaff = dailyStats.reduce((sum, d) => sum + d.totalStaff, 0);
-  const peakDay = dailyStats.reduce((max, d) => (d.projectedCovers > max.projectedCovers ? d : max), dailyStats[0]);
+  const peakDay = dailyStats.reduce(
+    (max, d) => (d.forecastedCovers > max.forecastedCovers ? d : max),
+    dailyStats[0]
+  );
 
   return (
     <Card className="p-4">
       <div className="flex items-center gap-2 mb-3">
         <TrendingUp className="w-4 h-4 text-emerald-600" />
-        <h3 className="text-sm font-semibold text-gray-900">Covers Projection & Staffing</h3>
+        <h3 className="text-sm font-semibold text-gray-900">Covers Forecast & Staffing</h3>
         <span className="text-xs text-gray-500 ml-auto">
-          Based on POS data (server_day_facts P75+10%) | CPLH {SERVER_CPLH}
+          {hasForecast ? 'ML demand_forecasts model' : 'No forecast data for this week'}
         </span>
       </div>
 
@@ -699,23 +722,39 @@ function CoversProjection({
             </tr>
           </thead>
           <tbody>
-            {/* Projected Covers */}
+            {/* Forecasted Covers — from demand_forecasts ML model */}
             <tr className="border-b">
               <td className="p-2 font-medium text-gray-900 flex items-center gap-1">
                 <TrendingUp className="w-3 h-3 text-emerald-500" />
-                Projected Covers
+                Forecasted Covers
               </td>
               {dailyStats.map((d, i) => (
                 <td key={i} className={`text-center p-2 font-semibold ${
-                  d.projectedCovers === 0 ? 'text-gray-300' :
-                  d.projectedCovers >= 500 ? 'text-red-600' :
-                  d.projectedCovers >= 300 ? 'text-amber-600' : 'text-gray-900'
+                  d.forecastedCovers === 0 ? 'text-gray-300' :
+                  d.forecastedCovers >= 500 ? 'text-red-600' :
+                  d.forecastedCovers >= 300 ? 'text-amber-600' : 'text-gray-900'
                 }`}>
-                  {d.projectedCovers === 0 ? 'Closed' : d.projectedCovers.toLocaleString()}
+                  {d.forecastedCovers === 0 ? (hasForecast ? 'Closed' : '—') : d.forecastedCovers.toLocaleString()}
                 </td>
               ))}
               <td className="text-center p-2 font-bold text-gray-900 bg-gray-50">
-                {totalCovers.toLocaleString()}
+                {totalCovers > 0 ? totalCovers.toLocaleString() : '—'}
+              </td>
+            </tr>
+
+            {/* Forecasted Revenue */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700 flex items-center gap-1">
+                <TrendingUp className="w-3 h-3 text-blue-400" />
+                Forecasted Revenue
+              </td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 text-xs ${d.forecastedRevenue === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.forecastedRevenue === 0 ? '—' : `$${(d.forecastedRevenue / 1000).toFixed(0)}k`}
+                </td>
+              ))}
+              <td className="text-center p-2 text-xs font-semibold text-gray-700 bg-gray-50">
+                {totalRevenue > 0 ? `$${(totalRevenue / 1000).toFixed(0)}k` : '—'}
               </td>
             </tr>
 
@@ -782,10 +821,12 @@ function CoversProjection({
 
       {/* Summary chips */}
       <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 flex-wrap">
-        <span>Peak: <strong className="text-gray-700">{peakDay.dayName} {peakDay.dateStr}</strong> ({peakDay.projectedCovers} covers, {peakDay.totalStaff} staff)</span>
-        <span>Weekly Rev: <strong className="text-gray-700">${(schedule.projected_revenue || 0).toLocaleString()}</strong></span>
-        <span>Labor: <strong className="text-gray-700">${(schedule.total_labor_cost || 0).toLocaleString()}</strong> ({schedule.total_labor_hours || 0}h)</span>
-        <span>Labor%: <strong className="text-gray-700">{schedule.projected_revenue ? ((schedule.total_labor_cost / schedule.projected_revenue) * 100).toFixed(1) : '—'}%</strong></span>
+        {peakDay.forecastedCovers > 0 && (
+          <span>Peak: <strong className="text-gray-700">{peakDay.dayName} {peakDay.dateStr}</strong> ({peakDay.forecastedCovers.toLocaleString()} covers, {peakDay.totalStaff} staff)</span>
+        )}
+        <span>Forecast Revenue: <strong className="text-gray-700">${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong></span>
+        <span>Labor Cost: <strong className="text-gray-700">${(schedule.total_labor_cost || 0).toLocaleString()}</strong> ({schedule.total_labor_hours || 0}h)</span>
+        <span>Labor%: <strong className="text-gray-700">{totalRevenue > 0 ? ((schedule.total_labor_cost / totalRevenue) * 100).toFixed(1) : '—'}%</strong></span>
       </div>
     </Card>
   );

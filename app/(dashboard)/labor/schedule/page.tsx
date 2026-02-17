@@ -12,29 +12,34 @@ import { redirect } from 'next/navigation';
 export default async function SchedulePage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string }>;
+  searchParams: Promise<{ week?: string; venue?: string }>;
 }) {
   const supabase = await createClient();
 
-  // Get user's selected venue
+  // Get all active venues
   const { data: venues } = await supabase
     .from('venues')
     .select('id, name')
-    .eq('is_active', true)
-    .limit(1);
+    .eq('is_active', true);
 
   if (!venues || venues.length === 0) {
     redirect('/');
   }
 
-  const venueId = venues[0].id;
+  // Use venue from URL param, fallback to first venue
+  const params = await searchParams;
+  const weekStart = params.week || getCurrentWeekStart();
 
-  // Get week start (default to current week)
-  const { week } = await searchParams;
-  const weekStart = week || getCurrentWeekStart();
+  // Always keep venue in URL so client knows which venue is active
+  if (!params.venue) {
+    redirect(`/labor/schedule?week=${weekStart}&venue=${venues[0].id}`);
+  }
+
+  const venueId = params.venue;
+  const venueName = venues.find(v => v.id === venueId)?.name || venues[0].name;
 
   // Fetch schedule for this week
-  const { data: schedule } = await supabase
+  const { data: schedule, error: scheduleError } = await supabase
     .from('weekly_schedules')
     .select(`
       *,
@@ -46,7 +51,28 @@ export default async function SchedulePage({
     `)
     .eq('venue_id', venueId)
     .eq('week_start_date', weekStart)
-    .single();
+    .maybeSingle();
+
+  // Fetch demand_forecasts for this venue + week (latest run per date)
+  const weekDates = getWeekDates(weekStart);
+  const { data: rawForecasts } = await supabase
+    .from('demand_forecasts')
+    .select('business_date, forecast_date, covers_predicted, revenue_predicted')
+    .eq('venue_id', venueId)
+    .in('business_date', weekDates)
+    .order('business_date')
+    .order('forecast_date', { ascending: false });
+
+  // Deduplicate: keep most recently generated forecast per date
+  const forecastCovers: Record<string, { covers: number; revenue: number }> = {};
+  for (const f of rawForecasts || []) {
+    if (!forecastCovers[f.business_date]) {
+      forecastCovers[f.business_date] = {
+        covers: Number(f.covers_predicted) || 0,
+        revenue: Number(f.revenue_predicted) || 0,
+      };
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -54,15 +80,23 @@ export default async function SchedulePage({
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Weekly Schedule</h1>
           <p className="text-sm text-gray-500 mt-1">
-            AI-generated schedule recommendations
+            {venueName} — Auto-generated optimal schedules
           </p>
         </div>
       </div>
 
+      {scheduleError && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+          Failed to load schedule: {scheduleError.message}
+        </div>
+      )}
+
       <ScheduleCalendar
-        schedule={schedule as any}
+        schedule={scheduleError ? null : (schedule as any)}
         venueId={venueId}
+        venueName={venueName}
         weekStart={weekStart}
+        forecastCovers={forecastCovers}
       />
     </div>
   );
@@ -75,4 +109,15 @@ function getCurrentWeekStart(): string {
   const monday = new Date(now);
   monday.setDate(monday.getDate() + diff);
   return monday.toISOString().split('T')[0];
+}
+
+function getWeekDates(weekStart: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(weekStart + 'T00:00:00Z');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start);
+    d.setUTCDate(d.getUTCDate() + i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  return dates;
 }

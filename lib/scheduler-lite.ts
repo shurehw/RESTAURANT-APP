@@ -1,13 +1,14 @@
 /**
  * Lightweight TypeScript scheduler for Vercel (no Python dependency).
- * Simplified version of python-services/scheduler/auto_scheduler.py
- * Uses same CPLH targets and forecast data from POS (server_day_facts P75+10%).
+ * Uses covers from demand_forecasts table (ML model per-venue, per-date predictions).
+ * Falls back to DOW_FALLBACK if no forecast data found for a date.
  */
 
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 
-// Delilah LA DOW forecast (P75+10% from 78 actual POS nights in server_day_facts)
-const DOW_FORECAST: Record<number, { covers: number; revenue: number }> = {
+// Fallback DOW covers used only when demand_forecasts has no data for a date
+// (Delilah LA P75+10% baseline from historical server_day_facts)
+const DOW_FALLBACK: Record<number, { covers: number; revenue: number }> = {
   0: { covers: 627, revenue: 75000 },  // Sun
   1: { covers: 0, revenue: 0 },        // Mon (closed)
   2: { covers: 120, revenue: 15000 },   // Tue
@@ -102,6 +103,29 @@ export async function generateScheduleTS(
     });
   }
 
+  // Fetch covers from demand_forecasts for this venue + week.
+  // Multiple forecast runs may exist per date — use only the most recently generated
+  // one per business_date (order by forecast_date DESC, keep first seen per date).
+  const dateCoversMap: Record<string, { covers: number; revenue: number }> = {};
+  const { data: forecasts } = await admin
+    .from('demand_forecasts')
+    .select('business_date, forecast_date, covers_predicted, revenue_predicted')
+    .eq('venue_id', venueId)
+    .in('business_date', weekDays.map(d => d.date))
+    .order('business_date')
+    .order('forecast_date', { ascending: false }); // latest forecast run first
+
+  for (const f of forecasts || []) {
+    // Skip if we already have the latest forecast for this date
+    if (dateCoversMap[f.business_date]) continue;
+    dateCoversMap[f.business_date] = {
+      covers: Number(f.covers_predicted) || 0,
+      revenue: Number(f.revenue_predicted) || 0,
+    };
+  }
+
+  const hasForecastData = Object.keys(dateCoversMap).length > 0;
+
   // Delete existing schedule for this week/venue
   if (save) {
     const { data: existing } = await admin
@@ -127,8 +151,12 @@ export async function generateScheduleTS(
 
   // For each day, calculate requirements and assign
   for (const day of weekDays) {
-    const forecast = DOW_FORECAST[day.dow];
-    if (!forecast || forecast.covers === 0) continue; // closed day
+    // Use demand_forecasts if available, else fall back to DOW_FALLBACK
+    const forecast = hasForecastData
+      ? (dateCoversMap[day.date] ?? null)
+      : (DOW_FALLBACK[day.dow] ?? null);
+
+    if (!forecast || forecast.covers === 0) continue; // no forecast or closed day
 
     totalCovers += forecast.covers;
     totalRevenue += forecast.revenue;
