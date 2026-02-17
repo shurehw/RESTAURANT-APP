@@ -108,7 +108,7 @@
     },
     {
       "path": "/api/sales/poll",
-      "schedule": "0 11-23,0-2 * * *"
+      "schedule": "*/5 17-23,0-11 * * *"
     }
   ]
 }
