@@ -6,7 +6,6 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
 import { getUserOrgAndVenues } from "@/lib/tenant";
-import { getActiveViolations } from "@/lib/database/enforcement";
 import { MobileSidebar } from "@/components/layout/MobileSidebar";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
@@ -44,13 +43,16 @@ export default async function DashboardLayout({
     .select("id, name, location, city, state")
     .eq("is_active", true);
 
-  // Fetch active violations for badge
+  // Fetch active violations for badge (non-critical — fails silently if RPC missing)
   let criticalViolationCount = 0;
   try {
-    const violations = await getActiveViolations(orgId, 'critical');
-    criticalViolationCount = violations.length;
-  } catch (error) {
-    console.error('Failed to fetch violation count:', error);
+    const { data: violations } = await supabase.rpc('get_active_violations', {
+      p_org_id: orgId,
+      p_severity: 'critical',
+    });
+    criticalViolationCount = (violations || []).length;
+  } catch {
+    // RPC may not exist yet — badge just shows 0
   }
 
   return (

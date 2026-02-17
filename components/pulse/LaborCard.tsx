@@ -61,9 +61,11 @@ export function LaborCard({ labor, loading, netSales }: { labor: LaborData | nul
 
   const fohCost = labor.foh?.cost ?? 0;
   const bohCost = labor.boh?.cost ?? 0;
-  const totalDeptCost = fohCost + bohCost + (labor.other?.cost ?? 0);
-  const fohPct = totalDeptCost > 0 ? (fohCost / totalDeptCost) * 100 : 50;
-  const bohPct = totalDeptCost > 0 ? (bohCost / totalDeptCost) * 100 : 50;
+  const otherCost = labor.other?.cost ?? 0;
+  const totalDeptCost = fohCost + bohCost + otherCost;
+  const fohPct = totalDeptCost > 0 ? (fohCost / totalDeptCost) * 100 : 0;
+  const bohPct = totalDeptCost > 0 ? (bohCost / totalDeptCost) * 100 : 0;
+  const otherPct = totalDeptCost > 0 ? (otherCost / totalDeptCost) * 100 : 0;
 
   return (
     <Card>
@@ -114,32 +116,57 @@ export function LaborCard({ labor, loading, netSales }: { labor: LaborData | nul
           </div>
         )}
 
-        {/* FOH/BOH bar */}
+        {/* FOH/BOH/Other bar */}
         {totalDeptCost > 0 && (
           <div className="mt-3">
-            <div className="flex justify-between text-[11px] text-muted-foreground mb-1">
-              <span>
-                FOH {fmt(fohCost)}
-                {netSales && netSales > 0 && (
-                  <span className="ml-1 font-medium text-foreground">({((fohCost / netSales) * 100).toFixed(1)}%)</span>
-                )}
-              </span>
-              <span>
-                {netSales && netSales > 0 && (
-                  <span className="mr-1 font-medium text-foreground">({((bohCost / netSales) * 100).toFixed(1)}%)</span>
-                )}
-                BOH {fmt(bohCost)}
-              </span>
+            <div className="flex flex-wrap gap-x-3 text-[11px] text-muted-foreground mb-1">
+              {fohCost > 0 && (
+                <span>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 mr-1" />
+                  FOH {fmt(fohCost)}
+                  {netSales && netSales > 0 && (
+                    <span className="ml-0.5 font-medium text-foreground">({((fohCost / netSales) * 100).toFixed(1)}%)</span>
+                  )}
+                </span>
+              )}
+              {bohCost > 0 && (
+                <span>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-500 mr-1" />
+                  BOH {fmt(bohCost)}
+                  {netSales && netSales > 0 && (
+                    <span className="ml-0.5 font-medium text-foreground">({((bohCost / netSales) * 100).toFixed(1)}%)</span>
+                  )}
+                </span>
+              )}
+              {otherCost > 0 && (
+                <span>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400 mr-1" />
+                  Other {fmt(otherCost)}
+                  {netSales && netSales > 0 && (
+                    <span className="ml-0.5 font-medium text-foreground">({((otherCost / netSales) * 100).toFixed(1)}%)</span>
+                  )}
+                </span>
+              )}
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden flex">
-              <div
-                className="bg-blue-500 h-full transition-all"
-                style={{ width: `${fohPct}%` }}
-              />
-              <div
-                className="bg-orange-500 h-full transition-all"
-                style={{ width: `${bohPct}%` }}
-              />
+              {fohPct > 0 && (
+                <div
+                  className="bg-blue-500 h-full transition-all"
+                  style={{ width: `${fohPct}%` }}
+                />
+              )}
+              {bohPct > 0 && (
+                <div
+                  className="bg-orange-500 h-full transition-all"
+                  style={{ width: `${bohPct}%` }}
+                />
+              )}
+              {otherPct > 0 && (
+                <div
+                  className="bg-gray-400 h-full transition-all"
+                  style={{ width: `${otherPct}%` }}
+                />
+              )}
             </div>
           </div>
         )}
