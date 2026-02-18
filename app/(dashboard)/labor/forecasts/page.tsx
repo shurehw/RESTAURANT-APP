@@ -34,19 +34,28 @@ export default async function ForecastsPage({
     .toISOString()
     .split('T')[0];
 
-  const { data: forecasts } = await supabase
+  const { data: rawForecasts } = await supabase
     .from('demand_forecasts')
     .select('*')
     .eq('venue_id', selectedVenue ?? '')
     .gte('business_date', startDate)
     .lte('business_date', endDate)
-    .order('business_date');
+    .order('business_date')
+    .order('forecast_date', { ascending: false });
+
+  // Deduplicate: keep only the latest forecast_date per business_date
+  const seen = new Set<string>();
+  const forecasts = (rawForecasts || []).filter(f => {
+    if (seen.has(f.business_date)) return false;
+    seen.add(f.business_date);
+    return true;
+  });
 
   // Calculate summary stats
-  const totalCovers = forecasts?.reduce((sum, f) => sum + (f.covers_predicted || 0), 0) || 0;
-  const totalRevenue = forecasts?.reduce((sum, f) => sum + (f.revenue_predicted || 0), 0) || 0;
+  const totalCovers = forecasts.reduce((sum, f) => sum + (f.covers_predicted || 0), 0);
+  const totalRevenue = forecasts.reduce((sum, f) => sum + (f.revenue_predicted || 0), 0);
   const avgCheck = totalRevenue / totalCovers || 0;
-  const avgConfidence = (forecasts?.reduce((sum, f) => sum + (f.confidence_level || 0), 0) ?? 0) / (forecasts?.length || 1);
+  const avgConfidence = (forecasts.reduce((sum, f) => sum + (f.confidence_level || 0), 0)) / (forecasts.length || 1);
 
   return (
     <div>
