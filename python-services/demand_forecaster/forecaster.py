@@ -56,6 +56,32 @@ TIER_C_MIN = 30    # Basic: Prophet baseline (no weather, no reso)
 # Venue classes where weather impact is weak/indirect
 WEATHER_WEAK_CLASSES = {"nightclub", "late_night"}
 
+# US holidays for day_type classification (must match SQL get_day_type function)
+US_HOLIDAYS = {
+    # 2025
+    "2025-01-01", "2025-01-20", "2025-02-17", "2025-05-26", "2025-07-04",
+    "2025-09-01", "2025-11-27", "2025-11-28", "2025-12-25", "2025-12-31",
+    # 2026
+    "2026-01-01", "2026-01-19", "2026-02-16", "2026-05-25", "2026-07-04",
+    "2026-09-07", "2026-11-26", "2026-11-27", "2026-12-25", "2026-12-31",
+}
+
+
+def get_day_type(date_str: str) -> str:
+    """Classify a date into day_type. Mirrors SQL get_day_type() function."""
+    if date_str in US_HOLIDAYS:
+        return "holiday"
+    d = pd.Timestamp(date_str)
+    dow = d.dayofweek  # 0=Mon, 6=Sun
+    if dow == 6:
+        return "sunday"
+    elif dow == 4:
+        return "friday"
+    elif dow == 5:
+        return "saturday"
+    else:
+        return "weekday"
+
 
 # ============================================================================
 # MODEL ROUTER
@@ -816,6 +842,7 @@ def save_forecasts(forecasts: list, supabase: Client):
             "forecast_date": today,
             "business_date": f["business_date"],
             "shift_type": "dinner",
+            "day_type": get_day_type(str(f["business_date"])),
             "covers_predicted": covers_pred,
             "covers_lower": covers_lower,
             "covers_upper": covers_upper,

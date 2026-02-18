@@ -75,31 +75,31 @@ BEGIN
   END IF;
 
   -- =====================================================
-  -- Keys Los Angeles — open Thu/Fri/Sat only
-  -- Closed: Mon(0), Tue(1), Wed(2), Sun(6)
+  -- Keys Los Angeles — open Tue/Thu/Sat/Sun
+  -- Closed: Mon(0), Wed(2), Fri(4)
   -- =====================================================
   SELECT id INTO v_venue_id FROM venues WHERE name ILIKE '%Keys%' LIMIT 1;
   IF v_venue_id IS NOT NULL THEN
     INSERT INTO location_config (venue_id, closed_weekdays)
-    VALUES (v_venue_id, '{0,1,2,6}')
+    VALUES (v_venue_id, '{0,2,4}')
     ON CONFLICT (venue_id) DO UPDATE SET
       closed_weekdays = EXCLUDED.closed_weekdays,
       updated_at = NOW();
-    RAISE NOTICE 'Seeded location_config for Keys Los Angeles (open Thu/Fri/Sat)';
+    RAISE NOTICE 'Seeded location_config for Keys Los Angeles (open Tue/Thu/Sat/Sun)';
   END IF;
 
   -- =====================================================
-  -- Poppy — open Mon/Thu/Fri only
-  -- Closed: Tue(1), Wed(2), Sat(5), Sun(6)
+  -- Poppy — open Mon/Fri/Sat
+  -- Closed: Tue(1), Wed(2), Thu(3), Sun(6)
   -- =====================================================
   SELECT id INTO v_venue_id FROM venues WHERE name ILIKE '%Poppy%' LIMIT 1;
   IF v_venue_id IS NOT NULL THEN
     INSERT INTO location_config (venue_id, closed_weekdays)
-    VALUES (v_venue_id, '{1,2,5,6}')
+    VALUES (v_venue_id, '{1,2,3,6}')
     ON CONFLICT (venue_id) DO UPDATE SET
       closed_weekdays = EXCLUDED.closed_weekdays,
       updated_at = NOW();
-    RAISE NOTICE 'Seeded location_config for Poppy (open Mon/Thu/Fri)';
+    RAISE NOTICE 'Seeded location_config for Poppy (open Mon/Fri/Sat)';
   END IF;
 
   -- =====================================================

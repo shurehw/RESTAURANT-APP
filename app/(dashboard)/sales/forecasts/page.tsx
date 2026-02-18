@@ -43,6 +43,7 @@ export default async function ForecastsPage({
     .eq('venue_id', selectedVenue ?? '')
     .gte('business_date', startDate)
     .lte('business_date', endDate)
+    .gt('covers_predicted', 0)
     .order('business_date');
 
   // Get existing overrides for this range
