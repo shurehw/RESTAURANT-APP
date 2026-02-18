@@ -5,22 +5,11 @@
  * - Headcount sized from peak-hour demand (covers × peakPct / cplh)
  * - Staff spread across early / main / late shift waves
  * - Shorter, targeted shifts replace one long block per person
- * - Uses covers from demand_forecasts table (ML model per-venue, per-date).
- * - Falls back to DOW_FALLBACK if no forecast data found for a date.
+ * - Uses covers exclusively from demand_forecasts table (ML model per-venue, per-date).
+ * - Days with no forecast data are skipped (no hardcoded fallback).
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
-
-// Fallback DOW covers used only when demand_forecasts has no data for a date
-const DOW_FALLBACK: Record<number, { covers: number; revenue: number }> = {
-  0: { covers: 627, revenue: 75000 },  // Sun
-  1: { covers: 0,   revenue: 0 },      // Mon (closed)
-  2: { covers: 120, revenue: 15000 },  // Tue
-  3: { covers: 196, revenue: 22000 },  // Wed
-  4: { covers: 223, revenue: 28000 },  // Thu
-  5: { covers: 541, revenue: 65000 },  // Fri
-  6: { covers: 675, revenue: 80000 },  // Sat
-};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -423,8 +412,6 @@ export async function generateScheduleTS(
     };
   }
 
-  const hasForecastData = Object.keys(dateCoversMap).length > 0;
-
   // Delete any existing schedule for this venue + week
   if (save) {
     const { data: existing } = await admin
@@ -448,11 +435,9 @@ export async function generateScheduleTS(
   let totalCovers  = 0;
   let totalRevenue = 0;
 
-  // ── Per-day scheduling ──────────────────────────────────────────────────
+  // ── Per-day scheduling (uses demand_forecasts covers only) ────────────
   for (const day of weekDays) {
-    const forecast = hasForecastData
-      ? (dateCoversMap[day.date] ?? null)
-      : (DOW_FALLBACK[day.dow] ?? null);
+    const forecast = dateCoversMap[day.date] ?? null;
 
     if (!forecast || forecast.covers === 0) continue;
 
