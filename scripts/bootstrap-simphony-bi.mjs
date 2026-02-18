@@ -144,8 +144,11 @@ async function tryPKCE() {
     console.log('   Cookies:', cookies ? cookies.slice(0, 50) + '...' : '(none)');
 
     console.log('   Signin (POST)...');
-    const signinBody = { username: USERNAME, grant_type: 'password' };
-    if (PASSWORD) signinBody.password = PASSWORD;
+    const signinBody = {
+      username: USERNAME,
+      password: PASSWORD,
+      orgname: CONFIG.orgIdentifier,
+    };
 
     const signinRes = await fetch(
       `${CONFIG.authServer}/oidc-provider/v1/oauth2/signin`,
@@ -156,18 +159,20 @@ async function tryPKCE() {
           ...(cookies ? { Cookie: cookies } : {}),
         },
         body: new URLSearchParams(signinBody).toString(),
-        redirect: 'manual',
       }
     );
     console.log('   Status:', signinRes.status);
 
-    const signinLocation = signinRes.headers.get('location') || '';
-    codeMatch = signinLocation.match(/[?&]code=([^&]+)/);
+    // Signin returns JSON with redirectUrl containing the auth code
+    const signinJson = await signinRes.json().catch(() => null);
+    console.log('   Response:', JSON.stringify(signinJson, null, 2)?.slice(0, 300));
+
+    if (!signinJson?.success || !signinJson?.redirectUrl) {
+      throw new Error(`Signin failed: ${signinJson?.message || signinJson?.error || JSON.stringify(signinJson)}`);
+    }
+    codeMatch = signinJson.redirectUrl.match(/[?&]code=([^&]+)/);
     if (!codeMatch) {
-      const body = await signinRes.text().catch(() => '');
-      console.error('   Location header:', signinLocation || '(none)');
-      console.error('   Response body:', body.slice(0, 500));
-      throw new Error('Signin failed: no authorization code in redirect');
+      throw new Error('No authorization code in signin redirectUrl');
     }
   }
 

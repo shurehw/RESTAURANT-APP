@@ -190,8 +190,11 @@ async function bootstrapPKCE(
     }
 
     const signinUrl = `${config.authServer}/oidc-provider/v1/oauth2/signin`;
-    const signinBody: Record<string, string> = { username, grant_type: 'password' };
-    if (password) signinBody.password = password;
+    const signinBody: Record<string, string> = {
+      username,
+      password: password || '',
+      orgname: config.orgIdentifier,
+    };
 
     const signinRes = await fetchWithTimeout(signinUrl, {
       method: 'POST',
@@ -200,16 +203,18 @@ async function bootstrapPKCE(
         ...(cookies ? { Cookie: cookies } : {}),
       },
       body: new URLSearchParams(signinBody).toString(),
-      redirect: 'manual',
     });
 
-    const signinLocation = signinRes.headers.get('location') || '';
-    codeMatch = signinLocation.match(/[?&]code=([^&]+)/);
-    if (!codeMatch) {
-      const body = await signinRes.text().catch(() => '');
+    // Signin returns JSON with redirectUrl containing the auth code
+    const signinJson = await signinRes.json().catch(() => null) as any;
+    if (!signinJson?.success || !signinJson?.redirectUrl) {
       throw new Error(
-        `PKCE signin failed: no authorization code. Status: ${signinRes.status}. Body: ${body.slice(0, 200)}`
+        `PKCE signin failed: ${signinJson?.message || signinJson?.error || JSON.stringify(signinJson)}`
       );
+    }
+    codeMatch = signinJson.redirectUrl.match(/[?&]code=([^&]+)/);
+    if (!codeMatch) {
+      throw new Error('No authorization code in signin redirectUrl');
     }
   }
 
