@@ -273,7 +273,7 @@ async function deriveVenueCPLH(
     }
   }
 
-  // Blend: 60% venue-derived + 40% POS_CONFIG default
+  // Blend: 40% venue-derived + 60% industry default (industry-weighted)
   for (const [posName, stats] of Object.entries(posStats)) {
     if (stats.totalCoversWeighted === 0) continue;
     const derivedPeak = stats.cplhSum / stats.totalCoversWeighted;
@@ -281,7 +281,7 @@ async function deriveVenueCPLH(
 
     const defaultCplh = POS_CONFIG[posName]?.cplh;
     const blended = defaultCplh
-      ? Math.round(derivedPeak * 0.6 + defaultCplh * 0.4)
+      ? Math.round(derivedPeak * 0.4 + defaultCplh * 0.6)
       : Math.round(derivedPeak);
 
     if (blended > 0) result.set(posName, blended);
