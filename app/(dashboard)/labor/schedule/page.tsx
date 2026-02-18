@@ -53,24 +53,45 @@ export default async function SchedulePage({
     .eq('week_start_date', weekStart)
     .maybeSingle();
 
-  // Fetch demand_forecasts for this venue + week (latest run per date)
+  // Fetch covers from forecasts_with_bias (matches Forecasts page)
   const weekDates = getWeekDates(weekStart);
-  const { data: rawForecasts } = await supabase
-    .from('demand_forecasts')
-    .select('business_date, forecast_date, covers_predicted, revenue_predicted')
+  const forecastCovers: Record<string, { covers: number; revenue: number }> = {};
+
+  const { data: biasForecasts } = await supabase
+    .from('forecasts_with_bias')
+    .select('business_date, covers_predicted, revenue_predicted')
     .eq('venue_id', venueId)
     .in('business_date', weekDates)
-    .order('business_date')
-    .order('forecast_date', { ascending: false });
+    .gt('covers_predicted', 0)
+    .order('business_date');
 
-  // Deduplicate: keep most recently generated forecast per date
-  const forecastCovers: Record<string, { covers: number; revenue: number }> = {};
-  for (const f of rawForecasts || []) {
+  for (const f of biasForecasts || []) {
     if (!forecastCovers[f.business_date]) {
       forecastCovers[f.business_date] = {
         covers: Number(f.covers_predicted) || 0,
         revenue: Number(f.revenue_predicted) || 0,
       };
+    }
+  }
+
+  // Backfill missing dates from demand_forecasts (raw)
+  const missingDates = weekDates.filter(d => !forecastCovers[d]);
+  if (missingDates.length > 0) {
+    const { data: rawForecasts } = await supabase
+      .from('demand_forecasts')
+      .select('business_date, forecast_date, covers_predicted, revenue_predicted')
+      .eq('venue_id', venueId)
+      .in('business_date', missingDates)
+      .order('business_date')
+      .order('forecast_date', { ascending: false });
+
+    for (const f of rawForecasts || []) {
+      if (!forecastCovers[f.business_date]) {
+        forecastCovers[f.business_date] = {
+          covers: Number(f.covers_predicted) || 0,
+          revenue: Number(f.revenue_predicted) || 0,
+        };
+      }
     }
   }
 
