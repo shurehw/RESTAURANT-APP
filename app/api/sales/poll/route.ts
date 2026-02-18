@@ -122,11 +122,20 @@ async function processVenue(venueId: string): Promise<{
   // Determine business date (before 5 AM local = previous day)
   const businessDate = getBusinessDateForTimezone(tz);
 
-  // Detect POS type and fetch running totals from the right source
+  // Detect POS type and fetch running totals from the right source.
+  // Simphony venues (e.g. Dallas) have data in both tipsee_simphony_sales
+  // (batch/delayed) and tipsee_checks (real-time). Try the Simphony-specific
+  // table first for richer data, but fall back to tipsee_checks for live polling.
   const posType = await getPosTypeForLocations(locationUuids);
-  const summary = posType === 'simphony'
+  let summary = posType === 'simphony'
     ? await fetchSimphonyIntraDaySummary(locationUuids, businessDate)
     : await fetchIntraDaySummary(locationUuids, businessDate);
+
+  // Simphony fallback: if the Simphony-specific table has no data yet,
+  // try the standard tipsee_checks table which syncs in real-time.
+  if (posType === 'simphony' && summary.net_sales === 0 && summary.total_checks === 0) {
+    summary = await fetchIntraDaySummary(locationUuids, businessDate);
+  }
 
   // Skip if no sales activity yet
   if (summary.net_sales === 0 && summary.total_checks === 0) {
