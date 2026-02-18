@@ -748,6 +748,75 @@ export async function fetchSimphonyIntraDaySummary(
 }
 
 // ============================================================================
+// SIMPHONY BI API — Direct Oracle Simphony polling (bypasses TipSee batch)
+// ============================================================================
+
+/**
+ * Fetch intra-day sales summary directly from the Simphony BI API.
+ * Used for Simphony venues (e.g. Dallas) where TipSee data is batch-delayed.
+ * Returns the same IntraDaySummary interface for seamless integration.
+ *
+ * Note: Takes venueId (not locationUuids) because it uses the
+ * simphony_bi_location_mapping table.
+ */
+export async function fetchSimphonyBIIntraDaySummary(
+  venueId: string,
+  businessDate: string
+): Promise<IntraDaySummary> {
+  // Lazy imports to avoid circular deps and keep TipSee module lightweight
+  // when Simphony BI is not configured
+  const { getSimphonyLocationMapping, getValidIdToken, getSimphonyConfig } =
+    await import('@/lib/database/simphony-tokens');
+  const { getOperationsDailyTotals } =
+    await import('@/lib/integrations/simphony-bi');
+
+  const mapping = await getSimphonyLocationMapping(venueId);
+  if (!mapping) {
+    throw new Error(`No Simphony BI mapping for venue ${venueId}`);
+  }
+
+  const idToken = await getValidIdToken(mapping.org_identifier);
+  const config = await getSimphonyConfig(mapping.org_identifier);
+  const totals = await getOperationsDailyTotals(config, idToken, mapping.loc_ref, businessDate);
+
+  const barRCs = new Set(mapping.bar_revenue_centers || [2]);
+
+  let netSales = 0;
+  let checks = 0;
+  let covers = 0;
+  let voids = 0;
+  let comps = 0;
+  let foodSales = 0;
+  let bevSales = 0;
+
+  for (const rc of totals.revenueCenters || []) {
+    const rcNet = rc.netSlsTtl || 0;
+    netSales += rcNet;
+    checks += rc.chkCnt || 0;
+    covers += rc.gstCnt || 0;
+    voids += Math.abs(rc.vdTtl || 0);
+    comps += Math.abs(rc.itmDscTtl || 0) + Math.abs(rc.subDscTtl || 0);
+
+    if (barRCs.has(rc.rvcNum)) {
+      bevSales += rcNet;
+    } else {
+      foodSales += rcNet;
+    }
+  }
+
+  return {
+    total_checks: checks,
+    total_covers: covers,
+    gross_sales: netSales + comps + voids,
+    net_sales: netSales,
+    food_sales: foodSales,
+    beverage_sales: bevSales,
+    comps_total: comps,
+    voids_total: voids,
+  };
+}
+
+// ============================================================================
 // COMP BY REASON — Breakdown of comps grouped by voidcomp_reason_text
 // ============================================================================
 

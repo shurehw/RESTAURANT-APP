@@ -26,6 +26,7 @@ import {
 import {
   fetchIntraDaySummary,
   fetchSimphonyIntraDaySummary,
+  fetchSimphonyBIIntraDaySummary,
   getPosTypeForLocations,
   fetchLaborSummary,
   fetchCompExceptions,
@@ -123,17 +124,30 @@ async function processVenue(venueId: string): Promise<{
   const businessDate = getBusinessDateForTimezone(tz);
 
   // Detect POS type and fetch running totals from the right source.
-  // Simphony venues (e.g. Dallas) have data in both tipsee_simphony_sales
-  // (batch/delayed) and tipsee_checks (real-time). Try the Simphony-specific
-  // table first for richer data, but fall back to tipsee_checks for live polling.
+  // Simphony venues: try direct BI API first (live ~90s), then TipSee fallbacks.
+  // Upserve venues: TipSee tipsee_checks (real-time).
   const posType = await getPosTypeForLocations(locationUuids);
-  let summary = posType === 'simphony'
-    ? await fetchSimphonyIntraDaySummary(locationUuids, businessDate)
-    : await fetchIntraDaySummary(locationUuids, businessDate);
+  let summary;
 
-  // Simphony fallback: if the Simphony-specific table has no data yet,
-  // try the standard tipsee_checks table which syncs in real-time.
-  if (posType === 'simphony' && summary.net_sales === 0 && summary.total_checks === 0) {
+  if (posType === 'simphony') {
+    // 1. Try Simphony BI API (direct POS query — freshest data)
+    try {
+      summary = await fetchSimphonyBIIntraDaySummary(venueId, businessDate);
+    } catch (err: any) {
+      console.warn(`[sales-poll] Simphony BI API failed for ${venueId}: ${err.message}`);
+      summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, comps_total: 0, voids_total: 0 };
+    }
+
+    // 2. Fall back to TipSee tipsee_simphony_sales (batch/delayed)
+    if (summary.net_sales === 0 && summary.total_checks === 0) {
+      summary = await fetchSimphonyIntraDaySummary(locationUuids, businessDate);
+    }
+
+    // 3. Fall back to TipSee tipsee_checks
+    if (summary.net_sales === 0 && summary.total_checks === 0) {
+      summary = await fetchIntraDaySummary(locationUuids, businessDate);
+    }
+  } else {
     summary = await fetchIntraDaySummary(locationUuids, businessDate);
   }
 
