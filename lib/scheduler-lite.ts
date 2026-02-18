@@ -167,12 +167,127 @@ const POS_CONFIG: Record<string, PosConfig> = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** How many staff are needed to cover the peak hour for this position */
-function calcPeakStaff(covers: number, config: PosConfig): number {
+function calcPeakStaff(covers: number, config: PosConfig, cplhOverride?: number): number {
   if (covers === 0) return 0;
   if (config.fixed) return 1;
-  if (config.ratio) return Math.max(1, Math.ceil(covers / config.ratio));
-  if (config.cplh)  return Math.max(1, Math.ceil(covers * config.peakPct / config.cplh));
+  const cplh = cplhOverride || config.cplh;
+  if (config.ratio && !cplhOverride) return Math.max(1, Math.ceil(covers / config.ratio));
+  if (cplh) return Math.max(1, Math.ceil(covers * config.peakPct / cplh));
   return 0;
+}
+
+/** Minimum busy days needed to trust venue-derived CPLH */
+const MIN_BUSY_DAYS = 10;
+
+/**
+ * Derive per-position peak-hour CPLH from this venue's actual labor data.
+ * Uses labor_day_facts (FOH/BOH hours & employee counts) × employee pool
+ * proportions to estimate per-position hours, then converts to peak-hour CPLH.
+ * Blends 60% venue data + 40% POS_CONFIG defaults.
+ * Returns empty map if insufficient data (< MIN_BUSY_DAYS).
+ */
+async function deriveVenueCPLH(
+  admin: ReturnType<typeof createAdminClient>,
+  venueId: string,
+  positions: { id: string; name: string; category: string }[],
+  employees: { id: string; primary_position_id: string }[],
+): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+
+  // Build position category and pool counts
+  const posMap = new Map(positions.map(p => [p.id, p]));
+  const posCounts: Record<string, number> = {};
+  const posCategory: Record<string, string> = {};
+  for (const emp of employees) {
+    const pos = posMap.get(emp.primary_position_id);
+    if (!pos) continue;
+    posCounts[pos.name] = (posCounts[pos.name] || 0) + 1;
+    posCategory[pos.name] = pos.category;
+  }
+
+  const fohNames = Object.keys(posCategory).filter(n => posCategory[n] === 'front_of_house');
+  const bohNames = Object.keys(posCategory).filter(n => posCategory[n] === 'back_of_house');
+  const fohPool = fohNames.reduce((s, n) => s + (posCounts[n] || 0), 0);
+  const bohPool = bohNames.reduce((s, n) => s + (posCounts[n] || 0), 0);
+
+  if (fohPool === 0 && bohPool === 0) return result;
+
+  // Fetch busy-day labor data for this venue (covers > 100, last 90 days)
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - 90);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+
+  const { data: laborDays } = await admin
+    .from('labor_day_facts')
+    .select('covers, foh_hours, boh_hours, foh_employee_count, boh_employee_count')
+    .eq('venue_id', venueId)
+    .gt('covers', 100)
+    .gte('business_date', cutoffStr)
+    .order('business_date', { ascending: false })
+    .limit(60);
+
+  if (!laborDays || laborDays.length < MIN_BUSY_DAYS) return result;
+
+  // Filter days with valid FOH/BOH data
+  const validDays = laborDays.filter(
+    d => d.foh_hours && d.foh_hours > 10 && d.boh_hours && d.boh_hours > 5
+      && d.foh_employee_count && d.boh_employee_count,
+  );
+  if (validDays.length < MIN_BUSY_DAYS) return result;
+
+  // Per-position: accumulate weighted stats across busy days
+  const posStats: Record<string, { totalCoversWeighted: number; cplhSum: number }> = {};
+
+  for (const day of validDays) {
+    const covers = day.covers as number;
+    const fohH = day.foh_hours as number;
+    const bohH = day.boh_hours as number;
+    const fohEmp = day.foh_employee_count as number;
+    const bohEmp = day.boh_employee_count as number;
+
+    const fohAvgShift = fohH / fohEmp;
+    const bohAvgShift = bohH / bohEmp;
+
+    for (const posName of [...fohNames, ...bohNames]) {
+      const poolSize = posCounts[posName] || 0;
+      if (poolSize === 0) continue;
+
+      const isFoh = posCategory[posName] === 'front_of_house';
+      const catPool = isFoh ? fohPool : bohPool;
+      const catEmp = isFoh ? fohEmp : bohEmp;
+      const avgShift = isFoh ? fohAvgShift : bohAvgShift;
+
+      // Estimate staff count for this position on this day
+      const estStaff = Math.max(1, Math.round(poolSize / catPool * catEmp));
+      const estHours = estStaff * avgShift;
+      if (estHours <= 0) continue;
+
+      // All-day CPLH for this position
+      const allDayCplh = covers / estHours;
+      // Convert to peak-hour CPLH: peak = allDay × avgShift × PEAK_PCT
+      const peakCplh = allDayCplh * avgShift * PEAK_PCT;
+
+      if (!posStats[posName]) posStats[posName] = { totalCoversWeighted: 0, cplhSum: 0 };
+      posStats[posName].totalCoversWeighted += covers;
+      posStats[posName].cplhSum += peakCplh * covers; // cover-weighted sum
+    }
+  }
+
+  // Blend: 60% venue-derived + 40% POS_CONFIG default
+  for (const [posName, stats] of Object.entries(posStats)) {
+    if (stats.totalCoversWeighted === 0) continue;
+    const derivedPeak = stats.cplhSum / stats.totalCoversWeighted;
+    if (derivedPeak <= 0) continue;
+
+    const defaultCplh = POS_CONFIG[posName]?.cplh;
+    const blended = defaultCplh
+      ? Math.round(derivedPeak * 0.6 + defaultCplh * 0.4)
+      : Math.round(derivedPeak);
+
+    if (blended > 0) result.set(posName, blended);
+  }
+
+  return result;
 }
 
 /**
@@ -278,6 +393,9 @@ export async function generateScheduleTS(
     empByPos.set(pos.name, list);
   }
 
+  // Derive venue-specific CPLH from actual labor data (falls back to defaults)
+  const venueCPLH = await deriveVenueCPLH(admin, venueId, positions, employees);
+
   // Build the 7 days of the week
   const startDate = new Date(weekStart + 'T00:00:00Z');
   const weekDays: { date: string; dow: number }[] = [];
@@ -343,7 +461,8 @@ export async function generateScheduleTS(
 
     // ── Per-position wave assignment ──────────────────────────────────────
     for (const [posName, config] of Object.entries(POS_CONFIG)) {
-      const peakStaff = calcPeakStaff(forecast.covers, config);
+      const cplhOverride = venueCPLH.get(posName);
+      const peakStaff = calcPeakStaff(forecast.covers, config, cplhOverride);
       if (peakStaff === 0) continue;
 
       const posInfo = posNameMap.get(posName);
