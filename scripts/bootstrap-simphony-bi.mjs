@@ -1,11 +1,14 @@
 /**
  * Simphony BI API Bootstrap Script
  *
- * One-time setup: authenticates with the Oracle Simphony BI API using PKCE,
+ * One-time setup: authenticates with the Oracle Simphony BI API,
  * discovers location references, and stores tokens + mappings in Supabase.
  *
- * Usage:
- *   SIMPHONY_BI_PASSWORD=your_password node scripts/bootstrap-simphony-bi.mjs
+ * Usage (no password — API accounts use client credentials):
+ *   node scripts/bootstrap-simphony-bi.mjs
+ *
+ * If a password IS required (falls back automatically):
+ *   SIMPHONY_BI_PASSWORD=xxx node scripts/bootstrap-simphony-bi.mjs
  *
  * Optional env vars:
  *   SIMPHONY_BI_USERNAME   (default: OPS-OS)
@@ -26,15 +29,9 @@ const CONFIG = {
 };
 
 const USERNAME = process.env.SIMPHONY_BI_USERNAME || 'OPS-OS';
-const PASSWORD = process.env.SIMPHONY_BI_PASSWORD;
+const PASSWORD = process.env.SIMPHONY_BI_PASSWORD || '';
 const DALLAS_VENUE_ID = '79c33e6a-eb21-419f-9606-7494d1a9584c';
 const MANUAL_LOC_REF = process.env.SIMPHONY_BI_LOC_REF;
-
-if (!PASSWORD) {
-  console.error('ERROR: Set SIMPHONY_BI_PASSWORD env var.');
-  console.error('Usage: SIMPHONY_BI_PASSWORD=xxx node scripts/bootstrap-simphony-bi.mjs');
-  process.exit(1);
-}
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -70,16 +67,60 @@ function extractCookies(res) {
 // ── Auth Flow ───────────────────────────────────────────────────────────
 
 async function authenticate() {
-  console.log('\n1. Generating PKCE code verifier/challenge...');
+  // Try 1: Client credentials (API accounts typically don't need a password)
+  console.log('\n1. Trying client_credentials grant (no password)...');
+  try {
+    const tokens = await tryClientCredentials();
+    return tokens;
+  } catch (err) {
+    console.log('   Failed:', err.message);
+  }
+
+  // Try 2: PKCE flow (authorize may return code directly for API accounts)
+  console.log('\n2. Trying PKCE flow...');
+  return await tryPKCE();
+}
+
+async function tryClientCredentials() {
+  const tokenUrl = `${CONFIG.authServer}/oidc-provider/v1/oauth2/token`;
+  const res = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: CONFIG.clientId,
+      scope: 'openid',
+    }).toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`${res.status} - ${text.slice(0, 300)}`);
+  }
+
+  const tokens = await res.json();
+  if (!tokens.id_token && !tokens.access_token) {
+    throw new Error('No tokens returned');
+  }
+  console.log('   id_token:', tokens.id_token ? tokens.id_token.slice(0, 30) + '...' : 'MISSING');
+  console.log('   access_token:', tokens.access_token ? tokens.access_token.slice(0, 30) + '...' : 'MISSING');
+  console.log('   refresh_token:', tokens.refresh_token ? 'present' : 'none');
+  console.log('   expires_in:', tokens.expires_in, 'seconds');
+  return tokens;
+}
+
+async function tryPKCE() {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
-  console.log('   Code verifier:', codeVerifier.slice(0, 20) + '...');
+  const redirectUri = 'apiaccount://callback';
 
-  console.log('\n2. Authorize (GET)...');
+  console.log('   Generating PKCE verifier:', codeVerifier.slice(0, 20) + '...');
+
+  console.log('   Authorize (GET)...');
   const authorizeParams = new URLSearchParams({
     response_type: 'code',
     client_id: CONFIG.clientId,
-    redirect_uri: 'apiaccount://callback',
+    redirect_uri: redirectUri,
     scope: 'openid',
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
@@ -90,40 +131,50 @@ async function authenticate() {
     { method: 'GET', redirect: 'manual' }
   );
   console.log('   Status:', authorizeRes.status);
-  const cookies = extractCookies(authorizeRes);
-  console.log('   Cookies:', cookies ? cookies.slice(0, 50) + '...' : '(none)');
 
-  console.log('\n3. Signin (POST)...');
-  const signinRes = await fetch(
-    `${CONFIG.authServer}/oidc-provider/v1/oauth2/signin`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        ...(cookies ? { Cookie: cookies } : {}),
-      },
-      body: new URLSearchParams({
-        username: USERNAME,
-        password: PASSWORD,
-        grant_type: 'password',
-      }).toString(),
-      redirect: 'manual',
+  // Check if authorize returned code directly (API account shortcut)
+  const authorizeLocation = authorizeRes.headers.get('location') || '';
+  let codeMatch = authorizeLocation.match(/[?&]code=([^&]+)/);
+
+  if (codeMatch) {
+    console.log('   Code returned directly from authorize (no signin needed)');
+  } else {
+    // Need signin step
+    const cookies = extractCookies(authorizeRes);
+    console.log('   Cookies:', cookies ? cookies.slice(0, 50) + '...' : '(none)');
+
+    console.log('   Signin (POST)...');
+    const signinBody = { username: USERNAME, grant_type: 'password' };
+    if (PASSWORD) signinBody.password = PASSWORD;
+
+    const signinRes = await fetch(
+      `${CONFIG.authServer}/oidc-provider/v1/oauth2/signin`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          ...(cookies ? { Cookie: cookies } : {}),
+        },
+        body: new URLSearchParams(signinBody).toString(),
+        redirect: 'manual',
+      }
+    );
+    console.log('   Status:', signinRes.status);
+
+    const signinLocation = signinRes.headers.get('location') || '';
+    codeMatch = signinLocation.match(/[?&]code=([^&]+)/);
+    if (!codeMatch) {
+      const body = await signinRes.text().catch(() => '');
+      console.error('   Location header:', signinLocation || '(none)');
+      console.error('   Response body:', body.slice(0, 500));
+      throw new Error('Signin failed: no authorization code in redirect');
     }
-  );
-  console.log('   Status:', signinRes.status);
-
-  const location = signinRes.headers.get('location') || '';
-  const codeMatch = location.match(/[?&]code=([^&]+)/);
-  if (!codeMatch) {
-    const body = await signinRes.text().catch(() => '');
-    console.error('   Location header:', location || '(none)');
-    console.error('   Response body:', body.slice(0, 500));
-    throw new Error('Signin failed: no authorization code in redirect');
   }
+
   const authorizationCode = codeMatch[1];
   console.log('   Authorization code:', authorizationCode.slice(0, 20) + '...');
 
-  console.log('\n4. Token exchange (POST)...');
+  console.log('   Token exchange (POST)...');
   const tokenRes = await fetch(
     `${CONFIG.authServer}/oidc-provider/v1/oauth2/token`,
     {
@@ -134,7 +185,7 @@ async function authenticate() {
         client_id: CONFIG.clientId,
         code: authorizationCode,
         code_verifier: codeVerifier,
-        redirect_uri: 'apiaccount://callback',
+        redirect_uri: redirectUri,
         scope: 'openid',
       }).toString(),
     }
@@ -266,7 +317,7 @@ async function main() {
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║  Simphony BI API Bootstrap                      ║');
   console.log('╚══════════════════════════════════════════════════╝');
-  console.log(`Org: ${CONFIG.orgIdentifier} | User: ${USERNAME}`);
+  console.log(`Org: ${CONFIG.orgIdentifier} | User: ${USERNAME} | Password: ${PASSWORD ? 'set' : '(none)'}`);
 
   // Authenticate
   const tokens = await authenticate();
@@ -322,7 +373,7 @@ async function main() {
   } else {
     console.log('\nWARNING: Could not determine Dallas locRef.');
     console.log('Review the locations above and re-run with:');
-    console.log('  SIMPHONY_BI_LOC_REF=<value> SIMPHONY_BI_PASSWORD=xxx node scripts/bootstrap-simphony-bi.mjs');
+    console.log('  SIMPHONY_BI_LOC_REF=<value> node scripts/bootstrap-simphony-bi.mjs');
   }
 
   console.log('\n✓ Bootstrap complete.');

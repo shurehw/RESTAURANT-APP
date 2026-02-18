@@ -9,6 +9,7 @@
 
 import { getServiceClient } from '@/lib/supabase/service';
 import {
+  bootstrapTokens,
   refreshTokens,
   SimphonyAuthExpiredError,
   type SimphonyBIConfig,
@@ -98,10 +99,10 @@ async function saveSimphonyTokens(
   const { error } = await (supabase as any)
     .from('simphony_bi_tokens')
     .update({
-      id_token: tokens.id_token,
-      refresh_token: tokens.refresh_token,
+      id_token: tokens.id_token || tokens.access_token,
+      refresh_token: tokens.refresh_token || null,
       token_expires_at: expiresAt.toISOString(),
-      refresh_expires_at: refreshExpiresAt.toISOString(),
+      refresh_expires_at: tokens.refresh_token ? refreshExpiresAt.toISOString() : null,
       last_refreshed_at: now.toISOString(),
       updated_at: now.toISOString(),
     })
@@ -124,19 +125,33 @@ export async function getValidIdToken(
   orgIdentifier: string
 ): Promise<string> {
   const row = await getSimphonyTokenRow(orgIdentifier);
-  if (!row || !row.id_token || !row.refresh_token) {
+  if (!row || (!row.id_token && !row.refresh_token)) {
     throw new SimphonyAuthExpiredError(
       `No Simphony BI tokens found for org '${orgIdentifier}'. Run bootstrap script.`
     );
   }
 
   // Check if id_token is still valid (with 3-day buffer)
-  if (row.token_expires_at) {
+  if (row.id_token && row.token_expires_at) {
     const expiresAt = new Date(row.token_expires_at);
     const bufferMs = 3 * 24 * 60 * 60 * 1000; // 3 days
     if (expiresAt.getTime() - Date.now() > bufferMs) {
       return row.id_token;
     }
+  }
+
+  // If no refresh token (client_credentials flow), re-bootstrap
+  if (!row.refresh_token) {
+    console.log(`[simphony-tokens] No refresh token for org '${orgIdentifier}', re-bootstrapping...`);
+    const config: SimphonyBIConfig = {
+      authServer: row.auth_server,
+      appServer: row.app_server,
+      clientId: row.client_id,
+      orgIdentifier,
+    };
+    const newTokens = await bootstrapTokens(config);
+    await saveSimphonyTokens(orgIdentifier, newTokens);
+    return newTokens.id_token || newTokens.access_token;
   }
 
   // Need to refresh — check if refresh_token is still valid

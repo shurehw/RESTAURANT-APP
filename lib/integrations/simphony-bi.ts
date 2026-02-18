@@ -86,25 +86,79 @@ function generateCodeChallenge(verifier: string): string {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// AUTH — OAuth2 + PKCE (3-step flow)
+// AUTH — Multiple grant flows for API accounts
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Full PKCE auth flow to get initial tokens.
- * Called once during bootstrap, or when refresh_token has expired.
- *
- * Flow: generate PKCE → authorize (get session) → signin (get code) → exchange (get tokens)
+ * Bootstrap tokens for an API account.
+ * Tries flows in order: client_credentials → PKCE (passwordless) → PKCE (with password).
+ * API accounts typically don't need a password — the client_id is the credential.
  */
 export async function bootstrapTokens(
   config: SimphonyBIConfig,
-  username: string,
-  password: string
+  username?: string,
+  password?: string
+): Promise<SimphonyTokenSet> {
+  // 1. Try client_credentials grant (simplest — no password needed)
+  try {
+    return await bootstrapClientCredentials(config);
+  } catch (err: any) {
+    console.log(`[simphony-bi] Client credentials failed: ${err.message}`);
+  }
+
+  // 2. Try PKCE flow — authorize may return code directly for API accounts
+  try {
+    return await bootstrapPKCE(config, username, password);
+  } catch (err: any) {
+    throw new Error(`All Simphony auth flows failed. Last error: ${err.message}`);
+  }
+}
+
+/**
+ * Client credentials grant — just client_id, no user interaction.
+ */
+async function bootstrapClientCredentials(
+  config: SimphonyBIConfig
+): Promise<SimphonyTokenSet> {
+  const tokenUrl = `${config.authServer}/oidc-provider/v1/oauth2/token`;
+
+  const res = await fetchWithTimeout(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      client_id: config.clientId,
+      scope: 'openid',
+    }).toString(),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`client_credentials: ${res.status} - ${text.slice(0, 300)}`);
+  }
+
+  const tokens = await res.json() as SimphonyTokenSet;
+  if (!tokens.id_token && !tokens.access_token) {
+    throw new Error('client_credentials returned no tokens');
+  }
+  return tokens;
+}
+
+/**
+ * Full PKCE auth flow.
+ * For API accounts, the authorize step may return the code directly (no signin needed).
+ * Falls back to signin with username/password if provided.
+ */
+async function bootstrapPKCE(
+  config: SimphonyBIConfig,
+  username?: string,
+  password?: string
 ): Promise<SimphonyTokenSet> {
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   const redirectUri = 'apiaccount://callback';
 
-  // Step 1: Authorize — initiate OIDC flow, get session cookie
+  // Step 1: Authorize — initiate OIDC flow
   const authorizeUrl = `${config.authServer}/oidc-provider/v1/oauth2/authorize`;
   const authorizeParams = new URLSearchParams({
     response_type: 'code',
@@ -120,37 +174,48 @@ export async function bootstrapTokens(
     { method: 'GET', redirect: 'manual' }
   );
 
-  // Extract session cookies for the signin step
-  const cookies = extractCookies(authorizeRes);
+  // Check if authorize already returned the code (API account shortcut)
+  const authorizeLocation = authorizeRes.headers.get('location') || '';
+  let codeMatch = authorizeLocation.match(/[?&]code=([^&]+)/);
 
-  // Step 2: Signin — exchange API account credentials for authorization code
-  const signinUrl = `${config.authServer}/oidc-provider/v1/oauth2/signin`;
-  const signinRes = await fetchWithTimeout(signinUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      ...(cookies ? { Cookie: cookies } : {}),
-    },
-    body: new URLSearchParams({
-      username,
-      password,
-      grant_type: 'password',
-    }).toString(),
-    redirect: 'manual',
-  });
-
-  // The signin response redirects to the callback URI with the authorization code
-  const location = signinRes.headers.get('location') || '';
-  const codeMatch = location.match(/[?&]code=([^&]+)/);
   if (!codeMatch) {
-    const body = await signinRes.text().catch(() => '');
-    throw new Error(
-      `Simphony signin failed: no authorization code in redirect. Status: ${signinRes.status}. Body: ${body.slice(0, 200)}`
-    );
+    // Need to signin — extract cookies from authorize for the signin step
+    const cookies = extractCookies(authorizeRes);
+
+    if (!username) {
+      throw new Error(
+        'Authorize did not return code directly and no username provided. ' +
+        `Authorize status: ${authorizeRes.status}`
+      );
+    }
+
+    const signinUrl = `${config.authServer}/oidc-provider/v1/oauth2/signin`;
+    const signinBody: Record<string, string> = { username, grant_type: 'password' };
+    if (password) signinBody.password = password;
+
+    const signinRes = await fetchWithTimeout(signinUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(cookies ? { Cookie: cookies } : {}),
+      },
+      body: new URLSearchParams(signinBody).toString(),
+      redirect: 'manual',
+    });
+
+    const signinLocation = signinRes.headers.get('location') || '';
+    codeMatch = signinLocation.match(/[?&]code=([^&]+)/);
+    if (!codeMatch) {
+      const body = await signinRes.text().catch(() => '');
+      throw new Error(
+        `PKCE signin failed: no authorization code. Status: ${signinRes.status}. Body: ${body.slice(0, 200)}`
+      );
+    }
   }
+
   const authorizationCode = codeMatch[1];
 
-  // Step 3: Token exchange — code + code_verifier → tokens
+  // Step 2: Token exchange — code + code_verifier → tokens
   const tokenUrl = `${config.authServer}/oidc-provider/v1/oauth2/token`;
   const tokenRes = await fetchWithTimeout(tokenUrl, {
     method: 'POST',
@@ -168,13 +233,13 @@ export async function bootstrapTokens(
   if (!tokenRes.ok) {
     const text = await tokenRes.text().catch(() => '');
     throw new Error(
-      `Simphony token exchange failed: ${tokenRes.status} - ${text.slice(0, 300)}`
+      `PKCE token exchange failed: ${tokenRes.status} - ${text.slice(0, 300)}`
     );
   }
 
   const tokens = await tokenRes.json() as SimphonyTokenSet;
   if (!tokens.id_token) {
-    throw new Error('Simphony token exchange returned no id_token');
+    throw new Error('PKCE token exchange returned no id_token');
   }
 
   return tokens;
