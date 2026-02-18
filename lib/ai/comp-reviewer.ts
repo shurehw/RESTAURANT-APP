@@ -96,8 +96,12 @@ export async function reviewComps(
     throw new Error('No text response from AI');
   }
 
-  // Parse the JSON response
-  const response = JSON.parse(textContent.text);
+  // Parse the JSON response — strip markdown code fences if present
+  let raw = textContent.text.trim();
+  if (raw.startsWith('```')) {
+    raw = raw.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+  }
+  const response = JSON.parse(raw);
   return response as CompReviewOutput;
 }
 

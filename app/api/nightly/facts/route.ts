@@ -1025,10 +1025,11 @@ export async function GET(request: NextRequest) {
 
       salesByCategory: (categoryResult.data || []).map((cat: any) => ({
         category: cat.category,
-        net_sales: cat.gross_sales,
-        comps: cat.comps_total,
-        voids: cat.voids_total,
-        quantity: cat.quantity_sold,
+        gross_sales: cat.gross_sales || 0,
+        comps: cat.comps_total || 0,
+        voids: cat.voids_total || 0,
+        net_sales: (cat.gross_sales || 0) - (cat.comps_total || 0) - (cat.voids_total || 0),
+        quantity: cat.quantity_sold || 0,
       })),
 
       servers: (serverResult.data || []).map((server: any) => ({

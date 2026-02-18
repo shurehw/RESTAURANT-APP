@@ -11,7 +11,7 @@
 import type { Pool } from 'pg';
 import { cleanRow } from '@/lib/database/tipsee';
 
-const MAX_ROWS = 50;
+const MAX_ROWS = 200;
 
 // ---------------------------------------------------------------------------
 // Location context: split UUIDs by POS type + resolve legacy names
@@ -87,11 +87,16 @@ export function resetLocationContext() {
 export async function getDailySales(
   pool: Pool,
   locationUuids: string[],
-  params: { startDate: string; endDate: string },
+  params: { startDate: string; endDate: string; dayOfWeek?: number },
   ctx?: LocationContext
 ): Promise<Record<string, any>[]> {
   const loc = ctx || await resolveLocationContext(pool, locationUuids);
   const allRows: Record<string, any>[] = [];
+
+  // Optional day-of-week filter (PostgreSQL DOW: 0=Sun, 1=Mon, ... 6=Sat)
+  const dowClause = params.dayOfWeek != null
+    ? `AND EXTRACT(DOW FROM trading_day) = ${params.dayOfWeek}`
+    : '';
 
   // Upserve: tipsee_checks
   if (loc.upserveUuids.length > 0) {
@@ -108,6 +113,7 @@ export async function getDailySales(
       FROM public.tipsee_checks
       WHERE location_uuid = ANY($1::uuid[])
         AND trading_day >= $2 AND trading_day <= $3
+        ${dowClause}
       GROUP BY trading_day
       ORDER BY trading_day DESC
       LIMIT $4`,
@@ -131,6 +137,7 @@ export async function getDailySales(
         FROM public.checks
         WHERE location = ANY($1::text[])
           AND trading_day >= $2 AND trading_day <= $3
+          ${dowClause}
         GROUP BY trading_day
         ORDER BY trading_day DESC
         LIMIT $4`,
@@ -155,6 +162,7 @@ export async function getDailySales(
       FROM public.tipsee_simphony_sales
       WHERE location_uuid = ANY($1::uuid[])
         AND trading_day >= $2 AND trading_day <= $3
+        ${dowClause}
       GROUP BY trading_day
       ORDER BY trading_day DESC
       LIMIT $4`,
@@ -194,11 +202,14 @@ function mergeDailyRows(rows: Record<string, any>[]): Record<string, any>[] {
 export async function getSalesByCategory(
   pool: Pool,
   locationUuids: string[],
-  params: { startDate: string; endDate: string },
+  params: { startDate: string; endDate: string; dayOfWeek?: number },
   ctx?: LocationContext
 ): Promise<Record<string, any>[]> {
   const loc = ctx || await resolveLocationContext(pool, locationUuids);
   const allRows: Record<string, any>[] = [];
+  const dowClause = params.dayOfWeek != null
+    ? `AND EXTRACT(DOW FROM trading_day) = ${params.dayOfWeek}`
+    : '';
 
   // Upserve: tipsee_check_items
   if (loc.upserveUuids.length > 0) {
@@ -212,6 +223,7 @@ export async function getSalesByCategory(
       FROM public.tipsee_check_items
       WHERE location_uuid = ANY($1::uuid[])
         AND trading_day >= $2 AND trading_day <= $3
+        ${dowClause}
       GROUP BY parent_category
       ORDER BY net_sales DESC
       LIMIT $4`,
@@ -233,6 +245,7 @@ export async function getSalesByCategory(
         JOIN public.checks c ON ci.check_id = c.id
         WHERE c.location = ANY($1::text[])
           AND c.trading_day >= $2 AND c.trading_day <= $3
+          ${dowClause}
         GROUP BY ci.parent_category
         ORDER BY net_sales DESC
         LIMIT $4`,
@@ -259,6 +272,7 @@ export async function getSalesByCategory(
       FROM public.tipsee_simphony_sales
       WHERE location_uuid = ANY($1::uuid[])
         AND trading_day >= $2 AND trading_day <= $3
+        ${dowClause}
       GROUP BY category
       ORDER BY net_sales DESC`,
       [loc.simphonyUuids, params.startDate, params.endDate]
@@ -275,10 +289,13 @@ export async function getSalesByCategory(
 export async function getServerPerformance(
   pool: Pool,
   locationUuids: string[],
-  params: { startDate: string; endDate: string },
+  params: { startDate: string; endDate: string; dayOfWeek?: number },
   ctx?: LocationContext
 ): Promise<Record<string, any>[]> {
   const loc = ctx || await resolveLocationContext(pool, locationUuids);
+  const dowClause = params.dayOfWeek != null
+    ? `AND EXTRACT(DOW FROM c.trading_day) = ${params.dayOfWeek}`
+    : '';
 
   // Upserve: tipsee_checks (per-check data with server names)
   if (loc.upserveUuids.length > 0) {
@@ -300,6 +317,7 @@ export async function getServerPerformance(
       ) pt ON true
       WHERE c.location_uuid = ANY($1::uuid[])
         AND c.trading_day >= $2 AND c.trading_day <= $3
+        ${dowClause}
       GROUP BY c.employee_name
       ORDER BY net_sales DESC
       LIMIT $4`,
@@ -328,6 +346,7 @@ export async function getServerPerformance(
         ) pt ON true
         WHERE c.location = ANY($1::text[])
           AND c.trading_day >= $2 AND c.trading_day <= $3
+          ${dowClause}
         GROUP BY c.employee_name
         ORDER BY net_sales DESC
         LIMIT $4`,
@@ -499,8 +518,12 @@ export async function getCompSummary(
 export async function getLaborSummary(
   pool: Pool,
   locationUuids: string[],
-  params: { startDate: string; endDate: string }
+  params: { startDate: string; endDate: string; dayOfWeek?: number }
 ): Promise<Record<string, any>[]> {
+  const dowClause = params.dayOfWeek != null
+    ? `AND EXTRACT(DOW FROM clocked_in::date) = ${params.dayOfWeek}`
+    : '';
+
   // Primary: tipsee_7shifts_punches (most complete data source)
   const result = await pool.query(
     `SELECT
@@ -515,6 +538,7 @@ export async function getLaborSummary(
     FROM public.tipsee_7shifts_punches
     WHERE location_uuid = ANY($1::uuid[])
       AND clocked_in::date >= $2::date AND clocked_in::date <= $3::date
+      ${dowClause}
       AND clocked_out IS NOT NULL
       AND deleted IS NOT TRUE
     GROUP BY clocked_in::date
@@ -528,6 +552,10 @@ export async function getLaborSummary(
   }
 
   // Fallback: new_tipsee_punches
+  const dowClauseFb = params.dayOfWeek != null
+    ? `AND EXTRACT(DOW FROM p.clocked_in::date) = ${params.dayOfWeek}`
+    : '';
+
   const fb = await pool.query(
     `SELECT
       p.clocked_in::date as work_date,
@@ -546,6 +574,7 @@ export async function getLaborSummary(
     ) w ON true
     WHERE p.location_uuid = ANY($1::uuid[])
       AND p.clocked_in::date >= $2::date AND p.clocked_in::date <= $3::date
+      ${dowClauseFb}
       AND p.clocked_out IS NOT NULL
       AND p.is_deleted IS NOT TRUE
     GROUP BY p.clocked_in::date

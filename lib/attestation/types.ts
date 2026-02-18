@@ -41,6 +41,85 @@ export const COACHING_TYPES = [
 
 export const ATTESTATION_STATUSES = ['draft', 'submitted', 'amended'] as const;
 
+// ---------------------------------------------------------------------------
+// Revenue Tags (multi-select driver tags — always shown, not gated by trigger)
+// ---------------------------------------------------------------------------
+
+export const REVENUE_TAGS = [
+  'private_event', 'holiday_special', 'celebrity_vip', 'promoter_event',
+  'live_entertainment', 'sports_event', 'walkins_strong', 'reservations_heavy',
+  'slow_night', 'no_shows', 'weather_impact', 'seasonal', 'competitor_event',
+  'short_staffed', 'kitchen_issue', '86d_items', 'early_close_late_open',
+  'new_menu_launch', 'pos_issue',
+  'high_comp_night', 'large_discount', 'prix_fixe',
+] as const;
+export type RevenueTag = typeof REVENUE_TAGS[number];
+
+export const REVENUE_TAG_LABELS: Record<RevenueTag, string> = {
+  private_event: 'Private Event / Buyout',
+  holiday_special: 'Holiday / Special Occasion',
+  celebrity_vip: 'Celebrity / VIP Traffic',
+  promoter_event: 'Promoter / Influencer Event',
+  live_entertainment: 'Live Entertainment / DJ',
+  sports_event: 'Sports Event',
+  walkins_strong: 'Walk-ins Strong',
+  reservations_heavy: 'Reservations Heavy',
+  slow_night: 'Slow Night / Low Demand',
+  no_shows: 'No-Shows / Cancellations',
+  weather_impact: 'Weather Impact',
+  seasonal: 'Seasonal Slowdown',
+  competitor_event: 'Competitor Event Nearby',
+  short_staffed: 'Short Staffed',
+  kitchen_issue: 'Kitchen / Equipment Issue',
+  '86d_items': "86'd Menu Items",
+  early_close_late_open: 'Early Close / Late Open',
+  new_menu_launch: 'New Menu / Special Launch',
+  pos_issue: 'POS / System Issue',
+  high_comp_night: 'High Comp Night',
+  large_discount: 'Large Discount / Promo',
+  prix_fixe: 'Prix Fixe / Set Menu',
+};
+
+export const REVENUE_TAG_CATEGORIES = ['demand_drivers', 'demand_drags', 'operational', 'financial'] as const;
+export type RevenueTagCategory = typeof REVENUE_TAG_CATEGORIES[number];
+
+export const REVENUE_TAG_CATEGORY_LABELS: Record<RevenueTagCategory, string> = {
+  demand_drivers: 'Demand Drivers',
+  demand_drags: 'Demand Drags',
+  operational: 'Operational',
+  financial: 'Financial',
+};
+
+export const REVENUE_TAG_BY_CATEGORY: Record<RevenueTagCategory, RevenueTag[]> = {
+  demand_drivers: ['private_event', 'holiday_special', 'celebrity_vip', 'promoter_event', 'live_entertainment', 'sports_event', 'walkins_strong', 'reservations_heavy'],
+  demand_drags: ['slow_night', 'no_shows', 'weather_impact', 'seasonal', 'competitor_event'],
+  operational: ['short_staffed', 'kitchen_issue', '86d_items', 'early_close_late_open', 'new_menu_launch', 'pos_issue'],
+  financial: ['high_comp_night', 'large_discount', 'prix_fixe'],
+};
+
+// ---------------------------------------------------------------------------
+// Labor Tags (multi-select driver tags)
+// ---------------------------------------------------------------------------
+
+export const LABOR_TAGS = [
+  'call_out', 'no_show', 'event_staffing', 'training_night', 'cut_early',
+  'held_over', 'double_shift', 'new_hire', 'scheduling_error', 'weather_slow',
+] as const;
+export type LaborTag = typeof LABOR_TAGS[number];
+
+export const LABOR_TAG_LABELS: Record<LaborTag, string> = {
+  call_out: 'Call-out(s)',
+  no_show: 'No-show(s)',
+  event_staffing: 'Event Staffing',
+  training_night: 'Training Night',
+  cut_early: 'Cut Early',
+  held_over: 'Held Over',
+  double_shift: 'Double Shift(s)',
+  new_hire: 'New Hire(s) on Floor',
+  scheduling_error: 'Scheduling Error',
+  weather_slow: 'Weather — Slow Shift',
+};
+
 // Human-readable labels for UI
 export const REVENUE_VARIANCE_LABELS: Record<RevenueVarianceReason, string> = {
   weather: 'Weather impact',
@@ -132,11 +211,13 @@ export interface NightlyAttestation {
   revenue_confirmed?: boolean;
   revenue_variance_reason?: RevenueVarianceReason;
   revenue_notes?: string;
+  revenue_tags?: RevenueTag[];
 
   // Labor
   labor_confirmed?: boolean;
   labor_variance_reason?: LaborVarianceReason;
   labor_notes?: string;
+  labor_tags?: LaborTag[];
 
   // Lock
   locked_at?: string;
@@ -264,9 +345,11 @@ export const updateAttestationSchema = z.object({
   revenue_confirmed: z.boolean().optional(),
   revenue_variance_reason: z.enum(REVENUE_VARIANCE_REASONS).optional().nullable(),
   revenue_notes: z.string().max(500).optional().nullable(),
+  revenue_tags: z.array(z.enum(REVENUE_TAGS)).optional().nullable(),
   labor_confirmed: z.boolean().optional(),
   labor_variance_reason: z.enum(LABOR_VARIANCE_REASONS).optional().nullable(),
   labor_notes: z.string().max(500).optional().nullable(),
+  labor_tags: z.array(z.enum(LABOR_TAGS)).optional().nullable(),
 });
 
 export const submitAttestationSchema = z.object({

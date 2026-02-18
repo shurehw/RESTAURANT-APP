@@ -3,6 +3,7 @@
  * Sidebar + topbar with brass accent line
  */
 
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
 import { getUserOrgAndVenues } from "@/lib/tenant";
@@ -10,6 +11,7 @@ import { MobileSidebar } from "@/components/layout/MobileSidebar";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
 import { VenueProvider } from "@/components/providers/VenueProvider";
+import type { UserRole } from "@/lib/nav/role-permissions";
 
 export default async function DashboardLayout({
   children,
@@ -22,14 +24,34 @@ export default async function DashboardLayout({
   // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
   const supabase = createAdminClient();
 
-  // Fetch user profile to get role
+  // Fetch role — try user_profiles first, fall back to users table
   const { data: profile } = await supabase
     .from("user_profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  const userRole = (profile?.role as 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner') || 'manager';
+  let userRole = profile?.role as UserRole | undefined;
+
+  if (!userRole) {
+    // user_profiles may not exist — check legacy users table by email
+    const { data: legacyUser } = await supabase
+      .from("users")
+      .select("role")
+      .eq("email", user.email)
+      .single();
+    // Map legacy 'pwa' role through; others default to 'manager'
+    if (legacyUser?.role === 'pwa') {
+      userRole = 'pwa';
+    } else {
+      userRole = 'manager';
+    }
+  }
+
+  // PWA-only users cannot access the dashboard — redirect to Pulse
+  if (userRole === 'pwa') {
+    redirect('/pulse');
+  }
 
   const { data: organization } = await supabase
     .from("organizations")
@@ -67,13 +89,13 @@ export default async function DashboardLayout({
         </a>
 
         {/* Sidebar — hidden in PWA standalone mode */}
-        <div data-pwa-hide>
-          <MobileSidebar
-            criticalViolationCount={criticalViolationCount}
-            organizationSlug={organization?.slug}
-            userRole={userRole}
-          />
-        </div>
+        <MobileSidebar
+          criticalViolationCount={criticalViolationCount}
+          organizationSlug={organization?.slug}
+          userRole={userRole}
+          userName={user.email?.split('@')[0]}
+          userEmail={user.email}
+        />
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">

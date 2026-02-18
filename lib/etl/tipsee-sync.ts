@@ -545,7 +545,48 @@ export async function syncVenueDay(
       [tipseeLocationUuid, businessDate]
     );
 
-    const rawSummary = summaryResult.rows[0];
+    let rawSummary = summaryResult.rows[0];
+    let useHistorical = false;
+    let locationName = '';
+
+    // If tipsee_checks has no data, fall back to the historical `checks` table.
+    // The `checks` table has data back to 2020 but uses `location` (string name)
+    // instead of `location_uuid`. It is stale for recent dates but fills historical gaps.
+    if (!rawSummary || (parseFloat(rawSummary.net_sales) === 0 && parseInt(rawSummary.total_checks) === 0)) {
+      try {
+        const locResult = await pool.query(
+          `SELECT location_name FROM public.general_locations WHERE uuid = $1 LIMIT 1`,
+          [tipseeLocationUuid]
+        );
+        locationName = locResult.rows[0]?.location_name || '';
+
+        if (locationName) {
+          const fallbackResult = await pool.query(
+            `SELECT
+              trading_day,
+              COUNT(*) as total_checks,
+              SUM(guest_count) as total_covers,
+              SUM(revenue_total) as gross_sales,
+              SUM(sub_total) as net_sales,
+              SUM(tax_total) as total_tax,
+              SUM(comp_total) as total_comps,
+              SUM(void_total) as total_voids
+            FROM public.checks
+            WHERE location = $1 AND trading_day = $2
+            GROUP BY trading_day`,
+            [locationName, businessDate]
+          );
+          const fb = fallbackResult.rows[0];
+          if (fb && parseFloat(fb.net_sales) > 0) {
+            rawSummary = fb;
+            useHistorical = true;
+          }
+        }
+      } catch {
+        // Historical fallback failed — continue with normal empty path
+      }
+    }
+
     // Skip dates with no POS data — do NOT create $0 placeholder rows
     if (!rawSummary || (parseFloat(rawSummary.net_sales) === 0 && parseInt(rawSummary.total_checks) === 0)) {
       await (supabase as any).from('etl_runs').update({
@@ -564,20 +605,36 @@ export async function syncVenueDay(
     rowsExtracted += summaryResult.rowCount || 0;
 
     // 2. Extract category breakdown
-    const categoryResult = await pool.query(
-      `SELECT
-        COALESCE(parent_category, 'Other') as category,
-        SUM(price * quantity) as gross_sales,
-        SUM(price * quantity) as net_sales,
-        SUM(quantity) as quantity_sold,
-        SUM(comp_total) as comps_total,
-        SUM(void_value) as voids_total
-      FROM public.tipsee_check_items
-      WHERE location_uuid = $1 AND trading_day = $2
-      GROUP BY parent_category
-      ORDER BY gross_sales DESC`,
-      [tipseeLocationUuid, businessDate]
-    );
+    const categoryResult = useHistorical
+      ? await pool.query(
+          `SELECT
+            COALESCE(ci.parent_category, 'Other') as category,
+            SUM(ci.price * ci.quantity) as gross_sales,
+            SUM(ci.price * ci.quantity) as net_sales,
+            SUM(ci.quantity) as quantity_sold,
+            SUM(COALESCE(ci.comp_total, 0)) as comps_total,
+            0 as voids_total
+          FROM public.check_items ci
+          JOIN public.checks c ON ci.check_id = c.id
+          WHERE c.location = $1 AND c.trading_day = $2
+          GROUP BY ci.parent_category
+          ORDER BY gross_sales DESC`,
+          [locationName, businessDate]
+        )
+      : await pool.query(
+          `SELECT
+            COALESCE(parent_category, 'Other') as category,
+            SUM(price * quantity) as gross_sales,
+            SUM(price * quantity) as net_sales,
+            SUM(quantity) as quantity_sold,
+            SUM(comp_total) as comps_total,
+            SUM(void_value) as voids_total
+          FROM public.tipsee_check_items
+          WHERE location_uuid = $1 AND trading_day = $2
+          GROUP BY parent_category
+          ORDER BY gross_sales DESC`,
+          [tipseeLocationUuid, businessDate]
+        );
     rowsExtracted += categoryResult.rowCount || 0;
 
     // Calculate category breakdowns
@@ -600,52 +657,96 @@ export async function syncVenueDay(
     }
 
     // 3. Extract server performance
-    const serverResult = await pool.query(
-      `SELECT
-        employee_name,
-        employee_role_name as employee_role,
-        COUNT(*) as checks_count,
-        SUM(guest_count) as covers_count,
-        SUM(revenue_total) as gross_sales,
-        SUM(comp_total) as comps_total,
-        ROUND(AVG(CASE WHEN close_time > open_time
-          THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins
-      FROM public.tipsee_checks
-      WHERE location_uuid = $1 AND trading_day = $2
-      GROUP BY employee_name, employee_role_name
-      ORDER BY gross_sales DESC`,
-      [tipseeLocationUuid, businessDate]
-    );
+    const serverResult = useHistorical
+      ? await pool.query(
+          `SELECT
+            employee_name,
+            employee_role_name as employee_role,
+            COUNT(*) as checks_count,
+            SUM(guest_count) as covers_count,
+            SUM(revenue_total) as gross_sales,
+            SUM(comp_total) as comps_total,
+            ROUND(AVG(CASE WHEN close_time > open_time
+              THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins
+          FROM public.checks
+          WHERE location = $1 AND trading_day = $2
+          GROUP BY employee_name, employee_role_name
+          ORDER BY gross_sales DESC`,
+          [locationName, businessDate]
+        )
+      : await pool.query(
+          `SELECT
+            employee_name,
+            employee_role_name as employee_role,
+            COUNT(*) as checks_count,
+            SUM(guest_count) as covers_count,
+            SUM(revenue_total) as gross_sales,
+            SUM(comp_total) as comps_total,
+            ROUND(AVG(CASE WHEN close_time > open_time
+              THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins
+          FROM public.tipsee_checks
+          WHERE location_uuid = $1 AND trading_day = $2
+          GROUP BY employee_name, employee_role_name
+          ORDER BY gross_sales DESC`,
+          [tipseeLocationUuid, businessDate]
+        );
     rowsExtracted += serverResult.rowCount || 0;
 
     // 4. Extract item-level data (top 100 items)
-    const itemResult = await pool.query(
-      `SELECT
-        name as menu_item_name,
-        parent_category,
-        category,
-        SUM(quantity) as quantity_sold,
-        SUM(price * quantity) as gross_sales,
-        SUM(price * quantity) as net_sales,
-        SUM(comp_total) as comps_total,
-        SUM(void_value) as voids_total
-      FROM public.tipsee_check_items
-      WHERE location_uuid = $1 AND trading_day = $2
-      GROUP BY name, parent_category, category
-      ORDER BY gross_sales DESC
-      LIMIT 100`,
-      [tipseeLocationUuid, businessDate]
-    );
+    const itemResult = useHistorical
+      ? await pool.query(
+          `SELECT
+            ci.name as menu_item_name,
+            ci.parent_category,
+            ci.category,
+            SUM(ci.quantity) as quantity_sold,
+            SUM(ci.price * ci.quantity) as gross_sales,
+            SUM(ci.price * ci.quantity) as net_sales,
+            SUM(COALESCE(ci.comp_total, 0)) as comps_total,
+            0 as voids_total
+          FROM public.check_items ci
+          JOIN public.checks c ON ci.check_id = c.id
+          WHERE c.location = $1 AND c.trading_day = $2
+          GROUP BY ci.name, ci.parent_category, ci.category
+          ORDER BY gross_sales DESC
+          LIMIT 100`,
+          [locationName, businessDate]
+        )
+      : await pool.query(
+          `SELECT
+            name as menu_item_name,
+            parent_category,
+            category,
+            SUM(quantity) as quantity_sold,
+            SUM(price * quantity) as gross_sales,
+            SUM(price * quantity) as net_sales,
+            SUM(comp_total) as comps_total,
+            SUM(void_value) as voids_total
+          FROM public.tipsee_check_items
+          WHERE location_uuid = $1 AND trading_day = $2
+          GROUP BY name, parent_category, category
+          ORDER BY gross_sales DESC
+          LIMIT 100`,
+          [tipseeLocationUuid, businessDate]
+        );
     rowsExtracted += itemResult.rowCount || 0;
 
     // 5. Extract tips data
-    const tipsResult = await pool.query(
-      `SELECT COALESCE(SUM(tip_amount), 0) as tips_total
-       FROM public.tipsee_payments p
-       JOIN public.tipsee_checks c ON p.check_id = c.id
-       WHERE c.location_uuid = $1 AND c.trading_day = $2`,
-      [tipseeLocationUuid, businessDate]
-    );
+    const tipsResult = useHistorical
+      ? await pool.query(
+          `SELECT COALESCE(SUM(tip_amount), 0) as tips_total
+           FROM public.payments p
+           JOIN public.checks c ON p.check_id = c.id
+           WHERE c.location = $1 AND c.trading_day = $2`,
+          [locationName, businessDate]
+        )
+      : await pool.query(
+          `SELECT COALESCE(SUM(tip_amount), 0) as tips_total
+           FROM public.tipsee_payments p
+           JOIN public.tipsee_checks c ON p.check_id = c.id
+           WHERE c.location_uuid = $1 AND c.trading_day = $2`,
+          [tipseeLocationUuid, businessDate]
+        );
     const tipsTotal = parseFloat(tipsResult.rows[0]?.tips_total) || 0;
 
     // 6. Create source snapshot for audit

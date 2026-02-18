@@ -17,6 +17,7 @@ const TIPSEE_CONFIG = {
   max: 15, // Increased from 5 to handle 10 parallel queries + headroom for concurrent users
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 20000, // Increased from 10s to 20s for slow Azure connections
+  statement_timeout: 12000, // Kill queries after 12s — prevents indefinite hangs
 };
 
 // Singleton pool
@@ -154,11 +155,20 @@ export async function fetchNightlyReport(
   const pool = getTipseePool();
   const t0 = Date.now();
 
+  // Timing wrapper for per-query profiling
+  const timed = <T,>(label: string, promise: Promise<T>): Promise<T> => {
+    const start = Date.now();
+    return promise.then(
+      (r) => { console.log(`[nightly:query] ${label}: ${Date.now() - start}ms`); return r; },
+      (e) => { console.log(`[nightly:query] ${label}: ${Date.now() - start}ms FAILED`); throw e; },
+    );
+  };
+
   // Run all 10 independent queries in parallel — allSettled so non-critical
   // failures don't nuke the whole page. Pool max=5 naturally caps concurrency.
   const results = await Promise.allSettled([
     // 0: Daily Summary
-    pool.query(
+    timed('0:summary', pool.query(
       `SELECT
         trading_day,
         COUNT(*) as total_checks,
@@ -172,10 +182,10 @@ export async function fetchNightlyReport(
       WHERE location_uuid = $1 AND trading_day = $2
       GROUP BY trading_day`,
       [locationUuid, date]
-    ),
+    )),
 
     // 1: Sales by Category (true net = gross - comps - voids)
-    pool.query(
+    timed('1:salesByCategory', pool.query(
       `SELECT
         COALESCE(parent_category, 'Other') as category,
         SUM(price * quantity) as gross_sales,
@@ -187,10 +197,10 @@ export async function fetchNightlyReport(
       GROUP BY parent_category
       ORDER BY net_sales DESC`,
       [locationUuid, date]
-    ),
+    )),
 
     // 2: Sales by Subcategory
-    pool.query(
+    timed('2:salesBySub', pool.query(
       `SELECT
         COALESCE(parent_category, 'Other') as parent_category,
         category,
@@ -200,11 +210,18 @@ export async function fetchNightlyReport(
       GROUP BY parent_category, category
       ORDER BY parent_category, net_sales DESC`,
       [locationUuid, date]
-    ),
+    )),
 
-    // 3: Server Performance (with tip data from tipsee_payments)
-    pool.query(
-      `SELECT
+    // 3: Server Performance (pre-aggregate tips to avoid LATERAL per-row)
+    timed('3:servers', pool.query(
+      `WITH check_tips AS (
+        SELECT check_id, SUM(tip_amount) as total_tips
+        FROM public.tipsee_payments
+        WHERE check_id IN (SELECT id FROM public.tipsee_checks WHERE location_uuid = $1 AND trading_day = $2)
+          AND tip_amount > 0
+        GROUP BY check_id
+      )
+      SELECT
         c.employee_name,
         c.employee_role_name,
         COUNT(*) as tickets,
@@ -213,21 +230,18 @@ export async function fetchNightlyReport(
         ROUND(AVG(c.revenue_total)::numeric, 2) as avg_ticket,
         ROUND(AVG(CASE WHEN c.close_time > c.open_time THEN EXTRACT(EPOCH FROM (c.close_time - c.open_time))/60 END)::numeric, 0) as avg_turn_mins,
         ROUND((SUM(c.revenue_total) / NULLIF(SUM(c.guest_count), 0))::numeric, 2) as avg_per_cover,
-        ROUND((SUM(COALESCE(pt.total_tips, 0)) / NULLIF(SUM(c.revenue_total), 0) * 100)::numeric, 1) as tip_pct,
-        SUM(COALESCE(pt.total_tips, 0)) as total_tips
+        ROUND((SUM(COALESCE(ct.total_tips, 0)) / NULLIF(SUM(c.revenue_total), 0) * 100)::numeric, 1) as tip_pct,
+        SUM(COALESCE(ct.total_tips, 0)) as total_tips
       FROM public.tipsee_checks c
-      LEFT JOIN LATERAL (
-        SELECT SUM(tip_amount) as total_tips
-        FROM public.tipsee_payments WHERE check_id = c.id AND tip_amount > 0
-      ) pt ON true
+      LEFT JOIN check_tips ct ON ct.check_id = c.id
       WHERE c.location_uuid = $1 AND c.trading_day = $2
       GROUP BY c.employee_name, c.employee_role_name
       ORDER BY net_sales DESC`,
       [locationUuid, date]
-    ),
+    )),
 
     // 4: Menu Items Sold (top 10 food + top 10 beverage)
-    pool.query(
+    timed('4:menuItems', pool.query(
       `WITH ranked_items AS (
         SELECT
           ci.name,
@@ -258,10 +272,10 @@ export async function fetchNightlyReport(
       WHERE rn <= 10
       ORDER BY item_type, net_total DESC`,
       [locationUuid, date]
-    ),
+    )),
 
     // 5: Discounts/Comps Summary - combines check-level and item-level comps
-    pool.query(
+    timed('5:discounts', pool.query(
       `WITH check_comps AS (
         SELECT
           COALESCE(NULLIF(voidcomp_reason_text, ''), 'Unknown') as reason,
@@ -293,66 +307,75 @@ export async function fetchNightlyReport(
       GROUP BY reason
       ORDER BY amount DESC`,
       [locationUuid, date]
-    ),
+    )),
 
     // 6: Detailed Comps - finds checks with comps at either check or item level
-    pool.query(
-      `SELECT DISTINCT
+    timed('6:detailedComps', pool.query(
+      `WITH item_comp_totals AS (
+        SELECT check_id, SUM(comp_total) as total
+        FROM public.tipsee_check_items
+        WHERE check_id IN (SELECT id FROM public.tipsee_checks WHERE location_uuid = $1 AND trading_day = $2)
+          AND comp_total > 0
+        GROUP BY check_id
+      )
+      SELECT DISTINCT
         c.id as check_id,
         c.table_name,
         c.employee_name as server,
-        GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
+        GREATEST(c.comp_total, COALESCE(ict.total, 0)) as comp_total,
         c.revenue_total as check_total,
         COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason
       FROM public.tipsee_checks c
-      LEFT JOIN LATERAL (
-        SELECT SUM(comp_total) as total
-        FROM public.tipsee_check_items
-        WHERE check_id = c.id AND comp_total > 0
-      ) item_comps ON true
+      LEFT JOIN item_comp_totals ict ON ict.check_id = c.id
       WHERE c.location_uuid = $1 AND c.trading_day = $2
-        AND (c.comp_total > 0 OR item_comps.total > 0)
-      ORDER BY GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) DESC`,
+        AND (c.comp_total > 0 OR ict.total > 0)
+      ORDER BY GREATEST(c.comp_total, COALESCE(ict.total, 0)) DESC`,
       [locationUuid, date]
-    ),
+    )),
 
     // 7: Logbook
-    pool.query(
+    timed('7:logbook', pool.query(
       `SELECT * FROM public.tipsee_daily_logbook
        WHERE location_uuid = $1 AND logbook_date = $2
        LIMIT 1`,
       [locationUuid, date]
-    ),
+    )),
 
-    // 8: Notable Guests (Top 5 spenders)
-    pool.query(
-      `SELECT
-        c.id as check_id,
-        c.employee_name as server,
-        c.guest_count as covers,
-        c.revenue_total as payment,
-        c.open_time,
-        c.close_time,
-        c.table_name,
-        p.cc_name as cardholder_name,
-        p.tip_amount,
-        p.amount as payment_amount
-      FROM public.tipsee_checks c
-      LEFT JOIN LATERAL (
-        SELECT cc_name, tip_amount, amount
-        FROM public.tipsee_payments
-        WHERE check_id = c.id
-        ORDER BY (cc_name IS NOT NULL AND cc_name != '') DESC, tip_amount DESC NULLS LAST, amount DESC
-        LIMIT 1
-      ) p ON true
-      WHERE c.location_uuid = $1 AND c.trading_day = $2 AND c.revenue_total > 0
-      ORDER BY c.revenue_total DESC
-      LIMIT 5`,
+    // 8: Notable Guests (Top 5 spenders — pre-select top checks, then join payment)
+    timed('8:notableGuests', pool.query(
+      `WITH top_checks AS (
+        SELECT id, employee_name, guest_count, revenue_total, open_time, close_time, table_name
+        FROM public.tipsee_checks
+        WHERE location_uuid = $1 AND trading_day = $2 AND revenue_total > 0
+        ORDER BY revenue_total DESC
+        LIMIT 5
+      ),
+      best_payment AS (
+        SELECT DISTINCT ON (p.check_id)
+          p.check_id, p.cc_name, p.tip_amount, p.amount
+        FROM public.tipsee_payments p
+        INNER JOIN top_checks tc ON tc.id = p.check_id
+        ORDER BY p.check_id, (p.cc_name IS NOT NULL AND p.cc_name != '') DESC, p.tip_amount DESC NULLS LAST, p.amount DESC
+      )
+      SELECT
+        tc.id as check_id,
+        tc.employee_name as server,
+        tc.guest_count as covers,
+        tc.revenue_total as payment,
+        tc.open_time,
+        tc.close_time,
+        tc.table_name,
+        bp.cc_name as cardholder_name,
+        bp.tip_amount,
+        bp.amount as payment_amount
+      FROM top_checks tc
+      LEFT JOIN best_payment bp ON bp.check_id = tc.id
+      ORDER BY tc.revenue_total DESC`,
       [locationUuid, date]
-    ),
+    )),
 
     // 9: People We Know (VIP reservations)
-    pool.query(
+    timed('9:peopleWeKnow', pool.query(
       `SELECT
         first_name,
         last_name,
@@ -366,7 +389,7 @@ export async function fetchNightlyReport(
         AND status IN ('COMPLETE', 'ARRIVED', 'SEATED')
       ORDER BY is_vip DESC, total_payment DESC`,
       [locationUuid, date]
-    ),
+    )),
   ]);
 
   const t1 = Date.now();

@@ -223,14 +223,19 @@ SELECT
   on_hand_resos,
   typical_resos,
 
-  -- Final 4-layer prediction
-  GREATEST(0, ROUND(
-    (covers_raw + day_type_offset + holiday_offset) * pacing_multiplier
-  ))::integer as covers_predicted,
+  -- Final 4-layer prediction (preserve Prophet zero for dark/closed days)
+  CASE WHEN covers_raw = 0 THEN 0
+    ELSE GREATEST(0, ROUND(
+      (covers_raw + day_type_offset + holiday_offset) * pacing_multiplier
+    ))::integer
+  END as covers_predicted,
 
-  revenue_adjusted as revenue_predicted,
-  covers_lower,
-  covers_upper,
+  CASE WHEN covers_raw = 0 THEN 0
+    ELSE revenue_adjusted
+  END as revenue_predicted,
+
+  CASE WHEN covers_raw = 0 THEN 0 ELSE covers_lower END as covers_lower,
+  CASE WHEN covers_raw = 0 THEN 0 ELSE covers_upper END as covers_upper,
 
   -- Metadata
   bias_corrected,

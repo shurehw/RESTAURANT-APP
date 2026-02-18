@@ -2,7 +2,7 @@
 
 import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
-import { VendorOnboardingLinkDisplay } from './VendorOnboardingLinkDisplay';
+
 import { IntegrationStatus } from './IntegrationStatus';
 import { CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
 import { useVenue } from '@/components/providers/VenueProvider';
@@ -57,14 +57,6 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
 
   return (
     <div className="flex items-center gap-3">
-      {/* Vendor Onboarding Link */}
-      {organizationSlug && organizationName && (
-        <VendorOnboardingLinkDisplay
-          organizationSlug={organizationSlug}
-          organizationName={organizationName}
-        />
-      )}
-
       {/* Venue Selector (only if multiple venues) */}
       {showVenueSelector && (
         <div className="flex items-center gap-2 px-3 py-1.5 border border-opsos-sage-300 rounded-md bg-white hover:bg-opsos-sage-50 transition-colors">

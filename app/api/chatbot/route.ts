@@ -225,7 +225,7 @@ FORMATTING (your responses render as rich markdown):
 - Format currency with commas: $1,234 not $1234`;
 }
 
-const MAX_TOOL_ITERATIONS = 5;
+const MAX_TOOL_ITERATIONS = 8;
 
 export async function POST(req: NextRequest) {
   return guard(async () => {

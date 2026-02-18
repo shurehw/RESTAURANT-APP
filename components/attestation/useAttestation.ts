@@ -99,6 +99,7 @@ export function useAttestation(
       setIncidents(data.incidents || []);
       setCoachingActions(data.coaching_actions || []);
     } catch (err: any) {
+      console.error('[useAttestation] Init failed:', err.message || err);
       setError(err.message || 'Failed to initialize attestation');
     } finally {
       setLoading(false);

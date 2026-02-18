@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import {
   ShoppingCart,
@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   Activity,
   Settings,
+  LogOut,
 } from 'lucide-react';
 import { NavLink } from '@/components/layout/NavLink';
 import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
@@ -31,9 +32,11 @@ interface MobileSidebarProps {
   criticalViolationCount: number;
   organizationSlug?: string;
   userRole: UserRole;
+  userName?: string;
+  userEmail?: string;
 }
 
-export function MobileSidebar({ criticalViolationCount, organizationSlug, userRole }: MobileSidebarProps) {
+export function MobileSidebar({ criticalViolationCount, organizationSlug, userRole, userName, userEmail }: MobileSidebarProps) {
   const permissions = getNavPermissions(userRole);
   const [isOpen, setIsOpen] = useState(false);
   const touchStartX = useRef(0);
@@ -91,20 +94,23 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
 
       {/* Sidebar */}
       <aside
+        data-pwa-hide
         className={`
-          fixed lg:static inset-y-0 left-0 z-40
+          fixed inset-y-0 left-0 z-40
+          lg:static lg:z-auto lg:inset-auto lg:h-screen lg:sticky lg:top-0
           w-64 bg-opsos-sage-600 border-r-2 border-brass
+          flex flex-col flex-shrink-0
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center justify-center px-4 border-b-2 border-brass bg-white">
+        {/* Logo — matches topbar height (h-16 mobile, h-24 desktop) */}
+        <div className="h-16 lg:h-24 flex-shrink-0 flex items-center justify-center px-4 border-b border-opsos-sage-200 bg-white">
           <OpsOSLogo size="lg" />
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-6rem)]" aria-label="Main navigation">
+        <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0" aria-label="Main navigation">
           <NavLink href="/" icon={<Moon className="w-5 h-5" />}>
             Home
           </NavLink>
@@ -208,18 +214,13 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
             )}
           </NavSection>
 
-          <div className="pt-4 mt-4 border-t border-opsos-sage-500">
-            {permissions.aiAssistant && (
-              <NavLink href="/assistant" icon={<Bot className="w-5 h-5" />}>
-                AI Assistant
-              </NavLink>
-            )}
-            {permissions.budget && (
+          {permissions.budget && (
+            <div className="pt-4 mt-4 border-t border-opsos-sage-500">
               <NavLink href="/budget" icon={<DollarSign className="w-5 h-5" />}>
                 Budget
               </NavLink>
-            )}
-          </div>
+            </div>
+          )}
 
           <NavSection title="Admin">
             {permissions.orgSettings && (
@@ -240,8 +241,35 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
           </NavSection>
         </nav>
 
+        {/* Footer — pinned to bottom */}
+        <div className="flex-shrink-0 border-t border-opsos-sage-500 pb-2">
+          {permissions.aiAssistant && (
+            <div className="px-4 pt-3 pb-1">
+              <NavLink href="/assistant" icon={<Bot className="w-5 h-5" />}>
+                AI Assistant
+              </NavLink>
+            </div>
+          )}
+          <div className="px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-brass/20 text-brass flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {(userName || userEmail || '?').charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white truncate">
+                  {userName || 'User'}
+                </div>
+                <div className="text-[11px] text-opsos-sage-300 truncate capitalize">
+                  {userRole === 'gm' ? 'General Manager' : userRole === 'agm' ? 'Asst. GM' : userRole === 'exec_chef' ? 'Executive Chef' : userRole === 'sous_chef' ? 'Sous Chef' : userRole}
+                </div>
+              </div>
+              <SignOutButton />
+            </div>
+          </div>
+        </div>
+
         {/* Brass accent line at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-brass"></div>
+        <div className="h-1 bg-brass flex-shrink-0"></div>
       </aside>
     </div>
   );
@@ -261,5 +289,27 @@ function NavSection({
       </div>
       <div className="space-y-1">{children}</div>
     </div>
+  );
+}
+
+function SignOutButton() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
+  return (
+    <button
+      onClick={handleLogout}
+      className="p-1.5 rounded-md text-opsos-sage-300 hover:text-white hover:bg-opsos-sage-500 transition-colors"
+      title="Sign out"
+    >
+      <LogOut className="w-4 h-4" />
+    </button>
   );
 }

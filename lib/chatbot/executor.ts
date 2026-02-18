@@ -30,14 +30,23 @@ import {
 } from './supabase-queries';
 import {
   fetchCheckDetail,
-  fetchChecksForDate,
 } from '@/lib/database/tipsee';
 import { getTipseeMappingForVenue } from '@/lib/database/sales-pace';
 
 type VenueMapEntry = { venueId: string; locationUuid: string };
 
-const MAX_DATE_RANGE_DAYS = 90;
-const MAX_DISPLAY_ROWS = 30;
+const MAX_DATE_RANGE_DAYS = 1095; // ~3 years — data goes back to legacy tables
+const MAX_DISPLAY_ROWS = 100;
+
+const DOW_MAP: Record<string, number> = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
+
+function parseDayOfWeek(input: string | undefined): number | undefined {
+  if (!input || typeof input !== 'string') return undefined;
+  return DOW_MAP[input.toLowerCase()];
+}
 
 /**
  * Validate and normalize date params from the AI tool call.
@@ -190,8 +199,12 @@ export async function executeTool(
         if (filtered.venueIds.length === 0) {
           return 'Error: Could not resolve venue for check search.';
         }
-        const date = toolInput.date;
-        if (!date) return 'Error: date is required for check search.';
+
+        // Resolve dates: single date or date range
+        const searchDate = toolInput.date;
+        const searchStart = toolInput.start_date || searchDate;
+        const searchEnd = toolInput.end_date || searchStart;
+        if (!searchStart) return 'Error: date or start_date is required for check search.';
 
         // Get TipSee location UUIDs for the venue
         const locationUuids = await getTipseeMappingForVenue(filtered.venueIds[0]);
@@ -199,20 +212,69 @@ export async function executeTool(
           return 'No TipSee mapping found for this venue. Check data is not available.';
         }
 
-        const { checks } = await fetchChecksForDate(locationUuids, date, 50, 0);
-        let results = checks;
+        // Build dynamic WHERE clauses
+        const conditions: string[] = [
+          'c.location_uuid = ANY($1::uuid[])',
+          'c.trading_day >= $2',
+          'c.trading_day <= $3',
+        ];
+        const params: any[] = [locationUuids, searchStart, searchEnd];
+        let paramIdx = 4;
 
-        // Apply optional server/table filters
         if (toolInput.server_name) {
-          const q = toolInput.server_name.toLowerCase();
-          results = results.filter((c: any) => c.employee_name.toLowerCase().includes(q));
+          conditions.push(`c.employee_name ILIKE $${paramIdx}`);
+          params.push(`%${toolInput.server_name}%`);
+          paramIdx++;
         }
         if (toolInput.table_name) {
-          const q = toolInput.table_name.toLowerCase();
-          results = results.filter((c: any) => c.table_name.toLowerCase().includes(q));
+          conditions.push(`c.table_name ILIKE $${paramIdx}`);
+          params.push(`%${toolInput.table_name}%`);
+          paramIdx++;
+        }
+        if (toolInput.min_amount != null) {
+          conditions.push(`c.revenue_total >= $${paramIdx}`);
+          params.push(toolInput.min_amount);
+          paramIdx++;
+        }
+        if (toolInput.max_amount != null) {
+          conditions.push(`c.revenue_total <= $${paramIdx}`);
+          params.push(toolInput.max_amount);
+          paramIdx++;
+        }
+        if (toolInput.cardholder_name) {
+          conditions.push(`pay.cc_names ILIKE $${paramIdx}`);
+          params.push(`%${toolInput.cardholder_name}%`);
+          paramIdx++;
         }
 
-        return formatResults(results, toolName);
+        const sql = `SELECT
+          c.id, c.trading_day, c.table_name, c.employee_name, c.guest_count,
+          c.sub_total, c.revenue_total, c.comp_total, c.void_total,
+          c.open_time, c.close_time,
+          (c.close_time IS NULL) as is_open,
+          COALESCE(pay.payment_total, 0) as payment_total,
+          COALESCE(pay.tip_total, 0) as tip_total,
+          pay.cc_names as cardholder_names
+        FROM public.tipsee_checks c
+        LEFT JOIN LATERAL (
+          SELECT
+            SUM(amount) as payment_total,
+            SUM(COALESCE(tip_amount, 0)) as tip_total,
+            STRING_AGG(DISTINCT cc_name, ', ') FILTER (WHERE cc_name IS NOT NULL AND cc_name != '') as cc_names
+          FROM public.tipsee_payments WHERE check_id = c.id
+        ) pay ON true
+        WHERE ${conditions.join(' AND ')}
+        ORDER BY c.trading_day DESC, c.open_time DESC
+        LIMIT ${MAX_DISPLAY_ROWS}`;
+
+        const result = await ctx.pool.query(sql, params);
+        return formatResults(result.rows.map((r: any) => ({
+          ...r,
+          revenue_total: parseFloat(r.revenue_total) || 0,
+          comp_total: parseFloat(r.comp_total) || 0,
+          tip_total: parseFloat(r.tip_total) || 0,
+          payment_total: parseFloat(r.payment_total) || 0,
+        })), toolName);
       }
 
       case 'get_period_comparison': {
@@ -238,23 +300,29 @@ export async function executeTool(
 
     switch (toolName) {
       // --- TipSee POS tools ---
-      case 'get_daily_sales':
+      case 'get_daily_sales': {
+        const dayOfWeek = parseDayOfWeek(toolInput.day_of_week);
         return formatResults(
-          await getDailySales(ctx.pool, filtered.locationUuids, dates, locCtx),
+          await getDailySales(ctx.pool, filtered.locationUuids, { ...dates, dayOfWeek }, locCtx),
           toolName
         );
+      }
 
-      case 'get_sales_by_category':
+      case 'get_sales_by_category': {
+        const dayOfWeek = parseDayOfWeek(toolInput.day_of_week);
         return formatResults(
-          await getSalesByCategory(ctx.pool, filtered.locationUuids, dates, locCtx),
+          await getSalesByCategory(ctx.pool, filtered.locationUuids, { ...dates, dayOfWeek }, locCtx),
           toolName
         );
+      }
 
-      case 'get_server_performance':
+      case 'get_server_performance': {
+        const dayOfWeek = parseDayOfWeek(toolInput.day_of_week);
         return formatResults(
-          await getServerPerformance(ctx.pool, filtered.locationUuids, dates, locCtx),
+          await getServerPerformance(ctx.pool, filtered.locationUuids, { ...dates, dayOfWeek }, locCtx),
           toolName
         );
+      }
 
       case 'get_top_menu_items':
         return formatResults(
@@ -271,11 +339,35 @@ export async function executeTool(
           toolName
         );
 
-      case 'get_labor_summary':
-        return formatResults(
-          await getLaborSummary(ctx.pool, filtered.locationUuids, dates),
-          toolName
-        );
+      case 'get_labor_summary': {
+        const dayOfWeek = parseDayOfWeek(toolInput.day_of_week);
+        const laborRows = await getLaborSummary(ctx.pool, filtered.locationUuids, { ...dates, dayOfWeek });
+        if (laborRows.length > 0) {
+          return formatResults(laborRows, toolName);
+        }
+        // Fallback: labor_day_facts from Supabase (uses venue_id, always populated by ETL)
+        const dowFilter = dayOfWeek != null
+          ? (r: any) => new Date(r.business_date).getUTCDay() === dayOfWeek
+          : () => true;
+        const { data: ldf } = await (ctx.supabase as any)
+          .from('labor_day_facts')
+          .select('business_date, total_hours, labor_cost, punch_count, employee_count, labor_pct, splh')
+          .in('venue_id', filtered.venueIds)
+          .gte('business_date', dates.startDate)
+          .lte('business_date', dates.endDate)
+          .order('business_date', { ascending: false })
+          .limit(MAX_DISPLAY_ROWS);
+        const ldfRows = (ldf || []).filter(dowFilter).map((r: any) => ({
+          work_date: r.business_date,
+          punch_count: r.punch_count,
+          employee_count: r.employee_count,
+          total_hours: parseFloat(r.total_hours) || 0,
+          labor_cost: parseFloat(r.labor_cost) || 0,
+          labor_pct: r.labor_pct ? `${r.labor_pct}%` : null,
+          splh: r.splh ? parseFloat(r.splh) : null,
+        }));
+        return formatResults(ldfRows, toolName);
+      }
 
       case 'get_reservations':
         return formatResults(

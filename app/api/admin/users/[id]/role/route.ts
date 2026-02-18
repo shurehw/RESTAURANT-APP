@@ -20,7 +20,7 @@ export async function PUT(
     }
 
     // Validate role
-    const validRoles: UserRole[] = ['owner', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef'];
+    const validRoles: UserRole[] = ['owner', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef', 'pwa'];
     if (!validRoles.includes(role)) {
       return NextResponse.json(
         { error: 'Invalid role' },

@@ -26,10 +26,14 @@ export function NotificationsDropdown() {
 
   const close = useCallback(() => setIsOpen(false), []);
 
+  // Stop polling on auth failure to avoid console spam
+  const [authed, setAuthed] = useState(true);
+
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch('/api/notifications');
+      if (res.status === 401) { setAuthed(false); return; }
       if (!res.ok) return;
       const data = await res.json();
       setNotifications(data.notifications || []);
@@ -39,12 +43,13 @@ export function NotificationsDropdown() {
     }
   }, []);
 
-  // Initial fetch + polling
+  // Initial fetch + polling (stops if unauthenticated)
   useEffect(() => {
+    if (!authed) return;
     fetchNotifications();
     const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fetchNotifications]);
+  }, [fetchNotifications, authed]);
 
   // Close on Escape key
   useEffect(() => {

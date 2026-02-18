@@ -30,8 +30,10 @@ export function LoginForm() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Hard navigate so the browser sends the fresh auth cookies
-      const redirectTo = searchParams.get('redirect') || '/';
+      // PWA-only users always go to /pulse
+      const redirectTo = data.user?.role === 'pwa'
+        ? '/pulse'
+        : searchParams.get('redirect') || '/';
       window.location.href = redirectTo;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

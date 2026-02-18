@@ -40,12 +40,12 @@ import {
   ChevronUp,
   Activity,
   ArrowUpRight,
+  ClipboardCheck,
+  Lock,
+  Minus,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
-import { RevenueAttestation } from '@/components/attestation/RevenueAttestation';
-import { LaborAttestation } from '@/components/attestation/LaborAttestation';
-import { CompResolutionPanel } from '@/components/attestation/CompResolutionPanel';
-import { AttestationFooter } from '@/components/attestation/AttestationFooter';
+import { AttestationStepper } from '@/components/attestation/stepper/AttestationStepper';
 import { ServerDetailModal } from '@/components/reports/ServerDetailModal';
 import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
 import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
@@ -198,12 +198,32 @@ interface VenueHealthData {
 }
 
 interface FactsSummary {
+  // Core summary from venue_day_facts (Supabase — fast, authoritative)
+  net_sales?: number;
+  gross_sales?: number;
+  total_checks?: number;
+  total_covers?: number;
+  total_comps?: number;
+  total_voids?: number;
+  tips_total?: number;
+  avg_check?: number;
+  avg_cover?: number;
+  // Category sales
   food_sales?: number;
   beverage_sales?: number;
   wine_sales?: number;
   liquor_sales?: number;
   beer_sales?: number;
   beverage_pct?: number;
+  // Nightly category breakdown from category_day_facts
+  salesByCategory?: Array<{
+    category: string;
+    gross_sales: number;
+    comps: number;
+    voids: number;
+    net_sales: number;
+    quantity: number;
+  }>;
   // Labor metrics
   labor?: {
     total_hours: number;
@@ -492,6 +512,7 @@ export default function NightlyReportPage() {
   const [loadingLaborExceptions, setLoadingLaborExceptions] = useState<boolean>(false);
   const [healthData, setHealthData] = useState<VenueHealthData | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(false);
+  const [attestStepperOpen, setAttestStepperOpen] = useState(false);
 
   // Handler for view mode changes (updates URL)
   function handleViewChange(newView: ViewMode) {
@@ -554,17 +575,23 @@ export default function NightlyReportPage() {
     };
   }, [report?.servers, factsSummary?.servers_wtd, factsSummary?.servers_ptd, viewMode]);
 
+  // Core nightly metrics: prefer venue_day_facts (fast Supabase, same as Pulse)
+  // over TipSee report (slow direct query, sometimes missing data)
+  const nightlyNetSales = factsSummary?.net_sales ?? report?.summary?.net_sales ?? 0;
+  const nightlyCovers = factsSummary?.total_covers ?? report?.summary?.total_covers ?? 0;
+  const nightlyComps = factsSummary?.total_comps ?? report?.summary?.total_comps ?? 0;
+
   // Build attestation report payload (memoised to avoid re-triggering hook)
   const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
-    if (!report || !selectedVenue?.id || !date) return null;
+    if ((!report && !factsSummary) || !selectedVenue?.id || !date) return null;
     return {
       venue_id: selectedVenue.id,
       business_date: date,
-      net_sales: report.summary.net_sales,
+      net_sales: nightlyNetSales,
       forecasted_sales: factsSummary?.forecast?.net_sales || 0,
-      total_comp_amount: report.summary.total_comps,
-      comp_count: report.detailedComps?.length || 0,
-      comps: (report.detailedComps || []).map(c => ({
+      total_comp_amount: nightlyComps,
+      comp_count: report?.detailedComps?.length || 0,
+      comps: (report?.detailedComps || []).map(c => ({
         check_id: c.check_id,
         check_amount: c.check_total,
         comp_amount: c.comp_total,
@@ -637,12 +664,89 @@ export default function NightlyReportPage() {
       setCompReview(null);
       setCompExceptions(null);
       setCompNotes({});
+
+      // ---------------------------------------------------------------
+      // PARALLEL: Fire ALL independent fetches at once.
+      // Facts, labor exceptions, and health don't depend on TipSee data.
+      // Only comp exceptions + AI review need the report first.
+      // ---------------------------------------------------------------
+
+      // 1) Non-blocking independents — fire immediately, don't await
+      setLoadingFacts(true);
+      setFactsError(null);
+      const factsPromise = fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}&view=${viewMode}`, { credentials: 'include' })
+        .then(res => { if (!res.ok) throw new Error(`Facts API returned ${res.status}`); return res.json(); })
+        .then(factsData => {
+          if (factsData?.has_data) {
+            setFactsSummary({
+              ...factsData.summary,
+              salesByCategory: factsData.salesByCategory,
+              labor: factsData.labor,
+              forecast: factsData.forecast,
+              variance: factsData.variance,
+              servers_wtd: factsData.servers_wtd,
+              servers_ptd: factsData.servers_ptd,
+              servers_ytd: factsData.servers_ytd,
+              categories_wtd: factsData.categories_wtd,
+              categories_ptd: factsData.categories_ptd,
+              categories_ytd: factsData.categories_ytd,
+              items_wtd: factsData.items_wtd,
+              items_ptd: factsData.items_ptd,
+              items_ytd: factsData.items_ytd,
+              labor_wtd: factsData.labor_wtd,
+              labor_ptd: factsData.labor_ptd,
+              labor_ytd: factsData.labor_ytd,
+              ptd_weeks: factsData.ptd_weeks,
+              ytd_periods: factsData.ytd_periods,
+              fiscal: factsData.fiscal,
+            });
+            setFactsError(null);
+          } else {
+            setFactsSummary(null);
+            setFactsError('No fact data available for this date');
+          }
+        })
+        .catch(err => { console.error('Facts fetch error:', err); setFactsError(err.message || 'Failed to load analytics data'); setFactsSummary(null); })
+        .finally(() => setLoadingFacts(false));
+
+      if (viewMode === 'nightly') {
+        setLoadingLaborExceptions(true);
+        fetch(`/api/labor/exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => { if (data?.success && data?.data?.has_data) { setLaborExceptions(data.data); } else { setLaborExceptions(null); } })
+          .catch(err => { console.error('Labor exceptions fetch error:', err); setLaborExceptions(null); })
+          .finally(() => setLoadingLaborExceptions(false));
+      }
+
+      setLoadingHealth(true);
+      fetch(`/api/health?view=daily&date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
+        .then(res => { if (!res.ok) throw new Error(`Health API returned ${res.status}`); return res.json(); })
+        .then(healthResponse => {
+          if (healthResponse?.venues && healthResponse.venues.length > 0) {
+            const venueHealth = healthResponse.venues[0];
+            setHealthData({
+              health_score: venueHealth.latest_score || 0,
+              status: venueHealth.status || 'YELLOW',
+              confidence: venueHealth.daily?.[0]?.confidence || 0,
+              signal_count: venueHealth.daily?.[0]?.signal_count || 0,
+              top_drivers: venueHealth.latest_drivers || null,
+              open_actions: 0,
+            });
+          } else { setHealthData(null); }
+        })
+        .catch(err => { console.error('[nightly] Health fetch failed:', err); setHealthData(null); })
+        .finally(() => setLoadingHealth(false));
+
+      // 2) Critical path — TipSee report + comp notes (blocks UI)
+      // Timeout after 15s so the page isn't stuck if TipSee is slow
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15_000);
       try {
-        // CRITICAL PATH: Only block on essential TipSee report data and comp notes
         const [liveRes, notesRes] = await Promise.all([
-          fetch(`/api/nightly?date=${date}&location=${locationUuid}`),
-          fetch(`/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`, { credentials: 'include' }),
+          fetch(`/api/nightly?date=${date}&location=${locationUuid}`, { signal: controller.signal }),
+          fetch(`/api/nightly/comp-notes?venue_id=${selectedVenue.id}&business_date=${date}`, { credentials: 'include', signal: controller.signal }),
         ]);
+        clearTimeout(timeoutId);
 
         if (!liveRes.ok) {
           const errData = await liveRes.json();
@@ -651,70 +755,19 @@ export default function NightlyReportPage() {
         const liveData = await liveRes.json();
         setReport(liveData);
 
-        // Process comp notes
         if (notesRes.ok) {
           const notesData = await notesRes.json();
           setCompNotes(notesData.notes || {});
         }
 
-        // NON-BLOCKING: Fetch facts asynchronously (optimized: 12-20 queries depending on view mode)
-        setLoadingFacts(true);
-        setFactsError(null);
-        fetch(`/api/nightly/facts?date=${date}&venue_id=${selectedVenue.id}&view=${viewMode}`, { credentials: 'include' })
-          .then(res => {
-            if (!res.ok) {
-              throw new Error(`Facts API returned ${res.status}`);
-            }
-            return res.json();
-          })
-          .then(factsData => {
-            if (factsData?.has_data) {
-              setFactsSummary({
-                ...factsData.summary,
-                labor: factsData.labor,
-                forecast: factsData.forecast,
-                variance: factsData.variance,
-                servers_wtd: factsData.servers_wtd,
-                servers_ptd: factsData.servers_ptd,
-                servers_ytd: factsData.servers_ytd,
-                categories_wtd: factsData.categories_wtd,
-                categories_ptd: factsData.categories_ptd,
-                categories_ytd: factsData.categories_ytd,
-                items_wtd: factsData.items_wtd,
-                items_ptd: factsData.items_ptd,
-                items_ytd: factsData.items_ytd,
-                labor_wtd: factsData.labor_wtd,
-                labor_ptd: factsData.labor_ptd,
-                labor_ytd: factsData.labor_ytd,
-                ptd_weeks: factsData.ptd_weeks,
-                ytd_periods: factsData.ytd_periods,
-                fiscal: factsData.fiscal,
-              });
-              setFactsError(null);
-            } else {
-              setFactsSummary(null);
-              setFactsError('No fact data available for this date');
-            }
-          })
-          .catch(err => {
-            console.error('Facts fetch error:', err);
-            setFactsError(err.message || 'Failed to load analytics data');
-            setFactsSummary(null);
-          })
-          .finally(() => setLoadingFacts(false));
-
-        // Fetch comp exceptions AFTER liveData is available, then trigger AI review
+        // 3) Post-report: comp exceptions → AI review (needs report data)
         if (liveData) {
           fetch(`/api/nightly/comp-exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
             .then(res => res.ok ? res.json() : null)
             .then(data => {
               const parsedExceptions = data?.success ? data.data : null;
-              if (parsedExceptions) {
-                setCompExceptions(parsedExceptions);
-              }
+              if (parsedExceptions) setCompExceptions(parsedExceptions);
 
-              // AI comp review fires AFTER exceptions are loaded (uses pre-fetched data)
-              // Only run in nightly mode - period views don't have check-level detail
               if (viewMode === 'nightly' && liveData.summary?.total_comps > 0) {
                 setLoadingCompReview(true);
                 return fetch('/api/ai/comp-review', {
@@ -737,59 +790,14 @@ export default function NightlyReportPage() {
             .catch(err => console.error('Comp exceptions/AI review error:', err))
             .finally(() => setLoadingCompReview(false));
         }
-
-        // Fetch labor exceptions (non-blocking, only for nightly view)
-        if (viewMode === 'nightly') {
-          setLoadingLaborExceptions(true);
-          fetch(`/api/labor/exceptions?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
-            .then(res => res.ok ? res.json() : null)
-            .then(data => {
-              if (data?.success && data?.data?.has_data) {
-                setLaborExceptions(data.data);
-              } else {
-                setLaborExceptions(null);
-              }
-            })
-            .catch(err => {
-              console.error('Labor exceptions fetch error:', err);
-              setLaborExceptions(null);
-            })
-            .finally(() => setLoadingLaborExceptions(false));
-        }
-
-        // Fetch venue health score (non-blocking, all view modes)
-        setLoadingHealth(true);
-        fetch(`/api/health?view=daily&date=${date}&venue_id=${selectedVenue.id}`, { credentials: 'include' })
-          .then(res => {
-            if (!res.ok) throw new Error(`Health API returned ${res.status}`);
-            return res.json();
-          })
-          .then(healthResponse => {
-            // Extract single venue health from response
-            if (healthResponse?.venues && healthResponse.venues.length > 0) {
-              const venueHealth = healthResponse.venues[0];
-              setHealthData({
-                health_score: venueHealth.latest_score || 0,
-                status: venueHealth.status || 'YELLOW',
-                confidence: venueHealth.daily?.[0]?.confidence || 0,
-                signal_count: venueHealth.daily?.[0]?.signal_count || 0,
-                top_drivers: venueHealth.latest_drivers || null,
-                open_actions: 0, // TODO: fetch from health actions if needed
-              });
-            } else {
-              setHealthData(null);
-            }
-          })
-          .catch(err => {
-            console.error('[nightly] Health fetch failed:', err);
-            setHealthData(null); // Graceful degradation - health is nice-to-have
-          })
-          .finally(() => setLoadingHealth(false));
-
       } catch (err: any) {
-        setError(err.message);
-        setReport(null);
-        setFactsSummary(null);
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          console.warn('[nightly] Report fetch timed out — using facts data');
+        } else {
+          setError(err.message);
+          setReport(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -812,6 +820,7 @@ export default function NightlyReportPage() {
         if (factsData?.has_data) {
           setFactsSummary({
             ...factsData.summary,
+            salesByCategory: factsData.salesByCategory,
             labor: factsData.labor,
             forecast: factsData.forecast,
             variance: factsData.variance,
@@ -931,6 +940,18 @@ export default function NightlyReportPage() {
               <TabsTrigger value="ytd">YTD</TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {/* Attestation Entry Button */}
+          {att.attestation && !loading && (
+            <Button
+              variant={att.isLocked ? 'outline' : 'brass'}
+              size="sm"
+              onClick={() => setAttestStepperOpen(true)}
+            >
+              <ClipboardCheck className="h-4 w-4 mr-1.5" />
+              {att.isLocked ? 'View Attestation' : 'Attest'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -963,10 +984,69 @@ export default function NightlyReportPage() {
         <span className="font-medium">{formatDate(date)}</span>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-brass" />
+      {/* Loading skeleton — shows page structure instantly */}
+      {loading && !report && !factsSummary && (
+        <div className="space-y-4 animate-pulse">
+          {/* Hero metrics skeleton */}
+          <Card className="bg-muted/30 border-brass/20">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-4 w-4 rounded bg-muted" />
+                <div className="h-4 w-32 rounded bg-muted" />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-3 w-16 rounded bg-muted" />
+                    <div className="h-7 w-24 rounded bg-muted" />
+                    <div className="h-3 w-20 rounded bg-muted" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Attestation banner skeleton */}
+          <div className="h-14 rounded-md bg-muted/40 border border-brass/10" />
+          {/* Labor card skeleton */}
+          <Card>
+            <CardHeader className="border-b border-brass/20 py-3">
+              <div className="h-5 w-40 rounded bg-muted" />
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-3 w-14 rounded bg-muted" />
+                    <div className="h-6 w-20 rounded bg-muted" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          {/* Server table skeleton */}
+          <Card>
+            <CardHeader className="border-b border-brass/20 py-3">
+              <div className="h-5 w-36 rounded bg-muted" />
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="space-y-0">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-0">
+                    <div className="h-4 w-28 rounded bg-muted" />
+                    <div className="h-4 w-16 rounded bg-muted ml-auto" />
+                    <div className="h-4 w-16 rounded bg-muted" />
+                    <div className="h-4 w-16 rounded bg-muted" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      {loading && (report || factsSummary) && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+          <Loader2 className="h-3 w-3 animate-spin text-brass" />
+          Loading report details...
         </div>
       )}
 
@@ -979,8 +1059,8 @@ export default function NightlyReportPage() {
         </Card>
       )}
 
-      {/* Report Content */}
-      {!loading && !error && report && (
+      {/* Report Content — renders when report OR facts are available */}
+      {!error && (report || factsSummary) && (
         <>
           {/* Executive Summary - Always show, variance optional */}
           <Card className="bg-muted/30 border-brass/20">
@@ -1041,14 +1121,14 @@ export default function NightlyReportPage() {
                   {(() => {
                     // Select data source based on view mode
                     const liveNetSales = viewMode === 'nightly'
-                      ? (report.summary.net_sales || 0)
+                      ? nightlyNetSales
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_net_sales || 0)
                         : viewMode === 'ptd'
                           ? (factsSummary?.variance?.ptd_net_sales || 0)
                           : (factsSummary?.variance?.ytd_net_sales || 0);
                     const liveCovers = viewMode === 'nightly'
-                      ? (report.summary.total_covers || 0)
+                      ? nightlyCovers
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_covers || 0)
                         : viewMode === 'ptd'
@@ -1229,15 +1309,17 @@ export default function NightlyReportPage() {
                       </div>
                     );
                   })()}
-                  {/* Food/Bev Split - moved from Summary Stats */}
+                  {/* Food/Bev/Other Split - actual category data */}
                   {(() => {
                     const categories = viewMode === 'nightly'
-                      ? (report.salesByCategory || [])
+                      ? (factsSummary?.salesByCategory || report?.salesByCategory || [])
                       : viewMode === 'wtd'
                         ? (factsSummary?.categories_wtd || [])
                         : viewMode === 'ptd'
                           ? (factsSummary?.categories_ptd || [])
                           : (factsSummary?.categories_ytd || []);
+
+                    if (categories.length === 0) return null;
 
                     const isBevCategory = (cat: string) => {
                       const lower = (cat || '').toLowerCase();
@@ -1246,33 +1328,31 @@ export default function NightlyReportPage() {
                              lower.includes('cocktail');
                     };
 
-                    const foodGross = categories
-                      .filter((c: any) => !isBevCategory(c.category))
-                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
-                    const bevGross = categories
+                    const isOtherCategory = (cat: string) => {
+                      const lower = (cat || '').toLowerCase();
+                      return lower === 'other' || lower === 'misc' || lower.includes('merch') ||
+                             lower.includes('gift') || lower.includes('retail');
+                    };
+
+                    const bevNet = categories
                       .filter((c: any) => isBevCategory(c.category))
                       .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+                    const otherNet = categories
+                      .filter((c: any) => isOtherCategory(c.category))
+                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+                    const totalNet = categories
+                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+                    const foodNet = totalNet - bevNet - otherNet;
 
-                    const totalCategoryGross = foodGross + bevGross;
-                    const foodPct = totalCategoryGross > 0 ? (foodGross / totalCategoryGross * 100) : 0;
-                    const bevPct = totalCategoryGross > 0 ? (bevGross / totalCategoryGross * 100) : 0;
-
-                    const actualNetSales = viewMode === 'nightly'
-                      ? (report.summary.net_sales || 0)
-                      : viewMode === 'wtd'
-                        ? (factsSummary?.variance?.wtd_net_sales || 0)
-                        : viewMode === 'ptd'
-                          ? (factsSummary?.variance?.ptd_net_sales || 0)
-                          : (factsSummary?.variance?.ytd_net_sales || 0);
-
-                    const foodSales = actualNetSales * (foodPct / 100);
-                    const bevSales = actualNetSales * (bevPct / 100);
+                    const foodPct = totalNet > 0 ? (foodNet / totalNet * 100) : 0;
+                    const bevPct = totalNet > 0 ? (bevNet / totalNet * 100) : 0;
+                    const otherPct = totalNet > 0 ? (otherNet / totalNet * 100) : 0;
 
                     return (
                       <>
                         <div className="space-y-1">
                           <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(foodSales)}
+                            {formatCurrency(foodNet)}
                           </div>
                           <div className="text-xs text-muted-foreground uppercase">Food Sales</div>
                           <div className="text-xs text-muted-foreground">
@@ -1281,13 +1361,24 @@ export default function NightlyReportPage() {
                         </div>
                         <div className="space-y-1">
                           <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(bevSales)}
+                            {formatCurrency(bevNet)}
                           </div>
                           <div className="text-xs text-muted-foreground uppercase">Bev Sales</div>
                           <div className="text-xs text-muted-foreground">
                             {bevPct.toFixed(1)}% mix
                           </div>
                         </div>
+                        {otherNet > 0 && (
+                          <div className="space-y-1">
+                            <div className="text-2xl font-bold tabular-nums">
+                              {formatCurrency(otherNet)}
+                            </div>
+                            <div className="text-xs text-muted-foreground uppercase">Other Sales</div>
+                            <div className="text-xs text-muted-foreground">
+                              {otherPct.toFixed(1)}% mix
+                            </div>
+                          </div>
+                        )}
                       </>
                     );
                   })()}
@@ -1319,19 +1410,6 @@ export default function NightlyReportPage() {
             </Card>
           )}
 
-          {/* Revenue Attestation — inline after revenue summary */}
-          {att.attestation && (
-            <div className="border-l-2 border-brass/30 pl-4 ml-2">
-              <RevenueAttestation
-                triggers={att.triggers}
-                attestation={att.attestation}
-                onUpdate={att.updateField}
-                disabled={att.isLocked}
-              />
-            </div>
-          )}
-
-
           {/* Labor & Productivity */}
           {(() => {
             // Select labor data based on view mode
@@ -1351,7 +1429,7 @@ export default function NightlyReportPage() {
 
             // Use period-appropriate covers for cost per cover and CPLH calculation
             const periodCovers = viewMode === 'nightly'
-              ? report.summary.total_covers
+              ? nightlyCovers
               : viewMode === 'wtd'
                 ? (factsSummary?.variance?.wtd_covers || 0)
                 : viewMode === 'ptd'
@@ -1451,7 +1529,7 @@ export default function NightlyReportPage() {
                     const otherCost = labor.other?.cost || 0;
                     // Use period-appropriate net sales
                     const netSales = viewMode === 'nightly'
-                      ? (report.summary.net_sales || 0)
+                      ? nightlyNetSales
                       : viewMode === 'wtd'
                         ? (factsSummary?.variance?.wtd_net_sales || 0)
                         : viewMode === 'ptd'
@@ -1606,18 +1684,6 @@ export default function NightlyReportPage() {
               </Card>
             );
           })()}
-
-          {/* Labor Attestation — inline after labor card */}
-          {att.attestation && (
-            <div className="border-l-2 border-brass/30 pl-4 ml-2">
-              <LaborAttestation
-                triggers={att.triggers}
-                attestation={att.attestation}
-                onUpdate={att.updateField}
-                disabled={att.isLocked}
-              />
-            </div>
-          )}
 
           {/* Comp Exceptions - Policy Violations */}
           {compExceptions && compExceptions.exceptions.length > 0 && (
@@ -1905,18 +1971,6 @@ export default function NightlyReportPage() {
             </Card>
           )}
 
-          {/* Comp Resolution Attestation — inline after comp analysis */}
-          {att.attestation && (
-            <div className="border-l-2 border-brass/30 pl-4 ml-2">
-              <CompResolutionPanel
-                triggers={att.triggers}
-                resolutions={att.compResolutions}
-                onAdd={att.addCompResolution}
-                disabled={att.isLocked}
-              />
-            </div>
-          )}
-
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
@@ -1948,8 +2002,18 @@ export default function NightlyReportPage() {
                     );
                   }
 
+                  // Nightly view: show loading while TipSee report is still fetching
+                  if (viewMode === 'nightly' && !report && loading) {
+                    return (
+                      <div className="empty-state py-8 flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-brass" />
+                        <p className="text-muted-foreground">Loading server data...</p>
+                      </div>
+                    );
+                  }
+
                   const serverData = viewMode === 'nightly'
-                    ? report.servers
+                    ? (report?.servers || [])
                     : viewMode === 'wtd'
                       ? factsSummary?.servers_wtd || []
                       : viewMode === 'ptd'
@@ -2025,9 +2089,19 @@ export default function NightlyReportPage() {
               </CardHeader>
               <CardContent className="p-0">
                 {(() => {
+                  // Nightly view: show loading while TipSee report is still fetching
+                  if (viewMode === 'nightly' && !report && loading) {
+                    return (
+                      <div className="empty-state py-8 flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-brass" />
+                        <p className="text-muted-foreground">Loading menu items...</p>
+                      </div>
+                    );
+                  }
+
                   // Select data source based on view mode
                   const menuItems = viewMode === 'nightly'
-                    ? report.menuItems
+                    ? (report?.menuItems || [])
                     : viewMode === 'wtd'
                       ? (factsSummary?.items_wtd || [])
                       : viewMode === 'ptd'
@@ -2127,27 +2201,33 @@ export default function NightlyReportPage() {
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Gift className="h-5 w-5 text-error" />
                   Comps & Discounts
-                  {report.summary.total_comps > 0 && (
+                  {nightlyComps > 0 && (
                     <span className="ml-auto text-sm font-normal text-error">
-                      {formatCurrency(report.summary.total_comps)}
+                      {formatCurrency(nightlyComps)}
                     </span>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {viewMode !== 'nightly' ? (
+                {viewMode === 'nightly' && !report && loading ? (
+                  // Nightly view: show loading while TipSee report is still fetching
+                  <div className="empty-state py-8 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-brass" />
+                    <p className="text-muted-foreground">Loading comp details...</p>
+                  </div>
+                ) : viewMode !== 'nightly' ? (
                   // Period view: Show summary only
                   <div className="p-6 text-center">
                     <div className="mb-4">
                       <div className="text-3xl font-bold text-error mb-2">
-                        {formatCurrency(report.summary.total_comps || 0)}
+                        {formatCurrency(nightlyComps)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Total Comps & Discounts
                       </div>
-                      {report.summary.net_sales > 0 && (
+                      {nightlyNetSales > 0 && (
                         <div className="mt-2 text-lg font-semibold text-error/80">
-                          {((report.summary.total_comps / report.summary.net_sales) * 100).toFixed(1)}% of Net Sales
+                          {((nightlyComps / nightlyNetSales) * 100).toFixed(1)}% of Net Sales
                         </div>
                       )}
                     </div>
@@ -2155,21 +2235,21 @@ export default function NightlyReportPage() {
                       Detailed comp data is only available in Nightly view
                     </div>
                   </div>
-                ) : (report.discounts.length > 0 || report.detailedComps.length > 0) ? (
+                ) : ((report?.discounts?.length ?? 0) > 0 || (report?.detailedComps?.length ?? 0) > 0) ? (
                   <Tabs defaultValue="by-reason" className="w-full">
                     <div className="px-4 pt-3">
                       <TabsList className="w-full grid grid-cols-2">
                         <TabsTrigger value="by-reason">By Reason</TabsTrigger>
-                        <TabsTrigger value="all-comps">All Comps ({report.detailedComps.length})</TabsTrigger>
+                        <TabsTrigger value="all-comps">All Comps ({report?.detailedComps?.length})</TabsTrigger>
                       </TabsList>
                     </div>
 
                     <TabsContent value="by-reason" className="mt-0">
-                      {report.discounts.length > 0 ? (
+                      {(report?.discounts?.length ?? 0) > 0 ? (
                         (() => {
-                          const totalComps = report.discounts.reduce((sum, d) => sum + (d.amount || 0), 0);
-                          const compPct = report.summary.net_sales > 0
-                            ? ((totalComps / report.summary.net_sales) * 100).toFixed(1)
+                          const totalComps = report?.discounts?.reduce((sum, d) => sum + (d.amount || 0), 0) ?? 0;
+                          const compPct = nightlyNetSales > 0
+                            ? ((totalComps / nightlyNetSales) * 100).toFixed(1)
                             : '0.0';
                           return (
                             <>
@@ -2189,7 +2269,7 @@ export default function NightlyReportPage() {
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {report.discounts.map((disc, i) => {
+                                  {report?.discounts?.map((disc, i) => {
                                     const pct = totalComps > 0
                                       ? ((disc.amount || 0) / totalComps * 100).toFixed(0)
                                       : '0';
@@ -2215,9 +2295,9 @@ export default function NightlyReportPage() {
                     </TabsContent>
 
                     <TabsContent value="all-comps" className="mt-0">
-                      {report.detailedComps.length > 0 ? (
+                      {(report?.detailedComps?.length ?? 0) > 0 ? (
                         <div className="divide-y divide-border">
-                          {report.detailedComps.map((comp, i) => (
+                          {report?.detailedComps?.map((comp, i) => (
                             <div key={i} className="p-4 hover:bg-muted/50 transition-colors">
                               <div className="flex justify-between items-start">
                                 <div>
@@ -2279,26 +2359,31 @@ export default function NightlyReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {(report.notableGuests.length > 0 || report.peopleWeKnow.length > 0) ? (
+                {!report && loading ? (
+                  <div className="empty-state py-8 flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-brass" />
+                    <p className="text-muted-foreground">Loading VIP data...</p>
+                  </div>
+                ) : ((report?.notableGuests?.length ?? 0) > 0 || (report?.peopleWeKnow?.length ?? 0) > 0) ? (
                 <Tabs defaultValue="top-spenders" className="w-full">
                   <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent">
                     <TabsTrigger
                       value="top-spenders"
                       className="rounded-none border-b-2 border-transparent data-[state=active]:border-brass data-[state=active]:bg-transparent"
                     >
-                      Top Spenders ({report.notableGuests.length})
+                      Top Spenders ({report?.notableGuests?.length})
                     </TabsTrigger>
                     <TabsTrigger
                       value="vips"
                       className="rounded-none border-b-2 border-transparent data-[state=active]:border-brass data-[state=active]:bg-transparent"
                     >
-                      VIPs ({report.peopleWeKnow.length})
+                      VIPs ({report?.peopleWeKnow?.length})
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="top-spenders" className="mt-0">
-                    {report.notableGuests.length > 0 ? (
+                    {(report?.notableGuests?.length ?? 0) > 0 ? (
                       <div className="divide-y divide-border">
-                        {report.notableGuests.map((guest, i) => (
+                        {report?.notableGuests?.map((guest, i) => (
                           <div key={i} className="p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex justify-between items-start mb-2">
                               <div>
@@ -2345,7 +2430,7 @@ export default function NightlyReportPage() {
                     )}
                   </TabsContent>
                   <TabsContent value="vips" className="mt-0">
-                    {report.peopleWeKnow.length > 0 ? (
+                    {(report?.peopleWeKnow?.length ?? 0) > 0 ? (
                       <table className="table-opsos">
                         <thead>
                           <tr>
@@ -2356,7 +2441,7 @@ export default function NightlyReportPage() {
                           </tr>
                         </thead>
                         <tbody>
-                          {report.peopleWeKnow.map((person, i) => (
+                          {report?.peopleWeKnow?.map((person, i) => (
                             <tr key={i}>
                               <td>
                                 <div className="flex items-center gap-2">
@@ -2411,23 +2496,78 @@ export default function NightlyReportPage() {
             </Card>
           )}
 
-          {/* Attestation Footer — Incidents, Coaching & Submit */}
-          <AttestationFooter
-            attestation={att.attestation}
-            triggers={att.triggers}
-            incidents={att.incidents}
-            coachingActions={att.coachingActions}
-            completionState={att.completionState}
-            canSubmit={att.canSubmit}
-            isLocked={att.isLocked}
-            loading={att.loading}
-            saving={att.saving}
-            submitting={att.submitting}
-            error={att.error}
-            onAddIncident={att.addIncident}
-            onAddCoaching={att.addCoaching}
-            onSubmit={att.submitAttestation}
-          />
+          {/* Inline Attestation Status Banner */}
+          {att.attestation && (
+            <Card
+              className={`cursor-pointer transition-colors ${
+                att.isLocked
+                  ? 'border-sage/40 bg-sage/5 hover:bg-sage/10'
+                  : 'border-brass/30 bg-brass/[0.02] hover:bg-brass/5'
+              }`}
+              onClick={() => setAttestStepperOpen(true)}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  {att.isLocked ? (
+                    <Lock className="h-5 w-5 text-sage shrink-0" />
+                  ) : (
+                    <ClipboardCheck className="h-5 w-5 text-brass shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">
+                      {att.isLocked
+                        ? `Attestation ${att.attestation.status === 'amended' ? 'Amended' : 'Submitted'}`
+                        : 'Nightly Attestation'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {att.isLocked && att.attestation.submitted_at
+                        ? new Date(att.attestation.submitted_at).toLocaleString()
+                        : (() => {
+                            const required = Object.entries(att.completionState).filter(
+                              ([, v]) => v !== 'not_required' && v !== 'always_optional',
+                            );
+                            const done = required.filter(([, v]) => v === 'complete').length;
+                            return required.length > 0
+                              ? `${done} of ${required.length} required module${required.length !== 1 ? 's' : ''} complete`
+                              : 'No modules required — submit when ready';
+                          })()}
+                    </div>
+                  </div>
+                  {/* Module status chips */}
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    {Object.entries(att.completionState).map(([key, status]) => {
+                      if (status === 'not_required') return null;
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-background border text-[10px]"
+                        >
+                          {status === 'complete' ? (
+                            <CheckCircle2 className="h-3 w-3 text-sage" />
+                          ) : status === 'always_optional' ? (
+                            <Minus className="h-3 w-3 text-muted-foreground" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-error" />
+                          )}
+                          <span className="capitalize">{key}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant={att.isLocked ? 'outline' : 'brass'}
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAttestStepperOpen(true);
+                    }}
+                  >
+                    {att.isLocked ? 'View' : 'Begin'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Server Detail Modal */}
           <ServerDetailModal
@@ -2445,6 +2585,45 @@ export default function NightlyReportPage() {
               setServerModalOpen(false);
               setSelectedServer(null);
             }}
+          />
+
+          {/* Attestation Stepper Modal */}
+          <AttestationStepper
+            open={attestStepperOpen}
+            onClose={() => setAttestStepperOpen(false)}
+            venueId={selectedVenue?.id}
+            reportSummary={report ? report.summary : null}
+            factsSummary={factsSummary ? {
+              food_sales: factsSummary.food_sales,
+              beverage_sales: factsSummary.beverage_sales,
+              beverage_pct: factsSummary.beverage_pct,
+              forecast: factsSummary.forecast,
+              variance: factsSummary.variance,
+              labor: factsSummary.labor,
+            } : null}
+            compExceptions={compExceptions}
+            compReview={compReview}
+            laborExceptions={laborExceptions}
+            healthData={healthData}
+            attestation={att.attestation}
+            triggers={att.triggers}
+            compResolutions={att.compResolutions}
+            incidents={att.incidents}
+            coachingActions={att.coachingActions}
+            completionState={att.completionState}
+            canSubmit={att.canSubmit}
+            isLocked={att.isLocked}
+            loading={att.loading}
+            saving={att.saving}
+            submitting={att.submitting}
+            error={att.error}
+            updateField={att.updateField}
+            addCompResolution={att.addCompResolution}
+            addIncident={att.addIncident}
+            addCoaching={att.addCoaching}
+            submitAttestation={att.submitAttestation}
+            date={date}
+            venueName={selectedVenue?.name || ''}
           />
 
         </>

@@ -15,7 +15,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_daily_sales',
     description:
-      'Get daily sales summary including revenue, total checks, covers (guests), comps, voids, and tax for one or more dates. Use this for questions about revenue, sales totals, guest counts, or daily performance.',
+      'Get daily sales summary including revenue, total checks, covers (guests), comps, voids, and tax for one or more dates. Use this for questions about revenue, sales totals, guest counts, or daily performance. Supports filtering by day of week (e.g. "only Saturdays") for multi-week averages — use day_of_week to avoid fetching unnecessary rows.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -28,6 +28,11 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           description:
             'End date in YYYY-MM-DD format. Defaults to start_date for single-day queries.',
         },
+        day_of_week: {
+          type: 'string',
+          enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+          description: 'Filter to only a specific day of the week. Use when calculating multi-week averages for a particular day (e.g. "average Saturday revenue"). Omit to include all days.',
+        },
         venue: VENUE_PARAM,
       },
       required: ['start_date'],
@@ -36,7 +41,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_sales_by_category',
     description:
-      'Get sales broken down by food/beverage category (e.g. Food, Beverage, Wine, Beer). Shows gross sales, comps, voids, and net sales per category.',
+      'Get sales broken down by food/beverage category (e.g. Food, Beverage, Wine, Beer). Shows gross sales, comps, voids, and net sales per category. Supports day_of_week filter for multi-week category averages.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -47,6 +52,11 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
         end_date: {
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+        day_of_week: {
+          type: 'string',
+          enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+          description: 'Filter to only a specific day of the week. Omit to include all days.',
         },
         venue: VENUE_PARAM,
       },
@@ -56,7 +66,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_server_performance',
     description:
-      'Get server/employee productivity: net sales, check count, guest count, average spend per guest, table turns, average check, tip percentage, and total tips. Use for questions about staff performance, top servers, or tip analysis.',
+      'Get server/employee productivity: net sales, check count, guest count, average spend per guest, table turns, average check, tip percentage, and total tips. Use for questions about staff performance, top servers, or tip analysis. Supports day_of_week filter for day-specific server analysis.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -67,6 +77,11 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
         end_date: {
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+        day_of_week: {
+          type: 'string',
+          enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+          description: 'Filter to only a specific day of the week. Omit to include all days.',
         },
         venue: VENUE_PARAM,
       },
@@ -121,7 +136,7 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'get_labor_summary',
     description:
-      'Get daily labor summary: punch count, employee count, total hours worked, and labor cost. Use for questions about labor, staffing, hours, or payroll.',
+      'Get daily labor summary: punch count, employee count, total hours worked, and labor cost. Use for questions about labor, staffing, hours, or payroll. Supports day_of_week filter for day-specific labor averages.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -132,6 +147,11 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
         end_date: {
           type: 'string',
           description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+        day_of_week: {
+          type: 'string',
+          enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+          description: 'Filter to only a specific day of the week. Omit to include all days.',
         },
         venue: VENUE_PARAM,
       },
@@ -333,13 +353,21 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
   {
     name: 'search_checks',
     description:
-      'Search checks for a venue on a given date. Returns a list of checks with server name, table, guest count, revenue, comps, tips, and open/closed status. Use to find checks by server or table (e.g. "show me all of John\'s checks tonight", "what checks are on table 5?"), or to browse all checks.',
+      'Search checks for a venue. Returns checks with server name, table, guest count, revenue, comps, tips, and open/closed status. Use to find checks by server, table, cardholder name, or amount range. Supports single date or date range for multi-day searches (e.g. "find all checks from the Johnsons this month", "checks over $500 last week").',
     input_schema: {
       type: 'object' as const,
       properties: {
         date: {
           type: 'string',
-          description: 'Date in YYYY-MM-DD format. Use today\'s date for current service.',
+          description: 'Single date in YYYY-MM-DD format. Use for single-day searches. Use today\'s date for current service.',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Start date for multi-day searches (YYYY-MM-DD). Use with end_date instead of date.',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date for multi-day searches (YYYY-MM-DD). Defaults to start_date.',
         },
         server_name: {
           type: 'string',
@@ -349,12 +377,24 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
           type: 'string',
           description: 'Filter by table name (partial match). E.g. "Table 5", "Bar".',
         },
+        cardholder_name: {
+          type: 'string',
+          description: 'Filter by cardholder/guest name on the payment (partial match). E.g. "Smith", "Johnson". Searches the credit card name on file.',
+        },
+        min_amount: {
+          type: 'number',
+          description: 'Minimum check total to include. E.g. 500 for checks over $500.',
+        },
+        max_amount: {
+          type: 'number',
+          description: 'Maximum check total to include.',
+        },
         venue: {
           ...VENUE_PARAM,
           description: 'Venue name. REQUIRED for check searches.',
         },
       },
-      required: ['date', 'venue'],
+      required: ['venue'],
     },
   },
   {
