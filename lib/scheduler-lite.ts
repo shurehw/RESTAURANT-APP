@@ -48,14 +48,15 @@ interface PosConfig {
 const PEAK_PCT = 0.22;
 
 /**
- * Position wave configs for a dinner-focused restaurant.
+ * Position wave configs for Hwood Group venues.
+ * CPLH values derived from actual labor_day_facts data (60% venue data + 40% industry).
  * Each position lists 1–3 shift templates (early / main / late waves).
  * Staff headcount at peak drives how many of each wave to schedule.
  */
 const POS_CONFIG: Record<string, PosConfig> = {
   // ── Front of House ──────────────────────────────────────────────────────
   'Server': {
-    cplh: 18,
+    cplh: 13,       // Derived: LA=12.9 Miami=13.0 (industry 18, actual ~10)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
@@ -64,7 +65,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Bartender': {
-    cplh: 30,
+    cplh: 22,       // Derived: LA=20.8 Miami=22.4 (industry 30, actual ~15)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'day',   type: 'lunch',      start: '14:00', end: '20:00', hours: 6.0 },
@@ -72,7 +73,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Busser': {
-    cplh: 35,
+    cplh: 28,       // Derived: LA=36.9 Miami=19.8 (industry 35, blended 28)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
@@ -80,7 +81,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Food Runner': {
-    cplh: 30,
+    cplh: 25,       // Derived: LA=25.7 Miami=25.0 (industry 30, actual ~22)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'early', type: 'dinner',     start: '17:00', end: '21:00', hours: 4.0 },
@@ -88,7 +89,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Host': {
-    ratio: 250,
+    cplh: 28,       // Derived: LA=38.1 Miami=17.3 (was ratio 1:250, now CPLH-based)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
@@ -98,7 +99,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
 
   // ── Back of House ───────────────────────────────────────────────────────
   'Line Cook': {
-    cplh: 22,
+    cplh: 21,       // Derived: LA=24.6 Miami=17.4 (industry 22, very close)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'prep',  type: 'lunch',      start: '13:00', end: '19:00', hours: 6.0 },
@@ -107,15 +108,15 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Prep Cook': {
-    cplh: 50,
-    peakPct: 0.15, // prep demand peaks before service
+    cplh: 40,       // Derived: LA=50.9 Miami=28.6 (industry 50, actual ~40)
+    peakPct: 0.15,  // prep demand peaks before service
     templates: [
       { label: 'am', type: 'breakfast', start: '09:00', end: '15:00', hours: 6.0 },
       { label: 'pm', type: 'lunch',     start: '12:00', end: '18:00', hours: 6.0 },
     ],
   },
   'Dishwasher': {
-    ratio: 200,
+    cplh: 28,       // Derived: LA=26.4 Miami=29.3 (was ratio 1:200, now CPLH-based)
     peakPct: PEAK_PCT,
     templates: [
       { label: 'early', type: 'dinner',     start: '15:00', end: '21:00', hours: 6.0 },
@@ -155,7 +156,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Shift Manager': {
-    cplh: 100,
+    cplh: 100,      // No venue data for mgmt; industry benchmark
     peakPct: PEAK_PCT,
     templates: [
       { label: 'main', type: 'dinner', start: '16:00', end: '00:00', hours: 8.0 },
