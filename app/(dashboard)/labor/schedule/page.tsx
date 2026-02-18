@@ -53,7 +53,7 @@ export default async function SchedulePage({
     .eq('week_start_date', weekStart)
     .maybeSingle();
 
-  // Fetch covers from forecasts_with_bias (matches Forecasts page)
+  // Fetch covers from forecasts_with_bias only (matches Forecasts page exactly)
   const weekDates = getWeekDates(weekStart);
   const forecastCovers: Record<string, { covers: number; revenue: number }> = {};
 
@@ -71,27 +71,6 @@ export default async function SchedulePage({
         covers: Number(f.covers_predicted) || 0,
         revenue: Number(f.revenue_predicted) || 0,
       };
-    }
-  }
-
-  // Backfill missing dates from demand_forecasts (raw)
-  const missingDates = weekDates.filter(d => !forecastCovers[d]);
-  if (missingDates.length > 0) {
-    const { data: rawForecasts } = await supabase
-      .from('demand_forecasts')
-      .select('business_date, forecast_date, covers_predicted, revenue_predicted')
-      .eq('venue_id', venueId)
-      .in('business_date', missingDates)
-      .order('business_date')
-      .order('forecast_date', { ascending: false });
-
-    for (const f of rawForecasts || []) {
-      if (!forecastCovers[f.business_date]) {
-        forecastCovers[f.business_date] = {
-          covers: Number(f.covers_predicted) || 0,
-          revenue: Number(f.revenue_predicted) || 0,
-        };
-      }
     }
   }
 

@@ -394,15 +394,14 @@ export async function generateScheduleTS(
     weekDays.push({ date: d.toISOString().split('T')[0], dow: d.getUTCDay() });
   }
 
-  // Fetch covers from forecasts_with_bias (bias-corrected, matches Forecasts page)
+  // Fetch covers from forecasts_with_bias only (matches Forecasts page exactly)
   const dateCoversMap: Record<string, { covers: number; revenue: number }> = {};
-  const businessDates = weekDays.map(d => d.date);
 
   const { data: biasForecasts } = await admin
     .from('forecasts_with_bias')
     .select('business_date, covers_predicted, revenue_predicted')
     .eq('venue_id', venueId)
-    .in('business_date', businessDates)
+    .in('business_date', weekDays.map(d => d.date))
     .gt('covers_predicted', 0)
     .order('business_date');
 
@@ -412,26 +411,6 @@ export async function generateScheduleTS(
       covers: Number(f.covers_predicted) || 0,
       revenue: Number(f.revenue_predicted) || 0,
     };
-  }
-
-  // Backfill missing dates from demand_forecasts (raw, no bias)
-  const missingDates = businessDates.filter(d => !dateCoversMap[d]);
-  if (missingDates.length > 0) {
-    const { data: rawForecasts } = await admin
-      .from('demand_forecasts')
-      .select('business_date, forecast_date, covers_predicted, revenue_predicted')
-      .eq('venue_id', venueId)
-      .in('business_date', missingDates)
-      .order('business_date')
-      .order('forecast_date', { ascending: false });
-
-    for (const f of rawForecasts || []) {
-      if (dateCoversMap[f.business_date]) continue;
-      dateCoversMap[f.business_date] = {
-        covers: Number(f.covers_predicted) || 0,
-        revenue: Number(f.revenue_predicted) || 0,
-      };
-    }
   }
 
   // Delete any existing schedule for this venue + week
