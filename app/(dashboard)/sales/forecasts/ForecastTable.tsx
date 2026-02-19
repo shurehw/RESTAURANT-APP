@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pencil } from 'lucide-react';
+import { Pencil, ChevronDown, ChevronRight } from 'lucide-react';
 import { OverrideDialog } from '@/components/forecast/OverrideDialog';
+import { IntervalDrilldown } from './IntervalDrilldown';
 
 interface ForecastRow {
   id: string;
@@ -85,6 +86,7 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
   const router = useRouter();
   const [selectedForecast, setSelectedForecast] = useState<ForecastRow | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
 
   // Only show shift column if there are multiple shift types
   const shiftTypes = new Set(forecasts.map(f => f.shift_type));
@@ -124,6 +126,8 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                 const override = overrideMap[overrideKey];
                 const tier = confidenceTier(forecast.confidence_pct);
                 const adjText = adjustmentSummary(forecast);
+                const isExpanded = expandedDate === forecast.business_date;
+                const colSpan = 4 + (showShift ? 1 : 0) + 1; // date + shift? + covers + revenue + reliability + actions
 
                 // ± range from midpoint
                 const margin = Math.round(
@@ -131,95 +135,122 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                 );
 
                 return (
-                  <tr key={forecast.id} className="hover:bg-muted/30 group">
-                    {/* Date */}
-                    <td className="py-3.5 text-sm">
-                      <span className="font-medium">{dayOfWeek}</span>
-                      <span className="text-muted-foreground ml-1.5">{dateStr}</span>
-                      {forecast.holiday_code && (
-                        <Badge variant="brass" className="ml-1.5 text-[10px] py-0">
-                          {forecast.holiday_code}
-                        </Badge>
-                      )}
-                    </td>
-
-                    {/* Shift (only if multiple) */}
-                    {showShift && (
-                      <td className="py-3.5 text-sm text-muted-foreground capitalize">
-                        {forecast.shift_type}
-                      </td>
-                    )}
-
-                    {/* Covers */}
-                    <td className="py-3.5 text-right">
-                      <div className="font-mono">
-                        {override ? (
-                          <>
-                            <span className="text-sm line-through text-muted-foreground mr-1">
-                              {forecast.covers_predicted}
-                            </span>
-                            <span className="text-lg font-semibold text-brass">
-                              {override.forecast_post_override}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-lg font-semibold">
-                            {forecast.covers_predicted}
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground ml-1">
-                          ±{margin}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Revenue */}
-                    <td className="py-3.5 text-sm text-right font-mono text-muted-foreground">
-                      ${forecast.revenue_predicted?.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}
-                    </td>
-
-                    {/* Reliability — merged track record + adjustments */}
-                    <td className="py-3.5 text-sm text-right">
-                      {forecast.accuracy_sample_size > 0 ? (
-                        <div>
-                          <Badge variant="default" className={`text-[11px] py-0.5 px-2 ${tier.bg} ${tier.color} border-0`}>
-                            {tier.label}
-                          </Badge>
-                          {adjText && (
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {adjText}
-                            </div>
-                          )}
-                          {override && (
-                            <div className="text-[10px] text-brass mt-0.5">
-                              override: {override.reason_code.replace(/_/g, ' ').toLowerCase()}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div>
-                          <Badge variant="default" className="text-[11px] py-0.5 px-2">
-                            New
-                          </Badge>
-                          {adjText && (
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {adjText}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Override button */}
-                    <td className="py-3.5 text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0"
-                        onClick={() => handleOverrideClick(forecast)}
+                  <tr key={forecast.id} className="contents">
+                    {/* Main row — wrapped in a sub-table-structure via contents + individual cells */}
+                    <td colSpan={colSpan} className="p-0">
+                      <div
+                        className="hover:bg-muted/30 group grid items-center cursor-pointer"
+                        style={{ gridTemplateColumns: showShift ? '1fr auto auto auto auto auto' : '1fr auto auto auto auto' }}
+                        onClick={() => setExpandedDate(isExpanded ? null : forecast.business_date)}
                       >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
+                        {/* Date + expand chevron */}
+                        <div className="py-3.5 text-sm flex items-center gap-1.5 pl-1">
+                          {isExpanded
+                            ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                          }
+                          <span className="font-medium">{dayOfWeek}</span>
+                          <span className="text-muted-foreground">{dateStr}</span>
+                          {forecast.holiday_code && (
+                            <Badge variant="brass" className="text-[10px] py-0">
+                              {forecast.holiday_code}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {/* Shift (only if multiple) */}
+                        {showShift && (
+                          <div className="py-3.5 text-sm text-muted-foreground capitalize">
+                            {forecast.shift_type}
+                          </div>
+                        )}
+
+                        {/* Covers */}
+                        <div className="py-3.5 text-right pr-4">
+                          <div className="font-mono">
+                            {override ? (
+                              <>
+                                <span className="text-sm line-through text-muted-foreground mr-1">
+                                  {forecast.covers_predicted}
+                                </span>
+                                <span className="text-lg font-semibold text-brass">
+                                  {override.forecast_post_override}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-lg font-semibold">
+                                {forecast.covers_predicted}
+                              </span>
+                            )}
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ±{margin}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Revenue */}
+                        <div className="py-3.5 text-sm text-right font-mono text-muted-foreground pr-4">
+                          ${forecast.revenue_predicted?.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}
+                        </div>
+
+                        {/* Reliability */}
+                        <div className="py-3.5 text-sm text-right pr-2">
+                          {forecast.accuracy_sample_size > 0 ? (
+                            <div>
+                              <Badge variant="default" className={`text-[11px] py-0.5 px-2 ${tier.bg} ${tier.color} border-0`}>
+                                {tier.label}
+                              </Badge>
+                              {adjText && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  {adjText}
+                                </div>
+                              )}
+                              {override && (
+                                <div className="text-[10px] text-brass mt-0.5">
+                                  override: {override.reason_code.replace(/_/g, ' ').toLowerCase()}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div>
+                              <Badge variant="default" className="text-[11px] py-0.5 px-2">
+                                New
+                              </Badge>
+                              {adjText && (
+                                <div className="text-[10px] text-muted-foreground mt-0.5">
+                                  {adjText}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Override button */}
+                        <div className="py-3.5 text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOverrideClick(forecast);
+                            }}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Expanded interval drilldown */}
+                      {isExpanded && (
+                        <div className="border-t border-muted/50 bg-muted/10">
+                          <IntervalDrilldown
+                            venueId={venueId}
+                            businessDate={forecast.business_date}
+                            dayType={forecast.day_type}
+                          />
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
