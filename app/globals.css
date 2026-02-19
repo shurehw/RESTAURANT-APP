@@ -306,6 +306,15 @@
 }
 
 @layer utilities {
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Tabular Numbers for Data Tables */
   .tabular-nums {
     font-variant-numeric: tabular-nums;

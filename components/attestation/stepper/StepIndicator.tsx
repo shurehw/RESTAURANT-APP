@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, type LucideIcon } from 'lucide-react';
 
@@ -18,10 +19,31 @@ interface Props {
 }
 
 export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Auto-scroll to keep the active step visible
+  useEffect(() => {
+    const container = scrollRef.current;
+    const activeEl = stepRefs.current[currentStep];
+    if (!container || !activeEl) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const activeRect = activeEl.getBoundingClientRect();
+
+    // If active step is outside visible area, scroll it into view
+    if (activeRect.left < containerRect.left || activeRect.right > containerRect.right) {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentStep]);
+
   return (
     <div className="px-6 py-4 border-b border-border">
-      {/* Desktop: icons + labels */}
-      <div className="hidden sm:flex items-center justify-between">
+      {/* Desktop: icons + labels — scrollable for 6+ steps */}
+      <div
+        ref={scrollRef}
+        className="hidden sm:flex items-center overflow-x-auto scrollbar-none"
+      >
         {steps.map((step, i) => {
           const isCurrent = i === currentStep;
           const isComplete = step.completion === 'complete';
@@ -30,12 +52,16 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
           const Icon = step.icon;
 
           return (
-            <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <div
+              key={step.id}
+              ref={(el) => { stepRefs.current[i] = el; }}
+              className="flex items-center shrink-0"
+            >
               {/* Step circle + label */}
               <button
                 onClick={() => onStepClick(i)}
                 className={cn(
-                  'flex items-center gap-2 rounded-lg px-2.5 py-1.5 transition-colors text-left',
+                  'flex items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors text-left',
                   isCurrent && 'bg-brass/10',
                   !isCurrent && 'hover:bg-muted/50',
                   (isNotRequired || isOptional) && !isCurrent && 'opacity-50',
@@ -59,7 +85,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
                 <div className="min-w-0">
                   <div
                     className={cn(
-                      'text-xs font-medium leading-tight truncate',
+                      'text-xs font-medium leading-tight whitespace-nowrap',
                       isCurrent && 'text-brass',
                       !isCurrent && 'text-muted-foreground',
                     )}
@@ -67,12 +93,12 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
                     {step.label}
                   </div>
                   {isNotRequired && (
-                    <div className="text-[10px] text-muted-foreground/60 leading-tight">
+                    <div className="text-[10px] text-muted-foreground/60 leading-tight whitespace-nowrap">
                       Not required
                     </div>
                   )}
                   {isOptional && (
-                    <div className="text-[10px] text-muted-foreground/60 leading-tight">
+                    <div className="text-[10px] text-muted-foreground/60 leading-tight whitespace-nowrap">
                       Optional
                     </div>
                   )}
@@ -83,7 +109,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
               {i < steps.length - 1 && (
                 <div
                   className={cn(
-                    'flex-1 h-px mx-2',
+                    'w-4 h-px mx-1 shrink-0',
                     steps[i].completion === 'complete' && steps[i + 1].completion === 'complete'
                       ? 'bg-sage/50'
                       : 'bg-border',
