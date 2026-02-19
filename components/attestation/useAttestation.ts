@@ -17,6 +17,8 @@ export interface CompletionState {
   labor: 'complete' | 'incomplete' | 'not_required';
   incidents: 'complete' | 'incomplete' | 'not_required';
   coaching: 'always_optional';
+  entertainment: 'complete' | 'incomplete' | 'not_required';
+  culinary: 'complete' | 'incomplete' | 'not_required';
 }
 
 /** Extract error message from API JSON response { error: '...' } */
@@ -33,6 +35,12 @@ export function useAttestation(
   venueId: string | undefined,
   businessDate: string | undefined,
   reportData: NightlyReportPayload | null,
+  options?: {
+    entertainmentRequired?: boolean;
+    entertainmentComplete?: boolean;
+    culinaryRequired?: boolean;
+    culinaryComplete?: boolean;
+  },
 ) {
   const [attestation, setAttestation] = useState<NightlyAttestation | null>(null);
   const [triggers, setTriggers] = useState<TriggerResult | null>(null);
@@ -279,11 +287,9 @@ export function useAttestation(
   const completionState: CompletionState = {
     revenue: !triggers?.revenue_attestation_required
       ? 'not_required'
-      : attestation?.revenue_confirmed !== null && attestation?.revenue_confirmed !== undefined
+      : (attestation?.revenue_tags?.length ?? 0) > 0
         ? 'complete'
-        : attestation?.revenue_variance_reason
-          ? 'complete'
-          : 'incomplete',
+        : 'incomplete',
     comps: !triggers?.comp_resolution_required
       ? 'not_required'
       : (triggers.flagged_comps?.length || 0) <= compResolutions.length
@@ -291,17 +297,25 @@ export function useAttestation(
         : 'incomplete',
     labor: !triggers?.labor_attestation_required
       ? 'not_required'
-      : attestation?.labor_confirmed !== null && attestation?.labor_confirmed !== undefined
+      : (attestation?.labor_tags?.length ?? 0) > 0
         ? 'complete'
-        : attestation?.labor_variance_reason
-          ? 'complete'
-          : 'incomplete',
+        : 'incomplete',
     incidents: !triggers?.incident_log_required
       ? 'not_required'
       : incidents.length > 0
         ? 'complete'
         : 'incomplete',
     coaching: 'always_optional',
+    entertainment: !options?.entertainmentRequired
+      ? 'not_required'
+      : options?.entertainmentComplete
+        ? 'complete'
+        : 'incomplete',
+    culinary: !options?.culinaryRequired
+      ? 'not_required'
+      : options?.culinaryComplete
+        ? 'complete'
+        : 'incomplete',
   };
 
   const canSubmit =
@@ -309,7 +323,9 @@ export function useAttestation(
     completionState.revenue !== 'incomplete' &&
     completionState.comps !== 'incomplete' &&
     completionState.labor !== 'incomplete' &&
-    completionState.incidents !== 'incomplete';
+    completionState.incidents !== 'incomplete' &&
+    completionState.entertainment !== 'incomplete' &&
+    completionState.culinary !== 'incomplete';
 
   const isLocked = attestation?.status === 'submitted' || attestation?.status === 'amended';
 

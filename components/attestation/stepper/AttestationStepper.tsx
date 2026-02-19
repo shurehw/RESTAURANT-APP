@@ -13,6 +13,8 @@ import {
   Clock,
   AlertOctagon,
   Users,
+  Music,
+  ChefHat,
   ClipboardCheck,
 } from 'lucide-react';
 import { StepIndicator, type StepConfig } from './StepIndicator';
@@ -22,6 +24,8 @@ import { CompsStep } from './steps/CompsStep';
 import { LaborStep } from './steps/LaborStep';
 import { IncidentsStep } from './steps/IncidentsStep';
 import { CoachingStep } from './steps/CoachingStep';
+import { EntertainmentStep } from './steps/EntertainmentStep';
+import { CulinaryStep } from './steps/CulinaryStep';
 import { ReviewStep } from './steps/ReviewStep';
 import type {
   NightlyAttestation,
@@ -30,6 +34,8 @@ import type {
   NightlyIncident,
   CoachingAction,
 } from '@/lib/attestation/types';
+import type { ShiftLog } from '@/lib/entertainment/types';
+import type { CulinaryShiftLog } from '@/lib/culinary/types';
 import type { CompletionState } from '@/components/attestation/useAttestation';
 
 // ---------------------------------------------------------------------------
@@ -137,6 +143,11 @@ export interface AttestationStepperProps {
   // Metadata
   date: string;
   venueName: string;
+
+  // Entertainment (all h.wood venues)
+  hasEntertainment?: boolean;
+  // Culinary (all h.wood venues with kitchen)
+  hasCulinary?: boolean;
 }
 
 export function AttestationStepper({
@@ -168,7 +179,61 @@ export function AttestationStepper({
   submitAttestation,
   date,
   venueName,
+  hasEntertainment = true,
+  hasCulinary = true,
 }: AttestationStepperProps) {
+  // ---------------------------------------------------------------------------
+  // Entertainment shift log — fetch when stepper opens
+  // ---------------------------------------------------------------------------
+  const [shiftLog, setShiftLog] = useState<ShiftLog | null>(null);
+
+  useEffect(() => {
+    if (!open || !venueId || !date || !hasEntertainment) return;
+    let cancelled = false;
+
+    fetch(`/api/entertainment/shift-logs?venue_id=${venueId}&business_date=${date}`, {
+      credentials: 'include',
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(logs => {
+        if (!cancelled) {
+          setShiftLog(Array.isArray(logs) && logs.length > 0 ? logs[0] : null);
+        }
+      })
+      .catch(() => { if (!cancelled) setShiftLog(null); });
+
+    return () => { cancelled = true; };
+  }, [open, venueId, date, hasEntertainment]);
+
+  // Entertainment completion: complete when shift log has overall_rating
+  const entertainmentComplete = !!shiftLog?.overall_rating;
+
+  // ---------------------------------------------------------------------------
+  // Culinary shift log — fetch when stepper opens
+  // ---------------------------------------------------------------------------
+  const [culinaryLog, setCulinaryLog] = useState<CulinaryShiftLog | null>(null);
+
+  useEffect(() => {
+    if (!open || !venueId || !date || !hasCulinary) return;
+    let cancelled = false;
+
+    fetch(`/api/culinary/shift-logs?venue_id=${venueId}&business_date=${date}`, {
+      credentials: 'include',
+    })
+      .then(res => res.ok ? res.json() : [])
+      .then(logs => {
+        if (!cancelled) {
+          setCulinaryLog(Array.isArray(logs) && logs.length > 0 ? logs[0] : null);
+        }
+      })
+      .catch(() => { if (!cancelled) setCulinaryLog(null); });
+
+    return () => { cancelled = true; };
+  }, [open, venueId, date, hasCulinary]);
+
+  // Culinary completion: complete when culinary log has overall_rating
+  const culinaryComplete = !!culinaryLog?.overall_rating;
+
   // Build step configs
   const steps: StepConfig[] = useMemo(() => [
     {
@@ -206,14 +271,30 @@ export function AttestationStepper({
       status: 'optional' as const,
       completion: completionState.coaching,
     },
+    ...(hasEntertainment ? [{
+      id: 'entertainment',
+      label: 'Entertainment',
+      icon: Music,
+      status: 'required' as const,
+      completion: entertainmentComplete ? 'complete' as const : 'incomplete' as const,
+    }] : []),
+    ...(hasCulinary ? [{
+      id: 'culinary',
+      label: 'Culinary',
+      icon: ChefHat,
+      status: 'required' as const,
+      completion: culinaryComplete ? 'complete' as const : 'incomplete' as const,
+    }] : []),
     {
       id: 'review',
       label: 'Review',
       icon: ClipboardCheck,
       status: 'required' as const,
-      completion: canSubmit || isLocked ? 'complete' as const : 'incomplete' as const,
+      completion: (canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete)) || isLocked
+        ? 'complete' as const
+        : 'incomplete' as const,
     },
-  ], [triggers, completionState, canSubmit, isLocked]);
+  ], [triggers, completionState, canSubmit, isLocked, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
 
   // Smart start: first incomplete required step
   const initialStep = useMemo(() => {
@@ -236,11 +317,38 @@ export function AttestationStepper({
   // ---------------------------------------------------------------------------
   // AI Narrative — lazy fetch when stepper opens with data available
   // ---------------------------------------------------------------------------
-  const [narratives, setNarratives] = useState<{ revenue_narrative: string; labor_narrative: string } | null>(null);
+  const [narratives, setNarratives] = useState<{
+    revenue_narrative: string;
+    labor_narrative: string;
+    comp_narrative: string;
+    incident_narrative: string;
+    coaching_narrative: string;
+    entertainment_narrative?: string;
+    culinary_narrative?: string;
+  } | null>(null);
   const [narrativeLoading, setNarrativeLoading] = useState(false);
 
+  // Derived completion state that includes entertainment + culinary (stepper-managed)
+  const fullCompletionState: CompletionState = useMemo(() => ({
+    ...completionState,
+    entertainment: !hasEntertainment
+      ? 'not_required'
+      : entertainmentComplete
+        ? 'complete'
+        : 'incomplete',
+    culinary: !hasCulinary
+      ? 'not_required'
+      : culinaryComplete
+        ? 'complete'
+        : 'incomplete',
+  }), [completionState, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
+
+  // Derived canSubmit that includes entertainment + culinary
+  const fullCanSubmit = canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete);
+
   useEffect(() => {
-    if (!open || !venueId || !reportSummary || !date) return;
+    // Wait for both reportSummary AND factsSummary so food/bev data is included
+    if (!open || !venueId || !reportSummary || !factsSummary || !date) return;
     // Already fetched for this session
     if (narratives) return;
 
@@ -248,33 +356,59 @@ export function AttestationStepper({
     setNarrativeLoading(true);
 
     const body = {
+      venue_id: venueId,
       date,
-      venueName,
+      venue_name: venueName,
       net_sales: reportSummary.net_sales,
       total_covers: reportSummary.total_covers,
-      total_comps: reportSummary.total_comps,
       avg_check: reportSummary.total_covers > 0
         ? reportSummary.net_sales / reportSummary.total_covers
         : 0,
-      food_sales: factsSummary?.food_sales ?? 0,
-      beverage_sales: factsSummary?.beverage_sales ?? 0,
-      beverage_pct: factsSummary?.beverage_pct ?? 0,
-      comp_pct: reportSummary.net_sales > 0
-        ? (reportSummary.total_comps / reportSummary.net_sales) * 100
+      food_sales: factsSummary.food_sales ?? 0,
+      beverage_sales: factsSummary.beverage_sales ?? 0,
+      beverage_pct: (factsSummary.beverage_sales && reportSummary.net_sales > 0)
+        ? (factsSummary.beverage_sales / reportSummary.net_sales) * 100
         : 0,
-      forecast_net_sales: factsSummary?.forecast?.net_sales ?? null,
-      forecast_covers: factsSummary?.forecast?.covers ?? null,
-      vs_forecast_pct: factsSummary?.variance?.vs_forecast_pct ?? null,
-      vs_sdlw_pct: factsSummary?.variance?.vs_sdlw_pct ?? null,
-      vs_sdly_pct: factsSummary?.variance?.vs_sdly_pct ?? null,
+      forecast_net_sales: factsSummary.forecast?.net_sales ?? null,
+      forecast_covers: factsSummary.forecast?.covers ?? null,
+      vs_forecast_pct: factsSummary.variance?.vs_forecast_pct ?? null,
+      vs_sdlw_pct: factsSummary.variance?.vs_sdlw_pct ?? null,
+      vs_sdly_pct: factsSummary.variance?.vs_sdly_pct ?? null,
       // Labor
-      labor_cost: factsSummary?.labor?.labor_cost ?? 0,
-      labor_pct: factsSummary?.labor?.labor_pct ?? 0,
-      total_hours: factsSummary?.labor?.total_hours ?? 0,
-      splh: factsSummary?.labor?.splh ?? 0,
-      ot_hours: factsSummary?.labor?.ot_hours ?? 0,
-      covers_per_labor_hour: factsSummary?.labor?.covers_per_labor_hour ?? null,
-      employee_count: factsSummary?.labor?.employee_count ?? 0,
+      labor_cost: factsSummary.labor?.labor_cost ?? 0,
+      labor_pct: factsSummary.labor?.labor_pct ?? 0,
+      total_labor_hours: factsSummary.labor?.total_hours ?? 0,
+      splh: factsSummary.labor?.splh ?? 0,
+      ot_hours: factsSummary.labor?.ot_hours ?? 0,
+      covers_per_labor_hour: factsSummary.labor?.covers_per_labor_hour ?? null,
+      employee_count: factsSummary.labor?.employee_count ?? 0,
+      // FOH/BOH breakdown
+      foh_hours: factsSummary.labor?.foh?.hours ?? null,
+      foh_cost: factsSummary.labor?.foh?.cost ?? null,
+      boh_hours: factsSummary.labor?.boh?.hours ?? null,
+      boh_cost: factsSummary.labor?.boh?.cost ?? null,
+      health_score: healthData?.health_score ?? null,
+      // Comp data
+      total_comps: compExceptions?.summary?.total_comps ?? reportSummary.total_comps ?? 0,
+      comp_pct: compExceptions?.summary?.comp_pct ?? 0,
+      comp_exception_count: compExceptions?.summary?.exception_count ?? 0,
+      comp_critical_count: compExceptions?.summary?.critical_count ?? 0,
+      comp_overall_assessment: compReview?.summary?.overallAssessment ?? null,
+      // Incident context
+      incident_triggers: [
+        ...(triggers?.revenue_attestation_required ? ['revenue_variance'] : []),
+        ...(triggers?.comp_resolution_required ? ['comp_exceptions'] : []),
+        ...(triggers?.labor_attestation_required ? ['labor_variance'] : []),
+        ...(triggers?.incident_log_required ? ['incident_required'] : []),
+      ],
+      // Entertainment context
+      has_entertainment: hasEntertainment,
+      entertainment_cost: shiftLog?.total_entertainment_cost ?? null,
+      entertainment_pct: shiftLog?.entertainment_pct ?? null,
+      // Culinary context
+      has_culinary: hasCulinary,
+      eightysixed_count: culinaryLog?.eightysixed_items?.length ?? 0,
+      culinary_rating: culinaryLog?.overall_rating ?? null,
     };
 
     fetch('/api/ai/attestation-narrative', {
@@ -283,17 +417,22 @@ export function AttestationStepper({
       credentials: 'include',
       body: JSON.stringify(body),
     })
-      .then(res => res.json())
-      .then(data => {
-        if (!cancelled && data.narratives) {
-          setNarratives(data.narratives);
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(json => {
+        if (!cancelled && json.data?.revenue_narrative) {
+          setNarratives(json.data);
         }
       })
-      .catch(() => { /* silent — narrative is supplemental */ })
+      .catch((err) => {
+        console.error('[AttestationStepper] Narrative fetch failed:', err);
+      })
       .finally(() => { if (!cancelled) setNarrativeLoading(false); });
 
     return () => { cancelled = true; };
-  }, [open, venueId, reportSummary, date]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, venueId, reportSummary, factsSummary, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -386,6 +525,10 @@ export function AttestationStepper({
                   netSales={reportSummary?.net_sales ?? 0}
                   exceptionSummary={compExceptions?.summary ?? null}
                   reviewSummary={compReview?.summary ?? null}
+                  narrative={narratives?.comp_narrative}
+                  narrativeLoading={narrativeLoading}
+                  attestation={attestation}
+                  onUpdate={updateField}
                 />
               )}
               {activeStep.id === 'labor' && (
@@ -410,6 +553,10 @@ export function AttestationStepper({
                   disabled={isLocked}
                   healthScore={healthData?.health_score}
                   healthStatus={healthData?.status}
+                  narrative={narratives?.incident_narrative}
+                  narrativeLoading={narrativeLoading}
+                  attestation={attestation}
+                  onUpdate={updateField}
                 />
               )}
               {activeStep.id === 'coaching' && (
@@ -417,6 +564,36 @@ export function AttestationStepper({
                   actions={coachingActions}
                   onAdd={addCoaching}
                   disabled={isLocked}
+                  narrative={narratives?.coaching_narrative}
+                  narrativeLoading={narrativeLoading}
+                  attestation={attestation}
+                  onUpdate={updateField}
+                />
+              )}
+              {activeStep.id === 'entertainment' && venueId && (
+                <EntertainmentStep
+                  venueId={venueId}
+                  businessDate={date}
+                  shiftLog={shiftLog}
+                  onShiftLogUpdate={setShiftLog}
+                  disabled={isLocked}
+                  narrative={narratives?.entertainment_narrative}
+                  narrativeLoading={narrativeLoading}
+                  attestation={attestation}
+                  onUpdate={updateField}
+                />
+              )}
+              {activeStep.id === 'culinary' && venueId && (
+                <CulinaryStep
+                  venueId={venueId}
+                  businessDate={date}
+                  culinaryLog={culinaryLog}
+                  onCulinaryLogUpdate={setCulinaryLog}
+                  disabled={isLocked}
+                  narrative={narratives?.culinary_narrative}
+                  narrativeLoading={narrativeLoading}
+                  attestation={attestation}
+                  onUpdate={updateField}
                 />
               )}
               {activeStep.id === 'review' && (
@@ -426,8 +603,8 @@ export function AttestationStepper({
                   compResolutions={compResolutions}
                   incidents={incidents}
                   coachingActions={coachingActions}
-                  completionState={completionState}
-                  canSubmit={canSubmit}
+                  completionState={fullCompletionState}
+                  canSubmit={fullCanSubmit}
                   isLocked={isLocked}
                   submitting={submitting}
                   error={error}

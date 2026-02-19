@@ -15,8 +15,6 @@ import {
   Calendar,
   Bot,
   CheckSquare,
-  TrendingUp,
-  Calculator,
   Moon,
   Music2,
   AlertTriangle,
@@ -26,7 +24,7 @@ import {
 } from 'lucide-react';
 import { NavLink } from '@/components/layout/NavLink';
 import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
-import { getNavPermissions, type UserRole } from '@/lib/nav/role-permissions';
+import { getNavPermissions, ROLE_LABELS, type UserRole } from '@/lib/nav/role-permissions';
 
 interface MobileSidebarProps {
   criticalViolationCount: number;
@@ -111,9 +109,69 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
 
         {/* Navigation */}
         <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0" aria-label="Main navigation">
-          <NavLink href="/" icon={<Moon className="w-5 h-5" />}>
+          {/* Primary ops — always visible at the top */}
+          <NavLink
+            href="/"
+            icon={<AlertTriangle className="w-5 h-5" />}
+            badge={criticalViolationCount}
+          >
             Home
           </NavLink>
+          {permissions.nightlyReport && (
+            <NavLink href="/reports/nightly" icon={<Moon className="w-5 h-5" />}>
+              Nightly Report
+            </NavLink>
+          )}
+          {permissions.laborBriefing && (
+            <NavLink href="/labor/briefing" icon={<Calendar className="w-5 h-5" />}>
+              Daily Briefing
+            </NavLink>
+          )}
+          {permissions.preshift && (
+            <NavLink href="/preshift" icon={<ClipboardList className="w-5 h-5" />}>
+              Preshift
+            </NavLink>
+          )}
+          {permissions.attestations && (
+            <NavLink href="/control-plane/attestations" icon={<CheckSquare className="w-5 h-5" />}>
+              Attestations
+            </NavLink>
+          )}
+          {permissions.venueHealth && (
+            <NavLink href="/reports/health" icon={<Activity className="w-5 h-5" />}>
+              Venue Health
+            </NavLink>
+          )}
+
+          {(permissions.forecasts || permissions.entertainment) && (
+            <NavSection title="Sales">
+              {permissions.forecasts && (
+                <NavLink href="/sales/forecasts" icon={<BarChart3 className="w-5 h-5" />}>
+                  Forecasts
+                </NavLink>
+              )}
+              {permissions.entertainment && organizationSlug?.includes('hwood') && (
+                <NavLink href="/entertainment" icon={<Music2 className="w-5 h-5" />}>
+                  Entertainment
+                </NavLink>
+              )}
+            </NavSection>
+          )}
+
+          {(permissions.laborRequirements || permissions.laborSchedule) && (
+            <NavSection title="Labor">
+              {permissions.laborRequirements && (
+                <NavLink href="/labor/requirements" icon={<ClipboardList className="w-5 h-5" />}>
+                  Requirements
+                </NavLink>
+              )}
+              {permissions.laborSchedule && (
+                <NavLink href="/labor/schedule" icon={<Calendar className="w-5 h-5" />}>
+                  Schedule
+                </NavLink>
+              )}
+            </NavSection>
+          )}
 
           <NavSection title="COGS">
             {permissions.orders && (
@@ -153,116 +211,35 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
             )}
           </NavSection>
 
-          <NavSection title="Sales">
-            {permissions.forecasts && (
-              <NavLink href="/sales/forecasts" icon={<BarChart3 className="w-5 h-5" />}>
-                Forecasts
-              </NavLink>
-            )}
-            {permissions.nightlyReport && (
-              <NavLink href="/reports/nightly" icon={<Moon className="w-5 h-5" />}>
-                Nightly Report
-              </NavLink>
-            )}
-            {permissions.venueHealth && (
-              <NavLink href="/reports/health" icon={<Activity className="w-5 h-5" />}>
-                Venue Health
-              </NavLink>
-            )}
-            {permissions.preshift && (
-              <NavLink href="/preshift" icon={<ClipboardList className="w-5 h-5" />}>
-                Preshift
-              </NavLink>
-            )}
-            {permissions.actionCenter && (
-              <NavLink
-                href="/action-center"
-                icon={<AlertTriangle className="w-5 h-5" />}
-                badge={criticalViolationCount}
-              >
-                Action Center
-              </NavLink>
-            )}
-            {permissions.attestations && (
-              <NavLink href="/control-plane/attestations" icon={<CheckSquare className="w-5 h-5" />}>
-                Attestations
-              </NavLink>
-            )}
-            {/* Entertainment module - h.wood Group only */}
-            {permissions.entertainment && organizationSlug?.includes('hwood') && (
-              <NavLink href="/entertainment" icon={<Music2 className="w-5 h-5" />}>
-                Entertainment
-              </NavLink>
-            )}
-          </NavSection>
-
-          <NavSection title="Labor">
-            {permissions.laborBriefing && (
-              <NavLink href="/labor/briefing" icon={<Calendar className="w-5 h-5" />}>
-                Daily Briefing
-              </NavLink>
-            )}
-            {permissions.laborRequirements && (
-              <NavLink href="/labor/requirements" icon={<ClipboardList className="w-5 h-5" />}>
-                Requirements
-              </NavLink>
-            )}
-            {permissions.laborSchedule && (
-              <NavLink href="/labor/schedule" icon={<Calendar className="w-5 h-5" />}>
-                Schedule
-              </NavLink>
-            )}
-          </NavSection>
-
-          {permissions.budget && (
+          {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
             <div className="pt-4 mt-4 border-t border-opsos-sage-500">
-              <NavLink href="/budget" icon={<DollarSign className="w-5 h-5" />}>
-                Budget
+              <NavLink href="/admin/settings" icon={<Settings className="w-5 h-5" />}>
+                Settings
               </NavLink>
             </div>
           )}
-
-          <NavSection title="Admin">
-            {permissions.orgSettings && (
-              <NavLink href="/settings/organization" icon={<Settings className="w-5 h-5" />}>
-                Org Settings
-              </NavLink>
-            )}
-            {permissions.compSettings && (
-              <NavLink href="/admin/comp-settings" icon={<Settings className="w-5 h-5" />}>
-                Comp Settings
-              </NavLink>
-            )}
-            {permissions.procurementSettings && (
-              <NavLink href="/admin/procurement-settings" icon={<ShoppingCart className="w-5 h-5" />}>
-                Procurement
-              </NavLink>
-            )}
-          </NavSection>
         </nav>
 
         {/* Footer — pinned to bottom */}
         <div className="flex-shrink-0 border-t border-opsos-sage-500 pb-2">
-          {permissions.aiAssistant && (
-            <div className="px-4 pt-3 pb-1">
-              <NavLink href="/assistant" icon={<Bot className="w-5 h-5" />}>
-                AI Assistant
-              </NavLink>
-            </div>
-          )}
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-brass/20 text-brass flex items-center justify-center text-xs font-bold flex-shrink-0">
-                {(userName || userEmail || '?').charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">
-                  {userName || 'User'}
+              <a
+                href="/settings/account"
+                className="flex items-center gap-3 flex-1 min-w-0 group"
+              >
+                <div className="w-8 h-8 rounded-full bg-brass/20 text-brass flex items-center justify-center text-xs font-bold flex-shrink-0 group-hover:bg-brass/30 transition-colors">
+                  {(userName || userEmail || '?').charAt(0).toUpperCase()}
                 </div>
-                <div className="text-[11px] text-opsos-sage-300 truncate capitalize">
-                  {userRole === 'gm' ? 'General Manager' : userRole === 'agm' ? 'Asst. GM' : userRole === 'exec_chef' ? 'Executive Chef' : userRole === 'sous_chef' ? 'Sous Chef' : userRole}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-white truncate group-hover:text-brass transition-colors">
+                    {userName || 'User'}
+                  </div>
+                  <div className="text-[11px] text-opsos-sage-300 truncate capitalize">
+                    {ROLE_LABELS[userRole] || userRole}
+                  </div>
                 </div>
-              </div>
+              </a>
               <SignOutButton />
             </div>
           </div>

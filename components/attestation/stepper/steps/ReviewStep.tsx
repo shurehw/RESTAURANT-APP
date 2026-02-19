@@ -20,11 +20,21 @@ import {
   COMP_RESOLUTION_LABELS,
   REVENUE_TAG_LABELS,
   LABOR_TAG_LABELS,
+  COMP_TAG_LABELS,
+  INCIDENT_TAG_LABELS,
+  COACHING_TAG_LABELS,
+  ENTERTAINMENT_TAG_LABELS,
+  CULINARY_TAG_LABELS,
   type RevenueVarianceReason,
   type LaborVarianceReason,
   type CompResolutionCode,
   type RevenueTag,
   type LaborTag,
+  type CompTag,
+  type IncidentTag,
+  type CoachingTag,
+  type EntertainmentTag,
+  type CulinaryTag,
 } from '@/lib/attestation/types';
 import type { StepConfig } from '../StepIndicator';
 
@@ -50,6 +60,8 @@ const MODULE_LABELS: Record<keyof CompletionState, string> = {
   labor: 'Labor',
   incidents: 'Incidents',
   coaching: 'Coaching',
+  entertainment: 'Entertainment',
+  culinary: 'Culinary',
 };
 
 function StatusIcon({ status }: { status: string }) {
@@ -137,6 +149,8 @@ export function ReviewStep({
                       `${incidents.length} logged`}
                     {key === 'coaching' && coachingActions.length > 0 &&
                       `${coachingActions.length} action${coachingActions.length !== 1 ? 's' : ''}`}
+                    {key === 'entertainment' && status === 'complete' && 'Rated'}
+                    {key === 'culinary' && status === 'complete' && 'Rated'}
                     {status === 'not_required' && 'Not required'}
                     {status === 'always_optional' && coachingActions.length === 0 && 'Optional'}
                   </span>
@@ -149,7 +163,12 @@ export function ReviewStep({
 
       {/* Selected driver tags */}
       {((attestation?.revenue_tags && attestation.revenue_tags.length > 0) ||
-        (attestation?.labor_tags && attestation.labor_tags.length > 0)) && (
+        (attestation?.labor_tags && attestation.labor_tags.length > 0) ||
+        (attestation?.comp_tags && attestation.comp_tags.length > 0) ||
+        (attestation?.incident_tags && attestation.incident_tags.length > 0) ||
+        (attestation?.coaching_tags && attestation.coaching_tags.length > 0) ||
+        (attestation?.entertainment_tags && attestation.entertainment_tags.length > 0) ||
+        (attestation?.culinary_tags && attestation.culinary_tags.length > 0)) && (
         <Card>
           <CardContent className="p-4 space-y-3">
             {attestation?.revenue_tags && attestation.revenue_tags.length > 0 && (
@@ -171,6 +190,66 @@ export function ReviewStep({
                   {attestation.labor_tags.map((tag) => (
                     <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
                       {LABOR_TAG_LABELS[tag as LaborTag] || tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attestation?.comp_tags && attestation.comp_tags.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Comp Drivers</h4>
+                <div className="flex flex-wrap gap-1">
+                  {attestation.comp_tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
+                      {COMP_TAG_LABELS[tag as CompTag] || tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attestation?.incident_tags && attestation.incident_tags.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Incident Drivers</h4>
+                <div className="flex flex-wrap gap-1">
+                  {attestation.incident_tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
+                      {INCIDENT_TAG_LABELS[tag as IncidentTag] || tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attestation?.coaching_tags && attestation.coaching_tags.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Coaching Focus</h4>
+                <div className="flex flex-wrap gap-1">
+                  {attestation.coaching_tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
+                      {COACHING_TAG_LABELS[tag as CoachingTag] || tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attestation?.entertainment_tags && attestation.entertainment_tags.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Entertainment</h4>
+                <div className="flex flex-wrap gap-1">
+                  {attestation.entertainment_tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
+                      {ENTERTAINMENT_TAG_LABELS[tag as EntertainmentTag] || tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {attestation?.culinary_tags && attestation.culinary_tags.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Culinary</h4>
+                <div className="flex flex-wrap gap-1">
+                  {attestation.culinary_tags.map((tag) => (
+                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
+                      {CULINARY_TAG_LABELS[tag as CulinaryTag] || tag}
                     </span>
                   ))}
                 </div>

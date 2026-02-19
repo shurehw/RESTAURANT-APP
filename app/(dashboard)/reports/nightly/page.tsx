@@ -33,7 +33,6 @@ import {
   ShieldAlert,
   XCircle,
   AlertOctagon,
-  Sparkles,
   CheckCircle2,
   Info,
   ChevronDown,
@@ -43,12 +42,20 @@ import {
   ClipboardCheck,
   Lock,
   Minus,
+  Receipt,
+  CalendarCheck,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
 import { AttestationStepper } from '@/components/attestation/stepper/AttestationStepper';
 import { ServerDetailModal } from '@/components/reports/ServerDetailModal';
 import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
 import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
+import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/PeriodGaugeCard';
+import { LaborCard } from '@/components/pulse/LaborCard';
+import { CompCard } from '@/components/pulse/CompCard';
+import { CheckListSheet } from '@/components/pulse/CheckListSheet';
+import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
+import { ReservationListSheet } from '@/components/pulse/ReservationListSheet';
 import type { NightlyReportPayload } from '@/lib/attestation/types';
 
 interface NightlyReportData {
@@ -161,26 +168,6 @@ interface CompExceptionsData {
   exceptions: CompException[];
 }
 
-interface CompReviewRecommendation {
-  priority: 'urgent' | 'high' | 'medium' | 'low';
-  category: 'violation' | 'training' | 'process' | 'policy' | 'positive';
-  title: string;
-  description: string;
-  action: string;
-  relatedComps?: string[];
-}
-
-interface CompReviewData {
-  summary: {
-    totalReviewed: number;
-    approved: number;
-    needsFollowup: number;
-    urgent: number;
-    overallAssessment: string;
-  };
-  recommendations: CompReviewRecommendation[];
-  insights: string[];
-}
 
 interface VenueHealthData {
   health_score: number;
@@ -503,16 +490,25 @@ export default function NightlyReportPage() {
   const [compNotes, setCompNotes] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [compExceptions, setCompExceptions] = useState<CompExceptionsData | null>(null);
-  const [compReview, setCompReview] = useState<CompReviewData | null>(null);
-  const [loadingCompReview, setLoadingCompReview] = useState<boolean>(false);
-  const [compReviewExpanded, setCompReviewExpanded] = useState<boolean>(false);
   const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
   const [laborExceptions, setLaborExceptions] = useState<any | null>(null);
   const [loadingLaborExceptions, setLoadingLaborExceptions] = useState<boolean>(false);
   const [healthData, setHealthData] = useState<VenueHealthData | null>(null);
   const [loadingHealth, setLoadingHealth] = useState<boolean>(false);
+  const [enrichment, setEnrichment] = useState<{ labor: any; comps: any } | null>(null);
+  const [paceData, setPaceData] = useState<{
+    current: any;
+    sdlw: any;
+    sdly: any;
+    forecast: any;
+    pace: any;
+  } | null>(null);
   const [attestStepperOpen, setAttestStepperOpen] = useState(false);
+  const [checksSheetOpen, setChecksSheetOpen] = useState(false);
+  const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
+  const [checkDetailOpen, setCheckDetailOpen] = useState(false);
+  const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
 
   // Handler for view mode changes (updates URL)
   function handleViewChange(newView: ViewMode) {
@@ -661,7 +657,6 @@ export default function NightlyReportPage() {
 
       setLoading(true);
       setError(null);
-      setCompReview(null);
       setCompExceptions(null);
       setCompNotes({});
 
@@ -737,6 +732,20 @@ export default function NightlyReportPage() {
         .catch(err => { console.error('[nightly] Health fetch failed:', err); setHealthData(null); })
         .finally(() => setLoadingHealth(false));
 
+      // Enrichment: labor + comps from the same source as Pulse
+      setEnrichment(null);
+      fetch(`/api/pulse/enrichment?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => { if (data) setEnrichment({ labor: data.labor, comps: data.comps }); })
+        .catch(err => { console.error('[nightly] Enrichment fetch failed:', err); });
+
+      // Sales Pace: same data source as Pulse gauge cards
+      setPaceData(null);
+      fetch(`/api/sales/pace?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => { if (data) setPaceData(data); })
+        .catch(err => { console.error('[nightly] Pace fetch failed:', err); });
+
       // 2) Critical path — TipSee report + comp notes (blocks UI)
       // Timeout after 15s so the page isn't stuck if TipSee is slow
       const controller = new AbortController();
@@ -767,28 +776,8 @@ export default function NightlyReportPage() {
             .then(data => {
               const parsedExceptions = data?.success ? data.data : null;
               if (parsedExceptions) setCompExceptions(parsedExceptions);
-
-              if (viewMode === 'nightly' && liveData.summary?.total_comps > 0) {
-                setLoadingCompReview(true);
-                return fetch('/api/ai/comp-review', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  credentials: 'include',
-                  body: JSON.stringify({
-                    date,
-                    venue_id: selectedVenue.id,
-                    venue_name: selectedVenue.name,
-                    detailedComps: liveData.detailedComps,
-                    exceptions: parsedExceptions,
-                    summary: liveData.summary,
-                  }),
-                });
-              }
             })
-            .then(res => res && res.ok ? res.json() : null)
-            .then(data => { if (data?.success) setCompReview(data.data); })
-            .catch(err => console.error('Comp exceptions/AI review error:', err))
-            .finally(() => setLoadingCompReview(false));
+            .catch(err => console.error('Comp exceptions error:', err));
         }
       } catch (err: any) {
         clearTimeout(timeoutId);
@@ -941,17 +930,39 @@ export default function NightlyReportPage() {
             </TabsList>
           </Tabs>
 
-          {/* Attestation Entry Button */}
-          {att.attestation && !loading && (
-            <Button
-              variant={att.isLocked ? 'outline' : 'brass'}
-              size="sm"
-              onClick={() => setAttestStepperOpen(true)}
-            >
-              <ClipboardCheck className="h-4 w-4 mr-1.5" />
-              {att.isLocked ? 'View Attestation' : 'Attest'}
-            </Button>
-          )}
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {selectedVenue && !isAllVenues && viewMode === 'nightly' && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setChecksSheetOpen(true)}
+                >
+                  <Receipt className="h-4 w-4 mr-1.5" />
+                  Checks
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setReservationsSheetOpen(true)}
+                >
+                  <CalendarCheck className="h-4 w-4 mr-1.5" />
+                  Reservations
+                </Button>
+              </>
+            )}
+            {att.attestation && !loading && (
+              <Button
+                variant={att.isLocked ? 'outline' : 'brass'}
+                size="sm"
+                onClick={() => setAttestStepperOpen(true)}
+              >
+                <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                {att.isLocked ? 'View Attestation' : 'Attest'}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1062,17 +1073,196 @@ export default function NightlyReportPage() {
       {/* Report Content — renders when report OR facts are available */}
       {!error && (report || factsSummary) && (
         <>
-          {/* Executive Summary - Always show, variance optional */}
-          <Card className="bg-muted/30 border-brass/20">
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between gap-2 mb-3">
+          {/* Performance vs Benchmarks — Pulse-style gauge cards */}
+          {(() => {
+            // For nightly: use paceData (same source as Pulse — sales_snapshots)
+            // For WTD/PTD/YTD: use factsSummary (venue_day_facts aggregations)
+            const liveNetSales = viewMode === 'nightly'
+              ? (paceData?.current?.net_sales ?? nightlyNetSales)
+              : viewMode === 'wtd'
+                ? (factsSummary?.variance?.wtd_net_sales || 0)
+                : viewMode === 'ptd'
+                  ? (factsSummary?.variance?.ptd_net_sales || 0)
+                  : (factsSummary?.variance?.ytd_net_sales || 0);
+            const liveCovers = viewMode === 'nightly'
+              ? (paceData?.current?.covers_count ?? nightlyCovers)
+              : viewMode === 'wtd'
+                ? (factsSummary?.variance?.wtd_covers || 0)
+                : viewMode === 'ptd'
+                  ? (factsSummary?.variance?.ptd_covers || 0)
+                  : (factsSummary?.variance?.ytd_covers || 0);
+            const liveAvgCheck = viewMode === 'nightly' && paceData?.current?.avg_check
+              ? paceData.current.avg_check
+              : (liveCovers > 0 ? liveNetSales / liveCovers : 0);
+
+            // Mode-appropriate variance labels and values
+            let primaryLabel: string;
+            let primarySalesPct: number | null = null;
+            let primaryCoversPct: number | null = null;
+            let primarySalesValue: number = 0;
+            let primaryCoversValue: number = 0;
+            let secondaryLabel: string | null = null;
+            let secondarySalesPct: number | null = null;
+            let secondaryCoversPct: number | null = null;
+            let secondarySalesValue: number = 0;
+            let secondaryCoversValue: number = 0;
+
+            if (viewMode === 'nightly') {
+              // Use paceData (same source as Pulse), factsSummary as fallback
+              const sdlw = paceData?.sdlw;
+              const sdly = paceData?.sdly;
+
+              // SDLW comparison
+              const sdlwSales = sdlw?.net_sales ?? factsSummary?.variance?.sdlw_net_sales ?? 0;
+              const sdlwCovers = sdlw?.covers_count ?? factsSummary?.variance?.sdlw_covers ?? 0;
+              const sdlwSalesPct = factsSummary?.variance?.vs_sdlw_pct
+                ?? (sdlwSales > 0 ? ((liveNetSales - sdlwSales) / sdlwSales) * 100 : null);
+              const sdlwCoversPct = factsSummary?.variance?.vs_sdlw_covers_pct
+                ?? (sdlwCovers > 0 ? ((liveCovers - sdlwCovers) / sdlwCovers) * 100 : null);
+
+              // SDLY comparison
+              const sdlySales = sdly?.net_sales ?? factsSummary?.variance?.sdly_net_sales ?? 0;
+              const sdlyCovers = sdly?.covers_count ?? factsSummary?.variance?.sdly_covers ?? 0;
+              const sdlySalesPct = factsSummary?.variance?.vs_sdly_pct
+                ?? (sdlySales > 0 ? ((liveNetSales - sdlySales) / sdlySales) * 100 : null);
+              const sdlyCoversPct = factsSummary?.variance?.vs_sdly_covers_pct
+                ?? (sdlyCovers > 0 ? ((liveCovers - sdlyCovers) / sdlyCovers) * 100 : null);
+
+              // Forecast comparison
+              const forecastSales = paceData?.forecast?.revenue_predicted ?? factsSummary?.forecast?.net_sales ?? null;
+              const forecastCovers = paceData?.forecast?.covers_predicted ?? factsSummary?.forecast?.covers ?? null;
+              const forecastSalesPct = factsSummary?.variance?.vs_forecast_pct
+                ?? (forecastSales && forecastSales > 0 ? ((liveNetSales - forecastSales) / forecastSales) * 100 : null);
+              const forecastCoversPct = factsSummary?.variance?.vs_forecast_covers_pct
+                ?? (forecastCovers && forecastCovers > 0 ? ((liveCovers - forecastCovers) / forecastCovers) * 100 : null);
+
+              // Primary: forecast if available, else SDLW
+              if (forecastSales && forecastSales > 0) {
+                primaryLabel = 'vs Forecast';
+                primarySalesValue = forecastSales;
+                primaryCoversValue = forecastCovers || 0;
+                primarySalesPct = forecastSalesPct ?? null;
+                primaryCoversPct = forecastCoversPct ?? null;
+                secondaryLabel = 'vs SDLW';
+                secondarySalesValue = sdlwSales;
+                secondaryCoversValue = sdlwCovers;
+                secondarySalesPct = sdlwSalesPct ?? null;
+                secondaryCoversPct = sdlwCoversPct ?? null;
+              } else {
+                primaryLabel = 'vs SDLW';
+                primarySalesValue = sdlwSales;
+                primaryCoversValue = sdlwCovers;
+                primarySalesPct = sdlwSalesPct ?? null;
+                primaryCoversPct = sdlwCoversPct ?? null;
+                secondaryLabel = 'vs SDLY';
+                secondarySalesValue = sdlySales;
+                secondaryCoversValue = sdlyCovers;
+                secondarySalesPct = sdlySalesPct ?? null;
+                secondaryCoversPct = sdlyCoversPct ?? null;
+              }
+            } else if (viewMode === 'wtd') {
+              primaryLabel = 'vs LW';
+              primarySalesPct = factsSummary?.variance?.vs_wtd_pct ?? null;
+              primaryCoversPct = factsSummary?.variance?.vs_wtd_covers_pct ?? null;
+              primarySalesValue = factsSummary?.variance?.wtd_lw_net_sales || 0;
+              primaryCoversValue = factsSummary?.variance?.wtd_lw_covers || 0;
+              secondaryLabel = 'vs SWLY';
+              secondarySalesPct = factsSummary?.variance?.vs_wtd_swly_pct ?? null;
+              secondaryCoversPct = factsSummary?.variance?.vs_wtd_swly_covers_pct ?? null;
+              secondarySalesValue = factsSummary?.variance?.wtd_swly_net_sales || 0;
+              secondaryCoversValue = factsSummary?.variance?.wtd_swly_covers || 0;
+            } else if (viewMode === 'ptd') {
+              primaryLabel = 'vs LP';
+              primarySalesPct = factsSummary?.variance?.vs_ptd_pct ?? null;
+              primaryCoversPct = factsSummary?.variance?.vs_ptd_covers_pct ?? null;
+              primarySalesValue = factsSummary?.variance?.ptd_lw_net_sales || 0;
+              primaryCoversValue = factsSummary?.variance?.ptd_lw_covers || 0;
+              secondaryLabel = 'vs SPLY';
+              secondarySalesPct = factsSummary?.variance?.vs_ptd_sply_pct ?? null;
+              secondaryCoversPct = factsSummary?.variance?.vs_ptd_sply_covers_pct ?? null;
+              secondarySalesValue = factsSummary?.variance?.ptd_sply_net_sales || 0;
+              secondaryCoversValue = factsSummary?.variance?.ptd_sply_covers || 0;
+            } else {
+              primaryLabel = 'vs LY';
+              primarySalesPct = factsSummary?.variance?.vs_ytd_pct ?? null;
+              primaryCoversPct = factsSummary?.variance?.vs_ytd_covers_pct ?? null;
+              primarySalesValue = factsSummary?.variance?.ytd_ly_net_sales || 0;
+              primaryCoversValue = factsSummary?.variance?.ytd_ly_covers || 0;
+            }
+
+            // Avg check for prior periods
+            const primaryAvgCheck = primaryCoversValue > 0 ? primarySalesValue / primaryCoversValue : 0;
+            const secondaryAvgCheck = secondaryCoversValue > 0 ? secondarySalesValue / secondaryCoversValue : 0;
+            const avgCheckPrimaryPct = primaryAvgCheck > 0 ? ((liveAvgCheck - primaryAvgCheck) / primaryAvgCheck) * 100 : null;
+            const avgCheckSecondaryPct = secondaryAvgCheck > 0 ? ((liveAvgCheck - secondaryAvgCheck) / secondaryAvgCheck) * 100 : null;
+
+            // Category mix: for nightly, prefer paceData (same as Pulse), fallback to factsSummary
+            let foodNet: number;
+            let bevNet: number;
+            if (viewMode === 'nightly') {
+              if (paceData?.current) {
+                foodNet = paceData.current.food_sales ?? 0;
+                bevNet = paceData.current.beverage_sales ?? 0;
+              } else {
+                foodNet = factsSummary?.food_sales ?? 0;
+                bevNet = factsSummary?.beverage_sales ?? 0;
+              }
+            } else {
+              const categories = viewMode === 'wtd'
+                ? (factsSummary?.categories_wtd || [])
+                : viewMode === 'ptd'
+                  ? (factsSummary?.categories_ptd || [])
+                  : (factsSummary?.categories_ytd || []);
+
+              const isBevCategory = (cat: string) => {
+                const lower = (cat || '').toLowerCase();
+                return lower.includes('bev') || lower.includes('wine') ||
+                       lower.includes('beer') || lower.includes('liquor') ||
+                       lower.includes('cocktail');
+              };
+
+              bevNet = categories
+                .filter((c: any) => isBevCategory(c.category))
+                .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+              const totalCatNet = categories
+                .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
+              foodNet = totalCatNet - bevNet;
+            }
+
+            // Prior bev mix from SDLW
+            let priorBevPct: number | null = null;
+            if (viewMode === 'nightly' && paceData?.sdlw) {
+              const sdlwTotal = (paceData.sdlw.food_sales ?? 0) + (paceData.sdlw.beverage_sales ?? 0);
+              if (sdlwTotal > 0) {
+                priorBevPct = ((paceData.sdlw.beverage_sales ?? 0) / sdlwTotal) * 100;
+              }
+            }
+
+            // Labor data: enrichment (same source as Pulse) for nightly,
+            // factsSummary for period views
+            const laborData = viewMode === 'nightly'
+              ? (enrichment?.labor ?? factsSummary?.labor)
+              : viewMode === 'wtd'
+                ? factsSummary?.labor_wtd
+                : viewMode === 'ptd'
+                  ? factsSummary?.labor_ptd
+                  : factsSummary?.labor_ytd;
+
+            // Comp data: enrichment (same source as Pulse) for nightly
+            const compCardData = viewMode === 'nightly'
+              ? (enrichment?.comps ?? null)
+              : null;
+
+            return (
+              <>
+                {/* Header with Health Badge */}
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Target className="h-4 w-4 text-brass" />
                     <span className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
                       Performance vs Benchmarks
                     </span>
                   </div>
-                  {/* Venue Health Score Badge */}
                   {healthData && (
                     <a
                       href="/reports/health"
@@ -1116,275 +1306,67 @@ export default function NightlyReportPage() {
                     </a>
                   )}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {/* Net Sales with variance - mode-aware comparisons */}
-                  {(() => {
-                    // Select data source based on view mode
-                    const liveNetSales = viewMode === 'nightly'
-                      ? nightlyNetSales
-                      : viewMode === 'wtd'
-                        ? (factsSummary?.variance?.wtd_net_sales || 0)
-                        : viewMode === 'ptd'
-                          ? (factsSummary?.variance?.ptd_net_sales || 0)
-                          : (factsSummary?.variance?.ytd_net_sales || 0);
-                    const liveCovers = viewMode === 'nightly'
-                      ? nightlyCovers
-                      : viewMode === 'wtd'
-                        ? (factsSummary?.variance?.wtd_covers || 0)
-                        : viewMode === 'ptd'
-                          ? (factsSummary?.variance?.ptd_covers || 0)
-                          : (factsSummary?.variance?.ytd_covers || 0);
 
-                    // Mode-appropriate variance labels
-                    let primaryLabel: string, primarySalesPct: number | null | undefined, primaryCoversPct: number | null | undefined;
-                    let secondaryLabel: string | null = null, secondarySalesPct: number | null | undefined, secondaryCoversPct: number | null | undefined;
-
-                    if (viewMode === 'nightly') {
-                      const calcVar = (actual: number, comp: number | null | undefined) =>
-                        comp && comp > 0 ? ((actual - comp) / comp) * 100 : null;
-                      primaryLabel = 'SDLW';
-                      primarySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdlw_net_sales);
-                      primaryCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdlw_covers);
-                      secondaryLabel = 'SDLY';
-                      secondarySalesPct = calcVar(liveNetSales, factsSummary?.variance?.sdly_net_sales);
-                      secondaryCoversPct = calcVar(liveCovers, factsSummary?.variance?.sdly_covers);
-                    } else if (viewMode === 'wtd') {
-                      primaryLabel = 'vs LW';
-                      primarySalesPct = factsSummary?.variance?.vs_wtd_pct;
-                      primaryCoversPct = factsSummary?.variance?.vs_wtd_covers_pct;
-                      secondaryLabel = 'vs SWLY';
-                      secondarySalesPct = factsSummary?.variance?.vs_wtd_swly_pct;
-                      secondaryCoversPct = factsSummary?.variance?.vs_wtd_swly_covers_pct;
-                    } else if (viewMode === 'ptd') {
-                      primaryLabel = 'vs LP';
-                      primarySalesPct = factsSummary?.variance?.vs_ptd_pct;
-                      primaryCoversPct = factsSummary?.variance?.vs_ptd_covers_pct;
-                      secondaryLabel = 'vs SPLY';
-                      secondarySalesPct = factsSummary?.variance?.vs_ptd_sply_pct;
-                      secondaryCoversPct = factsSummary?.variance?.vs_ptd_sply_covers_pct;
-                    } else {
-                      // YTD
-                      primaryLabel = 'vs LY';
-                      primarySalesPct = factsSummary?.variance?.vs_ytd_pct;
-                      primaryCoversPct = factsSummary?.variance?.vs_ytd_covers_pct;
-                    }
-
-                    return (
-                      <>
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(liveNetSales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">Net Sales</div>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <VarianceBadge value={primarySalesPct ?? null} label={primaryLabel} />
-                            {secondaryLabel && <VarianceBadge value={secondarySalesPct ?? null} label={secondaryLabel} />}
-                          </div>
-                        </div>
-                        {/* Covers with variance */}
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums">
-                            {formatNumber(liveCovers)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">Covers</div>
-                          <div className="flex flex-wrap gap-x-3 gap-y-1">
-                            <VarianceBadge value={primaryCoversPct ?? null} label={primaryLabel} />
-                            {secondaryLabel && <VarianceBadge value={secondaryCoversPct ?? null} label={secondaryLabel} />}
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()}
-                  {/* Comparison context cards - mode-aware */}
-                  {viewMode === 'nightly' && (
-                    <>
-                      {factsSummary?.variance?.sdlw_net_sales != null && factsSummary.variance.sdlw_net_sales > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                            {formatCurrency(factsSummary.variance.sdlw_net_sales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">SDLW</div>
-                          <div className="text-xs text-muted-foreground">
-                            {factsSummary.variance.sdlw_covers} covers
-                          </div>
-                        </div>
-                      )}
-                      {factsSummary?.variance?.sdly_net_sales != null && factsSummary.variance.sdly_net_sales > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                            {formatCurrency(factsSummary.variance.sdly_net_sales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">SDLY</div>
-                          <div className="text-xs text-muted-foreground">
-                            {factsSummary.variance.sdly_covers} covers
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {viewMode === 'wtd' && (
-                    <>
-                      {factsSummary?.variance?.wtd_lw_net_sales != null && factsSummary.variance.wtd_lw_net_sales > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                            {formatCurrency(factsSummary.variance.wtd_lw_net_sales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">Last Week</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatNumber(factsSummary.variance.wtd_lw_covers || 0)} covers
-                          </div>
-                        </div>
-                      )}
-                      {factsSummary?.variance?.wtd_swly_net_sales != null && factsSummary.variance.wtd_swly_net_sales > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                            {formatCurrency(factsSummary.variance.wtd_swly_net_sales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">SWLY</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatNumber(factsSummary.variance.wtd_swly_covers || 0)} covers
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {viewMode === 'ptd' && (
-                    <>
-                      {factsSummary?.variance?.ptd_lw_net_sales != null && factsSummary.variance.ptd_lw_net_sales > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                            {formatCurrency(factsSummary.variance.ptd_lw_net_sales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">Last Period</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatNumber(factsSummary.variance.ptd_lw_covers || 0)} covers
-                          </div>
-                        </div>
-                      )}
-                      {factsSummary?.variance?.ptd_sply_net_sales != null && factsSummary.variance.ptd_sply_net_sales > 0 && (
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                            {formatCurrency(factsSummary.variance.ptd_sply_net_sales)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">SPLY</div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatNumber(factsSummary.variance.ptd_sply_covers || 0)} covers
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  {viewMode === 'ytd' && factsSummary?.variance?.ytd_ly_net_sales != null && factsSummary.variance.ytd_ly_net_sales > 0 && (
-                    <div className="space-y-1">
-                      <div className="text-2xl font-bold tabular-nums text-muted-foreground">
-                        {formatCurrency(factsSummary.variance.ytd_ly_net_sales)}
-                      </div>
-                      <div className="text-xs text-muted-foreground uppercase">Last Year</div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatNumber(factsSummary.variance.ytd_ly_covers || 0)} covers
-                      </div>
-                    </div>
-                  )}
-                  {/* Labor efficiency preview */}
-                  {(() => {
-                    const laborPreview = viewMode === 'nightly'
-                      ? factsSummary?.labor
-                      : viewMode === 'wtd'
-                        ? factsSummary?.labor_wtd
-                        : viewMode === 'ptd'
-                          ? factsSummary?.labor_ptd
-                          : factsSummary?.labor_ytd;
-
-                    if (!laborPreview) return null;
-
-                    return (
-                      <div className="space-y-1">
-                        <div className="text-2xl font-bold tabular-nums">
-                          {(laborPreview.labor_pct || 0).toFixed(1)}%
-                        </div>
-                        <div className="text-xs text-muted-foreground uppercase">Labor %</div>
-                        <div className="text-xs text-muted-foreground">
-                          SPLH: {formatCurrency(laborPreview.splh || 0)} · CPLH: {laborPreview.covers_per_labor_hour ? laborPreview.covers_per_labor_hour.toFixed(1) : '—'}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                  {/* Food/Bev/Other Split - actual category data */}
-                  {(() => {
-                    const categories = viewMode === 'nightly'
-                      ? (factsSummary?.salesByCategory || report?.salesByCategory || [])
-                      : viewMode === 'wtd'
-                        ? (factsSummary?.categories_wtd || [])
-                        : viewMode === 'ptd'
-                          ? (factsSummary?.categories_ptd || [])
-                          : (factsSummary?.categories_ytd || []);
-
-                    if (categories.length === 0) return null;
-
-                    const isBevCategory = (cat: string) => {
-                      const lower = (cat || '').toLowerCase();
-                      return lower.includes('bev') || lower.includes('wine') ||
-                             lower.includes('beer') || lower.includes('liquor') ||
-                             lower.includes('cocktail');
-                    };
-
-                    const isOtherCategory = (cat: string) => {
-                      const lower = (cat || '').toLowerCase();
-                      return lower === 'other' || lower === 'misc' || lower.includes('merch') ||
-                             lower.includes('gift') || lower.includes('retail');
-                    };
-
-                    const bevNet = categories
-                      .filter((c: any) => isBevCategory(c.category))
-                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
-                    const otherNet = categories
-                      .filter((c: any) => isOtherCategory(c.category))
-                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
-                    const totalNet = categories
-                      .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
-                    const foodNet = totalNet - bevNet - otherNet;
-
-                    const foodPct = totalNet > 0 ? (foodNet / totalNet * 100) : 0;
-                    const bevPct = totalNet > 0 ? (bevNet / totalNet * 100) : 0;
-                    const otherPct = totalNet > 0 ? (otherNet / totalNet * 100) : 0;
-
-                    return (
-                      <>
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(foodNet)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">Food Sales</div>
-                          <div className="text-xs text-muted-foreground">
-                            {foodPct.toFixed(1)}% mix
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-2xl font-bold tabular-nums">
-                            {formatCurrency(bevNet)}
-                          </div>
-                          <div className="text-xs text-muted-foreground uppercase">Bev Sales</div>
-                          <div className="text-xs text-muted-foreground">
-                            {bevPct.toFixed(1)}% mix
-                          </div>
-                        </div>
-                        {otherNet > 0 && (
-                          <div className="space-y-1">
-                            <div className="text-2xl font-bold tabular-nums">
-                              {formatCurrency(otherNet)}
-                            </div>
-                            <div className="text-xs text-muted-foreground uppercase">Other Sales</div>
-                            <div className="text-xs text-muted-foreground">
-                              {otherPct.toFixed(1)}% mix
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
+                {/* Hero gauge cards — mirrors Live Pulse layout */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <PeriodGaugeCard
+                    title="Net Revenue"
+                    icon={DollarSign}
+                    current={liveNetSales}
+                    prior={primarySalesValue}
+                    variancePct={primarySalesPct}
+                    priorLabel={primaryLabel}
+                    secondaryPrior={secondarySalesValue || null}
+                    secondaryVariancePct={secondarySalesPct}
+                    secondaryLabel={secondaryLabel}
+                  />
+                  <PeriodGaugeCard
+                    title="Covers"
+                    icon={Users}
+                    current={liveCovers}
+                    prior={primaryCoversValue}
+                    variancePct={primaryCoversPct}
+                    priorLabel={primaryLabel}
+                    secondaryPrior={secondaryCoversValue || null}
+                    secondaryVariancePct={secondaryCoversPct}
+                    secondaryLabel={secondaryLabel}
+                    format="number"
+                  />
+                  <PeriodGaugeCard
+                    title="Avg Check"
+                    icon={TrendingUp}
+                    current={Math.round(liveAvgCheck)}
+                    prior={Math.round(primaryAvgCheck)}
+                    variancePct={avgCheckPrimaryPct != null ? Math.round(avgCheckPrimaryPct * 10) / 10 : null}
+                    priorLabel={primaryLabel}
+                    secondaryPrior={secondaryAvgCheck > 0 ? Math.round(secondaryAvgCheck) : null}
+                    secondaryVariancePct={avgCheckSecondaryPct != null ? Math.round(avgCheckSecondaryPct * 10) / 10 : null}
+                    secondaryLabel={secondaryLabel}
+                  />
+                  <PeriodCategoryMixCard
+                    foodSales={foodNet}
+                    bevSales={bevNet}
+                    priorBevPct={priorBevPct}
+                  />
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Labor + Comps — only render when data exists */}
+                {(laborData || compCardData) && (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {laborData && (
+                      <LaborCard
+                        labor={{ punch_count: 0, ...laborData }}
+                        netSales={liveNetSales + (viewMode === 'nightly' ? nightlyComps : 0)}
+                      />
+                    )}
+                    {compCardData && (
+                      <CompCard comps={compCardData} />
+                    )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {/* PTD Week Breakdown */}
           {viewMode === 'ptd' && factsSummary?.ptd_weeks && factsSummary.ptd_weeks.length > 0 && (
@@ -1801,173 +1783,6 @@ export default function NightlyReportPage() {
                   ))}
                 </div>
               </CardContent>
-            </Card>
-          )}
-
-          {/* AI Comp Review */}
-          {loadingCompReview && (
-            <Card className="border-blue-500/50 bg-blue-500/5">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-center gap-3">
-                  <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                  <span className="text-sm text-muted-foreground">
-                    AI is reviewing all comp activity...
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {compReview && !loadingCompReview && (
-            <Card className="border-blue-500/50 bg-blue-500/5">
-              <CardHeader
-                className="border-b border-blue-500/20 cursor-pointer hover:bg-blue-500/10 transition-colors"
-                onClick={() => setCompReviewExpanded(!compReviewExpanded)}
-              >
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-blue-500" />
-                  AI Comp Review
-                  <span className="ml-auto flex items-center gap-2">
-                    {compReview.summary.urgent > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-error text-white rounded">
-                        {compReview.summary.urgent} Urgent
-                      </span>
-                    )}
-                    {compReview.summary.needsFollowup > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-500 text-white rounded">
-                        {compReview.summary.needsFollowup} Follow-up
-                      </span>
-                    )}
-                    {compReview.summary.approved > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-green-600 text-white rounded">
-                        {compReview.summary.approved} Approved
-                      </span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 ml-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCompReviewExpanded(!compReviewExpanded);
-                      }}
-                    >
-                      {compReviewExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              {compReviewExpanded && (
-                <CardContent className="p-0">
-                  {/* Overall Assessment */}
-                  <div className="px-4 py-3 border-b bg-blue-500/10 border-blue-500/20">
-                  <p className="text-sm font-medium text-foreground">
-                    {compReview.summary.overallAssessment}
-                  </p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                    <span>{compReview.summary.totalReviewed} comps reviewed</span>
-                  </div>
-                </div>
-
-                {/* Recommendations */}
-                {compReview.recommendations.length > 0 && (
-                  <div className="divide-y divide-border">
-                    {compReview.recommendations.map((rec, i) => {
-                      const priorityColors = {
-                        urgent: {
-                          bg: 'bg-error/5 hover:bg-error/10',
-                          icon: 'text-error',
-                          badge: 'bg-error/20 text-error',
-                        },
-                        high: {
-                          bg: 'bg-yellow-500/5 hover:bg-yellow-500/10',
-                          icon: 'text-yellow-600',
-                          badge: 'bg-yellow-500/20 text-yellow-700',
-                        },
-                        medium: {
-                          bg: 'bg-blue-500/5 hover:bg-blue-500/10',
-                          icon: 'text-blue-600',
-                          badge: 'bg-blue-500/20 text-blue-700',
-                        },
-                        low: {
-                          bg: 'bg-green-500/5 hover:bg-green-500/10',
-                          icon: 'text-green-600',
-                          badge: 'bg-green-500/20 text-green-700',
-                        },
-                      };
-
-                      const colors = priorityColors[rec.priority];
-                      const Icon =
-                        rec.priority === 'urgent'
-                          ? XCircle
-                          : rec.priority === 'high'
-                          ? AlertTriangle
-                          : rec.category === 'positive'
-                          ? CheckCircle2
-                          : Info;
-
-                      return (
-                        <div
-                          key={i}
-                          className={`p-4 ${colors.bg} transition-colors`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3 flex-1">
-                              <Icon className={`h-5 w-5 ${colors.icon} mt-0.5 flex-shrink-0`} />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold">{rec.title}</span>
-                                  <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${colors.badge}`}>
-                                    {rec.priority.toUpperCase()}
-                                  </span>
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-muted text-muted-foreground">
-                                    {rec.category}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {rec.description}
-                                </p>
-                                <div className="mt-2 p-2 bg-background/50 rounded text-sm">
-                                  <span className="font-medium text-foreground">Action: </span>
-                                  <span className="text-foreground">{rec.action}</span>
-                                </div>
-                                {rec.relatedComps && rec.relatedComps.length > 0 && (
-                                  <div className="mt-2 text-xs text-muted-foreground">
-                                    Related checks: {rec.relatedComps.join(', ')}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Insights */}
-                {compReview.insights.length > 0 && (
-                  <div className="p-4 border-t bg-muted/30">
-                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                      <Info className="h-4 w-4" />
-                      Key Insights
-                    </h4>
-                    <ul className="space-y-1">
-                      {compReview.insights.map((insight, i) => (
-                        <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
-                          <span className="text-blue-500 mt-1">•</span>
-                          <span>{insight}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                </CardContent>
-              )}
             </Card>
           )}
 
@@ -2593,16 +2408,9 @@ export default function NightlyReportPage() {
             onClose={() => setAttestStepperOpen(false)}
             venueId={selectedVenue?.id}
             reportSummary={report ? report.summary : null}
-            factsSummary={factsSummary ? {
-              food_sales: factsSummary.food_sales,
-              beverage_sales: factsSummary.beverage_sales,
-              beverage_pct: factsSummary.beverage_pct,
-              forecast: factsSummary.forecast,
-              variance: factsSummary.variance,
-              labor: factsSummary.labor,
-            } : null}
+            factsSummary={factsSummary}
             compExceptions={compExceptions}
-            compReview={compReview}
+            compReview={null}
             laborExceptions={laborExceptions}
             healthData={healthData}
             attestation={att.attestation}
@@ -2625,6 +2433,38 @@ export default function NightlyReportPage() {
             date={date}
             venueName={selectedVenue?.name || ''}
           />
+
+          {/* Check & Reservation Sheets */}
+          {selectedVenue && !isAllVenues && (
+            <>
+              <CheckListSheet
+                isOpen={checksSheetOpen}
+                onClose={() => setChecksSheetOpen(false)}
+                venueId={selectedVenue.id}
+                venueName={selectedVenue.name}
+                date={date}
+                onSelectCheck={(id) => {
+                  setSelectedCheckId(id);
+                  setCheckDetailOpen(true);
+                }}
+              />
+              <CheckDetailDialog
+                checkId={selectedCheckId}
+                isOpen={checkDetailOpen}
+                onClose={() => {
+                  setCheckDetailOpen(false);
+                  setSelectedCheckId(null);
+                }}
+              />
+              <ReservationListSheet
+                isOpen={reservationsSheetOpen}
+                onClose={() => setReservationsSheetOpen(false)}
+                venueId={selectedVenue.id}
+                venueName={selectedVenue.name}
+                date={date}
+              />
+            </>
+          )}
 
         </>
       )}

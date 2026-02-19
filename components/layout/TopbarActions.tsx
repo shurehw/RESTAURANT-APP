@@ -1,8 +1,7 @@
 'use client';
 
-import { Users, Settings, UserCircle, Building2, LogOut } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
-
 import { IntegrationStatus } from './IntegrationStatus';
 import { CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
 import { useVenue } from '@/components/providers/VenueProvider';
@@ -34,27 +33,6 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
     }
   }, [selectedVenue, venues, setSelectedVenue]);
 
-  const handleTeamSettings = () => {
-    window.location.href = '/admin/users';
-  };
-
-  const handleUserSettings = () => {
-    window.location.href = '/settings/organization';
-  };
-
-  const handleProfile = () => {
-    window.location.href = '/settings/organization';
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
   return (
     <div className="flex items-center gap-3">
       {/* Venue Selector (only if multiple venues) */}
@@ -67,7 +45,6 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
             value={selectedVenue?.id || ''}
             onChange={(e) => {
               if (e.target.value === 'all') {
-                // Select "The h.wood Group" (all venues)
                 setSelectedVenue({
                   id: 'all',
                   name: 'The h.wood Group',
@@ -97,51 +74,11 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
       {/* Command Panel Trigger */}
       <CommandTrigger />
 
-      {/* Team Settings */}
-      <button
-        onClick={handleTeamSettings}
-        className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
-        aria-label="Team Settings"
-        title="Team Settings"
-      >
-        <Users className="w-5 h-5" aria-hidden="true" />
-      </button>
-
-      {/* User Settings */}
-      <button
-        onClick={handleUserSettings}
-        className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
-        aria-label="User Settings"
-        title="Organization Settings"
-      >
-        <Settings className="w-5 h-5" aria-hidden="true" />
-      </button>
-
       {/* Integration Status */}
       <IntegrationStatus />
 
       {/* Notifications */}
       <NotificationsDropdown />
-
-      {/* User Profile */}
-      <button
-        onClick={handleProfile}
-        className="p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors"
-        aria-label="Profile"
-        title="User Profile"
-      >
-        <UserCircle className="w-5 h-5" aria-hidden="true" />
-      </button>
-
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="p-2 text-opsos-sage-600 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-        aria-label="Log out"
-        title="Log Out"
-      >
-        <LogOut className="w-5 h-5" aria-hidden="true" />
-      </button>
     </div>
   );
 }

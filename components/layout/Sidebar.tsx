@@ -19,32 +19,27 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       <nav className="p-4 space-y-1">
-        <NavLink href="/">Dashboard</NavLink>
-        <NavLink href="/invoices">Invoices</NavLink>
-        <NavLink href="/items">Item Master</NavLink>
-        <NavLink href="/inventory">Inventory</NavLink>
-        <NavLink href="/recipes">Recipes</NavLink>
-        <NavLink href="/budget">Budget</NavLink>
+        <NavLink href="/">Home</NavLink>
+        <NavLink href="/reports/nightly">Nightly Report</NavLink>
+        <NavLink href="/labor/briefing">Daily Briefing</NavLink>
+        <NavLink href="/preshift">Preshift</NavLink>
+        <NavLink href="/control-plane/attestations">Attestations</NavLink>
+        <NavLink href="/reports/health">Venue Health</NavLink>
         <NavSection title="Sales">
           <NavLink href="/sales/pace">Live Pulse</NavLink>
-          <NavLink href="/labor/forecasts">Forecasts</NavLink>
+          <NavLink href="/sales/forecasts">Forecasts</NavLink>
         </NavSection>
         <NavSection title="Labor">
-          <NavLink href="/labor/briefing">Daily Briefing</NavLink>
           <NavLink href="/labor/requirements">Requirements</NavLink>
           <NavLink href="/labor/schedule">Schedule</NavLink>
         </NavSection>
-        <NavLink href="/alerts">Alerts</NavLink>
+        <NavSection title="COGS">
+          <NavLink href="/invoices">Invoices</NavLink>
+          <NavLink href="/inventory">Inventory</NavLink>
+          <NavLink href="/recipes">Recipes</NavLink>
+        </NavSection>
         <div className="border-t my-2"></div>
-        <NavSection title="Settings">
-          <NavLink href="/settings/organization">Organization</NavLink>
-        </NavSection>
-        <NavSection title="System Admin">
-          <NavLink href="/admin">Admin</NavLink>
-          <NavLink href="/admin/operational-standards">Operational Standards</NavLink>
-          <NavLink href="/admin/comp-settings">Comp Settings</NavLink>
-          <NavLink href="/admin/system-bounds">System Bounds</NavLink>
-        </NavSection>
+        <NavLink href="/admin/settings">Settings</NavLink>
       </nav>
 
       <div className="absolute bottom-0 w-64 border-t p-4">

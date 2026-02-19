@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent } from '@/components/ui/card';
-import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target } from 'lucide-react';
 
 interface Props {
   netSales: number;
@@ -52,7 +52,7 @@ export function RevenueContextCard({
   beveragePct,
 }: Props) {
   const avgCheck = totalCovers > 0 ? netSales / totalCovers : 0;
-  const compPct = netSales > 0 ? (totalComps / netSales) * 100 : 0;
+  const catTotal = (foodSales ?? 0) + (beverageSales ?? 0);
 
   return (
     <Card className="bg-muted/30 border-brass/20">
@@ -65,7 +65,7 @@ export function RevenueContextCard({
         </div>
 
         {/* Primary KPIs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-3">
+        <div className="grid grid-cols-3 gap-4 mb-3">
           <div>
             <div className="text-xl font-bold tabular-nums">{fmt(netSales)}</div>
             <div className="text-xs text-muted-foreground">Net Sales</div>
@@ -78,13 +78,34 @@ export function RevenueContextCard({
             <div className="text-xl font-bold tabular-nums">{fmt(avgCheck)}</div>
             <div className="text-xs text-muted-foreground">Avg Check</div>
           </div>
-          <div>
-            <div className="text-xl font-bold tabular-nums">
-              {beveragePct != null ? `${beveragePct.toFixed(0)}%` : '—'}
-            </div>
-            <div className="text-xs text-muted-foreground">Bev Mix</div>
-          </div>
         </div>
+
+        {/* Category split with mix % */}
+        {(foodSales != null || beverageSales != null) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5 mb-2 text-xs text-muted-foreground">
+            {foodSales != null && (
+              <span>
+                Food: <span className="font-medium text-foreground">{fmt(foodSales)}</span>
+                {catTotal > 0 && <span className="ml-1">({(foodSales / catTotal * 100).toFixed(0)}%)</span>}
+              </span>
+            )}
+            {beverageSales != null && (
+              <span>
+                Bev: <span className="font-medium text-foreground">{fmt(beverageSales)}</span>
+                {catTotal > 0 && <span className="ml-1">({(beverageSales / catTotal * 100).toFixed(0)}%)</span>}
+              </span>
+            )}
+            {foodSales != null && beverageSales != null && netSales > 0 && (() => {
+              const other = netSales - foodSales - beverageSales;
+              return other > 0 ? (
+                <span>
+                  Other: <span className="font-medium text-foreground">{fmt(other)}</span>
+                  <span className="ml-1">({(other / netSales * 100).toFixed(0)}%)</span>
+                </span>
+              ) : null;
+            })()}
+          </div>
+        )}
 
         {/* Forecast + Variance */}
         <div className="flex flex-wrap gap-x-4 gap-y-1">
@@ -98,13 +119,6 @@ export function RevenueContextCard({
           <VBadge value={variance?.vs_sdly_pct} label="vs SDLY" />
         </div>
 
-        {/* Comp summary line */}
-        {totalComps > 0 && (
-          <div className="mt-2 text-xs text-muted-foreground">
-            Comps: <span className="font-medium text-foreground">{fmt(totalComps)}</span>
-            <span className="ml-1">({compPct.toFixed(1)}% of net)</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

@@ -151,6 +151,8 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           labor_triggers: [],
           incident_log_required: false,
           incident_triggers: [],
+          entertainment_review_required: false,
+          culinary_review_required: false,
         },
         venueName: venue?.name || '',
       });

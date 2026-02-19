@@ -29,6 +29,8 @@ const MODULE_LABELS: Record<keyof CompletionState, string> = {
   labor: 'Labor',
   incidents: 'Incidents',
   coaching: 'Coaching',
+  entertainment: 'Entertainment',
+  culinary: 'Culinary',
 };
 
 function StatusIcon({ status }: { status: string }) {

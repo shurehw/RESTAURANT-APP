@@ -120,6 +120,129 @@ export const LABOR_TAG_LABELS: Record<LaborTag, string> = {
   weather_slow: 'Weather — Slow Shift',
 };
 
+// ---------------------------------------------------------------------------
+// Comp Tags (multi-select driver tags — what drove comps tonight)
+// ---------------------------------------------------------------------------
+
+export const COMP_TAGS = [
+  'vip_comp', 'kitchen_error', 'service_recovery', 'birthday_anniversary',
+  'regular_guest', 'manager_discount', 'buyback', 'spill_remake',
+  'wrong_order', 'complaint_resolution', 'promotional', 'staff_meal',
+] as const;
+export type CompTag = typeof COMP_TAGS[number];
+
+export const COMP_TAG_LABELS: Record<CompTag, string> = {
+  vip_comp: 'VIP / Celebrity Comp',
+  kitchen_error: 'Kitchen Error',
+  service_recovery: 'Service Recovery',
+  birthday_anniversary: 'Birthday / Anniversary',
+  regular_guest: 'Regular Guest',
+  manager_discount: 'Manager Discount',
+  buyback: 'Buyback',
+  spill_remake: 'Spill / Remake',
+  wrong_order: 'Wrong Order',
+  complaint_resolution: 'Complaint Resolution',
+  promotional: 'Promotional / Tasting',
+  staff_meal: 'Staff Meal',
+};
+
+// ---------------------------------------------------------------------------
+// Incident Tags (multi-select driver tags — what drove incidents tonight)
+// ---------------------------------------------------------------------------
+
+export const INCIDENT_TAGS = [
+  'guest_complaint', 'staff_conflict', 'safety_hazard', 'equipment_failure',
+  'noise_complaint', 'underage_attempt', 'overservice', 'theft_loss',
+  'health_code', 'reservation_issue', 'severe_weather', 'medical_emergency',
+] as const;
+export type IncidentTag = typeof INCIDENT_TAGS[number];
+
+export const INCIDENT_TAG_LABELS: Record<IncidentTag, string> = {
+  guest_complaint: 'Guest Complaint',
+  staff_conflict: 'Staff Conflict',
+  safety_hazard: 'Safety Hazard',
+  equipment_failure: 'Equipment Failure',
+  noise_complaint: 'Noise Complaint',
+  underage_attempt: 'Underage Attempt',
+  overservice: 'Over-service',
+  theft_loss: 'Theft / Loss',
+  health_code: 'Health Code Issue',
+  reservation_issue: 'Reservation Issue',
+  severe_weather: 'Severe Weather',
+  medical_emergency: 'Medical Emergency',
+};
+
+// ---------------------------------------------------------------------------
+// Coaching Tags (multi-select driver tags — what prompted coaching tonight)
+// ---------------------------------------------------------------------------
+
+export const COACHING_TAGS = [
+  'comp_pattern', 'service_speed', 'upsell_opportunity', 'attendance_issue',
+  'policy_violation', 'guest_interaction', 'menu_knowledge', 'teamwork',
+  'positive_recognition', 'cash_handling',
+] as const;
+export type CoachingTag = typeof COACHING_TAGS[number];
+
+export const COACHING_TAG_LABELS: Record<CoachingTag, string> = {
+  comp_pattern: 'Comp Pattern',
+  service_speed: 'Service Speed',
+  upsell_opportunity: 'Upsell Opportunity',
+  attendance_issue: 'Attendance Issue',
+  policy_violation: 'Policy Violation',
+  guest_interaction: 'Guest Interaction',
+  menu_knowledge: 'Menu Knowledge',
+  teamwork: 'Teamwork',
+  positive_recognition: 'Positive Recognition',
+  cash_handling: 'Cash Handling',
+};
+
+// ---------------------------------------------------------------------------
+// Entertainment Tags (multi-select driver tags — entertainment performance)
+// ---------------------------------------------------------------------------
+
+export const ENTERTAINMENT_TAGS = [
+  'great_band', 'great_dj', 'great_dancers', 'low_energy', 'crowd_mismatch',
+  'sound_issues', 'late_start', 'over_budget', 'perfect_vibe', 'needs_change',
+] as const;
+export type EntertainmentTag = typeof ENTERTAINMENT_TAGS[number];
+
+export const ENTERTAINMENT_TAG_LABELS: Record<EntertainmentTag, string> = {
+  great_band: 'Great Band',
+  great_dj: 'Great DJ',
+  great_dancers: 'Great Dancers',
+  low_energy: 'Low Energy',
+  crowd_mismatch: 'Crowd Mismatch',
+  sound_issues: 'Sound Issues',
+  late_start: 'Late Start',
+  over_budget: 'Over Budget',
+  perfect_vibe: 'Perfect Vibe',
+  needs_change: 'Needs Change',
+};
+
+// ---------------------------------------------------------------------------
+// Culinary Tags (multi-select driver tags — kitchen/BOH performance)
+// ---------------------------------------------------------------------------
+
+export const CULINARY_TAGS = [
+  '86d_items', 'strong_execution', 'new_special_success', 'food_quality_concern',
+  'equipment_issue', 'prep_shortage', 'vendor_issue', 'waste_high',
+  'kitchen_staffing', 'menu_change',
+] as const;
+export type CulinaryTag = typeof CULINARY_TAGS[number];
+
+export const CULINARY_TAG_LABELS: Record<CulinaryTag, string> = {
+  '86d_items': "86'd Items",
+  strong_execution: 'Strong Execution',
+  new_special_success: 'Special Performed Well',
+  food_quality_concern: 'Food Quality Concern',
+  equipment_issue: 'Equipment Issue',
+  prep_shortage: 'Prep Shortage',
+  vendor_issue: 'Vendor Issue',
+  waste_high: 'High Waste / Spoilage',
+  kitchen_staffing: 'Kitchen Staffing Issue',
+  menu_change: 'Menu Change',
+};
+
 // Human-readable labels for UI
 export const REVENUE_VARIANCE_LABELS: Record<RevenueVarianceReason, string> = {
   weather: 'Weather impact',
@@ -218,6 +341,26 @@ export interface NightlyAttestation {
   labor_variance_reason?: LaborVarianceReason;
   labor_notes?: string;
   labor_tags?: LaborTag[];
+
+  // Comps
+  comp_tags?: CompTag[];
+  comp_notes?: string;
+
+  // Incidents
+  incident_tags?: IncidentTag[];
+  incident_notes?: string;
+
+  // Coaching
+  coaching_tags?: CoachingTag[];
+  coaching_notes?: string;
+
+  // Entertainment
+  entertainment_tags?: EntertainmentTag[];
+  entertainment_notes?: string;
+
+  // Culinary
+  culinary_tags?: CulinaryTag[];
+  culinary_notes?: string;
 
   // Lock
   locked_at?: string;
@@ -326,6 +469,8 @@ export interface TriggerResult {
   labor_triggers: string[];
   incident_log_required: boolean;
   incident_triggers: string[];
+  entertainment_review_required: boolean;
+  culinary_review_required: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -350,6 +495,16 @@ export const updateAttestationSchema = z.object({
   labor_variance_reason: z.enum(LABOR_VARIANCE_REASONS).optional().nullable(),
   labor_notes: z.string().max(500).optional().nullable(),
   labor_tags: z.array(z.enum(LABOR_TAGS)).optional().nullable(),
+  comp_tags: z.array(z.enum(COMP_TAGS)).optional().nullable(),
+  comp_notes: z.string().max(500).optional().nullable(),
+  incident_tags: z.array(z.enum(INCIDENT_TAGS)).optional().nullable(),
+  incident_notes: z.string().max(500).optional().nullable(),
+  coaching_tags: z.array(z.enum(COACHING_TAGS)).optional().nullable(),
+  coaching_notes: z.string().max(500).optional().nullable(),
+  entertainment_tags: z.array(z.enum(ENTERTAINMENT_TAGS)).optional().nullable(),
+  entertainment_notes: z.string().max(500).optional().nullable(),
+  culinary_tags: z.array(z.enum(CULINARY_TAGS)).optional().nullable(),
+  culinary_notes: z.string().max(500).optional().nullable(),
 });
 
 export const submitAttestationSchema = z.object({

@@ -605,12 +605,16 @@ export async function syncVenueDay(
     rowsExtracted += summaryResult.rowCount || 0;
 
     // 2. Extract category breakdown
+    // Item-level price*quantity is a distribution key — NOT actual sales.
+    // At high-end venues, item totals can be 2-5x check-level revenue due to
+    // table minimums, packages, and pricing structures.
+    // We use gross proportions from items to distribute the authoritative
+    // check-level net_sales across categories.
     const categoryResult = useHistorical
       ? await pool.query(
           `SELECT
             COALESCE(ci.parent_category, 'Other') as category,
             SUM(ci.price * ci.quantity) as gross_sales,
-            SUM(ci.price * ci.quantity) as net_sales,
             SUM(ci.quantity) as quantity_sold,
             SUM(COALESCE(ci.comp_total, 0)) as comps_total,
             0 as voids_total
@@ -625,7 +629,6 @@ export async function syncVenueDay(
           `SELECT
             COALESCE(parent_category, 'Other') as category,
             SUM(price * quantity) as gross_sales,
-            SUM(price * quantity) as net_sales,
             SUM(quantity) as quantity_sold,
             SUM(comp_total) as comps_total,
             SUM(void_value) as voids_total
@@ -637,8 +640,8 @@ export async function syncVenueDay(
         );
     rowsExtracted += categoryResult.rowCount || 0;
 
-    // Calculate category breakdowns
-    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
+    // Compute gross totals per category type (used as distribution weights)
+    let grossFood = 0, grossBev = 0, grossWine = 0, grossLiquor = 0, grossBeer = 0, grossOther = 0;
     let totalItemsSold = 0;
 
     for (const row of categoryResult.rows) {
@@ -647,12 +650,35 @@ export async function syncVenueDay(
       totalItemsSold += parseInt(row.quantity_sold) || 0;
 
       switch (categoryType) {
-        case 'food': foodSales += sales; break;
-        case 'wine': wineSales += sales; beverageSales += sales; break;
-        case 'liquor': liquorSales += sales; beverageSales += sales; break;
-        case 'beer': beerSales += sales; beverageSales += sales; break;
-        case 'beverage': beverageSales += sales; break;
-        default: otherSales += sales;
+        case 'food': grossFood += sales; break;
+        case 'wine': grossWine += sales; grossBev += sales; break;
+        case 'liquor': grossLiquor += sales; grossBev += sales; break;
+        case 'beer': grossBeer += sales; grossBev += sales; break;
+        case 'beverage': grossBev += sales; break;
+        default: grossOther += sales;
+      }
+    }
+
+    // Distribute check-level net_sales across categories by their gross proportions
+    const grossTotal = grossFood + grossBev + grossOther;
+    const venueNetSales = parseFloat(summary.net_sales) || 0;
+    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
+
+    if (grossTotal > 0 && venueNetSales > 0) {
+      const ratio = venueNetSales / grossTotal;
+      foodSales = Math.round(grossFood * ratio * 100) / 100;
+      beverageSales = Math.round(grossBev * ratio * 100) / 100;
+      wineSales = Math.round(grossWine * ratio * 100) / 100;
+      liquorSales = Math.round(grossLiquor * ratio * 100) / 100;
+      beerSales = Math.round(grossBeer * ratio * 100) / 100;
+      otherSales = Math.round(grossOther * ratio * 100) / 100;
+      // Absorb rounding remainder into the largest bucket
+      const allocated = foodSales + beverageSales + otherSales;
+      const remainder = Math.round((venueNetSales - allocated) * 100) / 100;
+      if (Math.abs(remainder) > 0) {
+        if (foodSales >= beverageSales && foodSales >= otherSales) foodSales += remainder;
+        else if (beverageSales >= otherSales) beverageSales += remainder;
+        else otherSales += remainder;
       }
     }
 
@@ -811,15 +837,18 @@ export async function syncVenueDay(
     rowsLoaded++;
 
     // 8. Upsert category_day_facts
+    // Store proportionally-allocated net_sales so category net matches venue net
     for (const cat of categoryResult.rows) {
+      const catGross = parseFloat(cat.gross_sales) || 0;
+      const catNet = grossTotal > 0 ? Math.round(catGross * (venueNetSales / grossTotal) * 100) / 100 : 0;
       await (supabase as any)
         .from('category_day_facts')
         .upsert({
           venue_id: venueId,
           business_date: businessDate,
           category: cat.category || 'Other',
-          gross_sales: parseFloat(cat.gross_sales) || 0,
-          net_sales: parseFloat(cat.net_sales) || 0,
+          gross_sales: catGross,
+          net_sales: catNet,
           quantity_sold: parseInt(cat.quantity_sold) || 0,
           comps_total: parseFloat(cat.comps_total) || 0,
           voids_total: parseFloat(cat.voids_total) || 0,

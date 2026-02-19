@@ -2,8 +2,16 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { IncidentLog } from '@/components/attestation/IncidentLog';
+import { NarrativeCard } from '@/components/attestation/NarrativeCard';
+import { TagSelector } from '@/components/attestation/TagSelector';
 import { AlertOctagon, Activity } from 'lucide-react';
-import type { NightlyIncident, TriggerResult } from '@/lib/attestation/types';
+import type {
+  NightlyIncident,
+  TriggerResult,
+  NightlyAttestation,
+  IncidentTag,
+} from '@/lib/attestation/types';
+import { INCIDENT_TAGS, INCIDENT_TAG_LABELS } from '@/lib/attestation/types';
 
 interface Props {
   triggers: TriggerResult | null;
@@ -13,6 +21,11 @@ interface Props {
   // Context
   healthScore?: number | null;
   healthStatus?: string | null;
+  // AI narrative + tags
+  narrative?: string | null;
+  narrativeLoading?: boolean;
+  attestation?: NightlyAttestation | null;
+  onUpdate?: (fields: Partial<NightlyAttestation>) => void;
 }
 
 export function IncidentsStep({
@@ -22,6 +35,10 @@ export function IncidentsStep({
   disabled,
   healthScore,
   healthStatus,
+  narrative,
+  narrativeLoading,
+  attestation,
+  onUpdate,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -65,6 +82,36 @@ export function IncidentsStep({
             )}
           </CardContent>
         </Card>
+      )}
+
+      <NarrativeCard
+        title="AI Incident Brief"
+        narrative={narrative ?? null}
+        loading={narrativeLoading ?? false}
+      />
+
+      {onUpdate && (
+        <>
+          <TagSelector<IncidentTag>
+            tags={INCIDENT_TAGS}
+            labels={INCIDENT_TAG_LABELS}
+            selected={attestation?.incident_tags ?? []}
+            onChange={(tags) => onUpdate({ incident_tags: tags })}
+            disabled={disabled}
+            title="What drove incidents tonight?"
+          />
+
+          <textarea
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+            placeholder="Additional incident notes (optional)..."
+            rows={2}
+            maxLength={500}
+            value={attestation?.incident_notes ?? ''}
+            onChange={(e) => onUpdate({ incident_notes: e.target.value })}
+            onBlur={(e) => onUpdate({ incident_notes: e.target.value })}
+            disabled={disabled}
+          />
+        </>
       )}
 
       <IncidentLog

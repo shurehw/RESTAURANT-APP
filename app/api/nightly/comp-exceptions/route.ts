@@ -63,6 +63,19 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Comp exceptions API error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // On timeout or transient DB errors, return empty result so the page still renders
+    if (error?.code === '57014' || error?.message?.includes('timeout')) {
+      return NextResponse.json({
+        success: true,
+        data: {
+          summary: { total_comps: 0, net_sales: 0, comp_pct: 0, comp_pct_status: 'ok', exception_count: 0, critical_count: 0, warning_count: 0 },
+          exceptions: [],
+        },
+        timeout: true,
+      });
+    }
+
+    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 });
   }
 }

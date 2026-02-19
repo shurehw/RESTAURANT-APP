@@ -1628,3 +1628,82 @@ export async function fetchLaborSummary(
     return null;
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// RESERVATIONS
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface ReservationSummary {
+  id: string;
+  first_name: string;
+  last_name: string;
+  party_size: number;
+  arrival_time: string | null;
+  seated_time: string | null;
+  left_time: string | null;
+  status: string;
+  booked_by: string | null;
+  is_vip: boolean;
+  tags: string[] | null;
+  min_price: number | null;
+  reservation_type: string | null;
+  venue_seating_area_name: string | null;
+  notes: string | null;
+  client_requests: string | null;
+}
+
+export async function fetchReservationsForDate(
+  locationUuids: string[],
+  date: string
+): Promise<{ reservations: ReservationSummary[]; total: number }> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+        id,
+        first_name,
+        last_name,
+        max_guests as party_size,
+        arrival_time,
+        seated_time,
+        left_time,
+        status,
+        booked_by,
+        is_vip,
+        tags,
+        min_price,
+        reservation_type,
+        venue_seating_area_name,
+        notes,
+        client_requests
+      FROM public.full_reservations
+      WHERE location_uuid = ANY($1::uuid[]) AND date = $2
+        AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'CONFIRMED', 'PENDING', 'PAID', 'CANCELLED')
+      ORDER BY arrival_time ASC NULLS LAST, is_vip DESC`,
+    [locationUuids, date]
+  );
+
+  const reservations = result.rows.map(row => {
+    const r = cleanRow(row);
+    return {
+      id: r.id,
+      first_name: r.first_name || '',
+      last_name: r.last_name || '',
+      party_size: r.party_size || 0,
+      arrival_time: r.arrival_time || null,
+      seated_time: r.seated_time || null,
+      left_time: r.left_time || null,
+      status: r.status || 'PENDING',
+      booked_by: r.booked_by || null,
+      is_vip: !!r.is_vip,
+      tags: r.tags || null,
+      min_price: r.min_price || null,
+      reservation_type: r.reservation_type || null,
+      venue_seating_area_name: r.venue_seating_area_name || null,
+      notes: r.notes || null,
+      client_requests: r.client_requests || null,
+    } as ReservationSummary;
+  });
+
+  return { reservations, total: reservations.length };
+}

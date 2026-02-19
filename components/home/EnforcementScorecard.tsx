@@ -365,7 +365,7 @@ export function EnforcementScorecard() {
           icon={<TrendingUp className="w-4 h-4" />}
         />
         <QuickLink
-          href="/action-center"
+          href="/"
           label="Action Center"
           description="Open enforcement items"
           icon={<AlertTriangle className="w-4 h-4" />}

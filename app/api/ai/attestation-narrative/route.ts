@@ -2,7 +2,7 @@
  * AI Attestation Narrative API
  * POST /api/ai/attestation-narrative
  *
- * Generates revenue + labor narratives for the nightly attestation stepper.
+ * Generates all 5 attestation narratives (revenue, labor, comp, incident, coaching).
  * Caching: sha256(input) → 24h TTL in Supabase (same pattern as comp-review).
  */
 
@@ -35,12 +35,10 @@ export async function POST(request: NextRequest) {
       venueName: venue_name || 'Unknown Venue',
       net_sales: body.net_sales ?? 0,
       total_covers: body.total_covers ?? 0,
-      total_comps: body.total_comps ?? 0,
       avg_check: body.avg_check ?? 0,
       food_sales: body.food_sales ?? 0,
       beverage_sales: body.beverage_sales ?? 0,
       beverage_pct: body.beverage_pct ?? 0,
-      comp_pct: body.comp_pct ?? 0,
       forecast_net_sales: body.forecast_net_sales ?? null,
       forecast_covers: body.forecast_covers ?? null,
       vs_forecast_pct: body.vs_forecast_pct ?? null,
@@ -57,9 +55,23 @@ export async function POST(request: NextRequest) {
       foh_cost: body.foh_cost ?? null,
       boh_hours: body.boh_hours ?? null,
       boh_cost: body.boh_cost ?? null,
+      // Comps
+      total_comps: body.total_comps ?? 0,
+      comp_pct: body.comp_pct ?? 0,
       comp_exception_count: body.comp_exception_count ?? 0,
-      comp_pct_status: body.comp_pct_status ?? 'ok',
+      comp_critical_count: body.comp_critical_count ?? 0,
+      comp_overall_assessment: body.comp_overall_assessment ?? null,
+      // Context
       health_score: body.health_score ?? null,
+      incident_triggers: body.incident_triggers ?? [],
+      // Entertainment
+      has_entertainment: body.has_entertainment ?? false,
+      entertainment_cost: body.entertainment_cost ?? null,
+      entertainment_pct: body.entertainment_pct ?? null,
+      // Culinary
+      has_culinary: body.has_culinary ?? false,
+      eightysixed_count: body.eightysixed_count ?? 0,
+      culinary_rating: body.culinary_rating ?? null,
     };
 
     // Cache lookup
@@ -98,13 +110,21 @@ function computeHash(input: AttestationNarrativeInput): string {
     date: input.date,
     net_sales: Math.round(input.net_sales),
     total_covers: input.total_covers,
-    total_comps: Math.round(input.total_comps),
+    food_sales: Math.round(input.food_sales),
+    beverage_sales: Math.round(input.beverage_sales),
     labor_cost: Math.round(input.labor_cost),
     labor_pct: Math.round(input.labor_pct * 10),
     splh: Math.round(input.splh),
     ot_hours: Math.round(input.ot_hours * 10),
     vs_forecast_pct: input.vs_forecast_pct != null ? Math.round(input.vs_forecast_pct * 10) : null,
-    comp_pct_status: input.comp_pct_status,
+    total_comps: Math.round(input.total_comps),
+    comp_exception_count: input.comp_exception_count,
+    health_score: input.health_score != null ? Math.round(input.health_score) : null,
+    has_entertainment: input.has_entertainment ?? false,
+    entertainment_cost: input.entertainment_cost != null ? Math.round(input.entertainment_cost) : null,
+    has_culinary: input.has_culinary ?? false,
+    eightysixed_count: input.eightysixed_count ?? 0,
+    culinary_rating: input.culinary_rating ?? null,
   };
   return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 }

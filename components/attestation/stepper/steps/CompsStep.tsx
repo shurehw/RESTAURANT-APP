@@ -2,7 +2,15 @@
 
 import { CompResolutionPanel } from '@/components/attestation/CompResolutionPanel';
 import { CompContextCard } from '../context/CompContextCard';
-import type { CompResolution, TriggerResult } from '@/lib/attestation/types';
+import { NarrativeCard } from '@/components/attestation/NarrativeCard';
+import { TagSelector } from '@/components/attestation/TagSelector';
+import type {
+  CompResolution,
+  TriggerResult,
+  NightlyAttestation,
+  CompTag,
+} from '@/lib/attestation/types';
+import { COMP_TAGS, COMP_TAG_LABELS } from '@/lib/attestation/types';
 
 interface CompExceptionSummary {
   total_comps: number;
@@ -32,6 +40,11 @@ interface Props {
   netSales: number;
   exceptionSummary: CompExceptionSummary | null;
   reviewSummary: CompReviewSummary | null;
+  // AI narrative + tags
+  narrative?: string | null;
+  narrativeLoading?: boolean;
+  attestation?: NightlyAttestation | null;
+  onUpdate?: (fields: Partial<NightlyAttestation>) => void;
 }
 
 export function CompsStep({
@@ -43,6 +56,10 @@ export function CompsStep({
   netSales,
   exceptionSummary,
   reviewSummary,
+  narrative,
+  narrativeLoading,
+  attestation,
+  onUpdate,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -52,6 +69,36 @@ export function CompsStep({
         exceptionSummary={exceptionSummary}
         reviewSummary={reviewSummary}
       />
+
+      <NarrativeCard
+        title="AI Comp Brief"
+        narrative={narrative ?? null}
+        loading={narrativeLoading ?? false}
+      />
+
+      {onUpdate && (
+        <>
+          <TagSelector<CompTag>
+            tags={COMP_TAGS}
+            labels={COMP_TAG_LABELS}
+            selected={attestation?.comp_tags ?? []}
+            onChange={(tags) => onUpdate({ comp_tags: tags })}
+            disabled={disabled}
+            title="What drove comps tonight?"
+          />
+
+          <textarea
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+            placeholder="Additional comp notes (optional)..."
+            rows={2}
+            maxLength={500}
+            value={attestation?.comp_notes ?? ''}
+            onChange={(e) => onUpdate({ comp_notes: e.target.value })}
+            onBlur={(e) => onUpdate({ comp_notes: e.target.value })}
+            disabled={disabled}
+          />
+        </>
+      )}
 
       <CompResolutionPanel
         triggers={triggers}

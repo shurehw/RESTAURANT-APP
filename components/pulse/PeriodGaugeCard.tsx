@@ -60,12 +60,8 @@ export function PeriodGaugeCard({
 
         {/* Variance badges */}
         <div className="mt-1 space-y-0.5">
-          {variancePct != null ? (
+          {variancePct != null && (
             <VarianceBadge pct={variancePct} label={priorLabel} />
-          ) : (
-            prior === 0 && (
-              <div className="text-xs text-muted-foreground">No prior data</div>
-            )
           )}
           {secondaryVariancePct != null && secondaryLabel && (
             <VarianceBadge pct={secondaryVariancePct} label={secondaryLabel} />

@@ -3,7 +3,7 @@
  * Defines which nav items are visible for each role
  */
 
-export type UserRole = 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner' | 'pwa';
+export type UserRole = 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner' | 'readonly' | 'pwa';
 
 export interface NavPermissions {
   // COGS Section
@@ -209,6 +209,33 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         entertainment: false,
       };
 
+    case 'readonly':
+      // Read-only: Can see everything but no admin access
+      return {
+        orders: true,
+        invoices: true,
+        reconciliation: true,
+        vendors: true,
+        products: true,
+        recipes: true,
+        inventory: true,
+        forecasts: true,
+        nightlyReport: true,
+        venueHealth: true,
+        preshift: true,
+        actionCenter: true,
+        attestations: true,
+        laborBriefing: true,
+        laborRequirements: true,
+        laborSchedule: true,
+        aiAssistant: true,
+        budget: true,
+        orgSettings: false,
+        compSettings: false,
+        procurementSettings: false,
+        entertainment: true,
+      };
+
     case 'pwa':
       // PWA Only: Pulse live sales monitoring only
       return {
@@ -261,6 +288,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   manager: 'Manager',
   exec_chef: 'Executive Chef',
   sous_chef: 'Sous Chef',
+  readonly: 'Read Only',
   pwa: 'PWA Only',
 };
 
@@ -275,5 +303,6 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   manager: 'Day-to-day operations, no deep admin access',
   exec_chef: 'Kitchen + procurement, plus operational visibility',
   sous_chef: 'Kitchen operations, limited visibility',
+  readonly: 'Read-only access to all operational data',
   pwa: 'Pulse PWA access only — live sales monitoring',
 };
