@@ -20,6 +20,8 @@ interface ForecastRow {
   covers_lower: number;
   covers_upper: number;
   revenue_predicted: number;
+  food_revenue_predicted: number | null;
+  bev_revenue_predicted: number | null;
   confidence_pct: number;
   historical_mape: number;
   accuracy_sample_size: number;
@@ -189,8 +191,17 @@ export function ForecastTable({ forecasts, overrideMap, venueId }: ForecastTable
                         </div>
 
                         {/* Revenue */}
-                        <div className="py-3.5 text-sm text-right font-mono text-muted-foreground pr-4">
-                          ${forecast.revenue_predicted?.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}
+                        <div className="py-3.5 text-right font-mono pr-4">
+                          <div className="text-sm text-muted-foreground">
+                            ${forecast.revenue_predicted?.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}
+                          </div>
+                          {forecast.food_revenue_predicted != null && forecast.bev_revenue_predicted != null && (
+                            <div className="text-[10px] text-muted-foreground/70 mt-0.5">
+                              F ${Math.round(forecast.food_revenue_predicted).toLocaleString()}
+                              {' · '}
+                              B ${Math.round(forecast.bev_revenue_predicted).toLocaleString()}
+                            </div>
+                          )}
                         </div>
 
                         {/* Reliability */}

@@ -726,6 +726,126 @@ export async function fetchIntraDaySummary(
   };
 }
 
+/**
+ * Blended intra-day summary: closed check revenue + open tab item revenue.
+ *
+ * - Closed checks (close_time IS NOT NULL): use authoritative revenue_total
+ * - Open tabs (items whose check_id has no closed check): sum item prices
+ *
+ * This true-ups incrementally as each check closes — no need to wait for EOD.
+ * Closed checks use the real revenue_total (post-comp, post-void, proper accounting).
+ * Open tabs use item-level sums (slightly inflated but real-time).
+ */
+export async function fetchIntraDayItemSummary(
+  locationUuids: string[],
+  date: string
+): Promise<IntraDaySummary> {
+  const pool = getTipseePool();
+
+  // Run three queries in parallel:
+  // 1. Closed check totals (authoritative)
+  // 2. Open tab item totals (items on checks not yet closed or not yet in tipsee_checks)
+  // 3. Category breakdown from ALL items (for food/bev split)
+  const [closedResult, openResult, categoryResult] = await Promise.all([
+    // 1. Closed checks — authoritative revenue_total
+    pool.query(
+      `SELECT
+        COUNT(*) as closed_checks,
+        COALESCE(SUM(guest_count), 0) as closed_covers,
+        COALESCE(SUM(sub_total), 0) as closed_gross,
+        COALESCE(SUM(revenue_total), 0) as closed_net,
+        COALESCE(SUM(comp_total), 0) as closed_comps,
+        COALESCE(SUM(void_total), 0) as closed_voids
+      FROM public.tipsee_checks
+      WHERE location_uuid = ANY($1) AND trading_day = $2
+        AND close_time IS NOT NULL`,
+      [locationUuids, date]
+    ),
+    // 2. Open tab items — items on checks that are still open or don't exist yet
+    pool.query(
+      `SELECT
+        COUNT(DISTINCT ci.check_id) as open_checks,
+        COALESCE(SUM(ci.price * ci.quantity), 0) as open_gross,
+        COALESCE(SUM(ci.comp_total), 0) as open_comps,
+        COALESCE(SUM(ci.void_value), 0) as open_voids
+      FROM public.tipsee_check_items ci
+      LEFT JOIN public.tipsee_checks c
+        ON ci.check_id = c.id AND c.trading_day = $2 AND c.close_time IS NOT NULL
+      WHERE ci.location_uuid = ANY($1) AND ci.trading_day = $2
+        AND c.id IS NULL`,
+      [locationUuids, date]
+    ),
+    // 3. Category breakdown from ALL items (food/bev split)
+    pool.query(
+      `SELECT
+        CASE
+          WHEN LOWER(COALESCE(parent_category, '')) LIKE '%bev%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%wine%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%beer%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%liquor%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%cocktail%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%spirit%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%draft%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%drink%'
+          THEN 'Beverage'
+          WHEN LOWER(COALESCE(parent_category, '')) LIKE '%food%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%entree%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%appetizer%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%dessert%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%salad%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%soup%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%side%'
+          THEN 'Food'
+          ELSE 'Other'
+        END as sales_type,
+        COALESCE(SUM(price * quantity), 0) as total
+      FROM public.tipsee_check_items
+      WHERE location_uuid = ANY($1) AND trading_day = $2
+      GROUP BY sales_type`,
+      [locationUuids, date]
+    ),
+  ]);
+
+  const closed = closedResult.rows[0] ? cleanRow(closedResult.rows[0]) : { closed_checks: 0, closed_covers: 0, closed_gross: 0, closed_net: 0, closed_comps: 0, closed_voids: 0 };
+  const open = openResult.rows[0] ? cleanRow(openResult.rows[0]) : { open_checks: 0, open_gross: 0, open_comps: 0, open_voids: 0 };
+
+  const openNet = (open.open_gross || 0) - (open.open_comps || 0) - (open.open_voids || 0);
+
+  const totalChecks = closed.closed_checks + open.open_checks;
+  const totalCovers = closed.closed_covers; // only closed checks have guest_count
+  const totalGross = closed.closed_gross + (open.open_gross || 0);
+  const totalNet = closed.closed_net + Math.max(openNet, 0);
+  const totalComps = closed.closed_comps + (open.open_comps || 0);
+  const totalVoids = closed.closed_voids + (open.open_voids || 0);
+
+  if (totalNet === 0 && totalChecks === 0) {
+    return { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, other_sales: 0, comps_total: 0, voids_total: 0 };
+  }
+
+  // Category split from items (used as distribution weights for the blended net)
+  let grossFood = 0, grossBev = 0, grossOther = 0;
+  for (const row of categoryResult.rows) {
+    const clean = cleanRow(row);
+    if (clean.sales_type === 'Food') grossFood = clean.total;
+    else if (clean.sales_type === 'Beverage') grossBev = clean.total;
+    else grossOther = clean.total;
+  }
+  const grossTotal = grossFood + grossBev + grossOther;
+  const ratio = grossTotal > 0 && totalNet > 0 ? totalNet / grossTotal : 1;
+
+  return {
+    total_checks: totalChecks,
+    total_covers: totalCovers,
+    gross_sales: totalGross,
+    net_sales: Math.round(totalNet * 100) / 100,
+    food_sales: Math.round(grossFood * ratio * 100) / 100,
+    beverage_sales: Math.round(grossBev * ratio * 100) / 100,
+    other_sales: Math.round(grossOther * ratio * 100) / 100,
+    comps_total: totalComps,
+    voids_total: totalVoids,
+  };
+}
+
 // ============================================================================
 // SIMPHONY POS SUPPORT (Oracle Simphony — used by Dallas, etc.)
 // ============================================================================

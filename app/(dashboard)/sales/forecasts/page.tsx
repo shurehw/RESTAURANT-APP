@@ -61,6 +61,8 @@ export default async function ForecastsPage({
   // Calculate summary stats (using bias-corrected values)
   const totalCovers = forecasts?.reduce((sum, f) => sum + (f.covers_predicted || 0), 0) || 0;
   const totalRevenue = forecasts?.reduce((sum, f) => sum + (f.revenue_predicted || 0), 0) || 0;
+  const totalFood = forecasts?.reduce((sum, f) => sum + (f.food_revenue_predicted || 0), 0) || 0;
+  const totalBev = forecasts?.reduce((sum, f) => sum + (f.bev_revenue_predicted || 0), 0) || 0;
   const avgCheck = totalCovers > 0 ? totalRevenue / totalCovers : 0;
   const avgAccuracy = forecasts?.length
     ? forecasts.reduce((sum, f) => sum + (f.confidence_pct || 0), 0) / forecasts.length
@@ -108,7 +110,13 @@ export default async function ForecastsPage({
             <div>
               <div className="text-sm text-muted-foreground">Total Revenue</div>
               <div className="text-2xl font-bold">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-              <div className="text-xs text-muted-foreground">Next {daysAhead} days</div>
+              {(totalFood > 0 || totalBev > 0) ? (
+                <div className="text-xs text-muted-foreground">
+                  F ${totalFood.toLocaleString('en-US', { maximumFractionDigits: 0 })} · B ${totalBev.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">Next {daysAhead} days</div>
+              )}
             </div>
           </div>
         </Card>

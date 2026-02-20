@@ -25,7 +25,7 @@ import {
   isWithinServiceHoursForTimezone,
 } from '@/lib/database/sales-pace';
 import {
-  fetchIntraDaySummary,
+  fetchIntraDayItemSummary,
   fetchSimphonyIntraDaySummary,
   fetchSimphonyBIIntraDaySummary,
   getPosTypeForLocations,
@@ -124,14 +124,16 @@ async function processVenue(venueId: string): Promise<{
   // Determine business date (before 5 AM local = previous day)
   const businessDate = getBusinessDateForTimezone(tz);
 
-  // Detect POS type and fetch running totals from the right source.
-  // Simphony venues: try direct BI API first (live ~90s), then TipSee fallbacks.
-  // Upserve venues: TipSee tipsee_checks (real-time).
+  // Fetch running totals using blended query:
+  // - Closed checks: authoritative revenue_total (true-up as each check closes)
+  // - Open tabs: item-level sums for checks not yet closed (real-time)
+  // This gives live sales during service and automatically true-ups to
+  // authoritative numbers as tabs close — no EOD switch needed.
   const posType = await getPosTypeForLocations(locationUuids);
   let summary;
 
   if (posType === 'simphony') {
-    // 1. Try Simphony BI API (direct POS query — freshest data)
+    // Simphony venues: try BI API first (live ~90s from POS)
     try {
       summary = await fetchSimphonyBIIntraDaySummary(venueId, businessDate);
     } catch (err: any) {
@@ -139,17 +141,18 @@ async function processVenue(venueId: string): Promise<{
       summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, other_sales: 0, comps_total: 0, voids_total: 0 };
     }
 
-    // 2. Fall back to TipSee tipsee_simphony_sales (batch/delayed)
+    // Fall back to blended item+check query
+    if (summary.net_sales === 0 && summary.total_checks === 0) {
+      summary = await fetchIntraDayItemSummary(locationUuids, businessDate);
+    }
+
+    // Final fallback: Simphony batch sales table
     if (summary.net_sales === 0 && summary.total_checks === 0) {
       summary = await fetchSimphonyIntraDaySummary(locationUuids, businessDate);
     }
-
-    // 3. Fall back to TipSee tipsee_checks
-    if (summary.net_sales === 0 && summary.total_checks === 0) {
-      summary = await fetchIntraDaySummary(locationUuids, businessDate);
-    }
   } else {
-    summary = await fetchIntraDaySummary(locationUuids, businessDate);
+    // Upserve venues: blended query (closed check revenue + open tab items)
+    summary = await fetchIntraDayItemSummary(locationUuids, businessDate);
   }
 
   // Skip if no sales activity yet

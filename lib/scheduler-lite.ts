@@ -29,7 +29,41 @@ interface PosConfig {
   fixed?: boolean;        // always schedule 1 person regardless of covers
   peakPct: number;        // fraction of daily covers in the single busiest hour
   templates: ShiftTemplate[]; // [early, main, late] wave definitions
+  useBarModel?: boolean;  // true = use composite bev-driven model (Bartender)
 }
+
+// ── Bartender Composite Model ────────────────────────────────────────────────
+// The bar is a production center for the entire restaurant. Every cover
+// generates drink orders regardless of where they sit. Bartender headcount
+// should scale with drink volume, not raw covers.
+//
+// Formula: peakBartenders = ceil(covers × drinksPerCover × peakPct / DPLH)
+//   drinksPerCover = venue_bev_pct / INDUSTRY_AVG_BEV_PCT × BASELINE_DRINKS_PER_COVER
+//   DPLH = drinks per labor hour (throughput ceiling per bartender)
+
+/** Industry average beverage percentage across full-service restaurants */
+const INDUSTRY_AVG_BEV_PCT = 0.30;
+
+/** Baseline drinks ordered per cover at an average full-service venue (at 30% bev) */
+const BASELINE_DRINKS_PER_COVER = 2.0;
+
+/**
+ * Drinks per labor hour at PEAK — how many drinks one bartender can produce
+ * in their busiest hour (with barback support where applicable).
+ * This is peak throughput, not all-shift average.
+ * Tuned by venue class: craft cocktail bars are slower, beer/wine pours are faster.
+ */
+const VENUE_CLASS_DPLH: Record<string, number> = {
+  supper_club:     40,  // Craft cocktails + wine service, slower per drink
+  high_end_social: 38,  // Heavy cocktail program
+  nightclub:       55,  // High-volume pours, simpler drinks, bottle service
+  late_night:      55,
+  member_club:     42,  // Mixed — cocktails + wine
+};
+const DEFAULT_DPLH = 45;
+
+/** Bev intensity by DOW for a venue — maps dow (0=Sun..6=Sat) to beverage_pct */
+type BevIntensityMap = Map<number, number>;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -54,8 +88,9 @@ const POS_CONFIG: Record<string, PosConfig> = {
     ],
   },
   'Bartender': {
-    cplh: 22,       // Derived: LA=20.8 Miami=22.4 (industry 30, actual ~15)
+    cplh: 22,           // Fallback CPLH (only used if bar model data unavailable)
     peakPct: PEAK_PCT,
+    useBarModel: true,  // Use composite bev-driven model instead of flat CPLH
     templates: [
       { label: 'day',   type: 'lunch',      start: '14:00', end: '20:00', hours: 6.0 },
       { label: 'night', type: 'late_night', start: '18:00', end: '00:00', hours: 6.0 },
@@ -167,6 +202,108 @@ function calcPeakStaff(covers: number, config: PosConfig, cplhOverride?: number)
 
 /** Minimum busy days needed to trust venue-derived CPLH */
 const MIN_BUSY_DAYS = 10;
+
+/**
+ * Derive venue beverage intensity by day-of-week from venue_day_facts.
+ * Returns a map of DOW (0=Sun..6=Sat) → avg beverage_pct (0-1).
+ * Falls back to venue-class default if insufficient data.
+ */
+async function deriveVenueBevIntensity(
+  admin: ReturnType<typeof createAdminClient>,
+  venueId: string,
+  venueClass: string | null,
+): Promise<BevIntensityMap> {
+  const result = new Map<number, number>();
+  const cutoff = new Date();
+  cutoff.setUTCDate(cutoff.getUTCDate() - 90);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+
+  let data: any[] | null = null;
+  try {
+    const res = await admin.rpc('get_venue_bev_by_dow', {
+      p_venue_id: venueId,
+      p_cutoff: cutoffStr,
+    });
+    data = res.data;
+  } catch { /* RPC may not exist yet */ }
+
+  // If RPC doesn't exist yet, fall back to direct query
+  if (!data) {
+    const { data: facts } = await admin
+      .from('venue_day_facts')
+      .select('business_date, beverage_pct')
+      .eq('venue_id', venueId)
+      .gte('business_date', cutoffStr)
+      .gt('beverage_pct', 0);
+
+    if (facts && facts.length >= MIN_BUSY_DAYS) {
+      // Group by DOW
+      const dowBuckets: Record<number, number[]> = {};
+      for (const f of facts) {
+        const dow = new Date(f.business_date + 'T12:00:00').getUTCDay();
+        if (!dowBuckets[dow]) dowBuckets[dow] = [];
+        dowBuckets[dow].push(Number(f.beverage_pct) / 100); // stored as 0-100, convert to 0-1
+      }
+      for (const [dow, pcts] of Object.entries(dowBuckets)) {
+        if (pcts.length >= 3) {
+          result.set(Number(dow), pcts.reduce((s, v) => s + v, 0) / pcts.length);
+        }
+      }
+    }
+  } else {
+    for (const row of data as any[]) {
+      result.set(Number(row.dow), Number(row.avg_bev_pct));
+    }
+  }
+
+  // Fall back to class default for missing DOWs
+  const classDefault = getClassDefaultBevPct(venueClass);
+  for (let dow = 0; dow <= 6; dow++) {
+    if (!result.has(dow)) result.set(dow, classDefault);
+  }
+
+  return result;
+}
+
+/** Default bev% by venue class when no data available */
+function getClassDefaultBevPct(venueClass: string | null): number {
+  switch (venueClass) {
+    case 'nightclub':
+    case 'late_night':       return 0.85;
+    case 'high_end_social':  return 0.53;
+    case 'supper_club':      return 0.40;
+    case 'member_club':      return 0.35;
+    default:                 return INDUSTRY_AVG_BEV_PCT;
+  }
+}
+
+/**
+ * Composite bartender staffing model.
+ * Uses venue bev intensity + DPLH throughput ceiling instead of flat CPLH.
+ *
+ * peakBartenders = ceil(covers × drinksPerCover × peakPct / DPLH)
+ *   where drinksPerCover = (venue_bev_pct / industry_avg) × baseline_drinks
+ */
+function calcBarStaff(
+  covers: number,
+  bevPct: number,
+  venueClass: string | null,
+  peakPct: number,
+): number {
+  if (covers === 0) return 0;
+
+  // Scale drinks per cover by venue bev intensity relative to industry average
+  const bevMultiplier = bevPct / INDUSTRY_AVG_BEV_PCT;
+  const drinksPerCover = bevMultiplier * BASELINE_DRINKS_PER_COVER;
+
+  // Peak-hour drink demand
+  const peakDrinks = covers * peakPct * drinksPerCover;
+
+  // Throughput ceiling per bartender
+  const dplh = VENUE_CLASS_DPLH[venueClass || ''] || DEFAULT_DPLH;
+
+  return Math.max(1, Math.ceil(peakDrinks / dplh));
+}
 
 /**
  * Derive per-position peak-hour CPLH from this venue's actual labor data.
@@ -385,6 +522,17 @@ export async function generateScheduleTS(
   // Derive venue-specific CPLH from actual labor data (falls back to defaults)
   const venueCPLH = await deriveVenueCPLH(admin, venueId, positions, employees);
 
+  // Fetch venue class for bar model calibration
+  const { data: venueRow } = await admin
+    .from('venues')
+    .select('venue_class')
+    .eq('id', venueId)
+    .single();
+  const venueClass: string | null = venueRow?.venue_class ?? null;
+
+  // Derive bev intensity by DOW for composite bartender model
+  const bevIntensity = await deriveVenueBevIntensity(admin, venueId, venueClass);
+
   // Build the 7 days of the week
   const startDate = new Date(weekStart + 'T00:00:00Z');
   const weekDays: { date: string; dow: number }[] = [];
@@ -447,8 +595,16 @@ export async function generateScheduleTS(
 
     // ── Per-position wave assignment ──────────────────────────────────────
     for (const [posName, config] of Object.entries(POS_CONFIG)) {
-      const cplhOverride = venueCPLH.get(posName);
-      const peakStaff = calcPeakStaff(forecast.covers, config, cplhOverride);
+      let peakStaff: number;
+
+      if (config.useBarModel) {
+        // Composite bartender model: covers × bev intensity × peak_pct / DPLH
+        const bevPct = bevIntensity.get(day.dow) ?? INDUSTRY_AVG_BEV_PCT;
+        peakStaff = calcBarStaff(forecast.covers, bevPct, venueClass, config.peakPct);
+      } else {
+        const cplhOverride = venueCPLH.get(posName);
+        peakStaff = calcPeakStaff(forecast.covers, config, cplhOverride);
+      }
       if (peakStaff === 0) continue;
 
       const posInfo = posNameMap.get(posName);

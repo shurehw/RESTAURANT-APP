@@ -878,12 +878,102 @@ def compute_avg_check_per_dow(df: pd.DataFrame, window_weeks: int = 10) -> Dict[
     return avg_checks
 
 
-def forecast_revenue(covers_forecast: pd.DataFrame, avg_check_per_dow: Dict[int, float]) -> pd.DataFrame:
-    """Revenue = covers × avg_check for that DOW."""
+def compute_food_bev_per_cover(supabase: Client, venue_id: str, window_weeks: int = 10) -> Tuple[Dict[int, float], Dict[int, float]]:
+    """
+    Compute average food and bev revenue per cover per DOW from venue_day_facts.
+    Returns (food_per_cover_by_dow, bev_per_cover_by_dow).
+    Falls back to a proportional split of total avg_check if no food/bev data.
+    """
+    cutoff = (datetime.now() - timedelta(weeks=window_weeks)).strftime("%Y-%m-%d")
+
+    response = supabase.table("venue_day_facts") \
+        .select("business_date, covers_count, food_sales, beverage_sales") \
+        .eq("venue_id", venue_id) \
+        .gte("business_date", cutoff) \
+        .gt("covers_count", 10) \
+        .execute()
+
+    food_by_dow: Dict[int, List[float]] = {}
+    bev_by_dow: Dict[int, List[float]] = {}
+    has_bev_data = False
+
+    for row in response.data or []:
+        covers = float(row["covers_count"] or 0)
+        food = float(row["food_sales"] or 0)
+        bev = float(row["beverage_sales"] or 0)
+        if covers <= 0:
+            continue
+        if bev > 0:
+            has_bev_data = True
+
+        dt = datetime.strptime(row["business_date"], "%Y-%m-%d")
+        dow = dt.weekday()  # 0=Mon
+
+        food_by_dow.setdefault(dow, []).append(food / covers)
+        bev_by_dow.setdefault(dow, []).append(bev / covers)
+
+    if not has_bev_data:
+        # No bev data (Simphony/Avero venues) — return empty, caller will skip
+        return {}, {}
+
+    # Average per DOW with winsorization + sanity cap
+    food_result: Dict[int, float] = {}
+    bev_result: Dict[int, float] = {}
+
+    all_food = [v for vals in food_by_dow.values() for v in vals]
+    all_bev = [v for vals in bev_by_dow.values() for v in vals]
+    food_median = float(np.median(all_food)) if all_food else 0
+    bev_median = float(np.median(all_bev)) if all_bev else 0
+
+    # Sanity caps: no per-cover amount should exceed 3× the overall median
+    # Catches DOWs with tiny sample sizes and extreme outliers (e.g., Bird Streets Sunday)
+    food_cap = max(food_median * 3, 200)   # at least $200 floor
+    bev_cap = max(bev_median * 3, 500)     # at least $500 floor (nightclubs have high bev)
+
+    for dow in range(7):
+        if dow in food_by_dow and len(food_by_dow[dow]) >= 2:
+            vals = np.array(food_by_dow[dow])
+            if len(vals) > 4:
+                vals = np.clip(vals, np.percentile(vals, 5), np.percentile(vals, 95))
+            food_result[dow] = min(float(np.mean(vals)), food_cap)
+        else:
+            food_result[dow] = food_median
+
+        if dow in bev_by_dow and len(bev_by_dow[dow]) >= 2:
+            vals = np.array(bev_by_dow[dow])
+            if len(vals) > 4:
+                vals = np.clip(vals, np.percentile(vals, 5), np.percentile(vals, 95))
+            bev_result[dow] = min(float(np.mean(vals)), bev_cap)
+        else:
+            bev_result[dow] = bev_median
+
+    return food_result, bev_result
+
+
+def forecast_revenue(covers_forecast: pd.DataFrame, avg_check_per_dow: Dict[int, float],
+                     food_per_cover: Optional[Dict[int, float]] = None,
+                     bev_per_cover: Optional[Dict[int, float]] = None) -> pd.DataFrame:
+    """Revenue = covers × avg_check for that DOW. Optionally splits into food + bev."""
     result = covers_forecast.copy()
     result["dow"] = result["ds"].dt.dayofweek
     result["avg_check"] = result["dow"].map(avg_check_per_dow)
     result["revenue"] = (result["yhat"] * result["avg_check"]).round(2)
+
+    if food_per_cover and bev_per_cover:
+        result["food_revenue"] = (result["yhat"] * result["dow"].map(food_per_cover)).round(2)
+        result["bev_revenue"] = (result["yhat"] * result["dow"].map(bev_per_cover)).round(2)
+
+        # Sanity: food + bev must not exceed total revenue. If it does, scale proportionally.
+        fb_sum = result["food_revenue"] + result["bev_revenue"]
+        over = fb_sum > result["revenue"]
+        if over.any():
+            scale = result.loc[over, "revenue"] / fb_sum[over]
+            result.loc[over, "food_revenue"] = (result.loc[over, "food_revenue"] * scale).round(2)
+            result.loc[over, "bev_revenue"] = (result.loc[over, "bev_revenue"] * scale).round(2)
+    else:
+        result["food_revenue"] = None
+        result["bev_revenue"] = None
+
     return result
 
 
@@ -951,6 +1041,8 @@ def save_forecasts(forecasts: list, supabase: Client):
             "covers_upper": covers_upper,
             "confidence_level": round(confidence, 3),
             "revenue_predicted": f.get("revenue_predicted"),
+            "food_revenue_predicted": f.get("food_revenue_predicted"),
+            "bev_revenue_predicted": f.get("bev_revenue_predicted"),
             "reservation_covers_predicted": reso_covers if reso_covers else None,
             "walkin_covers_predicted": walkin_pred,
             "model_version": MODEL_VERSION,
@@ -1067,18 +1159,32 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                   f"mode={pp['seasonality_mode']}")
             tier_counts[config.tier] = tier_counts.get(config.tier, 0) + 1
 
+            # --- Food/bev revenue split (all tiers) ---
+            food_per_cover, bev_per_cover = compute_food_bev_per_cover(supabase, vid)
+            has_fb_split = bool(food_per_cover and bev_per_cover)
+            if has_fb_split:
+                print(f"  Food/bev split by DOW: " + ", ".join(
+                    f"{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]}="
+                    f"F${food_per_cover.get(d, 0):.0f}+B${bev_per_cover.get(d, 0):.0f}"
+                    for d in range(7) if food_per_cover.get(d, 0) + bev_per_cover.get(d, 0) > 0
+                ))
+            else:
+                print("  Food/bev split: no data (will use total revenue only)")
+
             # --- TIER D: Naive fallback ---
             if not config.use_prophet:
                 fc_covers = naive_dow_forecast(df, forecast_days)
                 fc_covers = zero_closed_day_forecasts(fc_covers, closed_days)
                 avg_checks = compute_avg_check_per_dow(df)
-                fc_with_revenue = forecast_revenue(fc_covers, avg_checks)
+                fc_with_revenue = forecast_revenue(fc_covers, avg_checks,
+                                                   food_per_cover if has_fb_split else None,
+                                                   bev_per_cover if has_fb_split else None)
 
                 future_fc = fc_with_revenue[fc_with_revenue["ds"] > pd.Timestamp.today()]
                 for _, row in future_fc.iterrows():
                     bdate = str(row["business_date"])
                     weather_total += 1
-                    forecasts_to_save.append({
+                    rec = {
                         "venue_id": vid,
                         "business_date": bdate,
                         "covers_predicted": int(row["yhat"]),
@@ -1087,7 +1193,11 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                         "revenue_predicted": round(float(row["revenue"]), 2),
                         "reso_covers": 0,
                         "weather": None,
-                    })
+                    }
+                    if has_fb_split and pd.notna(row.get("food_revenue")):
+                        rec["food_revenue_predicted"] = round(float(row["food_revenue"]), 2)
+                        rec["bev_revenue_predicted"] = round(float(row["bev_revenue"]), 2)
+                    forecasts_to_save.append(rec)
 
                 if not future_fc.empty:
                     print(f"  Next 7 days (naive DOW avg):")
@@ -1146,13 +1256,15 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                 forecast_weather=fcast_weather,
             )
 
-            # Revenue = covers x avg check
+            # Revenue = covers x avg check (with food/bev split)
             avg_checks = compute_avg_check_per_dow(df_clean)
             print(f"  Avg check by DOW: " + ", ".join(
                 f"{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][d]}=${v:.0f}"
                 for d, v in sorted(avg_checks.items()) if v > 0
             ))
-            fc_with_revenue = forecast_revenue(fc_covers, avg_checks)
+            fc_with_revenue = forecast_revenue(fc_covers, avg_checks,
+                                               food_per_cover if has_fb_split else None,
+                                               bev_per_cover if has_fb_split else None)
 
             # Zero out closed weekdays in forecast output
             fc_with_revenue = zero_closed_day_forecasts(fc_with_revenue, closed_days)
@@ -1182,7 +1294,7 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                 if bdate in weather_lookup:
                     weather_attached += 1
 
-                forecasts_to_save.append({
+                rec = {
                     "venue_id": vid,
                     "business_date": bdate,
                     "covers_predicted": int(row["yhat"]),
@@ -1191,7 +1303,11 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                     "revenue_predicted": round(float(row["revenue"]), 2),
                     "reso_covers": reso_lookup.get(bdate, 0),
                     "weather": weather_lookup.get(bdate),
-                })
+                }
+                if has_fb_split and pd.notna(row.get("food_revenue")):
+                    rec["food_revenue_predicted"] = round(float(row["food_revenue"]), 2)
+                    rec["bev_revenue_predicted"] = round(float(row["bev_revenue"]), 2)
+                forecasts_to_save.append(rec)
 
             # Preview
             if not future_fc.empty:
@@ -1199,9 +1315,12 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                 for _, r in future_fc.head(7).iterrows():
                     dow = r["ds"].strftime("%a")
                     rev = f"${r['revenue']:,.0f}" if pd.notna(r["revenue"]) else "?"
+                    fb = ""
+                    if has_fb_split and pd.notna(r.get("food_revenue")) and int(r['yhat']) > 0:
+                        fb = f" (F${r['food_revenue']:,.0f}+B${r['bev_revenue']:,.0f})"
                     print(f"    {dow} {r['ds'].strftime('%m/%d')}: "
                           f"{int(r['yhat'])} covers ({int(r['yhat_lower'])}-{int(r['yhat_upper'])}) "
-                          f"rev {rev}")
+                          f"rev {rev}{fb}")
 
             venues_ok += 1
 
