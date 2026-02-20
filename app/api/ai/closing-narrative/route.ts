@@ -50,7 +50,13 @@ export async function POST(request: NextRequest) {
       total_comps: body.total_comps ?? 0,
       comp_pct: body.comp_pct ?? 0,
       comp_exception_count: body.comp_exception_count ?? 0,
+      voids_total: body.voids_total ?? 0,
+      discounts_total: body.discounts_total ?? 0,
+      checks_count: body.checks_count ?? 0,
+      avg_party_size: body.avg_party_size ?? 0,
       health_score: body.health_score ?? null,
+      top_items: body.top_items ?? [],
+      servers: body.servers ?? [],
       // Manager inputs — revenue (structured prompts)
       revenue_driver: body.revenue_driver ?? null,
       revenue_mgmt_impact: body.revenue_mgmt_impact ?? null,

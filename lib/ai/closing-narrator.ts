@@ -1,8 +1,8 @@
 /**
- * Unified Closing Narrative Generator
- * Generates one cohesive closing summary for the nightly attestation,
- * incorporating both raw operational data AND the manager's inputs
- * (tags, notes, resolutions, incidents, coaching actions).
+ * Nightly Operating Report Generator
+ * Two-part output:
+ *   1. Financial Snapshot — code-generated, deterministic, no AI
+ *   2. Manager's Narrative — AI-generated from structured prompts
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -39,13 +39,36 @@ export interface ClosingNarrativeInput {
   total_labor_hours: number;
   employee_count: number;
 
-  // Comp data
+  // Comp / voids / discounts
   total_comps: number;
   comp_pct: number;
   comp_exception_count: number;
+  voids_total: number;
+  discounts_total: number;
+
+  // Checks
+  checks_count: number;
+  avg_party_size: number;
 
   // Health
   health_score: number | null;
+
+  // Top menu items (from TipSee)
+  top_items: Array<{
+    name: string;
+    revenue: number;
+    quantity: number;
+  }>;
+
+  // Server performance (from TipSee)
+  servers: Array<{
+    name: string;
+    net_sales: number;
+    covers: number;
+    checks: number;
+    avg_check: number;
+    tip_pct: number;
+  }>;
 
   // Manager inputs — revenue (6 structured prompts)
   revenue_driver: string | null;
@@ -146,239 +169,231 @@ export interface ClosingNarrativeInput {
 }
 
 // ---------------------------------------------------------------------------
-// Prompt
+// Helpers
 // ---------------------------------------------------------------------------
 
-function buildClosingPrompt(input: ClosingNarrativeInput): string {
+const fmtCurrency = (v: number) => `$${Math.round(v).toLocaleString()}`;
+const fmtPct = (v: number | null) => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : 'N/A';
+
+// ---------------------------------------------------------------------------
+// Part 1: Financial Snapshot (code-generated, deterministic)
+// ---------------------------------------------------------------------------
+
+export function buildFinancialSnapshot(input: ClosingNarrativeInput): string {
   const dayOfWeek = new Date(input.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
-  const fmtCurrency = (v: number) => `$${Math.round(v).toLocaleString()}`;
-  const fmtPct = (v: number | null) => v != null ? `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` : 'N/A';
 
-  const sections: string[] = [];
+  const lines: string[] = [];
 
-  // Raw data section
-  sections.push(`## Operational Data — ${dayOfWeek}, ${input.date}
-- Net Sales: ${fmtCurrency(input.net_sales)} | Covers: ${input.total_covers} | Avg Check: ${fmtCurrency(input.avg_check)}
-- Food: ${fmtCurrency(input.food_sales)} | Beverage: ${fmtCurrency(input.beverage_sales)} (${input.beverage_pct.toFixed(0)}% mix)
-${input.forecast_net_sales ? `- vs Forecast: ${fmtPct(input.vs_forecast_pct)} (target ${fmtCurrency(input.forecast_net_sales)})` : '- Forecast: N/A'}
-${input.vs_sdlw_pct != null ? `- vs SDLW: ${fmtPct(input.vs_sdlw_pct)}` : ''}
-- Labor: ${fmtCurrency(input.labor_cost)} (${input.labor_pct.toFixed(1)}%) | ${input.total_labor_hours.toFixed(0)}h | SPLH: ${fmtCurrency(input.splh)} | OT: ${input.ot_hours.toFixed(1)}h
-- Comps: ${fmtCurrency(input.total_comps)} (${input.comp_pct.toFixed(1)}%) | ${input.comp_exception_count} exception(s)
-${input.health_score != null ? `- Health Score: ${Math.round(input.health_score)}` : ''}`);
+  // Header
+  lines.push(`NIGHTLY OPERATING REPORT`);
+  lines.push(`${input.venueName} — ${dayOfWeek}, ${input.date}`);
+  lines.push('');
 
-  // Top spenders section
+  // Revenue block
+  lines.push(`Revenue: ${fmtCurrency(input.net_sales)}    Covers: ${input.total_covers}    Avg Check: ${fmtCurrency(input.avg_check)}`);
+  if (input.checks_count > 0) {
+    lines.push(`Checks: ${input.checks_count}    Avg Party: ${input.avg_party_size.toFixed(1)}`);
+  }
+  const foodPct = input.net_sales > 0 ? ((input.food_sales / input.net_sales) * 100).toFixed(0) : '0';
+  const bevPct = input.beverage_pct.toFixed(0);
+  lines.push(`Food: ${fmtCurrency(input.food_sales)} (${foodPct}%)    Beverage: ${fmtCurrency(input.beverage_sales)} (${bevPct}%)`);
+
+  // Variance line
+  const varParts: string[] = [];
+  if (input.vs_forecast_pct != null) varParts.push(`vs Forecast: ${fmtPct(input.vs_forecast_pct)}`);
+  if (input.vs_sdlw_pct != null) varParts.push(`vs SDLW: ${fmtPct(input.vs_sdlw_pct)}`);
+  if (input.vs_sdly_pct != null) varParts.push(`vs SDLY: ${fmtPct(input.vs_sdly_pct)}`);
+  if (varParts.length > 0) lines.push(varParts.join('    '));
+  lines.push('');
+
+  // Top checks
   if (input.top_spenders && input.top_spenders.length > 0) {
-    const spenderLines = input.top_spenders.map((s, i) =>
-      `- #${i + 1}: ${fmtCurrency(s.payment)} (${s.covers} covers, table ${s.table_name || 'N/A'}, server: ${s.server})${s.items.length > 0 ? ` — ${s.items.slice(0, 3).join(', ')}` : ''}`
-    );
-    sections.push(`## Top Spenders\n${spenderLines.join('\n')}`);
+    lines.push('Top Checks:');
+    input.top_spenders.slice(0, 3).forEach(s => {
+      lines.push(`  ${s.table_name} — ${fmtCurrency(s.payment)} (${s.covers} covers)`);
+    });
+    const bigTables = input.top_spenders.filter(s => s.payment >= 1000).length;
+    if (bigTables > 0) lines.push(`Tables > $1,000: ${bigTables}`);
+    lines.push('');
   }
 
-  // Known VIPs section
-  if (input.known_vips && input.known_vips.length > 0) {
-    const vipLines = input.known_vips.map(v =>
-      `- ${v.name}${v.is_vip ? ' (VIP)' : ''} — party of ${v.party_size}${v.total_payment > 0 ? `, ${fmtCurrency(v.total_payment)} spent` : ''}`
-    );
-    sections.push(`## Known Guests\n${vipLines.join('\n')}`);
+  // Top items
+  if (input.top_items?.length > 0) {
+    lines.push('Top Items:');
+    input.top_items.slice(0, 3).forEach(item => {
+      lines.push(`  ${item.name} — ${fmtCurrency(item.revenue)} (${item.quantity} sold)`);
+    });
+    lines.push('');
   }
 
-  // Manager assessment section — structured prompts for revenue, notes for other modules
-  const managerLines: string[] = [];
-
-  // Revenue — 6 structured prompts
-  if (input.revenue_driver) {
-    managerLines.push(`Revenue driver: "${input.revenue_driver}"`);
-  }
-  if (input.revenue_mgmt_impact) {
-    managerLines.push(`Management impact: "${input.revenue_mgmt_impact}"`);
-  }
-  if (input.revenue_lost_opportunity) {
-    managerLines.push(`Lost opportunity: "${input.revenue_lost_opportunity}"`);
-  }
-  if (input.revenue_demand_signal) {
-    managerLines.push(`Demand signal: "${input.revenue_demand_signal}"`);
-  }
-  if (input.revenue_quality) {
-    managerLines.push(`Revenue quality: "${input.revenue_quality}"`);
-  }
-  if (input.revenue_action) {
-    managerLines.push(`Next shift action: "${input.revenue_action}"`);
-  }
-  // Legacy fallback
-  if (input.revenue_notes && !input.revenue_driver) {
-    managerLines.push(`Revenue notes: "${input.revenue_notes}"`);
-  }
-  if (input.revenue_tags.length > 0) {
-    managerLines.push(`Revenue tags: ${input.revenue_tags.join(', ')}`);
+  // Operations line
+  const compsLine = [`Comps: ${fmtCurrency(input.total_comps)} (${input.comp_pct.toFixed(1)}%)`];
+  if (input.voids_total > 0) compsLine.push(`Voids: ${fmtCurrency(input.voids_total)}`);
+  if (input.discounts_total > 0) compsLine.push(`Discounts: ${fmtCurrency(input.discounts_total)}`);
+  lines.push(`${compsLine.join('    ')}    Labor: ${fmtCurrency(input.labor_cost)} (${input.labor_pct.toFixed(1)}%)    OT: ${input.ot_hours.toFixed(1)}h`);
+  lines.push(`SPLH: ${fmtCurrency(input.splh)}    Staff: ${input.employee_count}    Hours: ${input.total_labor_hours.toFixed(0)}`);
+  if (input.health_score != null) {
+    lines.push(`Health Score: ${Math.round(input.health_score)}`);
   }
 
-  // Comps (3 structured prompts)
-  if (input.comp_driver) {
-    managerLines.push(`Comp driver: "${input.comp_driver}"`);
-  }
-  if (input.comp_pattern) {
-    managerLines.push(`Comp patterns: "${input.comp_pattern}"`);
-  }
-  if (input.comp_compliance) {
-    managerLines.push(`Comp compliance: "${input.comp_compliance}"`);
-  }
-  // Legacy fallback
-  if (input.comp_notes && !input.comp_driver) {
-    managerLines.push(`Comps: "${input.comp_notes}"`);
-  }
-  if (!input.comp_driver && !input.comp_notes && input.comp_acknowledged) {
-    managerLines.push('Comps: Nothing to report — standard activity');
-  }
-  if (input.comp_tags.length > 0) {
-    managerLines.push(`Comp tags: ${input.comp_tags.join(', ')}`);
-  }
+  return lines.join('\n');
+}
 
-  // Labor (4 structured prompts)
-  if (input.labor_foh_coverage) {
-    managerLines.push(`Labor FOH coverage: "${input.labor_foh_coverage}"`);
-  }
-  if (input.labor_boh_performance) {
-    managerLines.push(`Labor BOH performance: "${input.labor_boh_performance}"`);
-  }
-  if (input.labor_decision) {
-    managerLines.push(`Staffing decisions: "${input.labor_decision}"`);
-  }
-  if (input.labor_change) {
-    managerLines.push(`Labor plan change: "${input.labor_change}"`);
-  }
-  // Legacy fallback
-  if (input.labor_foh_notes && !input.labor_foh_coverage) {
-    managerLines.push(`Labor FOH: "${input.labor_foh_notes}"`);
-  }
-  if (input.labor_boh_notes && !input.labor_boh_performance) {
-    managerLines.push(`Labor BOH: "${input.labor_boh_notes}"`);
-  }
-  if (input.labor_notes && !input.labor_foh_coverage) {
-    managerLines.push(`Labor notes: "${input.labor_notes}"`);
-  }
-  if (!input.labor_foh_coverage && !input.labor_foh_notes && input.labor_acknowledged) {
-    managerLines.push('Labor: Nothing to report — standard staffing');
-  }
-  if (input.labor_tags.length > 0) {
-    managerLines.push(`Labor tags: ${input.labor_tags.join(', ')}`);
-  }
+// ---------------------------------------------------------------------------
+// Part 2: AI Narrative Prompt
+// ---------------------------------------------------------------------------
+
+function buildNarrativePrompt(input: ClosingNarrativeInput): string {
+  // Feed all manager inputs to the AI so it can synthesize
+  const context: string[] = [];
+
+  // Revenue context
+  if (input.revenue_driver) context.push(`Revenue driver: "${input.revenue_driver}"`);
+  if (input.revenue_mgmt_impact) context.push(`Management impact: "${input.revenue_mgmt_impact}"`);
+  if (input.revenue_lost_opportunity) context.push(`Lost opportunity: "${input.revenue_lost_opportunity}"`);
+  if (input.revenue_demand_signal) context.push(`Demand signal: "${input.revenue_demand_signal}"`);
+  if (input.revenue_quality) context.push(`Revenue quality: "${input.revenue_quality}"`);
+  if (input.revenue_action) context.push(`Next shift action: "${input.revenue_action}"`);
+  if (input.revenue_notes && !input.revenue_driver) context.push(`Revenue notes: "${input.revenue_notes}"`);
+  if (input.revenue_tags.length > 0) context.push(`Revenue tags: ${input.revenue_tags.join(', ')}`);
+
+  // Comp context
+  if (input.comp_driver) context.push(`Comp driver: "${input.comp_driver}"`);
+  if (input.comp_pattern) context.push(`Comp patterns: "${input.comp_pattern}"`);
+  if (input.comp_compliance) context.push(`Comp compliance: "${input.comp_compliance}"`);
+  if (input.comp_notes && !input.comp_driver) context.push(`Comp notes: "${input.comp_notes}"`);
+  if (!input.comp_driver && !input.comp_notes && input.comp_acknowledged) context.push('Comps: Nothing to report — standard activity');
+  if (input.comp_tags.length > 0) context.push(`Comp tags: ${input.comp_tags.join(', ')}`);
   if (input.comp_resolutions.length > 0) {
     const followUps = input.comp_resolutions.filter(r => r.requires_follow_up).length;
-    managerLines.push(`Comp resolutions: ${input.comp_resolutions.length} resolved${followUps > 0 ? ` (${followUps} require follow-up)` : ''}`);
+    context.push(`Comp resolutions: ${input.comp_resolutions.length} resolved${followUps > 0 ? ` (${followUps} require follow-up)` : ''}`);
   }
+
+  // Labor context
+  if (input.labor_foh_coverage) context.push(`Labor FOH coverage: "${input.labor_foh_coverage}"`);
+  if (input.labor_boh_performance) context.push(`Labor BOH performance: "${input.labor_boh_performance}"`);
+  if (input.labor_decision) context.push(`Staffing decisions: "${input.labor_decision}"`);
+  if (input.labor_change) context.push(`Labor plan change: "${input.labor_change}"`);
+  if (input.labor_foh_notes && !input.labor_foh_coverage) context.push(`Labor FOH: "${input.labor_foh_notes}"`);
+  if (input.labor_boh_notes && !input.labor_boh_performance) context.push(`Labor BOH: "${input.labor_boh_notes}"`);
+  if (input.labor_notes && !input.labor_foh_coverage) context.push(`Labor notes: "${input.labor_notes}"`);
+  if (!input.labor_foh_coverage && !input.labor_foh_notes && input.labor_acknowledged) context.push('Labor: Nothing to report — standard staffing');
+  if (input.labor_tags.length > 0) context.push(`Labor tags: ${input.labor_tags.join(', ')}`);
 
   // Incidents
-  if (input.incident_notes) {
-    managerLines.push(`Incidents: "${input.incident_notes}"`);
-  } else if (input.incidents_acknowledged) {
-    managerLines.push('Incidents: Nothing to report — clean night');
-  }
-  if (input.incident_tags.length > 0) {
-    managerLines.push(`Incident tags: ${input.incident_tags.join(', ')}`);
-  }
+  if (input.incident_notes) context.push(`Incidents: "${input.incident_notes}"`);
+  else if (input.incidents_acknowledged) context.push('Incidents: Nothing to report — clean night');
+  if (input.incident_tags.length > 0) context.push(`Incident tags: ${input.incident_tags.join(', ')}`);
   if (input.incidents.length > 0) {
     const unresolved = input.incidents.filter(i => !i.resolved).length;
-    managerLines.push(`Incidents logged: ${input.incidents.length} (${unresolved} unresolved)`);
+    context.push(`Incidents logged: ${input.incidents.length} (${unresolved} unresolved)`);
+    input.incidents.forEach(i => context.push(`  - ${i.incident_type} (${i.severity}): ${i.description} [${i.resolved ? 'resolved' : 'OPEN'}]`));
   }
 
-  // Coaching (5 structured prompts: FOH + BOH + shared)
-  if (input.coaching_foh_standout) {
-    managerLines.push(`FOH standout: "${input.coaching_foh_standout}"`);
-  }
-  if (input.coaching_foh_development) {
-    managerLines.push(`FOH development: "${input.coaching_foh_development}"`);
-  }
-  if (input.coaching_boh_standout) {
-    managerLines.push(`BOH standout: "${input.coaching_boh_standout}"`);
-  }
-  if (input.coaching_boh_development) {
-    managerLines.push(`BOH development: "${input.coaching_boh_development}"`);
-  }
-  if (input.coaching_team_focus) {
-    managerLines.push(`Team focus: "${input.coaching_team_focus}"`);
-  }
-  // Legacy fallback
-  if (input.coaching_notes && !input.coaching_foh_standout) {
-    managerLines.push(`Coaching: "${input.coaching_notes}"`);
-  }
-  if (!input.coaching_foh_standout && !input.coaching_notes && input.coaching_acknowledged) {
-    managerLines.push('Coaching: Nothing to report — all performing well');
-  }
-  if (input.coaching_tags.length > 0) {
-    managerLines.push(`Coaching tags: ${input.coaching_tags.join(', ')}`);
-  }
+  // Coaching
+  if (input.coaching_foh_standout) context.push(`FOH standout: "${input.coaching_foh_standout}"`);
+  if (input.coaching_foh_development) context.push(`FOH development: "${input.coaching_foh_development}"`);
+  if (input.coaching_boh_standout) context.push(`BOH standout: "${input.coaching_boh_standout}"`);
+  if (input.coaching_boh_development) context.push(`BOH development: "${input.coaching_boh_development}"`);
+  if (input.coaching_team_focus) context.push(`Team focus: "${input.coaching_team_focus}"`);
+  if (input.coaching_notes && !input.coaching_foh_standout) context.push(`Coaching: "${input.coaching_notes}"`);
+  if (!input.coaching_foh_standout && !input.coaching_notes && input.coaching_acknowledged) context.push('Coaching: Nothing to report — all performing well');
   if (input.coaching_actions.length > 0) {
-    managerLines.push(`Coaching actions: ${input.coaching_actions.map(c => `${c.employee_name} (${c.coaching_type})`).join(', ')}`);
+    context.push(`Coaching actions: ${input.coaching_actions.map(c => `${c.employee_name} (${c.coaching_type}: ${c.reason})`).join('; ')}`);
   }
 
-  // Guest (3 structured prompts)
-  if (input.guest_vip_notable) {
-    managerLines.push(`Notable guests: "${input.guest_vip_notable}"`);
-  }
-  if (input.guest_experience) {
-    managerLines.push(`Guest experience: "${input.guest_experience}"`);
-  }
-  if (input.guest_opportunity) {
-    managerLines.push(`Guest opportunity: "${input.guest_opportunity}"`);
-  }
-  // Legacy fallback
-  if (input.guest_notes && !input.guest_vip_notable) {
-    managerLines.push(`Guest: "${input.guest_notes}"`);
-  }
-  if (!input.guest_vip_notable && !input.guest_notes && input.guest_acknowledged) {
-    managerLines.push('Guests: Nothing notable to report');
-  }
-  if (input.guest_tags.length > 0) {
-    managerLines.push(`Guest tags: ${input.guest_tags.join(', ')}`);
-  }
+  // Guest
+  if (input.guest_vip_notable) context.push(`Notable guests: "${input.guest_vip_notable}"`);
+  if (input.guest_experience) context.push(`Guest experience: "${input.guest_experience}"`);
+  if (input.guest_opportunity) context.push(`Guest opportunity: "${input.guest_opportunity}"`);
+  if (input.guest_notes && !input.guest_vip_notable) context.push(`Guest notes: "${input.guest_notes}"`);
+  if (!input.guest_vip_notable && !input.guest_notes && input.guest_acknowledged) context.push('Guests: Nothing notable to report');
+  if (input.guest_tags.length > 0) context.push(`Guest tags: ${input.guest_tags.join(', ')}`);
 
   // Entertainment
-  if (input.entertainment_notes) {
-    managerLines.push(`Entertainment: "${input.entertainment_notes}"`);
-  }
-  if (input.entertainment_tags.length > 0) {
-    managerLines.push(`Entertainment tags: ${input.entertainment_tags.join(', ')}`);
-  }
+  if (input.entertainment_notes) context.push(`Entertainment: "${input.entertainment_notes}"`);
+  if (input.entertainment_tags.length > 0) context.push(`Entertainment tags: ${input.entertainment_tags.join(', ')}`);
 
   // Culinary
-  if (input.culinary_notes) {
-    managerLines.push(`Culinary: "${input.culinary_notes}"`);
+  if (input.culinary_notes) context.push(`Culinary: "${input.culinary_notes}"`);
+  if (input.culinary_tags.length > 0) context.push(`Culinary tags: ${input.culinary_tags.join(', ')}`);
+
+  // Top spenders (for AI context, not for snapshot)
+  if (input.top_spenders?.length > 0) {
+    context.push(`Top spenders: ${input.top_spenders.map(s => `${fmtCurrency(s.payment)} on ${s.table_name} (${s.covers} covers, ${s.items.slice(0, 2).join(' + ')})`).join('; ')}`);
   }
-  if (input.culinary_tags.length > 0) {
-    managerLines.push(`Culinary tags: ${input.culinary_tags.join(', ')}`);
+  if (input.known_vips?.length > 0) {
+    context.push(`Known VIPs: ${input.known_vips.map(v => `${v.name}${v.is_vip ? ' (VIP)' : ''}, party of ${v.party_size}`).join('; ')}`);
   }
 
-  if (managerLines.length > 0) {
-    sections.push(`## Manager's Assessment\n${managerLines.map(l => `- ${l}`).join('\n')}`);
+  // Server performance (for AI context — mentions top and bottom performers)
+  if (input.servers?.length > 0) {
+    const sorted = [...input.servers].sort((a, b) => b.net_sales - a.net_sales);
+    const top3 = sorted.slice(0, 3);
+    context.push(`Top servers by revenue: ${top3.map(s => `${s.name} ${fmtCurrency(s.net_sales)} (${s.covers} covers, ${s.checks} checks, ${s.tip_pct.toFixed(0)}% tips)`).join('; ')}`);
   }
 
-  // Flagged items
+  // Top menu items (for AI context — specials, trends)
+  if (input.top_items?.length > 0) {
+    context.push(`Top menu items: ${input.top_items.slice(0, 5).map(i => `${i.name} ${fmtCurrency(i.revenue)} (${i.quantity} sold)`).join('; ')}`);
+  }
+
+  // Voids / discounts (for AI context — operational flags)
+  if (input.voids_total > 0) context.push(`Voids: ${fmtCurrency(input.voids_total)}`);
+  if (input.discounts_total > 0) context.push(`Discounts: ${fmtCurrency(input.discounts_total)}`);
+
+  // Triggers
   if (input.trigger_reasons.length > 0) {
-    sections.push(`## Flagged Items\n${input.trigger_reasons.map(r => `- ${r}`).join('\n')}`);
+    context.push(`Flagged items: ${input.trigger_reasons.join('; ')}`);
   }
 
-  return `You are an operations analyst for ${input.venueName}, a high-end dining/nightlife venue.
+  // Key numbers for AI reference (so it doesn't need to parse the snapshot)
+  const numbers = `Net sales: ${fmtCurrency(input.net_sales)}, Covers: ${input.total_covers}, Avg check: ${fmtCurrency(input.avg_check)}, ` +
+    `Checks: ${input.checks_count}, Avg party: ${input.avg_party_size.toFixed(1)}, ` +
+    `Bev mix: ${input.beverage_pct.toFixed(0)}%, ` +
+    `${input.vs_forecast_pct != null ? `vs Forecast: ${fmtPct(input.vs_forecast_pct)}, ` : ''}` +
+    `${input.vs_sdlw_pct != null ? `vs SDLW: ${fmtPct(input.vs_sdlw_pct)}, ` : ''}` +
+    `Labor: ${input.labor_pct.toFixed(1)}%, SPLH: ${fmtCurrency(input.splh)}, OT: ${input.ot_hours.toFixed(1)}h, ` +
+    `Comps: ${fmtCurrency(input.total_comps)} (${input.comp_pct.toFixed(1)}%), ${input.comp_exception_count} exceptions` +
+    `${input.voids_total > 0 ? `, Voids: ${fmtCurrency(input.voids_total)}` : ''}` +
+    `${input.discounts_total > 0 ? `, Discounts: ${fmtCurrency(input.discounts_total)}` : ''}`;
 
-Write a unified closing summary for the manager's nightly attestation.
+  return `You are the operations analyst for ${input.venueName}. The financial snapshot is already printed above your narrative — do NOT restate the numbers table. Your job is to add the story.
 
-${sections.join('\n\n')}
+Key numbers (for reference, already shown above): ${numbers}
 
-## Instructions
-Write a closing narrative in 4 short paragraphs, separated by blank lines:
+Manager's inputs:
+${context.map(l => `- ${l}`).join('\n')}
 
-**Paragraph 1 — Headline & Revenue**: Top-line sales result vs forecast/SDLW, covers, avg check, what drove demand. 2-3 sentences.
+Write the manager's narrative in these sections. Use the section headers exactly as shown, each on its own line:
 
-**Paragraph 2 — Guest & Entertainment**: Notable high-spend tables (use dollar amounts, not guest names), VIP activity, bottle service, entertainment energy. 2-3 sentences. Skip if no guest/entertainment data.
+REVENUE & COMPS
+Two to three sentences. What drove the number tonight — demand, mix, pricing? Put comps in context (within policy, any flags). Reference specific dollar amounts from the data.
 
-**Paragraph 3 — Operations**: Labor efficiency (% of sales, OT, SPLH), comp activity and context, any incidents and resolution status. 2-3 sentences.
+LABOR
+One to two sentences. Was staffing right for volume? OT justified? Any scheduling takeaway?
 
-**Paragraph 4 — Team & Next Shift**: FOH and BOH standouts and development needs by name, team focus items, and open items for the next shift. 2-3 sentences.
+GUEST
+One to two sentences. High-spend tables, VIP activity, celebrations. Use table numbers and spend amounts, not guest names. Skip if nothing notable.
+
+ENTERTAINMENT
+One sentence. Energy, highlights, crowd response. Skip entirely if no entertainment data.
+
+KITCHEN
+One to two sentences. Execution quality, ticket times, 86s, specials performance. Skip if nothing notable.
+
+TEAM
+Two to three sentences. FOH and BOH standouts by name. Development needs by name. Keep it specific.
+
+ACTION ITEMS
+Bullet list using •. Only items that need follow-up tomorrow. If nothing, write "None."
 
 Rules:
-- Tone: Executive briefing — direct, factual, specific dollar amounts and percentages
-- Third person ("The venue..." not "You...")
-- No bullet points, no headers, no bold, no markdown — just plain text paragraphs separated by blank lines
-- Do NOT wrap in quotes
+- Write like a sharp GM — confident, direct, no filler
+- Section headers in ALL CAPS on their own line, no bold, no markdown
+- Keep the total narrative under 250 words
+- Third person ("The venue..." not "We...")
+- Do not wrap in quotes
 - Return the narrative text only`;
 }
 
@@ -389,11 +404,15 @@ Rules:
 export async function generateClosingNarrative(
   input: ClosingNarrativeInput,
 ): Promise<string> {
+  // Part 1: Deterministic financial snapshot
+  const snapshot = buildFinancialSnapshot(input);
+
+  // Part 2: AI narrative
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-5-20250929',
     max_tokens: 2000,
     temperature: 0.3,
-    messages: [{ role: 'user', content: buildClosingPrompt(input) }],
+    messages: [{ role: 'user', content: buildNarrativePrompt(input) }],
   });
 
   const textBlock = message.content.find(b => b.type === 'text');
@@ -401,5 +420,8 @@ export async function generateClosingNarrative(
     throw new Error('No text response from AI');
   }
 
-  return textBlock.text.trim();
+  const narrative = textBlock.text.trim();
+
+  // Combine: snapshot + separator + narrative
+  return `${snapshot}\n\n---\n\n${narrative}`;
 }

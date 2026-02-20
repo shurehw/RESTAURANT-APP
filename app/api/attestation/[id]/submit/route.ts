@@ -5,6 +5,8 @@ import { getServiceClient } from '@/lib/supabase/service';
 import { submitAttestationSchema } from '@/lib/attestation/types';
 import type { TriggerResult } from '@/lib/attestation/types';
 import { generateAttestationActions } from '@/lib/attestation/control-plane';
+import { extractAndStoreSignals, type SignalExtractionInput } from '@/lib/ai/signal-extractor';
+import { generateIntelligence } from '@/lib/database/operator-intelligence';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -233,11 +235,94 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       console.error('[Attestation] Control plane action generation failed:', err);
     }
 
+    // Signal extraction — AI-powered entity extraction from free-text (non-blocking)
+    let signalResult: { extracted: number; stored: number; errors: string[]; ownership: import('@/lib/ai/signal-extractor').OwnershipScores | null } = { extracted: 0, stored: 0, errors: [], ownership: null };
+    try {
+      // Build field map from attestation text columns
+      const textFields: Record<string, string | null> = {};
+      const textFieldNames = [
+        'revenue_driver', 'revenue_mgmt_impact', 'revenue_lost_opportunity',
+        'revenue_demand_signal', 'revenue_quality', 'revenue_action', 'revenue_notes',
+        'comp_driver', 'comp_pattern', 'comp_compliance', 'comp_notes',
+        'labor_foh_coverage', 'labor_boh_performance', 'labor_decision',
+        'labor_change', 'labor_notes', 'labor_foh_notes', 'labor_boh_notes',
+        'incident_notes',
+        'coaching_foh_standout', 'coaching_foh_development',
+        'coaching_boh_standout', 'coaching_boh_development',
+        'coaching_team_focus', 'coaching_notes',
+        'guest_vip_notable', 'guest_experience', 'guest_opportunity', 'guest_notes',
+        'entertainment_notes', 'culinary_notes',
+      ];
+      for (const f of textFieldNames) {
+        textFields[f] = attestation[f] ?? null;
+      }
+
+      // Get venue name (already fetched above for control plane, reuse if possible)
+      const venueName = (() => {
+        // The venue query happened in the control plane block; we need a name.
+        // Re-query is safe since it's cached by Supabase's connection pooler.
+        return '';
+      })();
+
+      const { data: venueForSignals } = await (supabase as any)
+        .from('venues')
+        .select('name')
+        .eq('id', attestation.venue_id)
+        .single();
+
+      const signalInput: SignalExtractionInput = {
+        attestation_id: id,
+        venue_id: attestation.venue_id,
+        business_date: attestation.business_date,
+        venue_name: venueForSignals?.name || '',
+        submitted_by: attestation.submitted_by || updated.submitted_by || undefined,
+        fields: textFields,
+      };
+
+      signalResult = await extractAndStoreSignals(signalInput);
+
+      // Operator intelligence — internal signals for owner/director only (non-blocking)
+      try {
+        const { data: venueWithOrg } = await (supabase as any)
+          .from('venues')
+          .select('organization_id')
+          .eq('id', attestation.venue_id)
+          .single();
+
+        const { data: submitterProfile } = attestation.submitted_by
+          ? await (supabase as any)
+              .from('user_profiles')
+              .select('full_name')
+              .eq('id', attestation.submitted_by)
+              .single()
+          : { data: null };
+
+        if (venueWithOrg?.organization_id) {
+          await generateIntelligence({
+            org_id: venueWithOrg.organization_id,
+            venue_id: attestation.venue_id,
+            venue_name: venueForSignals?.name || '',
+            business_date: attestation.business_date,
+            attestation_id: id,
+            submitted_by: attestation.submitted_by || undefined,
+            submitted_by_name: submitterProfile?.full_name || undefined,
+            ownership: signalResult.ownership ?? null,
+          });
+        }
+      } catch (err) {
+        console.error('[Attestation] Operator intelligence generation failed:', err);
+      }
+    } catch (err) {
+      console.error('[Attestation] Signal extraction failed:', err);
+    }
+
     return NextResponse.json({
       success: true,
       data: updated,
       actions_created: actionResult.actionsCreated,
       action_errors: actionResult.errors,
+      signals_extracted: signalResult.extracted,
+      signals_stored: signalResult.stored,
     });
   } catch (err: any) {
     console.error('[Attestation submit]', err);

@@ -19,6 +19,7 @@ import {
   Music2,
   AlertTriangle,
   Activity,
+  ShieldAlert,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -140,6 +141,11 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
           {permissions.venueHealth && (
             <NavLink href="/reports/health" icon={<Activity className="w-5 h-5" />}>
               Venue Health
+            </NavLink>
+          )}
+          {permissions.managerIntelligence && (
+            <NavLink href="/admin/manager-intelligence" icon={<ShieldAlert className="w-5 h-5" />}>
+              Intelligence
             </NavLink>
           )}
 

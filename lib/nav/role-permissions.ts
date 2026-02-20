@@ -39,6 +39,9 @@ export interface NavPermissions {
 
   // Optional Modules
   entertainment: boolean; // h.wood only
+
+  // Operator Intelligence (owner/director only — not visible to managers)
+  managerIntelligence: boolean;
 }
 
 /**
@@ -72,6 +75,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: true,
         procurementSettings: true,
         entertainment: true,
+        managerIntelligence: true,
       };
 
     case 'gm':
@@ -99,6 +103,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: true,
         procurementSettings: true,
         entertainment: true,
+        managerIntelligence: false,
       };
 
     case 'agm':
@@ -126,6 +131,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: true,
         entertainment: true,
+        managerIntelligence: false,
       };
 
     case 'manager':
@@ -153,6 +159,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: true,
+        managerIntelligence: false,
       };
 
     case 'exec_chef':
@@ -180,6 +187,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        managerIntelligence: false,
       };
 
     case 'sous_chef':
@@ -207,6 +215,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        managerIntelligence: false,
       };
 
     case 'readonly':
@@ -234,6 +243,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: true,
+        managerIntelligence: false,
       };
 
     case 'pwa':
@@ -261,6 +271,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        managerIntelligence: false,
       };
 
     default:

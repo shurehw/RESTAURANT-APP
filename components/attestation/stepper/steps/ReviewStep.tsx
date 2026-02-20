@@ -38,7 +38,7 @@ interface Props {
   steps: StepConfig[];
   onStepClick: (index: number) => void;
   // Context for closing narrative
-  reportSummary: { net_sales: number; total_covers: number; total_comps: number } | null;
+  reportSummary: { net_sales: number; total_covers: number; total_comps: number; total_checks?: number; total_voids?: number } | null;
   factsSummary: {
     food_sales?: number;
     beverage_sales?: number;
@@ -99,6 +99,17 @@ interface Props {
     total_payment: number;
     status: string;
   }>;
+  // Top items and server performance (for closing narrative)
+  topItems?: Array<{ name: string; revenue: number; quantity: number }>;
+  serverPerformance?: Array<{
+    name: string;
+    net_sales: number;
+    covers: number;
+    checks: number;
+    avg_check: number;
+    tip_pct: number;
+  }>;
+  discountsTotal?: number;
   updateField: (fields: Partial<NightlyAttestation>) => void;
 }
 
@@ -136,10 +147,14 @@ export function ReviewStep({
   factsSummary,
   compExceptions,
   healthData,
+  venueId,
   venueName,
   date,
   notableGuests = [],
   peopleWeKnow = [],
+  topItems = [],
+  serverPerformance = [],
+  discountsTotal = 0,
   updateField,
 }: Props) {
   const [showAmend, setShowAmend] = useState(false);
@@ -173,6 +188,7 @@ export function ReviewStep({
         body: JSON.stringify({
           date,
           venueName,
+          venue_id: venueId,
           // Raw data
           net_sales: reportSummary.net_sales,
           total_covers: reportSummary.total_covers,
@@ -193,7 +209,15 @@ export function ReviewStep({
           total_comps: reportSummary.total_comps,
           comp_pct: compExceptions?.summary?.comp_pct ?? 0,
           comp_exception_count: compExceptions?.summary?.exception_count ?? 0,
+          voids_total: reportSummary.total_voids ?? 0,
+          discounts_total: discountsTotal,
+          checks_count: reportSummary.total_checks ?? 0,
+          avg_party_size: (reportSummary.total_checks ?? 0) > 0
+            ? reportSummary.total_covers / (reportSummary.total_checks ?? 1)
+            : 0,
           health_score: healthData?.health_score ?? null,
+          top_items: topItems,
+          servers: serverPerformance,
           // Manager inputs — revenue (structured prompts)
           revenue_driver: attestation.revenue_driver ?? null,
           revenue_mgmt_impact: attestation.revenue_mgmt_impact ?? null,
@@ -303,6 +327,9 @@ export function ReviewStep({
     coachingActions,
     notableGuests,
     peopleWeKnow,
+    topItems,
+    serverPerformance,
+    discountsTotal,
     triggers,
     date,
     venueName,

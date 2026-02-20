@@ -2460,6 +2460,20 @@ export default function NightlyReportPage() {
             notableGuests={report?.notableGuests ?? []}
             peopleWeKnow={report?.peopleWeKnow ?? []}
             compsByReason={report?.discounts ?? []}
+            topItems={(report?.menuItems ?? []).slice(0, 10).map(i => ({
+              name: i.name,
+              revenue: i.net_total,
+              quantity: i.qty,
+            }))}
+            serverPerformance={(report?.servers ?? []).map(s => ({
+              name: s.employee_name,
+              net_sales: s.net_sales,
+              covers: s.covers,
+              checks: s.tickets,
+              avg_check: s.avg_ticket,
+              tip_pct: s.tip_pct ?? 0,
+            }))}
+            discountsTotal={report?.discounts?.reduce((sum, d) => sum + (d.amount || 0), 0) ?? 0}
           />
 
           {/* Check & Reservation Sheets */}

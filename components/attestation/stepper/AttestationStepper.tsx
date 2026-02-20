@@ -47,6 +47,8 @@ interface ReportSummary {
   net_sales: number;
   total_covers: number;
   total_comps: number;
+  total_checks?: number;
+  total_voids?: number;
 }
 
 interface FactsSummary {
@@ -173,6 +175,18 @@ export interface AttestationStepperProps {
   // Comp category breakdown (from TipSee report.discounts)
   compsByReason?: Array<{ reason: string; qty: number; amount: number }>;
 
+  // Top items and server performance (from TipSee, for closing narrative)
+  topItems?: Array<{ name: string; revenue: number; quantity: number }>;
+  serverPerformance?: Array<{
+    name: string;
+    net_sales: number;
+    covers: number;
+    checks: number;
+    avg_check: number;
+    tip_pct: number;
+  }>;
+  discountsTotal?: number;
+
   // Entertainment (all h.wood venues)
   hasEntertainment?: boolean;
   // Culinary (all h.wood venues with kitchen)
@@ -211,6 +225,9 @@ export function AttestationStepper({
   notableGuests = [],
   peopleWeKnow = [],
   compsByReason = [],
+  topItems = [],
+  serverPerformance = [],
+  discountsTotal = 0,
   hasEntertainment = true,
   hasCulinary = true,
 }: AttestationStepperProps) {
@@ -545,6 +562,9 @@ export function AttestationStepper({
                   culinaryLog={culinaryLog}
                   notableGuests={notableGuests}
                   peopleWeKnow={peopleWeKnow}
+                  topItems={topItems}
+                  serverPerformance={serverPerformance}
+                  discountsTotal={discountsTotal}
                   updateField={updateField}
                 />
               )}
