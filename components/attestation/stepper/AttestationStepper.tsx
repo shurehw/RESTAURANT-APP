@@ -475,8 +475,6 @@ export function AttestationStepper({
                   incidents={incidents}
                   onAdd={addIncident}
                   disabled={isLocked}
-                  healthScore={healthData?.health_score}
-                  healthStatus={healthData?.status}
                   attestation={attestation}
                   onUpdate={updateField}
                 />

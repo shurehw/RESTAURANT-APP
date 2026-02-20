@@ -55,6 +55,10 @@ export function LaborStep({
         disabled={disabled}
         fohData={labor?.foh}
         bohData={labor?.boh}
+        otherData={labor?.other}
+        netSales={netSales}
+        otHours={labor?.ot_hours}
+        cplh={labor?.covers_per_labor_hour}
       />
     </div>
   );

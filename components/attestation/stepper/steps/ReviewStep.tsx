@@ -233,9 +233,11 @@ export function ReviewStep({
             severity: i.severity,
             description: i.description,
           })),
-          // Coaching structured prompts
-          coaching_standout: attestation.coaching_standout ?? null,
-          coaching_development: attestation.coaching_development ?? null,
+          // Coaching structured prompts (FOH + BOH + shared)
+          coaching_foh_standout: attestation.coaching_foh_standout ?? null,
+          coaching_foh_development: attestation.coaching_foh_development ?? null,
+          coaching_boh_standout: attestation.coaching_boh_standout ?? null,
+          coaching_boh_development: attestation.coaching_boh_development ?? null,
           coaching_team_focus: attestation.coaching_team_focus ?? null,
           coaching_tags: attestation.coaching_tags ?? [],
           coaching_notes: attestation.coaching_notes ?? null,
@@ -360,8 +362,8 @@ export function ReviewStep({
       }
       case 'coaching': {
         const parts: string[] = [];
-        const filled = promptsFilledCount(['coaching_standout', 'coaching_development', 'coaching_team_focus']);
-        if (filled > 0) parts.push(`${filled}/3 prompts`);
+        const filled = promptsFilledCount(['coaching_foh_standout', 'coaching_foh_development', 'coaching_boh_standout', 'coaching_boh_development', 'coaching_team_focus']);
+        if (filled > 0) parts.push(`${filled}/5 prompts`);
         if (coachingActions.length > 0)
           parts.push(`${coachingActions.length} action${coachingActions.length !== 1 ? 's' : ''}`);
         if (attestation?.coaching_acknowledged && filled === 0) parts.push('Acknowledged');

@@ -56,26 +56,26 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       );
     }
 
-    // Comps: all 3 structured prompts OR acknowledged
-    const compPromptKeys = ['comp_driver', 'comp_pattern', 'comp_compliance'] as const;
+    // Comps: structured prompt OR acknowledged
+    const compPromptKeys = ['comp_driver'] as const;
     const incompleteComps = compPromptKeys.filter(
       (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
     );
     if (incompleteComps.length > 0 && !attestation.comp_acknowledged) {
       return NextResponse.json(
-        { error: `Comps module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: `Comps module incomplete — answer the comp prompt (${MIN_REVENUE_LEN}+ chars) or acknowledge nothing to report` },
         { status: 400 },
       );
     }
 
-    // Labor: all 4 structured prompts OR acknowledged
-    const laborPromptKeys = ['labor_foh_coverage', 'labor_boh_performance', 'labor_decision', 'labor_change'] as const;
+    // Labor: all 3 structured prompts OR acknowledged
+    const laborPromptKeys = ['labor_foh_coverage', 'labor_boh_performance', 'labor_decision'] as const;
     const incompleteLabor = laborPromptKeys.filter(
       (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
     );
     if (incompleteLabor.length > 0 && !attestation.labor_acknowledged) {
       return NextResponse.json(
-        { error: `Labor module incomplete — answer all 4 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: `Labor module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
         { status: 400 },
       );
     }
@@ -105,14 +105,18 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       );
     }
 
-    // Coaching: all 3 structured prompts OR acknowledged
-    const coachingPromptKeys = ['coaching_standout', 'coaching_development', 'coaching_team_focus'] as const;
+    // Coaching: all 5 structured prompts (FOH + BOH + team focus) OR acknowledged
+    const coachingPromptKeys = [
+      'coaching_foh_standout', 'coaching_foh_development',
+      'coaching_boh_standout', 'coaching_boh_development',
+      'coaching_team_focus',
+    ] as const;
     const incompleteCoaching = coachingPromptKeys.filter(
       (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
     );
     if (incompleteCoaching.length > 0 && !attestation.coaching_acknowledged) {
       return NextResponse.json(
-        { error: `Coaching module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: `Coaching module incomplete — answer all 5 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
         { status: 400 },
       );
     }

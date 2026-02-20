@@ -44,6 +44,7 @@ export interface TypeFeedback {
   rating?: number;
   notes?: string;
   performer?: string;
+  would_rebook?: boolean;
 }
 
 export interface ShiftLog {

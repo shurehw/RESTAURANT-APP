@@ -86,67 +86,70 @@ export const STRUCTURED_PROMPT_MIN_LENGTH = 20;
 export const REVENUE_PROMPT_MIN_LENGTH = STRUCTURED_PROMPT_MIN_LENGTH;
 
 // ---------------------------------------------------------------------------
-// Comp Prompts — 3 structured prompts for comp attestation
+// Comp Prompts — single driver prompt; pattern/compliance handled by AI reviewer
 // ---------------------------------------------------------------------------
 
 export const COMP_PROMPT_KEYS = [
-  'comp_driver', 'comp_pattern', 'comp_compliance',
+  'comp_driver',
 ] as const;
 export type CompPromptKey = typeof COMP_PROMPT_KEYS[number];
 
 export const COMP_PROMPT_QUESTIONS: Record<CompPromptKey, string> = {
   comp_driver: 'What drove comp activity tonight?',
-  comp_pattern: 'Any patterns in how comps were used across servers or categories?',
-  comp_compliance: 'Were comps appropriately managed tonight? Any concerns?',
 };
 
 export const COMP_PROMPT_PLACEHOLDERS: Record<CompPromptKey, string> = {
   comp_driver: 'VIP comps, kitchen errors, service recovery, birthday celebrations, buybacks...',
-  comp_pattern: 'Server-specific trends, comp type clusters, time-of-night patterns...',
-  comp_compliance: 'Policy adherence, approval workflow, excessive use by any individual...',
 };
 
 // ---------------------------------------------------------------------------
-// Labor Prompts — 4 structured prompts for labor attestation
+// Labor Prompts — 3 structured prompts for labor attestation
 // ---------------------------------------------------------------------------
 
 export const LABOR_PROMPT_KEYS = [
-  'labor_foh_coverage', 'labor_boh_performance', 'labor_decision', 'labor_change',
+  'labor_foh_coverage', 'labor_boh_performance', 'labor_decision',
 ] as const;
 export type LaborPromptKey = typeof LABOR_PROMPT_KEYS[number];
 
 export const LABOR_PROMPT_QUESTIONS: Record<LaborPromptKey, string> = {
   labor_foh_coverage: 'How was floor coverage and service pacing tonight?',
   labor_boh_performance: 'How was kitchen staffing and line performance?',
-  labor_decision: 'What staffing decisions did you make tonight?',
-  labor_change: 'What would you change about tonight\'s labor plan?',
+  labor_decision: 'Any staffing adjustments you\'d make in hindsight?',
 };
 
 export const LABOR_PROMPT_PLACEHOLDERS: Record<LaborPromptKey, string> = {
   labor_foh_coverage: 'Section coverage, host stand flow, server workload, bar congestion...',
   labor_boh_performance: 'Line strength, ticket times, prep readiness, station coverage...',
-  labor_decision: 'Cut early, held servers, called in extra, repositioned sections...',
-  labor_change: 'Scheduling adjustment, section mapping, break timing, cut sequence...',
+  labor_decision: 'Cut timing, OT management, other labor allocation, headcount changes, scheduling feedback...',
 };
 
 // ---------------------------------------------------------------------------
-// Coaching Prompts — 3 structured prompts for coaching attestation
+// Coaching Prompts — 5 structured prompts (FOH + BOH + shared team focus)
 // ---------------------------------------------------------------------------
 
 export const COACHING_PROMPT_KEYS = [
-  'coaching_standout', 'coaching_development', 'coaching_team_focus',
+  'coaching_foh_standout', 'coaching_foh_development',
+  'coaching_boh_standout', 'coaching_boh_development',
+  'coaching_team_focus',
 ] as const;
 export type CoachingPromptKey = typeof COACHING_PROMPT_KEYS[number];
 
+export const COACHING_FOH_KEYS: CoachingPromptKey[] = ['coaching_foh_standout', 'coaching_foh_development'];
+export const COACHING_BOH_KEYS: CoachingPromptKey[] = ['coaching_boh_standout', 'coaching_boh_development'];
+
 export const COACHING_PROMPT_QUESTIONS: Record<CoachingPromptKey, string> = {
-  coaching_standout: 'Who stood out positively tonight and why?',
-  coaching_development: 'Who needs attention or development and what for?',
+  coaching_foh_standout: 'Who stood out on the floor tonight?',
+  coaching_foh_development: 'Any FOH team members needing attention or development?',
+  coaching_boh_standout: 'Who stood out in the kitchen tonight?',
+  coaching_boh_development: 'Any BOH team members needing attention or development?',
   coaching_team_focus: 'What\'s one team-wide improvement to focus on?',
 };
 
 export const COACHING_PROMPT_PLACEHOLDERS: Record<CoachingPromptKey, string> = {
-  coaching_standout: 'Specific team members who excelled — upselling, guest recovery, leadership...',
-  coaching_development: 'Performance gaps, repeated issues, training needs, policy reminders...',
+  coaching_foh_standout: 'Servers, hosts, bartenders who excelled — upselling, guest recovery, floor leadership...',
+  coaching_foh_development: 'Service gaps, table pacing issues, guest complaints, training needs...',
+  coaching_boh_standout: 'Line cooks, prep team, expo — speed, consistency, creativity...',
+  coaching_boh_development: 'Ticket times, plating issues, station coverage, food quality concerns...',
   coaching_team_focus: 'Service speed, menu knowledge, upsell execution, pre-shift communication...',
 };
 
@@ -379,20 +382,18 @@ export const ENTERTAINMENT_TAG_LABELS: Record<EntertainmentTag, string> = {
 // ---------------------------------------------------------------------------
 
 export const CULINARY_TAGS = [
-  '86d_items', 'strong_execution', 'new_special_success', 'food_quality_concern',
-  'equipment_issue', 'prep_shortage', 'vendor_issue', 'waste_high',
+  'strong_execution', 'new_special_success', 'food_quality_concern',
+  'equipment_issue', 'prep_shortage', 'waste_high',
   'kitchen_staffing', 'menu_change',
 ] as const;
 export type CulinaryTag = typeof CULINARY_TAGS[number];
 
 export const CULINARY_TAG_LABELS: Record<CulinaryTag, string> = {
-  '86d_items': "86'd Items",
   strong_execution: 'Strong Execution',
   new_special_success: 'Special Performed Well',
   food_quality_concern: 'Food Quality Concern',
   equipment_issue: 'Equipment Issue',
   prep_shortage: 'Prep Shortage',
-  vendor_issue: 'Vendor Issue',
   waste_high: 'High Waste / Spoilage',
   kitchen_staffing: 'Kitchen Staffing Issue',
   menu_change: 'Menu Change',
@@ -531,10 +532,15 @@ export interface NightlyAttestation {
   incident_notes?: string;
   incidents_acknowledged?: boolean;
 
-  // Coaching — 3 structured prompts
+  // Coaching — 5 structured prompts (FOH + BOH + shared)
+  coaching_foh_standout?: string;
+  coaching_foh_development?: string;
+  coaching_boh_standout?: string;
+  coaching_boh_development?: string;
+  coaching_team_focus?: string;
+  // Legacy (pre-split)
   coaching_standout?: string;
   coaching_development?: string;
-  coaching_team_focus?: string;
   // Legacy / AI-extracted
   coaching_tags?: CoachingTag[];
   coaching_notes?: string;
@@ -737,10 +743,15 @@ export const updateAttestationSchema = z.object({
   incident_tags: z.array(z.enum(INCIDENT_TAGS)).optional().nullable(),
   incident_notes: z.string().max(1000).optional().nullable(),
   incidents_acknowledged: z.boolean().optional(),
-  // Coaching — 3 structured prompts
+  // Coaching — 5 structured prompts (FOH + BOH + shared)
+  coaching_foh_standout: z.string().max(500).optional().nullable(),
+  coaching_foh_development: z.string().max(500).optional().nullable(),
+  coaching_boh_standout: z.string().max(500).optional().nullable(),
+  coaching_boh_development: z.string().max(500).optional().nullable(),
+  coaching_team_focus: z.string().max(500).optional().nullable(),
+  // Legacy
   coaching_standout: z.string().max(500).optional().nullable(),
   coaching_development: z.string().max(500).optional().nullable(),
-  coaching_team_focus: z.string().max(500).optional().nullable(),
   coaching_tags: z.array(z.enum(COACHING_TAGS)).optional().nullable(),
   coaching_notes: z.string().max(1000).optional().nullable(),
   coaching_acknowledged: z.boolean().optional(),

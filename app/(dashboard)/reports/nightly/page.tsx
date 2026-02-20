@@ -712,7 +712,7 @@ export default function NightlyReportPage() {
 
     return {
       ...factsSummary,
-      labor: enrichment?.labor ?? factsSummary?.labor,
+      labor: factsSummary?.labor ?? enrichment?.labor,
       forecast: factsSummary?.forecast ?? (paceData?.forecast ? {
         net_sales: paceData.forecast.revenue_predicted ?? null,
         covers: paceData.forecast.covers_predicted ?? null,

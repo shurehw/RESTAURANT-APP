@@ -10,6 +10,8 @@ import type {
 } from '@/lib/attestation/types';
 import {
   COACHING_PROMPT_KEYS,
+  COACHING_FOH_KEYS,
+  COACHING_BOH_KEYS,
   COACHING_PROMPT_QUESTIONS,
   COACHING_PROMPT_PLACEHOLDERS,
   STRUCTURED_PROMPT_MIN_LENGTH,
@@ -94,16 +96,41 @@ export function CoachingStep({
     <div className="space-y-4">
       {onUpdate && (
         <>
-          {/* 3 structured coaching prompts */}
-          {COACHING_PROMPT_KEYS.map((key) => (
-            <PromptField
-              key={key}
-              promptKey={key}
-              value={(attestation?.[key] as string) ?? ''}
-              disabled={disabled}
-              onUpdate={onUpdate}
-            />
-          ))}
+          {/* FOH Coaching */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Front of House</h3>
+            {COACHING_FOH_KEYS.map((key) => (
+              <PromptField
+                key={key}
+                promptKey={key}
+                value={(attestation?.[key] as string) ?? ''}
+                disabled={disabled}
+                onUpdate={onUpdate}
+              />
+            ))}
+          </div>
+
+          {/* BOH Coaching */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Back of House</h3>
+            {COACHING_BOH_KEYS.map((key) => (
+              <PromptField
+                key={key}
+                promptKey={key}
+                value={(attestation?.[key] as string) ?? ''}
+                disabled={disabled}
+                onUpdate={onUpdate}
+              />
+            ))}
+          </div>
+
+          {/* Shared team focus */}
+          <PromptField
+            promptKey="coaching_team_focus"
+            value={(attestation?.coaching_team_focus as string) ?? ''}
+            disabled={disabled}
+            onUpdate={onUpdate}
+          />
 
           {/* Nothing to report toggle */}
           {!allPromptsFilled && (
