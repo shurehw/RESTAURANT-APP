@@ -3,13 +3,14 @@
  */
 
 import postgres from 'postgres';
+import { TIPSEE_CONFIG } from './_config.mjs';
 
 const sql = postgres({
-  host: 'TIPSEE_HOST_REDACTED',
-  username: 'TIPSEE_USERNAME_REDACTED',
-  password: 'TIPSEE_PASSWORD_REDACTED',
-  database: 'postgres',
-  port: 5432,
+  host: TIPSEE_CONFIG.host,
+  username: TIPSEE_CONFIG.user,
+  password: TIPSEE_CONFIG.password,
+  database: TIPSEE_CONFIG.database,
+  port: TIPSEE_CONFIG.port,
   ssl: 'require',
 });
 

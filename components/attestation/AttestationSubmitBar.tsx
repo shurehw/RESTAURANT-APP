@@ -29,6 +29,7 @@ const MODULE_LABELS: Record<keyof CompletionState, string> = {
   labor: 'Labor',
   incidents: 'Incidents',
   coaching: 'Coaching',
+  guest: 'Guest',
   entertainment: 'Entertainment',
   culinary: 'Culinary',
 };

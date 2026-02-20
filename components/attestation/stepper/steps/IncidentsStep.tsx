@@ -2,16 +2,14 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { IncidentLog } from '@/components/attestation/IncidentLog';
-import { NarrativeCard } from '@/components/attestation/NarrativeCard';
-import { TagSelector } from '@/components/attestation/TagSelector';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertOctagon, Activity } from 'lucide-react';
 import type {
   NightlyIncident,
   TriggerResult,
   NightlyAttestation,
-  IncidentTag,
 } from '@/lib/attestation/types';
-import { INCIDENT_TAGS, INCIDENT_TAG_LABELS } from '@/lib/attestation/types';
+import { GUIDED_PROMPTS } from '@/lib/attestation/types';
 
 interface Props {
   triggers: TriggerResult | null;
@@ -21,9 +19,6 @@ interface Props {
   // Context
   healthScore?: number | null;
   healthStatus?: string | null;
-  // AI narrative + tags
-  narrative?: string | null;
-  narrativeLoading?: boolean;
   attestation?: NightlyAttestation | null;
   onUpdate?: (fields: Partial<NightlyAttestation>) => void;
 }
@@ -35,11 +30,13 @@ export function IncidentsStep({
   disabled,
   healthScore,
   healthStatus,
-  narrative,
-  narrativeLoading,
   attestation,
   onUpdate,
 }: Props) {
+  const notesLen = attestation?.incident_notes?.length ?? 0;
+  const hasNotes = notesLen >= 10;
+  const isAcknowledged = !!attestation?.incidents_acknowledged;
+
   return (
     <div className="space-y-4">
       {/* Context: trigger reasons + health */}
@@ -84,33 +81,48 @@ export function IncidentsStep({
         </Card>
       )}
 
-      <NarrativeCard
-        title="AI Incident Brief"
-        narrative={narrative ?? null}
-        loading={narrativeLoading ?? false}
-      />
-
       {onUpdate && (
         <>
-          <TagSelector<IncidentTag>
-            tags={INCIDENT_TAGS}
-            labels={INCIDENT_TAG_LABELS}
-            selected={attestation?.incident_tags ?? []}
-            onChange={(tags) => onUpdate({ incident_tags: tags })}
-            disabled={disabled}
-            title="What drove incidents tonight?"
-          />
+          {/* Guided prompt */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">{GUIDED_PROMPTS.incidents}</h4>
+            <textarea
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+              placeholder="Describe any guest complaints, safety concerns, staff issues, equipment problems..."
+              rows={3}
+              maxLength={1000}
+              value={attestation?.incident_notes ?? ''}
+              onChange={(e) => onUpdate({ incident_notes: e.target.value, incidents_acknowledged: false })}
+              onBlur={(e) => onUpdate({ incident_notes: e.target.value })}
+              disabled={disabled}
+            />
+            <div className="flex items-center justify-between">
+              {notesLen > 0 && notesLen < 10 && (
+                <span className="text-[11px] text-muted-foreground">
+                  Minimum 10 characters required
+                </span>
+              )}
+              <span className="text-[11px] text-muted-foreground ml-auto">
+                {notesLen}/1000
+              </span>
+            </div>
+          </div>
 
-          <textarea
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-            placeholder="Additional incident notes (optional)..."
-            rows={2}
-            maxLength={500}
-            value={attestation?.incident_notes ?? ''}
-            onChange={(e) => onUpdate({ incident_notes: e.target.value })}
-            onBlur={(e) => onUpdate({ incident_notes: e.target.value })}
-            disabled={disabled}
-          />
+          {/* Nothing to report toggle */}
+          {!hasNotes && (
+            <label className="flex items-center gap-2 px-1 cursor-pointer">
+              <Checkbox
+                checked={isAcknowledged}
+                onCheckedChange={(checked) =>
+                  onUpdate({ incidents_acknowledged: !!checked })
+                }
+                disabled={disabled}
+              />
+              <span className="text-sm text-muted-foreground">
+                Nothing to report — no incidents tonight
+              </span>
+            </label>
+          )}
         </>
       )}
 

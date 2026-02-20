@@ -27,7 +27,6 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
 
 -- Seed default admin user
--- Password: "admin123" (bcrypt hash)
 INSERT INTO users (email, password_hash, full_name, role) VALUES
   ('admin@opsos.local', '$2a$10$rZJ5YXqKQvNhj6j8xGxJC.dKqN3pGfR5YsR3UQxQZ0xGLhJY6J6xW', 'Admin User', 'owner')
 ON CONFLICT (email) DO NOTHING;

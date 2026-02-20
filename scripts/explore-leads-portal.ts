@@ -7,8 +7,8 @@
 import { chromium, type Page } from 'playwright';
 import * as fs from 'fs';
 
-const EMAIL = 'RAR_EMAIL_REDACTED';
-const PASSWORD = 'RAR_PASSWORD_REDACTED';
+const EMAIL = process.env.RAR_EMAIL!;
+const PASSWORD = process.env.RAR_PASSWORD!;
 const BASE_URL = 'https://leads.restaurantactivityreport.com';
 
 async function main() {

@@ -13,6 +13,11 @@ import type {
 // Default thresholds (used when venue has no custom config)
 export const DEFAULT_THRESHOLDS: Omit<AttestationThresholds, 'id' | 'venue_id'> = {
   revenue_variance_pct: 5.0,
+  covers_variance_pct: 20.0,
+  sdlw_variance_pct: 15.0,
+  sdly_variance_pct: 20.0,
+  bev_mix_low_pct: 20.0,
+  bev_mix_high_pct: 60.0,
   high_comp_amount: 100.0,
   comp_pct_threshold: 3.0,
   labor_variance_pct: 5.0,
@@ -63,6 +68,61 @@ export function computeTriggers(
       result.revenue_attestation_required = true;
       result.revenue_triggers.push(
         `Comp % of net sales: ${compPct.toFixed(1)}% (threshold: ${t.comp_pct_threshold}%)`,
+      );
+    }
+  }
+
+  // Covers vs forecast
+  if (payload.forecasted_covers > 0) {
+    const coversVariancePct =
+      ((payload.covers - payload.forecasted_covers) / payload.forecasted_covers) * 100;
+
+    if (Math.abs(coversVariancePct) >= t.covers_variance_pct) {
+      const direction = coversVariancePct > 0 ? 'above' : 'below';
+      result.revenue_attestation_required = true;
+      result.revenue_triggers.push(
+        `Covers ${direction} forecast by ${Math.abs(coversVariancePct).toFixed(0)}% (${payload.covers} vs ${Math.round(payload.forecasted_covers)} fcst)`,
+      );
+    }
+  }
+
+  // Revenue vs SDLW (same day last week)
+  if (payload.sdlw_net_sales && payload.sdlw_net_sales > 0) {
+    const sdlwPct =
+      ((payload.net_sales - payload.sdlw_net_sales) / payload.sdlw_net_sales) * 100;
+
+    if (sdlwPct <= -t.sdlw_variance_pct) {
+      result.revenue_attestation_required = true;
+      result.revenue_triggers.push(
+        `Revenue down ${Math.abs(sdlwPct).toFixed(0)}% vs SDLW (threshold: ${t.sdlw_variance_pct}%)`,
+      );
+    }
+  }
+
+  // Revenue vs SDLY (same day last year)
+  if (payload.sdly_net_sales && payload.sdly_net_sales > 0) {
+    const sdlyPct =
+      ((payload.net_sales - payload.sdly_net_sales) / payload.sdly_net_sales) * 100;
+
+    if (sdlyPct <= -t.sdly_variance_pct) {
+      result.revenue_attestation_required = true;
+      result.revenue_triggers.push(
+        `Revenue down ${Math.abs(sdlyPct).toFixed(0)}% vs SDLY (threshold: ${t.sdly_variance_pct}%)`,
+      );
+    }
+  }
+
+  // Beverage mix outside normal band
+  if (payload.beverage_pct != null && payload.net_sales > 0) {
+    if (payload.beverage_pct < t.bev_mix_low_pct) {
+      result.revenue_attestation_required = true;
+      result.revenue_triggers.push(
+        `Bev mix unusually low at ${payload.beverage_pct.toFixed(0)}% (below ${t.bev_mix_low_pct}% floor)`,
+      );
+    } else if (payload.beverage_pct > t.bev_mix_high_pct) {
+      result.revenue_attestation_required = true;
+      result.revenue_triggers.push(
+        `Bev mix unusually high at ${payload.beverage_pct.toFixed(0)}% (above ${t.bev_mix_high_pct}% ceiling)`,
       );
     }
   }

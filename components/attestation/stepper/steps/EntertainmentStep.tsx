@@ -1,13 +1,8 @@
 'use client';
 
 import { EntertainmentFeedback } from '@/components/attestation/EntertainmentFeedback';
-import { NarrativeCard } from '@/components/attestation/NarrativeCard';
-import { TagSelector } from '@/components/attestation/TagSelector';
-import type {
-  NightlyAttestation,
-  EntertainmentTag,
-} from '@/lib/attestation/types';
-import { ENTERTAINMENT_TAGS, ENTERTAINMENT_TAG_LABELS } from '@/lib/attestation/types';
+import type { NightlyAttestation } from '@/lib/attestation/types';
+import { GUIDED_PROMPTS } from '@/lib/attestation/types';
 import type { ShiftLog } from '@/lib/entertainment/types';
 
 interface Props {
@@ -16,9 +11,6 @@ interface Props {
   shiftLog: ShiftLog | null;
   onShiftLogUpdate: (log: ShiftLog) => void;
   disabled: boolean;
-  // AI narrative + tags
-  narrative?: string | null;
-  narrativeLoading?: boolean;
   attestation?: NightlyAttestation | null;
   onUpdate?: (fields: Partial<NightlyAttestation>) => void;
 }
@@ -29,19 +21,13 @@ export function EntertainmentStep({
   shiftLog,
   onShiftLogUpdate,
   disabled,
-  narrative,
-  narrativeLoading,
   attestation,
   onUpdate,
 }: Props) {
+  const notesLen = attestation?.entertainment_notes?.length ?? 0;
+
   return (
     <div className="space-y-4">
-      <NarrativeCard
-        title="AI Entertainment Brief"
-        narrative={narrative ?? null}
-        loading={narrativeLoading ?? false}
-      />
-
       <EntertainmentFeedback
         venueId={venueId}
         businessDate={businessDate}
@@ -51,27 +37,22 @@ export function EntertainmentStep({
       />
 
       {onUpdate && (
-        <>
-          <TagSelector<EntertainmentTag>
-            tags={ENTERTAINMENT_TAGS}
-            labels={ENTERTAINMENT_TAG_LABELS}
-            selected={attestation?.entertainment_tags ?? []}
-            onChange={(tags) => onUpdate({ entertainment_tags: tags })}
-            disabled={disabled}
-            title="What defined tonight's entertainment?"
-          />
-
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">{GUIDED_PROMPTS.entertainment}</h4>
           <textarea
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-            placeholder="Additional entertainment notes (optional)..."
-            rows={2}
-            maxLength={500}
+            placeholder="Crowd energy, DJ/band performance, sound quality, vibe, any issues..."
+            rows={3}
+            maxLength={1000}
             value={attestation?.entertainment_notes ?? ''}
             onChange={(e) => onUpdate({ entertainment_notes: e.target.value })}
             onBlur={(e) => onUpdate({ entertainment_notes: e.target.value })}
             disabled={disabled}
           />
-        </>
+          <div className="text-[11px] text-muted-foreground text-right">
+            {notesLen}/1000
+          </div>
+        </div>
       )}
     </div>
   );

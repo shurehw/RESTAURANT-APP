@@ -2,8 +2,8 @@
  * Detailed per-venue, per-day-type accuracy breakdown
  * Shows exactly which offsets help and which hurt
  */
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SUPABASE_KEY = 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY } from './_config.mjs';
+const SUPABASE_KEY = SUPABASE_SERVICE_KEY;
 
 async function query(table, params = '') {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {

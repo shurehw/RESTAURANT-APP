@@ -23,7 +23,7 @@ import 'dotenv/config';
 
 const CONFIG = {
   orgIdentifier: 'HWG',
-  clientId: 'SIMPHONY_CLIENT_ID_REDACTED',
+  clientId: process.env.SIMPHONY_BI_CLIENT_ID,
   authServer: 'https://ors-idm.us07.oraclerestaurants.com',
   appServer: 'https://simphony-home.us07.oraclerestaurants.com',
 };

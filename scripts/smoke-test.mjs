@@ -9,7 +9,7 @@ import { chromium } from 'playwright';
 
 const BASE_URL = 'https://opsos-restaurant-app.vercel.app';
 const EMAIL = 'jacob@hwoodgroup.com';
-const PASSWORD = 'password123';
+const PASSWORD = process.env.OPSOS_TEST_PASSWORD;
 
 // Every sidebar route from layout.tsx + admin pages
 const ROUTES = [

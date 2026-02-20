@@ -1,8 +1,10 @@
 import urllib.request, json, math, os
+from dotenv import load_dotenv
+load_dotenv('.env.local')
 os.environ['PYTHONIOENCODING'] = 'utf-8'
 
-url = "https://mnraeesscqsaappkaldb.supabase.co"
-key = "SUPABASE_SERVICE_ROLE_KEY_REDACTED"
+url = os.environ['NEXT_PUBLIC_SUPABASE_URL']
+key = os.environ['SUPABASE_SERVICE_ROLE_KEY']
 
 PEAK_PCT = 0.22
 

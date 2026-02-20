@@ -1,5 +1,5 @@
 -- Query TipSee for labor-related tables
--- Run with: psql "postgresql://TIPSEE_USERNAME_REDACTED:TIPSEE_PASSWORD_REDACTED@TIPSEE_HOST_REDACTED:5432/postgres?sslmode=require" -f scripts/check-tipsee-labor.sql
+-- Run with: psql "$TIPSEE_DB_URL" -f scripts/check-tipsee-labor.sql
 
 -- Find labor-related tables
 SELECT table_name

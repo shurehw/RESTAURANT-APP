@@ -42,7 +42,137 @@ export const COACHING_TYPES = [
 export const ATTESTATION_STATUSES = ['draft', 'submitted', 'amended'] as const;
 
 // ---------------------------------------------------------------------------
-// Revenue Tags (multi-select driver tags — always shown, not gated by trigger)
+// Guided Prompts — narrative-first approach for manager attestation
+// ---------------------------------------------------------------------------
+
+export const GUIDED_PROMPTS = {
+  // Revenue — 6 structured prompts that elicit signal for downstream extraction
+  revenue_driver: 'What specifically drove tonight\'s revenue outcome?',
+  revenue_mgmt_impact: 'What did management do that materially impacted revenue?',
+  revenue_lost_opportunity: 'Where did we lose revenue opportunity?',
+  revenue_demand_signal: 'Did demand feel stronger or weaker than forecast? Why?',
+  revenue_quality: 'Was tonight\'s revenue quality sustainable? Explain.',
+  revenue_action: 'What is one specific action for the next comparable shift?',
+  // Other modules
+  comps: "What drove comps tonight? Note any patterns or unusual activity.",
+  labor_foh: "Any service staffing issues, call-outs, or floor coverage concerns?",
+  labor_boh: "Any kitchen staffing issues, line call-outs, or prep concerns?",
+  incidents: "Any incidents, guest issues, or safety concerns during service?",
+  coaching: "Any coaching moments, team recognition, or performance concerns?",
+  guest: "Any notable guests, VIPs, or celebrations worth highlighting?",
+  entertainment: "How was the energy and entertainment tonight?",
+  culinary: "How did the kitchen perform? Any 86s, quality issues, or highlights?",
+} as const;
+
+// Revenue prompt field keys (for iteration)
+export const REVENUE_PROMPT_KEYS = [
+  'revenue_driver', 'revenue_mgmt_impact', 'revenue_lost_opportunity',
+  'revenue_demand_signal', 'revenue_quality', 'revenue_action',
+] as const;
+export type RevenuePromptKey = typeof REVENUE_PROMPT_KEYS[number];
+
+// Placeholders for each revenue prompt
+export const REVENUE_PROMPT_PLACEHOLDERS: Record<RevenuePromptKey, string> = {
+  revenue_driver: 'Identify the primary factor — event, execution, mix shift, pricing, external demand...',
+  revenue_mgmt_impact: 'Staffing holds, cuts, upsell pushes, table pacing, vibe control...',
+  revenue_lost_opportunity: 'Turn delays, rail congestion, underutilized PDR, weak upsell, over-cuts...',
+  revenue_demand_signal: 'Walk-in strength, reservation conversion, event spillover, weather drag...',
+  revenue_quality: 'Discount-driven, check inflation, event anomaly, repeatable strength...',
+  revenue_action: 'One specific, actionable change for the next comparable shift.',
+};
+
+// Minimum character length for a meaningful structured answer (shared across all modules)
+export const STRUCTURED_PROMPT_MIN_LENGTH = 20;
+export const REVENUE_PROMPT_MIN_LENGTH = STRUCTURED_PROMPT_MIN_LENGTH;
+
+// ---------------------------------------------------------------------------
+// Comp Prompts — 3 structured prompts for comp attestation
+// ---------------------------------------------------------------------------
+
+export const COMP_PROMPT_KEYS = [
+  'comp_driver', 'comp_pattern', 'comp_compliance',
+] as const;
+export type CompPromptKey = typeof COMP_PROMPT_KEYS[number];
+
+export const COMP_PROMPT_QUESTIONS: Record<CompPromptKey, string> = {
+  comp_driver: 'What drove comp activity tonight?',
+  comp_pattern: 'Any patterns in how comps were used across servers or categories?',
+  comp_compliance: 'Were comps appropriately managed tonight? Any concerns?',
+};
+
+export const COMP_PROMPT_PLACEHOLDERS: Record<CompPromptKey, string> = {
+  comp_driver: 'VIP comps, kitchen errors, service recovery, birthday celebrations, buybacks...',
+  comp_pattern: 'Server-specific trends, comp type clusters, time-of-night patterns...',
+  comp_compliance: 'Policy adherence, approval workflow, excessive use by any individual...',
+};
+
+// ---------------------------------------------------------------------------
+// Labor Prompts — 4 structured prompts for labor attestation
+// ---------------------------------------------------------------------------
+
+export const LABOR_PROMPT_KEYS = [
+  'labor_foh_coverage', 'labor_boh_performance', 'labor_decision', 'labor_change',
+] as const;
+export type LaborPromptKey = typeof LABOR_PROMPT_KEYS[number];
+
+export const LABOR_PROMPT_QUESTIONS: Record<LaborPromptKey, string> = {
+  labor_foh_coverage: 'How was floor coverage and service pacing tonight?',
+  labor_boh_performance: 'How was kitchen staffing and line performance?',
+  labor_decision: 'What staffing decisions did you make tonight?',
+  labor_change: 'What would you change about tonight\'s labor plan?',
+};
+
+export const LABOR_PROMPT_PLACEHOLDERS: Record<LaborPromptKey, string> = {
+  labor_foh_coverage: 'Section coverage, host stand flow, server workload, bar congestion...',
+  labor_boh_performance: 'Line strength, ticket times, prep readiness, station coverage...',
+  labor_decision: 'Cut early, held servers, called in extra, repositioned sections...',
+  labor_change: 'Scheduling adjustment, section mapping, break timing, cut sequence...',
+};
+
+// ---------------------------------------------------------------------------
+// Coaching Prompts — 3 structured prompts for coaching attestation
+// ---------------------------------------------------------------------------
+
+export const COACHING_PROMPT_KEYS = [
+  'coaching_standout', 'coaching_development', 'coaching_team_focus',
+] as const;
+export type CoachingPromptKey = typeof COACHING_PROMPT_KEYS[number];
+
+export const COACHING_PROMPT_QUESTIONS: Record<CoachingPromptKey, string> = {
+  coaching_standout: 'Who stood out positively tonight and why?',
+  coaching_development: 'Who needs attention or development and what for?',
+  coaching_team_focus: 'What\'s one team-wide improvement to focus on?',
+};
+
+export const COACHING_PROMPT_PLACEHOLDERS: Record<CoachingPromptKey, string> = {
+  coaching_standout: 'Specific team members who excelled — upselling, guest recovery, leadership...',
+  coaching_development: 'Performance gaps, repeated issues, training needs, policy reminders...',
+  coaching_team_focus: 'Service speed, menu knowledge, upsell execution, pre-shift communication...',
+};
+
+// ---------------------------------------------------------------------------
+// Guest Prompts — 3 structured prompts for guest attestation
+// ---------------------------------------------------------------------------
+
+export const GUEST_PROMPT_KEYS = [
+  'guest_vip_notable', 'guest_experience', 'guest_opportunity',
+] as const;
+export type GuestPromptKey = typeof GUEST_PROMPT_KEYS[number];
+
+export const GUEST_PROMPT_QUESTIONS: Record<GuestPromptKey, string> = {
+  guest_vip_notable: 'Any VIPs, celebrities, or notable guests tonight?',
+  guest_experience: 'How was the overall guest experience quality?',
+  guest_opportunity: 'Any relationship-building moments or missed opportunities?',
+};
+
+export const GUEST_PROMPT_PLACEHOLDERS: Record<GuestPromptKey, string> = {
+  guest_vip_notable: 'Names, party size, spend level, special arrangements, return frequency...',
+  guest_experience: 'Service complaints, wait times, atmosphere, table pacing, satisfaction signals...',
+  guest_opportunity: 'Regulars to recognize, celebrations handled, VIP follow-up, connection points...',
+};
+
+// ---------------------------------------------------------------------------
+// Revenue Tags (AI-extracted from manager narratives)
 // ---------------------------------------------------------------------------
 
 export const REVENUE_TAGS = [
@@ -197,6 +327,31 @@ export const COACHING_TAG_LABELS: Record<CoachingTag, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Guest Tags (multi-select driver tags — notable guests and VIPs)
+// ---------------------------------------------------------------------------
+
+export const GUEST_TAGS = [
+  'celebrity_sighting', 'vip_party', 'large_party', 'birthday_celebration',
+  'anniversary', 'corporate_event', 'influencer', 'repeat_regular',
+  'first_time_vip', 'bottle_service', 'private_dining',
+] as const;
+export type GuestTag = typeof GUEST_TAGS[number];
+
+export const GUEST_TAG_LABELS: Record<GuestTag, string> = {
+  celebrity_sighting: 'Celebrity Sighting',
+  vip_party: 'VIP Party',
+  large_party: 'Large Party',
+  birthday_celebration: 'Birthday Celebration',
+  anniversary: 'Anniversary',
+  corporate_event: 'Corporate Event',
+  influencer: 'Influencer',
+  repeat_regular: 'Repeat Regular',
+  first_time_vip: 'First-Time VIP',
+  bottle_service: 'Bottle Service',
+  private_dining: 'Private Dining',
+};
+
+// ---------------------------------------------------------------------------
 // Entertainment Tags (multi-select driver tags — entertainment performance)
 // ---------------------------------------------------------------------------
 
@@ -315,6 +470,11 @@ export interface AttestationThresholds {
   id?: string;
   venue_id: string;
   revenue_variance_pct: number;
+  covers_variance_pct: number;
+  sdlw_variance_pct: number;
+  sdly_variance_pct: number;
+  bev_mix_low_pct: number;
+  bev_mix_high_pct: number;
   high_comp_amount: number;
   comp_pct_threshold: number;
   labor_variance_pct: number;
@@ -330,37 +490,75 @@ export interface NightlyAttestation {
   submitted_at?: string;
   status: AttestationStatus;
 
-  // Revenue
+  // Revenue — 6 structured prompts
+  revenue_driver?: string;
+  revenue_mgmt_impact?: string;
+  revenue_lost_opportunity?: string;
+  revenue_demand_signal?: string;
+  revenue_quality?: string;
+  revenue_action?: string;
+  // Legacy / AI-extracted
   revenue_confirmed?: boolean;
   revenue_variance_reason?: RevenueVarianceReason;
   revenue_notes?: string;
   revenue_tags?: RevenueTag[];
 
-  // Labor
+  // Comps — 3 structured prompts
+  comp_driver?: string;
+  comp_pattern?: string;
+  comp_compliance?: string;
+  // Legacy / AI-extracted
+  comp_tags?: CompTag[];
+  comp_notes?: string;
+  comp_acknowledged?: boolean;
+
+  // Labor — 4 structured prompts
+  labor_foh_coverage?: string;
+  labor_boh_performance?: string;
+  labor_decision?: string;
+  labor_change?: string;
+  // Legacy / AI-extracted
   labor_confirmed?: boolean;
   labor_variance_reason?: LaborVarianceReason;
   labor_notes?: string;
+  labor_foh_notes?: string;
+  labor_boh_notes?: string;
+  labor_acknowledged?: boolean;
   labor_tags?: LaborTag[];
-
-  // Comps
-  comp_tags?: CompTag[];
-  comp_notes?: string;
 
   // Incidents
   incident_tags?: IncidentTag[];
   incident_notes?: string;
+  incidents_acknowledged?: boolean;
 
-  // Coaching
+  // Coaching — 3 structured prompts
+  coaching_standout?: string;
+  coaching_development?: string;
+  coaching_team_focus?: string;
+  // Legacy / AI-extracted
   coaching_tags?: CoachingTag[];
   coaching_notes?: string;
+  coaching_acknowledged?: boolean;
 
   // Entertainment
   entertainment_tags?: EntertainmentTag[];
   entertainment_notes?: string;
 
+  // Guest — 3 structured prompts
+  guest_vip_notable?: string;
+  guest_experience?: string;
+  guest_opportunity?: string;
+  // Legacy / AI-extracted
+  guest_tags?: GuestTag[];
+  guest_notes?: string;
+  guest_acknowledged?: boolean;
+
   // Culinary
   culinary_tags?: CulinaryTag[];
   culinary_notes?: string;
+
+  // Closing summary
+  closing_narrative?: string;
 
   // Lock
   locked_at?: string;
@@ -444,6 +642,19 @@ export interface NightlyReportPayload {
     employee_name: string;
   }>;
 
+  // Covers
+  covers: number;
+  forecasted_covers: number;
+
+  // Benchmarks (SDLW / SDLY)
+  sdlw_net_sales?: number;
+  sdly_net_sales?: number;
+  sdlw_covers?: number;
+  sdly_covers?: number;
+
+  // Category mix
+  beverage_pct?: number;
+
   // Labor
   actual_labor_cost: number;
   scheduled_labor_cost: number;
@@ -479,6 +690,11 @@ export interface TriggerResult {
 
 export const attestationThresholdsSchema = z.object({
   revenue_variance_pct: z.number().min(0).max(100).optional(),
+  covers_variance_pct: z.number().min(0).max(100).optional(),
+  sdlw_variance_pct: z.number().min(0).max(100).optional(),
+  sdly_variance_pct: z.number().min(0).max(100).optional(),
+  bev_mix_low_pct: z.number().min(0).max(100).optional(),
+  bev_mix_high_pct: z.number().min(0).max(100).optional(),
   high_comp_amount: z.number().min(0).optional(),
   comp_pct_threshold: z.number().min(0).max(100).optional(),
   labor_variance_pct: z.number().min(0).max(100).optional(),
@@ -487,24 +703,59 @@ export const attestationThresholdsSchema = z.object({
 });
 
 export const updateAttestationSchema = z.object({
+  // Revenue — 6 structured prompts
+  revenue_driver: z.string().max(500).optional().nullable(),
+  revenue_mgmt_impact: z.string().max(500).optional().nullable(),
+  revenue_lost_opportunity: z.string().max(500).optional().nullable(),
+  revenue_demand_signal: z.string().max(500).optional().nullable(),
+  revenue_quality: z.string().max(500).optional().nullable(),
+  revenue_action: z.string().max(500).optional().nullable(),
+  // Legacy
   revenue_confirmed: z.boolean().optional(),
   revenue_variance_reason: z.enum(REVENUE_VARIANCE_REASONS).optional().nullable(),
-  revenue_notes: z.string().max(500).optional().nullable(),
+  revenue_notes: z.string().max(1000).optional().nullable(),
   revenue_tags: z.array(z.enum(REVENUE_TAGS)).optional().nullable(),
+  // Labor — 4 structured prompts
+  labor_foh_coverage: z.string().max(500).optional().nullable(),
+  labor_boh_performance: z.string().max(500).optional().nullable(),
+  labor_decision: z.string().max(500).optional().nullable(),
+  labor_change: z.string().max(500).optional().nullable(),
   labor_confirmed: z.boolean().optional(),
   labor_variance_reason: z.enum(LABOR_VARIANCE_REASONS).optional().nullable(),
-  labor_notes: z.string().max(500).optional().nullable(),
+  labor_notes: z.string().max(1000).optional().nullable(),
+  labor_foh_notes: z.string().max(1000).optional().nullable(),
+  labor_boh_notes: z.string().max(1000).optional().nullable(),
+  labor_acknowledged: z.boolean().optional(),
   labor_tags: z.array(z.enum(LABOR_TAGS)).optional().nullable(),
+  // Comps — 3 structured prompts
+  comp_driver: z.string().max(500).optional().nullable(),
+  comp_pattern: z.string().max(500).optional().nullable(),
+  comp_compliance: z.string().max(500).optional().nullable(),
   comp_tags: z.array(z.enum(COMP_TAGS)).optional().nullable(),
-  comp_notes: z.string().max(500).optional().nullable(),
+  comp_notes: z.string().max(1000).optional().nullable(),
+  comp_acknowledged: z.boolean().optional(),
   incident_tags: z.array(z.enum(INCIDENT_TAGS)).optional().nullable(),
-  incident_notes: z.string().max(500).optional().nullable(),
+  incident_notes: z.string().max(1000).optional().nullable(),
+  incidents_acknowledged: z.boolean().optional(),
+  // Coaching — 3 structured prompts
+  coaching_standout: z.string().max(500).optional().nullable(),
+  coaching_development: z.string().max(500).optional().nullable(),
+  coaching_team_focus: z.string().max(500).optional().nullable(),
   coaching_tags: z.array(z.enum(COACHING_TAGS)).optional().nullable(),
-  coaching_notes: z.string().max(500).optional().nullable(),
+  coaching_notes: z.string().max(1000).optional().nullable(),
+  coaching_acknowledged: z.boolean().optional(),
+  // Guest — 3 structured prompts
+  guest_vip_notable: z.string().max(500).optional().nullable(),
+  guest_experience: z.string().max(500).optional().nullable(),
+  guest_opportunity: z.string().max(500).optional().nullable(),
+  guest_tags: z.array(z.enum(GUEST_TAGS)).optional().nullable(),
+  guest_notes: z.string().max(1000).optional().nullable(),
+  guest_acknowledged: z.boolean().optional(),
   entertainment_tags: z.array(z.enum(ENTERTAINMENT_TAGS)).optional().nullable(),
-  entertainment_notes: z.string().max(500).optional().nullable(),
+  entertainment_notes: z.string().max(1000).optional().nullable(),
   culinary_tags: z.array(z.enum(CULINARY_TAGS)).optional().nullable(),
-  culinary_notes: z.string().max(500).optional().nullable(),
+  culinary_notes: z.string().max(1000).optional().nullable(),
+  closing_narrative: z.string().optional().nullable(),
 });
 
 export const submitAttestationSchema = z.object({

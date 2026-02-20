@@ -21,11 +21,18 @@ interface CompReviewSummary {
   overallAssessment: string;
 }
 
+interface CompByReason {
+  reason: string;
+  qty: number;
+  amount: number;
+}
+
 interface Props {
   exceptionSummary: CompExceptionSummary | null;
   reviewSummary: CompReviewSummary | null;
   totalComps: number;
   netSales: number;
+  compsByReason?: CompByReason[];
 }
 
 function fmt(v: number) {
@@ -42,8 +49,10 @@ export function CompContextCard({
   reviewSummary,
   totalComps,
   netSales,
+  compsByReason = [],
 }: Props) {
   const compPct = netSales > 0 ? (totalComps / netSales) * 100 : 0;
+  const sortedReasons = [...compsByReason].sort((a, b) => b.amount - a.amount);
 
   return (
     <Card className="bg-muted/30 border-brass/20">
@@ -76,6 +85,39 @@ export function CompContextCard({
             <div className="text-xs text-muted-foreground">Exceptions</div>
           </div>
         </div>
+
+        {/* Category breakdown */}
+        {sortedReasons.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              By Reason
+            </div>
+            {sortedReasons.map((r) => {
+              const pctOfTotal = totalComps > 0 ? (r.amount / totalComps) * 100 : 0;
+              return (
+                <div key={r.reason} className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-1.5 rounded-full bg-brass/60"
+                        style={{ width: `${Math.max(pctOfTotal, 4)}%` }}
+                      />
+                      <span className="text-xs text-foreground/80 truncate">
+                        {r.reason || 'No Reason'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                    {r.qty}x
+                  </span>
+                  <span className="text-xs tabular-nums font-medium whitespace-nowrap">
+                    {fmt(r.amount)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Exception breakdown */}
         {exceptionSummary && exceptionSummary.exception_count > 0 && (

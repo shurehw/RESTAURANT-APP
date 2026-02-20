@@ -8,9 +8,7 @@
  * Run with: node scripts/direct-backfill.mjs
  */
 
-// Configuration (from .env)
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SUPABASE_SERVICE_KEY = 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY } from './_config.mjs';
 
 // TipSee connection via Supabase Edge Function
 // We'll call the existing edge function for each date

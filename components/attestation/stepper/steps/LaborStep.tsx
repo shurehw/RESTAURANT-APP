@@ -27,8 +27,6 @@ interface Props {
   netSales: number;
   covers: number;
   laborExceptions?: any | null;
-  narrative?: string | null;
-  narrativeLoading?: boolean;
 }
 
 export function LaborStep({
@@ -40,8 +38,6 @@ export function LaborStep({
   netSales,
   covers,
   laborExceptions,
-  narrative,
-  narrativeLoading,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -57,8 +53,8 @@ export function LaborStep({
         attestation={attestation}
         onUpdate={onUpdate}
         disabled={disabled}
-        narrative={narrative}
-        narrativeLoading={narrativeLoading}
+        fohData={labor?.foh}
+        bohData={labor?.boh}
       />
     </div>
   );

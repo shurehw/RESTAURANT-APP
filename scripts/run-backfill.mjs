@@ -10,21 +10,9 @@
 import pg from 'pg';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'crypto';
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY, TIPSEE_CONFIG } from './_config.mjs';
 
 const { Pool } = pg;
-
-// Configuration
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SUPABASE_SERVICE_KEY = 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
-
-const TIPSEE_CONFIG = {
-  host: 'TIPSEE_HOST_REDACTED',
-  port: 5432,
-  user: 'TIPSEE_USERNAME_REDACTED',
-  password: 'TIPSEE_PASSWORD_REDACTED',
-  database: 'postgres',
-  ssl: { rejectUnauthorized: false },
-};
 
 // Category mapping
 const CATEGORY_MAPPING = {
@@ -429,8 +417,8 @@ async function syncVenueDay(venueId, tipseeLocationUuid, businessDate) {
       [tipseeLocationUuid, businessDate]
     );
 
-    // Calculate category breakdowns
-    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
+    // Calculate category breakdowns (raw item-level gross — NOT final values)
+    let grossFood = 0, grossBev = 0, grossWine = 0, grossLiquor = 0, grossBeer = 0, grossOther = 0;
     let totalItemsSold = 0;
 
     for (const row of categoryResult.rows) {
@@ -439,12 +427,41 @@ async function syncVenueDay(venueId, tipseeLocationUuid, businessDate) {
       totalItemsSold += parseInt(row.quantity_sold) || 0;
 
       switch (categoryType) {
-        case 'food': foodSales += sales; break;
-        case 'wine': wineSales += sales; beverageSales += sales; break;
-        case 'liquor': liquorSales += sales; beverageSales += sales; break;
-        case 'beer': beerSales += sales; beverageSales += sales; break;
-        case 'beverage': beverageSales += sales; break;
-        default: otherSales += sales;
+        case 'food': grossFood += sales; break;
+        case 'wine': grossWine += sales; grossBev += sales; break;
+        case 'liquor': grossLiquor += sales; grossBev += sales; break;
+        case 'beer': grossBeer += sales; grossBev += sales; break;
+        case 'beverage': grossBev += sales; break;
+        default: grossOther += sales;
+      }
+    }
+
+    // Proportional allocation: distribute check-level net_sales across categories
+    // Item-level price*quantity can be 2-5x check-level revenue (packages, minimums, bottle service)
+    const grossTotal = grossFood + grossBev + grossOther;
+    const venueNetSales = parseFloat(summary.net_sales) || 0;
+    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
+
+    if (grossTotal > 0 && venueNetSales > 0) {
+      const ratio = venueNetSales / grossTotal;
+      foodSales     = Math.round(grossFood   * ratio * 100) / 100;
+      beverageSales = Math.round(grossBev    * ratio * 100) / 100;
+      wineSales     = Math.round(grossWine   * ratio * 100) / 100;
+      liquorSales   = Math.round(grossLiquor * ratio * 100) / 100;
+      beerSales     = Math.round(grossBeer   * ratio * 100) / 100;
+      otherSales    = Math.round(grossOther  * ratio * 100) / 100;
+
+      // Absorb rounding remainder into the largest bucket
+      const allocated = foodSales + beverageSales + otherSales;
+      const remainder = Math.round((venueNetSales - allocated) * 100) / 100;
+      if (remainder !== 0) {
+        if (foodSales >= beverageSales && foodSales >= otherSales) {
+          foodSales = Math.round((foodSales + remainder) * 100) / 100;
+        } else if (beverageSales >= otherSales) {
+          beverageSales = Math.round((beverageSales + remainder) * 100) / 100;
+        } else {
+          otherSales = Math.round((otherSales + remainder) * 100) / 100;
+        }
       }
     }
 
@@ -465,7 +482,7 @@ async function syncVenueDay(venueId, tipseeLocationUuid, businessDate) {
         venue_id: venueId,
         business_date: businessDate,
         gross_sales: parseFloat(summary.gross_sales) || 0,
-        net_sales: parseFloat(summary.net_sales) || 0,
+        net_sales: venueNetSales,
         food_sales: foodSales,
         beverage_sales: beverageSales,
         wine_sales: wineSales,

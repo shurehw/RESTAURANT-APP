@@ -36,36 +36,105 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       );
     }
 
-    // Validate completeness: required triggers must be attested
+    // Validate completeness: all modules must be attested
+    // Narrative-first: notes >= 10 chars OR acknowledged
     const triggers: TriggerResult | null = attestation.triggers_snapshot;
-    if (triggers) {
-      if (triggers.revenue_attestation_required && attestation.revenue_confirmed === null) {
-        return NextResponse.json(
-          { error: 'Revenue attestation is required but not completed' },
-          { status: 400 },
-        );
-      }
-      if (triggers.labor_attestation_required && attestation.labor_confirmed === null) {
-        return NextResponse.json(
-          { error: 'Labor attestation is required but not completed' },
-          { status: 400 },
-        );
-      }
-      if (triggers.comp_resolution_required) {
-        const { data: resolutions } = await (supabase as any)
-          .from('comp_resolutions')
-          .select('id')
-          .eq('attestation_id', id);
 
-        const flaggedCount = triggers.flagged_comps?.length || 0;
-        const resolvedCount = resolutions?.length || 0;
-        if (resolvedCount < flaggedCount) {
-          return NextResponse.json(
-            { error: `${flaggedCount - resolvedCount} comp(s) still need resolution` },
-            { status: 400 },
-          );
-        }
+    // Revenue: all 6 structured prompts must meet minimum length
+    const revenuePromptKeys = [
+      'revenue_driver', 'revenue_mgmt_impact', 'revenue_lost_opportunity',
+      'revenue_demand_signal', 'revenue_quality', 'revenue_action',
+    ] as const;
+    const MIN_REVENUE_LEN = 20;
+    const incompleteRevenue = revenuePromptKeys.filter(
+      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+    );
+    if (incompleteRevenue.length > 0) {
+      return NextResponse.json(
+        { error: `Revenue module incomplete — ${incompleteRevenue.length} prompt(s) need at least ${MIN_REVENUE_LEN} characters each` },
+        { status: 400 },
+      );
+    }
+
+    // Comps: all 3 structured prompts OR acknowledged
+    const compPromptKeys = ['comp_driver', 'comp_pattern', 'comp_compliance'] as const;
+    const incompleteComps = compPromptKeys.filter(
+      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+    );
+    if (incompleteComps.length > 0 && !attestation.comp_acknowledged) {
+      return NextResponse.json(
+        { error: `Comps module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { status: 400 },
+      );
+    }
+
+    // Labor: all 4 structured prompts OR acknowledged
+    const laborPromptKeys = ['labor_foh_coverage', 'labor_boh_performance', 'labor_decision', 'labor_change'] as const;
+    const incompleteLabor = laborPromptKeys.filter(
+      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+    );
+    if (incompleteLabor.length > 0 && !attestation.labor_acknowledged) {
+      return NextResponse.json(
+        { error: `Labor module incomplete — answer all 4 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { status: 400 },
+      );
+    }
+
+    // Comps: if flagged, require resolutions
+    if (triggers?.comp_resolution_required) {
+      const { data: resolutions } = await (supabase as any)
+        .from('comp_resolutions')
+        .select('id')
+        .eq('attestation_id', id);
+
+      const flaggedCount = triggers.flagged_comps?.length || 0;
+      const resolvedCount = resolutions?.length || 0;
+      if (resolvedCount < flaggedCount) {
+        return NextResponse.json(
+          { error: `${flaggedCount - resolvedCount} comp(s) still need resolution` },
+          { status: 400 },
+        );
       }
+    }
+
+    // Incidents: must have notes OR acknowledged
+    if (!((attestation.incident_notes?.length ?? 0) >= 10) && !attestation.incidents_acknowledged) {
+      return NextResponse.json(
+        { error: 'Incidents module is required — describe incidents or acknowledge nothing to report' },
+        { status: 400 },
+      );
+    }
+
+    // Coaching: all 3 structured prompts OR acknowledged
+    const coachingPromptKeys = ['coaching_standout', 'coaching_development', 'coaching_team_focus'] as const;
+    const incompleteCoaching = coachingPromptKeys.filter(
+      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+    );
+    if (incompleteCoaching.length > 0 && !attestation.coaching_acknowledged) {
+      return NextResponse.json(
+        { error: `Coaching module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { status: 400 },
+      );
+    }
+
+    // Guest: all 3 structured prompts OR acknowledged
+    const guestPromptKeys = ['guest_vip_notable', 'guest_experience', 'guest_opportunity'] as const;
+    const incompleteGuest = guestPromptKeys.filter(
+      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+    );
+    if (incompleteGuest.length > 0 && !attestation.guest_acknowledged) {
+      return NextResponse.json(
+        { error: `Guest module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { status: 400 },
+      );
+    }
+
+    // Closing narrative: required
+    if (!attestation.closing_narrative) {
+      return NextResponse.json(
+        { error: 'Closing summary is required — generate it on the Review step before submitting' },
+        { status: 400 },
+      );
     }
 
     // Attestation gating: check for unresolved critical feedback objects

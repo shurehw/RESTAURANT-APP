@@ -8,8 +8,9 @@ export interface StepConfig {
   id: string;
   label: string;
   icon: LucideIcon;
-  status: 'required' | 'optional' | 'not_required';
-  completion: 'complete' | 'incomplete' | 'not_required' | 'always_optional';
+  status: 'required';
+  completion: 'complete' | 'incomplete';
+  flagged?: boolean;
 }
 
 interface Props {
@@ -31,7 +32,6 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
     const containerRect = container.getBoundingClientRect();
     const activeRect = activeEl.getBoundingClientRect();
 
-    // If active step is outside visible area, scroll it into view
     if (activeRect.left < containerRect.left || activeRect.right > containerRect.right) {
       activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
@@ -47,8 +47,6 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
         {steps.map((step, i) => {
           const isCurrent = i === currentStep;
           const isComplete = step.completion === 'complete';
-          const isNotRequired = step.status === 'not_required';
-          const isOptional = step.status === 'optional';
           const Icon = step.icon;
 
           return (
@@ -64,7 +62,6 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
                   'flex items-center gap-1.5 rounded-lg px-2 py-1.5 transition-colors text-left',
                   isCurrent && 'bg-brass/10',
                   !isCurrent && 'hover:bg-muted/50',
-                  (isNotRequired || isOptional) && !isCurrent && 'opacity-50',
                 )}
               >
                 <div
@@ -72,8 +69,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
                     'flex items-center justify-center w-7 h-7 rounded-full shrink-0 transition-colors',
                     isComplete && 'bg-sage text-white',
                     isCurrent && !isComplete && 'bg-brass text-white',
-                    !isCurrent && !isComplete && isNotRequired && 'border border-dashed border-muted-foreground/40',
-                    !isCurrent && !isComplete && !isNotRequired && 'border-2 border-brass/40',
+                    !isCurrent && !isComplete && 'border-2 border-brass/40',
                   )}
                 >
                   {isComplete ? (
@@ -92,14 +88,9 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
                   >
                     {step.label}
                   </div>
-                  {isNotRequired && (
-                    <div className="text-[10px] text-muted-foreground/60 leading-tight whitespace-nowrap">
-                      Not required
-                    </div>
-                  )}
-                  {isOptional && (
-                    <div className="text-[10px] text-muted-foreground/60 leading-tight whitespace-nowrap">
-                      Optional
+                  {step.flagged && (
+                    <div className="text-[10px] text-brass font-semibold leading-tight whitespace-nowrap">
+                      Flagged
                     </div>
                   )}
                 </div>
@@ -127,7 +118,6 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
           {steps.map((step, i) => {
             const isCurrent = i === currentStep;
             const isComplete = step.completion === 'complete';
-            const isNotRequired = step.status === 'not_required';
 
             return (
               <button
@@ -137,8 +127,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: Props) {
                   'w-2.5 h-2.5 rounded-full transition-all',
                   isComplete && 'bg-sage',
                   isCurrent && !isComplete && 'bg-brass w-6',
-                  !isCurrent && !isComplete && isNotRequired && 'bg-muted-foreground/20',
-                  !isCurrent && !isComplete && !isNotRequired && 'bg-brass/30',
+                  !isCurrent && !isComplete && 'bg-brass/30',
                 )}
               />
             );

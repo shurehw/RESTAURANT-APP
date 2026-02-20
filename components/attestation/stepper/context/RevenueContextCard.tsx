@@ -12,6 +12,9 @@ interface Props {
     vs_forecast_pct: number | null;
     vs_sdlw_pct: number | null;
     vs_sdly_pct: number | null;
+    vs_forecast_covers_pct?: number | null;
+    vs_sdlw_covers_pct?: number | null;
+    vs_sdly_covers_pct?: number | null;
   } | null;
   foodSales?: number;
   beverageSales?: number;
@@ -107,7 +110,7 @@ export function RevenueContextCard({
           </div>
         )}
 
-        {/* Forecast + Variance */}
+        {/* Sales Forecast + Variance */}
         <div className="flex flex-wrap gap-x-4 gap-y-1">
           {forecast?.net_sales != null && (
             <div className="text-xs text-muted-foreground">
@@ -118,6 +121,20 @@ export function RevenueContextCard({
           <VBadge value={variance?.vs_sdlw_pct} label="vs SDLW" />
           <VBadge value={variance?.vs_sdly_pct} label="vs SDLY" />
         </div>
+
+        {/* Covers Forecast + Variance */}
+        {(forecast?.covers != null || variance?.vs_forecast_covers_pct != null || variance?.vs_sdlw_covers_pct != null || variance?.vs_sdly_covers_pct != null) && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1">
+            {forecast?.covers != null && (
+              <div className="text-xs text-muted-foreground">
+                Covers Fcst: <span className="font-medium text-foreground">{Math.round(forecast.covers).toLocaleString()}</span>
+              </div>
+            )}
+            <VBadge value={variance?.vs_forecast_covers_pct} label="vs Fcst" />
+            <VBadge value={variance?.vs_sdlw_covers_pct} label="vs SDLW" />
+            <VBadge value={variance?.vs_sdly_covers_pct} label="vs SDLY" />
+          </div>
+        )}
 
       </CardContent>
     </Card>

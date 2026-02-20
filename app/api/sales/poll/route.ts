@@ -17,6 +17,7 @@ import {
   getActiveSalesPaceVenues,
   getSalesPaceSettings,
   storeSalesSnapshot,
+  getLatestSnapshot,
   upsertLaborDayFact,
   getTipseeMappingForVenue,
   getVenueTimezone,
@@ -109,7 +110,7 @@ async function processVenue(venueId: string): Promise<{
 
   // Check service hours (in venue's local timezone)
   const startHour = settings?.service_start_hour ?? 11;
-  const endHour = settings?.service_end_hour ?? 3;
+  const endHour = settings?.service_end_hour ?? 2;
   if (!isWithinServiceHoursForTimezone(startHour, endHour, tz)) {
     return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'outside_service_hours' };
   }
@@ -135,7 +136,7 @@ async function processVenue(venueId: string): Promise<{
       summary = await fetchSimphonyBIIntraDaySummary(venueId, businessDate);
     } catch (err: any) {
       console.warn(`[sales-poll] Simphony BI API failed for ${venueId}: ${err.message}`);
-      summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, comps_total: 0, voids_total: 0 };
+      summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, other_sales: 0, comps_total: 0, voids_total: 0 };
     }
 
     // 2. Fall back to TipSee tipsee_simphony_sales (batch/delayed)
@@ -154,6 +155,16 @@ async function processVenue(venueId: string): Promise<{
   // Skip if no sales activity yet
   if (summary.net_sales === 0 && summary.total_checks === 0) {
     return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'no_sales' };
+  }
+
+  // Skip duplicate: if net_sales and checks haven't changed since last snapshot, don't store
+  const lastSnap = await getLatestSnapshot(venueId, businessDate);
+  if (
+    lastSnap &&
+    lastSnap.net_sales === summary.net_sales &&
+    lastSnap.checks_count === summary.total_checks
+  ) {
+    return { snapshot_stored: false, net_sales: summary.net_sales, covers: summary.total_covers, checks: summary.total_checks, skipped_reason: 'no_change' };
   }
 
   // Fetch labor + comp data in parallel (non-blocking — sales snapshot still stores even if these fail)

@@ -584,8 +584,17 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
     );
   }
 
+  // Thin to one snapshot per hour (keep last snapshot in each hour bucket)
+  const hourly = new Map<string, SalesSnapshot>();
+  for (const s of snapshots) {
+    const d = new Date(s.snapshot_at);
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
+    // snapshots are chronological — later ones overwrite, so we keep the latest per hour
+    hourly.set(key, s);
+  }
+
   // Sorted newest-first; delta = difference from the previous (older) snapshot
-  const sorted = [...snapshots].reverse();
+  const sorted = [...hourly.values()].reverse();
 
   return (
     <div className="overflow-x-auto">
@@ -814,8 +823,11 @@ function GroupSummary({ data, enrichment, enrichmentLoading }: {
   enrichmentLoading: boolean;
 }) {
   const { totals, venues } = data;
-  const bevPct = (totals.food_sales + totals.beverage_sales) > 0
-    ? (totals.beverage_sales / (totals.food_sales + totals.beverage_sales)) * 100
+  // Use actual net values per category (item-level comps/voids already tracked)
+  const groupFood = totals.food_sales;
+  const groupBev = totals.beverage_sales;
+  const bevPct = (groupFood + groupBev) > 0
+    ? (groupBev / (groupFood + groupBev)) * 100
     : 0;
 
   const et = enrichment?.totals;
@@ -1662,6 +1674,7 @@ export default function LivePulsePage() {
                 <PeriodCategoryMixCard
                   foodSales={periodData.venue.current.food_sales}
                   bevSales={periodData.venue.current.beverage_sales}
+                  otherSales={Math.max(0, periodData.venue.current.net_sales - periodData.venue.current.food_sales - periodData.venue.current.beverage_sales)}
                   priorBevPct={periodData.venue.prior.days_count > 0 ? periodData.venue.prior.beverage_pct : null}
                 />
               </div>

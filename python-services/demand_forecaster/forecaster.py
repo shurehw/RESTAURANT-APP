@@ -36,7 +36,7 @@ load_dotenv(_project_root / ".env.local", override=True)
 
 # Configuration
 FORECAST_DAYS = int(os.getenv("FORECAST_DAYS", "42"))
-MODEL_VERSION = "prophet_v4_gated"
+MODEL_VERSION = "prophet_v4_tuned"
 MIN_COVERS_THRESHOLD = 10
 
 # Reso elasticity bounds
@@ -55,6 +55,54 @@ TIER_C_MIN = 30    # Basic: Prophet baseline (no weather, no reso)
 
 # Venue classes where weather impact is weak/indirect
 WEATHER_WEAK_CLASSES = {"nightclub", "late_night"}
+
+# ── Venue-class-specific Prophet hyperparameters ──────────────────────────
+# Restaurants: strong weekly/seasonal patterns → tighter seasonality priors
+# Nightclubs: volatile, event-driven → looser priors, flexible trend
+# Members club: small venue, high variance → very flexible, additive mode
+VENUE_CLASS_PROPHET_PARAMS = {
+    # Restaurants: predictable, strong seasonality
+    "supper_club": {
+        "changepoint_prior_scale": 0.08,
+        "seasonality_prior_scale": 5.0,
+        "holidays_prior_scale": 8.0,
+        "seasonality_mode": "multiplicative",
+    },
+    "high_end_social": {
+        "changepoint_prior_scale": 0.08,
+        "seasonality_prior_scale": 5.0,
+        "holidays_prior_scale": 8.0,
+        "seasonality_mode": "multiplicative",
+    },
+    # Nightclubs: volatile, event-driven
+    "nightclub": {
+        "changepoint_prior_scale": 0.15,
+        "seasonality_prior_scale": 12.0,
+        "holidays_prior_scale": 15.0,
+        "seasonality_mode": "multiplicative",
+    },
+    "late_night": {
+        "changepoint_prior_scale": 0.15,
+        "seasonality_prior_scale": 12.0,
+        "holidays_prior_scale": 15.0,
+        "seasonality_mode": "multiplicative",
+    },
+    # Members club: small, high variance
+    "member_club": {
+        "changepoint_prior_scale": 0.20,
+        "seasonality_prior_scale": 15.0,
+        "holidays_prior_scale": 15.0,
+        "seasonality_mode": "additive",
+    },
+}
+
+# Default Prophet params (used when venue_class is NULL or unknown)
+DEFAULT_PROPHET_PARAMS = {
+    "changepoint_prior_scale": 0.05,
+    "seasonality_prior_scale": 10.0,
+    "holidays_prior_scale": 10.0,
+    "seasonality_mode": "multiplicative",
+}
 
 # US holidays for day_type classification (must match SQL get_day_type function)
 US_HOLIDAYS = {
@@ -90,13 +138,15 @@ def get_day_type(date_str: str) -> str:
 class ModelConfig:
     """Configuration returned by the model router for a specific venue."""
     def __init__(self, tier: str, use_weather: str, use_reso: bool,
-                 use_outlier_removal: bool, use_prophet: bool, label: str):
+                 use_outlier_removal: bool, use_prophet: bool, label: str,
+                 prophet_params: Optional[Dict] = None):
         self.tier = tier                    # A, B, C, D
         self.use_weather = use_weather      # "continuous", "binary", "off"
         self.use_reso = use_reso
         self.use_outlier_removal = use_outlier_removal
         self.use_prophet = use_prophet      # False = naive fallback
         self.label = label
+        self.prophet_params = prophet_params or DEFAULT_PROPHET_PARAMS
 
     def __repr__(self):
         return f"Tier {self.tier}: {self.label}"
@@ -113,35 +163,41 @@ def model_router(training_days: int, venue_class: Optional[str] = None,
     Tier D (<30):      Naive DOW rolling average (no Prophet)
 
     Nightclubs/late-night: weather downgraded one level (A->binary, B->off)
+    Prophet hyperparameters tuned per venue class (restaurant vs nightclub vs members club).
     """
     is_weather_weak = venue_class in WEATHER_WEAK_CLASSES
+    params = VENUE_CLASS_PROPHET_PARAMS.get(venue_class, DEFAULT_PROPHET_PARAMS)
 
     if training_days >= TIER_A_MIN:
         if is_weather_weak:
-            # Nightclubs: weather less predictive, use binary flags instead
             weather = "binary" if has_coords else "off"
             return ModelConfig("A-", weather, True, True, True,
-                               f"Prophet + binary weather + reso (nightclub, {training_days}d)")
+                               f"Prophet + binary weather + reso ({venue_class or 'default'}, {training_days}d)",
+                               prophet_params=params)
         weather = "continuous" if has_coords else "off"
         return ModelConfig("A", weather, True, True, True,
-                           f"Prophet + weather + reso ({training_days}d)")
+                           f"Prophet + weather + reso ({venue_class or 'default'}, {training_days}d)",
+                           prophet_params=params)
 
     elif training_days >= TIER_B_MIN:
         if is_weather_weak:
-            # Nightclub with moderate data: skip weather entirely
             return ModelConfig("B-", "off", True, True, True,
-                               f"Prophet + reso only (nightclub, {training_days}d)")
+                               f"Prophet + reso only ({venue_class or 'default'}, {training_days}d)",
+                               prophet_params=params)
         weather = "binary" if has_coords else "off"
         return ModelConfig("B", weather, True, True, True,
-                           f"Prophet + binary weather + reso ({training_days}d)")
+                           f"Prophet + binary weather + reso ({venue_class or 'default'}, {training_days}d)",
+                           prophet_params=params)
 
     elif training_days >= TIER_C_MIN:
         return ModelConfig("C", "off", False, True, True,
-                           f"Prophet baseline ({training_days}d)")
+                           f"Prophet baseline ({venue_class or 'default'}, {training_days}d)",
+                           prophet_params=params)
 
     else:
         return ModelConfig("D", "off", False, False, False,
-                           f"Naive rolling avg ({training_days}d)")
+                           f"Naive rolling avg ({training_days}d)",
+                           prophet_params=params)
 
 
 # ============================================================================
@@ -232,6 +288,44 @@ def filter_closed_days(df: pd.DataFrame, closed_weekdays: List[int]) -> pd.DataF
         day_names = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
         closed_names = [day_names[d] for d in closed_weekdays]
         print(f"  Dark-day filter: removed {removed} rows for closed days ({', '.join(closed_names)})")
+    return df
+
+
+def get_venue_anomaly_dates(supabase: Client) -> Dict[str, set]:
+    """
+    Load flagged anomaly dates per venue from venue_day_anomalies.
+    These are buyouts, private events, soft closures that should be
+    excluded from Prophet training data (they'd confuse the model).
+    Returns {venue_id: {date_str, ...}}.
+    """
+    response = supabase.table("venue_day_anomalies").select(
+        "venue_id, business_date"
+    ).is_("resolved_at", "null").execute()
+
+    anomalies: Dict[str, set] = {}
+    for row in response.data or []:
+        vid = row["venue_id"]
+        if vid not in anomalies:
+            anomalies[vid] = set()
+        anomalies[vid].add(row["business_date"])
+
+    return anomalies
+
+
+def filter_anomaly_days(df: pd.DataFrame, anomaly_dates: set) -> pd.DataFrame:
+    """
+    Remove rows falling on flagged anomaly dates from training data.
+    Buyouts/private events would confuse Prophet with artificially low cover counts.
+    """
+    if not anomaly_dates:
+        return df
+    df = df.copy()
+    df["ds"] = pd.to_datetime(df["ds"])
+    before = len(df)
+    df = df[~df["ds"].dt.strftime("%Y-%m-%d").isin(anomaly_dates)]
+    removed = before - len(df)
+    if removed > 0:
+        print(f"  Anomaly filter: removed {removed} buyout/private event days from training")
     return df
 
 
@@ -587,19 +681,25 @@ def clean_training_data(df: pd.DataFrame) -> pd.DataFrame:
 # PROPHET MODEL
 # ============================================================================
 
-def build_prophet_model(weather_mode: str = "off") -> Prophet:
+def build_prophet_model(weather_mode: str = "off",
+                        prophet_params: Optional[Dict] = None) -> Prophet:
     """
-    Build Prophet model with weather config based on tier.
+    Build Prophet model with venue-class-specific hyperparameters.
 
     weather_mode: "continuous" | "binary" | "off"
+    prophet_params: dict with changepoint_prior_scale, seasonality_prior_scale,
+                    holidays_prior_scale, seasonality_mode
     """
+    p = prophet_params or DEFAULT_PROPHET_PARAMS
     m = Prophet(
         yearly_seasonality=True,
         weekly_seasonality=True,
         daily_seasonality=False,
-        seasonality_mode="multiplicative",
+        seasonality_mode=p.get("seasonality_mode", "multiplicative"),
         interval_width=0.80,
-        changepoint_prior_scale=0.05,
+        changepoint_prior_scale=p.get("changepoint_prior_scale", 0.05),
+        seasonality_prior_scale=p.get("seasonality_prior_scale", 10.0),
+        holidays_prior_scale=p.get("holidays_prior_scale", 10.0),
     )
     m.add_country_holidays(country_name="US")
 
@@ -676,8 +776,11 @@ def fit_and_forecast(
     reso_df["reso_covers"] = pd.to_numeric(reso_df["reso_covers"], errors="coerce").fillna(0)
     dow_avg_reso = reso_df.groupby(reso_df["ds"].dt.dayofweek)["reso_covers"].mean()
 
-    # Build and fit
-    model = build_prophet_model(weather_mode=weather_mode if has_weather else "off")
+    # Build and fit (with venue-class-specific hyperparameters)
+    model = build_prophet_model(
+        weather_mode=weather_mode if has_weather else "off",
+        prophet_params=config.prophet_params,
+    )
     model.fit(prophet_df)
 
     # Create future dataframe
@@ -887,6 +990,10 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
     venue_closed_days = get_venue_closed_days(supabase)
     print(f"[INFO] Venues with dark days: {len(venue_closed_days)}")
 
+    venue_anomalies = get_venue_anomaly_dates(supabase)
+    total_anomaly_days = sum(len(v) for v in venue_anomalies.values())
+    print(f"[INFO] Venues with anomaly flags: {len(venue_anomalies)} ({total_anomaly_days} days total)")
+
     mappings = get_venue_mappings(supabase, venue_id)
     print(f"[INFO] Venues to forecast: {len(mappings)}")
 
@@ -944,10 +1051,20 @@ def run_forecaster(venue_id: Optional[str] = None, forecast_days: int = FORECAST
                     venues_skipped += 1
                     continue
 
+            # Filter flagged anomaly days (buyouts, private events)
+            anomaly_dates = venue_anomalies.get(vid, set())
+            if anomaly_dates:
+                df = filter_anomaly_days(df, anomaly_dates)
+
             # Route to appropriate model tier (using post-filter count)
             training_days_effective = len(df)
             config = model_router(training_days_effective, venue_class, has_coords=coords is not None)
             print(f"  -> {config}")
+            pp = config.prophet_params
+            print(f"  Prophet params: cps={pp['changepoint_prior_scale']}, "
+                  f"sps={pp['seasonality_prior_scale']}, "
+                  f"hps={pp['holidays_prior_scale']}, "
+                  f"mode={pp['seasonality_mode']}")
             tier_counts[config.tier] = tier_counts.get(config.tier, 0) + 1
 
             # --- TIER D: Naive fallback ---

@@ -2,8 +2,8 @@
  * Check which venues are missing from cache for Feb 7-8
  */
 
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SUPABASE_KEY = 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY } from './_config.mjs';
+const SUPABASE_KEY = SUPABASE_SERVICE_KEY;
 
 async function query(table, params = '') {
   const url = `${SUPABASE_URL}/rest/v1/${table}?${params}`;

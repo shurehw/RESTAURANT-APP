@@ -30,9 +30,7 @@ import {
   Clock,
   AlertTriangle,
   Target,
-  ShieldAlert,
   XCircle,
-  AlertOctagon,
   CheckCircle2,
   Info,
   ChevronDown,
@@ -57,6 +55,25 @@ import { CheckListSheet } from '@/components/pulse/CheckListSheet';
 import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
 import { ReservationListSheet } from '@/components/pulse/ReservationListSheet';
 import type { NightlyReportPayload } from '@/lib/attestation/types';
+
+// ---------------------------------------------------------------------------
+// Category classification helpers (used for actual item-level net computation)
+// ---------------------------------------------------------------------------
+function isBevCategory(cat: string) {
+  const lower = (cat || '').toLowerCase();
+  return lower.includes('bev') || lower.includes('wine') ||
+         lower.includes('beer') || lower.includes('liquor') ||
+         lower.includes('cocktail') || lower.includes('spirit') ||
+         lower.includes('draft') || lower.includes('drink');
+}
+
+function isFoodCategory(cat: string) {
+  const lower = (cat || '').toLowerCase();
+  return lower.includes('food') || lower.includes('entree') ||
+         lower.includes('appetizer') || lower.includes('dessert') ||
+         lower.includes('salad') || lower.includes('soup') ||
+         lower.includes('side') || lower === '';
+}
 
 interface NightlyReportData {
   date: string;
@@ -577,14 +594,88 @@ export default function NightlyReportPage() {
   const nightlyCovers = factsSummary?.total_covers ?? report?.summary?.total_covers ?? 0;
   const nightlyComps = factsSummary?.total_comps ?? report?.summary?.total_comps ?? 0;
 
+  // Category net via proportional allocation:
+  // Item-level price*qty doesn't sum to check-level revenue_total (packages,
+  // minimums, pricing structures). Use item gross as distribution weights to
+  // divide the authoritative check-level net_sales across food/bev/other.
+  const actualCategoryNet = React.useMemo(() => {
+    const categories = report?.salesByCategory || factsSummary?.salesByCategory || [];
+    const netSales = nightlyNetSales;
+    let grossFood = 0, grossBev = 0, grossOther = 0;
+    for (const c of categories) {
+      const gross = Number(c.gross_sales) || 0;
+      if (isBevCategory(c.category)) grossBev += gross;
+      else if (isFoodCategory(c.category)) grossFood += gross;
+      else grossOther += gross;
+    }
+    const grossTotal = grossFood + grossBev + grossOther;
+    const ratio = grossTotal > 0 && netSales > 0 ? netSales / grossTotal : 1;
+    return {
+      foodNet: Math.round(grossFood * ratio * 100) / 100,
+      bevNet: Math.round(grossBev * ratio * 100) / 100,
+      otherNet: Math.round(grossOther * ratio * 100) / 100,
+    };
+  }, [report?.salesByCategory, factsSummary?.salesByCategory, nightlyNetSales]);
+
+  // Variance/forecast for attestation stepper: merge factsSummary with paceData,
+  // filling in null fields from paceData (same source as hero section).
+  const stepperVariance = React.useMemo(() => {
+    const fv = factsSummary?.variance;
+    const pct = (a: number, b: number | null) =>
+      b && b > 0 ? ((a - b) / b) * 100 : null;
+    const ns = nightlyNetSales;
+    const cv = nightlyCovers;
+    // Compute paceData-based fallbacks for sales
+    const pSdlwPct = pct(ns, paceData?.sdlw?.net_sales ?? null);
+    const pSdlyPct = pct(ns, paceData?.sdly?.net_sales ?? null);
+    const pFcstPct = pct(ns, paceData?.forecast?.revenue_predicted ?? null);
+    // Compute paceData-based fallbacks for covers
+    const pSdlwCoversPct = pct(cv, paceData?.sdlw?.covers_count ?? null);
+    const pSdlyCoversPct = pct(cv, paceData?.sdly?.covers_count ?? null);
+    const pFcstCoversPct = pct(cv, paceData?.forecast?.covers_predicted ?? null);
+    return {
+      ...fv,
+      vs_forecast_pct: fv?.vs_forecast_pct ?? pFcstPct,
+      vs_sdlw_pct: fv?.vs_sdlw_pct ?? pSdlwPct,
+      vs_sdly_pct: fv?.vs_sdly_pct ?? pSdlyPct,
+      vs_forecast_covers_pct: fv?.vs_forecast_covers_pct ?? pFcstCoversPct,
+      vs_sdlw_covers_pct: fv?.vs_sdlw_covers_pct ?? pSdlwCoversPct,
+      vs_sdly_covers_pct: fv?.vs_sdly_covers_pct ?? pSdlyCoversPct,
+    };
+  }, [factsSummary?.variance, paceData, nightlyNetSales, nightlyCovers]);
+
+  const stepperForecast = React.useMemo(() => {
+    const ff = factsSummary?.forecast;
+    const pf = paceData?.forecast;
+    if (!ff && !pf) return null;
+    return {
+      net_sales: ff?.net_sales ?? pf?.revenue_predicted ?? null,
+      covers: ff?.covers ?? pf?.covers_predicted ?? null,
+      net_sales_lower: ff?.net_sales_lower ?? null,
+      net_sales_upper: ff?.net_sales_upper ?? null,
+      covers_lower: ff?.covers_lower ?? null,
+      covers_upper: ff?.covers_upper ?? null,
+    };
+  }, [factsSummary?.forecast, paceData?.forecast]);
+
   // Build attestation report payload (memoised to avoid re-triggering hook)
   const attestationReportData: NightlyReportPayload | null = React.useMemo(() => {
     if ((!report && !factsSummary) || !selectedVenue?.id || !date) return null;
+
+    // Forecast: prefer factsSummary, fallback to paceData
+    const fcstSales = factsSummary?.forecast?.net_sales || paceData?.forecast?.revenue_predicted || 0;
+    const fcstCovers = factsSummary?.forecast?.covers || paceData?.forecast?.covers_predicted || 0;
+
+    // Bev mix %
+    const bevNet = actualCategoryNet.bevNet;
+    const catTotal = actualCategoryNet.foodNet + bevNet + actualCategoryNet.otherNet;
+    const bevPct = catTotal > 0 ? (bevNet / catTotal) * 100 : undefined;
+
     return {
       venue_id: selectedVenue.id,
       business_date: date,
       net_sales: nightlyNetSales,
-      forecasted_sales: factsSummary?.forecast?.net_sales || 0,
+      forecasted_sales: fcstSales,
       total_comp_amount: nightlyComps,
       comp_count: report?.detailedComps?.length || 0,
       comps: (report?.detailedComps || []).map(c => ({
@@ -594,12 +685,49 @@ export default function NightlyReportPage() {
         comp_reason: c.reason,
         employee_name: c.server,
       })),
+      covers: nightlyCovers,
+      forecasted_covers: fcstCovers,
+      sdlw_net_sales: paceData?.sdlw?.net_sales ?? undefined,
+      sdly_net_sales: paceData?.sdly?.net_sales ?? undefined,
+      sdlw_covers: paceData?.sdlw?.covers_count ?? undefined,
+      sdly_covers: paceData?.sdly?.covers_count ?? undefined,
+      beverage_pct: bevPct,
       actual_labor_cost: factsSummary?.labor?.labor_cost || 0,
       scheduled_labor_cost: 0,
       overtime_hours: factsSummary?.labor?.ot_hours || 0,
       walkout_count: 0,
     };
-  }, [report, selectedVenue?.id, date, factsSummary]);
+  }, [report, selectedVenue?.id, date, factsSummary, nightlyNetSales, nightlyCovers, nightlyComps, paceData, actualCategoryNet]);
+
+  // Enriched factsSummary for attestation stepper — merges paceData comparisons
+  // and enrichment labor so the stepper has the same data as the main page.
+  const stepperFacts = React.useMemo(() => {
+    if (!factsSummary && !paceData && !enrichment) return null;
+
+    const pct = (a: number, b: number | null | undefined) =>
+      b && b > 0 ? ((a - b) / b) * 100 : null;
+    const ns = nightlyNetSales;
+    const cv = nightlyCovers;
+    const fv = factsSummary?.variance;
+
+    return {
+      ...factsSummary,
+      labor: enrichment?.labor ?? factsSummary?.labor,
+      forecast: factsSummary?.forecast ?? (paceData?.forecast ? {
+        net_sales: paceData.forecast.revenue_predicted ?? null,
+        covers: paceData.forecast.covers_predicted ?? null,
+      } : null),
+      variance: {
+        ...fv,
+        vs_forecast_pct: fv?.vs_forecast_pct ?? pct(ns, paceData?.forecast?.revenue_predicted),
+        vs_sdlw_pct: fv?.vs_sdlw_pct ?? pct(ns, paceData?.sdlw?.net_sales),
+        vs_sdly_pct: fv?.vs_sdly_pct ?? pct(ns, paceData?.sdly?.net_sales),
+        vs_forecast_covers_pct: fv?.vs_forecast_covers_pct ?? pct(cv, paceData?.forecast?.covers_predicted),
+        vs_sdlw_covers_pct: fv?.vs_sdlw_covers_pct ?? pct(cv, paceData?.sdlw?.covers_count),
+        vs_sdly_covers_pct: fv?.vs_sdly_covers_pct ?? pct(cv, paceData?.sdly?.covers_count),
+      },
+    };
+  }, [factsSummary, paceData, enrichment, nightlyNetSales, nightlyCovers]);
 
   // Attestation hook — lifted to page level so inline modules share state
   const att = useAttestation(selectedVenue?.id, date, attestationReportData);
@@ -677,6 +805,8 @@ export default function NightlyReportPage() {
               ...factsData.summary,
               salesByCategory: factsData.salesByCategory,
               labor: factsData.labor,
+              labor_sdlw: factsData.labor_sdlw,
+              labor_sdly: factsData.labor_sdly,
               forecast: factsData.forecast,
               variance: factsData.variance,
               servers_wtd: factsData.servers_wtd,
@@ -811,6 +941,8 @@ export default function NightlyReportPage() {
             ...factsData.summary,
             salesByCategory: factsData.salesByCategory,
             labor: factsData.labor,
+            labor_sdlw: factsData.labor_sdlw,
+            labor_sdly: factsData.labor_sdly,
             forecast: factsData.forecast,
             variance: factsData.variance,
             servers_wtd: factsData.servers_wtd,
@@ -893,7 +1025,7 @@ export default function NightlyReportPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Date Navigation */}
           <div className="flex items-center gap-1 bg-card border border-border rounded-md p-1">
             <Button
@@ -922,7 +1054,7 @@ export default function NightlyReportPage() {
 
           {/* Global View Mode Switcher */}
           <Tabs value={viewMode} onValueChange={(v) => handleViewChange(v as ViewMode)}>
-            <TabsList className="grid grid-cols-4 w-full max-w-lg">
+            <TabsList>
               <TabsTrigger value="nightly">Nightly</TabsTrigger>
               <TabsTrigger value="wtd">WTD</TabsTrigger>
               <TabsTrigger value="ptd">PTD</TabsTrigger>
@@ -1196,37 +1328,30 @@ export default function NightlyReportPage() {
             const avgCheckPrimaryPct = primaryAvgCheck > 0 ? ((liveAvgCheck - primaryAvgCheck) / primaryAvgCheck) * 100 : null;
             const avgCheckSecondaryPct = secondaryAvgCheck > 0 ? ((liveAvgCheck - secondaryAvgCheck) / secondaryAvgCheck) * 100 : null;
 
-            // Category mix: for nightly, prefer paceData (same as Pulse), fallback to factsSummary
-            let foodNet: number;
-            let bevNet: number;
+            // Category mix: proportional allocation of check-level net_sales
+            // using item-level gross as distribution weights.
+            // Item prices don't sum to check revenue (packages, minimums).
+            // For nightly: use pre-computed actualCategoryNet (lifted useMemo)
+            // For WTD/PTD/YTD: category_day_facts already has proportional net_sales
+            let foodNet: number, bevNet: number, otherNet: number;
             if (viewMode === 'nightly') {
-              if (paceData?.current) {
-                foodNet = paceData.current.food_sales ?? 0;
-                bevNet = paceData.current.beverage_sales ?? 0;
-              } else {
-                foodNet = factsSummary?.food_sales ?? 0;
-                bevNet = factsSummary?.beverage_sales ?? 0;
-              }
+              foodNet = actualCategoryNet.foodNet;
+              bevNet = actualCategoryNet.bevNet;
+              otherNet = actualCategoryNet.otherNet;
             } else {
-              const categories = viewMode === 'wtd'
-                ? (factsSummary?.categories_wtd || [])
-                : viewMode === 'ptd'
-                  ? (factsSummary?.categories_ptd || [])
-                  : (factsSummary?.categories_ytd || []);
-
-              const isBevCategory = (cat: string) => {
-                const lower = (cat || '').toLowerCase();
-                return lower.includes('bev') || lower.includes('wine') ||
-                       lower.includes('beer') || lower.includes('liquor') ||
-                       lower.includes('cocktail');
-              };
-
-              bevNet = categories
-                .filter((c: any) => isBevCategory(c.category))
-                .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
-              const totalCatNet = categories
-                .reduce((sum: number, c: any) => sum + (Number(c.net_sales) || 0), 0);
-              foodNet = totalCatNet - bevNet;
+              const categories: Array<{ category: string; net_sales: number }> =
+                viewMode === 'wtd'
+                  ? (factsSummary?.categories_wtd || [])
+                  : viewMode === 'ptd'
+                    ? (factsSummary?.categories_ptd || [])
+                    : (factsSummary?.categories_ytd || []);
+              foodNet = 0; bevNet = 0; otherNet = 0;
+              for (const c of categories) {
+                const net = Number(c.net_sales) || 0;
+                if (isBevCategory(c.category)) bevNet += net;
+                else if (isFoodCategory(c.category)) foodNet += net;
+                else otherNet += net;
+              }
             }
 
             // Prior bev mix from SDLW
@@ -1346,6 +1471,7 @@ export default function NightlyReportPage() {
                   <PeriodCategoryMixCard
                     foodSales={foodNet}
                     bevSales={bevNet}
+                    otherSales={otherNet}
                     priorBevPct={priorBevPct}
                   />
                 </div>
@@ -1667,125 +1793,6 @@ export default function NightlyReportPage() {
             );
           })()}
 
-          {/* Comp Exceptions - Policy Violations */}
-          {compExceptions && compExceptions.exceptions.length > 0 && (
-            <Card className="border-error/50 bg-error/5">
-              <CardHeader className="border-b border-error/20">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5 text-error" />
-                  Comp Policy Exceptions
-                  <span className="ml-auto flex items-center gap-2">
-                    {compExceptions.summary.critical_count > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-error text-white rounded">
-                        {compExceptions.summary.critical_count} Critical
-                      </span>
-                    )}
-                    {compExceptions.summary.warning_count > 0 && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-yellow-500 text-white rounded">
-                        {compExceptions.summary.warning_count} Warning
-                      </span>
-                    )}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {/* Daily Comp % Status Banner */}
-                {compExceptions.summary.comp_pct_status !== 'ok' && (
-                  <div className={`px-4 py-3 border-b ${
-                    compExceptions.summary.comp_pct_status === 'critical'
-                      ? 'bg-error/10 border-error/20'
-                      : 'bg-yellow-500/10 border-yellow-500/20'
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <AlertOctagon className={`h-4 w-4 ${
-                        compExceptions.summary.comp_pct_status === 'critical'
-                          ? 'text-error'
-                          : 'text-yellow-600'
-                      }`} />
-                      <span className="text-sm font-medium">
-                        Daily comp % is {compExceptions.summary.comp_pct.toFixed(1)}% of net sales
-                        {compExceptions.summary.comp_pct_status === 'critical'
-                          ? ' (exceeds 3% threshold)'
-                          : ' (exceeds 2% target)'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Exception List */}
-                <div className="divide-y divide-border max-h-96 overflow-y-auto">
-                  {compExceptions.exceptions.map((exc: CompException, i: number) => (
-                    <div
-                      key={`${exc.check_id}-${i}`}
-                      className={`p-4 ${
-                        exc.severity === 'critical'
-                          ? 'bg-error/5 hover:bg-error/10'
-                          : 'hover:bg-muted/50'
-                      } transition-colors`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1">
-                          {exc.severity === 'critical' ? (
-                            <XCircle className="h-5 w-5 text-error mt-0.5 flex-shrink-0" />
-                          ) : (
-                            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className={`font-semibold ${
-                                exc.severity === 'critical' ? 'text-error' : 'text-yellow-700'
-                              }`}>
-                                {exc.message}
-                              </span>
-                              <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${
-                                exc.severity === 'critical'
-                                  ? 'bg-error/20 text-error'
-                                  : 'bg-yellow-500/20 text-yellow-700'
-                              }`}>
-                                {exc.severity.toUpperCase()}
-                              </span>
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {exc.details}
-                            </p>
-                            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                              <span>Table {exc.table_name}</span>
-                              <span>•</span>
-                              <span>Server: {exc.server}</span>
-                              <span>•</span>
-                              <span className="font-semibold text-error">
-                                {formatCurrency(exc.comp_total)} comped
-                              </span>
-                            </div>
-                            {exc.comped_items.length > 0 && (
-                              <div className="mt-2 text-sm">
-                                <span className="text-muted-foreground">Items: </span>
-                                {exc.comped_items.map((item: { name: string; quantity: number; amount: number }, j: number) => (
-                                  <span key={j}>
-                                    {j > 0 && ', '}
-                                    <span className={
-                                      item.name.toLowerCase().includes('promo')
-                                        ? 'text-yellow-700 font-medium'
-                                        : ''
-                                    }>
-                                      {item.name}
-                                    </span>
-                                    {item.quantity > 1 && ` x${item.quantity}`}
-                                    {' '}(${item.amount.toFixed(2)})
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
@@ -1938,28 +1945,30 @@ export default function NightlyReportPage() {
                            lower.includes('cocktail');
                   };
 
-                  const isExcludedCategory = (cat: string) => {
+                  const isFood = (cat: string) => {
                     const lower = cat.toLowerCase();
-                    return lower.includes('service charge') ||
-                           lower.includes('other') ||
-                           lower === 'other';
+                    return lower.includes('food') || lower.includes('appetizer') ||
+                           lower.includes('entree') || lower.includes('dessert') ||
+                           lower.includes('salad') || lower.includes('soup') ||
+                           lower.includes('side') || lower.includes('brunch') ||
+                           lower.includes('lunch') || lower.includes('dinner') ||
+                           lower.includes('starter') || lower.includes('snack') ||
+                           lower.includes('raw bar') || lower.includes('sushi');
                   };
 
-                  // Handle both TipSee data (parent_category) and facts data (category)
-                  // Filter out service charges and "other", then limit to top 5 of each
-                  const foodItems = menuItems
-                    .filter(item => {
-                      const category = (item as any).parent_category || (item as any).category || '';
-                      return !isBeverage(category) && !isExcludedCategory(category);
-                    })
-                    .slice(0, 5);
+                  const classifyItem = (item: any): 'Food' | 'Beverage' | 'Other' => {
+                    // Use item_type from SQL if available (TipSee live data)
+                    if (item.item_type) return item.item_type;
+                    const category = item.parent_category || item.category || '';
+                    if (isBeverage(category)) return 'Beverage';
+                    if (isFood(category)) return 'Food';
+                    return 'Other';
+                  };
 
-                  const bevItems = menuItems
-                    .filter(item => {
-                      const category = (item as any).parent_category || (item as any).category || '';
-                      return isBeverage(category) && !isExcludedCategory(category);
-                    })
-                    .slice(0, 5);
+                  // Split into three buckets, top 5 each
+                  const foodItems = menuItems.filter(i => classifyItem(i) === 'Food').slice(0, 5);
+                  const bevItems = menuItems.filter(i => classifyItem(i) === 'Beverage').slice(0, 5);
+                  const otherItems = menuItems.filter(i => classifyItem(i) === 'Other').slice(0, 5);
 
                     return (
                       <table className="table-opsos">
@@ -1996,6 +2005,22 @@ export default function NightlyReportPage() {
                               </tr>
                               {bevItems.map((item, i) => (
                                 <tr key={`bev-${i}`}>
+                                  <td className="font-medium">{item.name}</td>
+                                  <td className="text-right">{formatNumber(item.qty || 0)}</td>
+                                  <td className="text-right">{formatCurrency(item.net_total || 0)}</td>
+                                </tr>
+                              ))}
+                            </>
+                          )}
+                          {otherItems.length > 0 && (
+                            <>
+                              <tr className="bg-muted/50">
+                                <td colSpan={3} className="text-xs uppercase tracking-wide text-muted-foreground font-semibold py-2">
+                                  Other
+                                </td>
+                              </tr>
+                              {otherItems.map((item, i) => (
+                                <tr key={`other-${i}`}>
                                   <td className="font-medium">{item.name}</td>
                                   <td className="text-right">{formatNumber(item.qty || 0)}</td>
                                   <td className="text-right">{formatCurrency(item.net_total || 0)}</td>
@@ -2408,7 +2433,7 @@ export default function NightlyReportPage() {
             onClose={() => setAttestStepperOpen(false)}
             venueId={selectedVenue?.id}
             reportSummary={report ? report.summary : null}
-            factsSummary={factsSummary}
+            factsSummary={stepperFacts}
             compExceptions={compExceptions}
             compReview={null}
             laborExceptions={laborExceptions}
@@ -2432,6 +2457,9 @@ export default function NightlyReportPage() {
             submitAttestation={att.submitAttestation}
             date={date}
             venueName={selectedVenue?.name || ''}
+            notableGuests={report?.notableGuests ?? []}
+            peopleWeKnow={report?.peopleWeKnow ?? []}
+            compsByReason={report?.discounts ?? []}
           />
 
           {/* Check & Reservation Sheets */}

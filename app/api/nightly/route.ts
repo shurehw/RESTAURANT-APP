@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchNightlyReport, fetchNightlyReportFromFacts, fetchTipseeLocations, getPosTypeForLocations } from '@/lib/database/tipsee';
+import { fetchNightlyReport, fetchNightlyReportFromFacts, fetchTipseeLocations, getPosTypeForLocations, fetchCompsByReason } from '@/lib/database/tipsee';
 import { getServiceClient } from '@/lib/supabase/service';
 
 // Default location (The Nice Guy)
@@ -42,8 +42,17 @@ export async function GET(request: NextRequest) {
       const cached = await getCachedReport(location, date);
       if (cached) {
         console.log(`[nightly] Cache HIT for ${location.substring(0, 8)} ${date}`);
+        // Enrich with comp breakdown if cached report lacks it
+        let discounts = cached.discounts;
+        if (!discounts || discounts.length === 0) {
+          try {
+            const compsByReason = await fetchCompsByReason([location], date);
+            discounts = compsByReason.map(r => ({ reason: r.reason, qty: r.count, amount: r.total }));
+          } catch { /* non-critical — skip */ }
+        }
         return NextResponse.json({
           ...cached,
+          discounts,
           _cached: true,
           _synced_at: cached._synced_at,
         });
@@ -64,9 +73,13 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
 
       if (mapping?.venue_id) {
-        const report = await fetchNightlyReportFromFacts(date, mapping.venue_id);
+        const [report, compsByReason] = await Promise.all([
+          fetchNightlyReportFromFacts(date, mapping.venue_id),
+          fetchCompsByReason([location], date),
+        ]);
         return NextResponse.json({
           ...report,
+          discounts: compsByReason.map(r => ({ reason: r.reason, qty: r.count, amount: r.total })),
           _cached: false,
           _source: 'venue_day_facts',
         });

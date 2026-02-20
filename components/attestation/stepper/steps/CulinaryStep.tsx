@@ -1,13 +1,8 @@
 'use client';
 
 import { CulinaryFeedback } from '@/components/attestation/CulinaryFeedback';
-import { NarrativeCard } from '@/components/attestation/NarrativeCard';
-import { TagSelector } from '@/components/attestation/TagSelector';
-import type {
-  NightlyAttestation,
-  CulinaryTag,
-} from '@/lib/attestation/types';
-import { CULINARY_TAGS, CULINARY_TAG_LABELS } from '@/lib/attestation/types';
+import type { NightlyAttestation } from '@/lib/attestation/types';
+import { GUIDED_PROMPTS } from '@/lib/attestation/types';
 import type { CulinaryShiftLog } from '@/lib/culinary/types';
 
 interface Props {
@@ -16,9 +11,6 @@ interface Props {
   culinaryLog: CulinaryShiftLog | null;
   onCulinaryLogUpdate: (log: CulinaryShiftLog) => void;
   disabled: boolean;
-  // AI narrative + tags
-  narrative?: string | null;
-  narrativeLoading?: boolean;
   attestation?: NightlyAttestation | null;
   onUpdate?: (fields: Partial<NightlyAttestation>) => void;
 }
@@ -29,19 +21,13 @@ export function CulinaryStep({
   culinaryLog,
   onCulinaryLogUpdate,
   disabled,
-  narrative,
-  narrativeLoading,
   attestation,
   onUpdate,
 }: Props) {
+  const notesLen = attestation?.culinary_notes?.length ?? 0;
+
   return (
     <div className="space-y-4">
-      <NarrativeCard
-        title="AI Culinary Brief"
-        narrative={narrative ?? null}
-        loading={narrativeLoading ?? false}
-      />
-
       <CulinaryFeedback
         venueId={venueId}
         businessDate={businessDate}
@@ -51,27 +37,22 @@ export function CulinaryStep({
       />
 
       {onUpdate && (
-        <>
-          <TagSelector<CulinaryTag>
-            tags={CULINARY_TAGS}
-            labels={CULINARY_TAG_LABELS}
-            selected={attestation?.culinary_tags ?? []}
-            onChange={(tags) => onUpdate({ culinary_tags: tags })}
-            disabled={disabled}
-            title="What defined tonight's kitchen?"
-          />
-
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">{GUIDED_PROMPTS.culinary}</h4>
           <textarea
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-            placeholder="Additional culinary notes (optional)..."
-            rows={2}
-            maxLength={500}
+            placeholder="Kitchen execution, 86'd items, food quality, specials, prep issues, highlights..."
+            rows={3}
+            maxLength={1000}
             value={attestation?.culinary_notes ?? ''}
             onChange={(e) => onUpdate({ culinary_notes: e.target.value })}
             onBlur={(e) => onUpdate({ culinary_notes: e.target.value })}
             disabled={disabled}
           />
-        </>
+          <div className="text-[11px] text-muted-foreground text-right">
+            {notesLen}/1000
+          </div>
+        </div>
       )}
     </div>
   );

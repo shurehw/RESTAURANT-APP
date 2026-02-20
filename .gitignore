@@ -65,6 +65,33 @@ nul
 
 .vercel
 .env.local
+
+# Screenshots with sensitive data
 scripts/screenshots/erl-leads.json
 scripts/screenshots/rlr-leads.json
+scripts/screenshots/auth-response.json
+scripts/screenshots/network-log.json
+scripts/screenshots/login-page.html
+scripts/screenshots/03-credentials-filled.png
 scripts/audit-screenshots/trace.zip
+
+# Claude Code local settings (may contain tokens)
+.claude/settings.local.json
+
+# Sensitive data files
+*.csv
+tmp_*.sql
+*.dump
+
+# Token/secret files
+scripts/_sb_token.txt
+scripts/_get_sb_token.ps1
+scripts/_get_token.ps1
+
+# Root-level ad-hoc scripts (contain hardcoded credentials)
+/check-*.js
+/test-*.js
+/verify-*.js
+/create-view.js
+/reset-password.js
+/run-migration.ts

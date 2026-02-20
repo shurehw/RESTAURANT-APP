@@ -13,6 +13,7 @@ import {
   Clock,
   AlertOctagon,
   Users,
+  Crown,
   Music,
   ChefHat,
   ClipboardCheck,
@@ -25,6 +26,7 @@ import { LaborStep } from './steps/LaborStep';
 import { IncidentsStep } from './steps/IncidentsStep';
 import { CoachingStep } from './steps/CoachingStep';
 import { EntertainmentStep } from './steps/EntertainmentStep';
+import { GuestStep } from './steps/GuestStep';
 import { CulinaryStep } from './steps/CulinaryStep';
 import { ReviewStep } from './steps/ReviewStep';
 import type {
@@ -56,6 +58,9 @@ interface FactsSummary {
     vs_forecast_pct: number | null;
     vs_sdlw_pct: number | null;
     vs_sdly_pct: number | null;
+    vs_forecast_covers_pct?: number | null;
+    vs_sdlw_covers_pct?: number | null;
+    vs_sdly_covers_pct?: number | null;
   } | null;
   labor?: {
     total_hours: number;
@@ -116,7 +121,7 @@ export interface AttestationStepperProps {
   laborExceptions: any | null;
   healthData: HealthData | null;
 
-  // Venue ID for narrative generation
+  // Venue ID
   venueId: string | undefined;
 
   // Attestation state
@@ -143,6 +148,30 @@ export interface AttestationStepperProps {
   // Metadata
   date: string;
   venueName: string;
+
+  // Guest / VIP data (auto-surfaced from TipSee)
+  notableGuests?: Array<{
+    check_id: string;
+    server: string;
+    covers: number;
+    payment: number;
+    table_name: string;
+    cardholder_name: string | null;
+    tip_percent: number | null;
+    items: string[];
+  }>;
+  peopleWeKnow?: Array<{
+    first_name: string;
+    last_name: string;
+    is_vip: boolean;
+    tags: string[] | null;
+    party_size: number;
+    total_payment: number;
+    status: string;
+  }>;
+
+  // Comp category breakdown (from TipSee report.discounts)
+  compsByReason?: Array<{ reason: string; qty: number; amount: number }>;
 
   // Entertainment (all h.wood venues)
   hasEntertainment?: boolean;
@@ -179,6 +208,9 @@ export function AttestationStepper({
   submitAttestation,
   date,
   venueName,
+  notableGuests = [],
+  peopleWeKnow = [],
+  compsByReason = [],
   hasEntertainment = true,
   hasCulinary = true,
 }: AttestationStepperProps) {
@@ -205,7 +237,6 @@ export function AttestationStepper({
     return () => { cancelled = true; };
   }, [open, venueId, date, hasEntertainment]);
 
-  // Entertainment completion: complete when shift log has overall_rating
   const entertainmentComplete = !!shiftLog?.overall_rating;
 
   // ---------------------------------------------------------------------------
@@ -231,45 +262,57 @@ export function AttestationStepper({
     return () => { cancelled = true; };
   }, [open, venueId, date, hasCulinary]);
 
-  // Culinary completion: complete when culinary log has overall_rating
   const culinaryComplete = !!culinaryLog?.overall_rating;
 
-  // Build step configs
+  // ---------------------------------------------------------------------------
+  // Build step configs — all modules always required, flagged when triggered
+  // ---------------------------------------------------------------------------
   const steps: StepConfig[] = useMemo(() => [
     {
       id: 'revenue',
       label: 'Revenue',
       icon: DollarSign,
-      status: triggers?.revenue_attestation_required ? 'required' : 'not_required',
+      status: 'required' as const,
       completion: completionState.revenue,
+      flagged: !!triggers?.revenue_attestation_required,
     },
     {
       id: 'comps',
       label: 'Comps',
       icon: ShieldAlert,
-      status: triggers?.comp_resolution_required ? 'required' : 'not_required',
+      status: 'required' as const,
       completion: completionState.comps,
+      flagged: !!triggers?.comp_resolution_required,
     },
     {
       id: 'labor',
       label: 'Labor',
       icon: Clock,
-      status: triggers?.labor_attestation_required ? 'required' : 'not_required',
+      status: 'required' as const,
       completion: completionState.labor,
+      flagged: !!triggers?.labor_attestation_required,
     },
     {
       id: 'incidents',
       label: 'Incidents',
       icon: AlertOctagon,
-      status: triggers?.incident_log_required ? 'required' : 'not_required',
+      status: 'required' as const,
       completion: completionState.incidents,
+      flagged: !!triggers?.incident_log_required,
     },
     {
       id: 'coaching',
       label: 'Coaching',
       icon: Users,
-      status: 'optional' as const,
+      status: 'required' as const,
       completion: completionState.coaching,
+    },
+    {
+      id: 'guest',
+      label: 'Guest',
+      icon: Crown,
+      status: 'required' as const,
+      completion: completionState.guest,
     },
     ...(hasEntertainment ? [{
       id: 'entertainment',
@@ -296,143 +339,30 @@ export function AttestationStepper({
     },
   ], [triggers, completionState, canSubmit, isLocked, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
 
-  // Smart start: first incomplete required step
+  // Derived completion state including entertainment + culinary
+  const fullCompletionState: CompletionState = useMemo(() => ({
+    ...completionState,
+    entertainment: entertainmentComplete ? 'complete' : 'incomplete',
+    culinary: culinaryComplete ? 'complete' : 'incomplete',
+  }), [completionState, entertainmentComplete, culinaryComplete]);
+
+  // Derived canSubmit including entertainment + culinary
+  const fullCanSubmit = canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete);
+
+  // Smart start: first incomplete step
   const initialStep = useMemo(() => {
-    if (isLocked) return steps.length - 1; // Go to review if already submitted
-    const firstIncomplete = steps.findIndex(
-      s => s.status === 'required' && s.completion === 'incomplete',
-    );
+    if (isLocked) return steps.length - 1;
+    const firstIncomplete = steps.findIndex(s => s.completion === 'incomplete');
     return firstIncomplete >= 0 ? firstIncomplete : 0;
   }, [steps, isLocked]);
 
   const [currentStep, setCurrentStep] = useState(initialStep);
 
-  // Reset step when Sheet opens
   useEffect(() => {
     if (open) {
       setCurrentStep(initialStep);
     }
   }, [open, initialStep]);
-
-  // ---------------------------------------------------------------------------
-  // AI Narrative — lazy fetch when stepper opens with data available
-  // ---------------------------------------------------------------------------
-  const [narratives, setNarratives] = useState<{
-    revenue_narrative: string;
-    labor_narrative: string;
-    comp_narrative: string;
-    incident_narrative: string;
-    coaching_narrative: string;
-    entertainment_narrative?: string;
-    culinary_narrative?: string;
-  } | null>(null);
-  const [narrativeLoading, setNarrativeLoading] = useState(false);
-
-  // Derived completion state that includes entertainment + culinary (stepper-managed)
-  const fullCompletionState: CompletionState = useMemo(() => ({
-    ...completionState,
-    entertainment: !hasEntertainment
-      ? 'not_required'
-      : entertainmentComplete
-        ? 'complete'
-        : 'incomplete',
-    culinary: !hasCulinary
-      ? 'not_required'
-      : culinaryComplete
-        ? 'complete'
-        : 'incomplete',
-  }), [completionState, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
-
-  // Derived canSubmit that includes entertainment + culinary
-  const fullCanSubmit = canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete);
-
-  useEffect(() => {
-    // Wait for both reportSummary AND factsSummary so food/bev data is included
-    if (!open || !venueId || !reportSummary || !factsSummary || !date) return;
-    // Already fetched for this session
-    if (narratives) return;
-
-    let cancelled = false;
-    setNarrativeLoading(true);
-
-    const body = {
-      venue_id: venueId,
-      date,
-      venue_name: venueName,
-      net_sales: reportSummary.net_sales,
-      total_covers: reportSummary.total_covers,
-      avg_check: reportSummary.total_covers > 0
-        ? reportSummary.net_sales / reportSummary.total_covers
-        : 0,
-      food_sales: factsSummary.food_sales ?? 0,
-      beverage_sales: factsSummary.beverage_sales ?? 0,
-      beverage_pct: (factsSummary.beverage_sales && reportSummary.net_sales > 0)
-        ? (factsSummary.beverage_sales / reportSummary.net_sales) * 100
-        : 0,
-      forecast_net_sales: factsSummary.forecast?.net_sales ?? null,
-      forecast_covers: factsSummary.forecast?.covers ?? null,
-      vs_forecast_pct: factsSummary.variance?.vs_forecast_pct ?? null,
-      vs_sdlw_pct: factsSummary.variance?.vs_sdlw_pct ?? null,
-      vs_sdly_pct: factsSummary.variance?.vs_sdly_pct ?? null,
-      // Labor
-      labor_cost: factsSummary.labor?.labor_cost ?? 0,
-      labor_pct: factsSummary.labor?.labor_pct ?? 0,
-      total_labor_hours: factsSummary.labor?.total_hours ?? 0,
-      splh: factsSummary.labor?.splh ?? 0,
-      ot_hours: factsSummary.labor?.ot_hours ?? 0,
-      covers_per_labor_hour: factsSummary.labor?.covers_per_labor_hour ?? null,
-      employee_count: factsSummary.labor?.employee_count ?? 0,
-      // FOH/BOH breakdown
-      foh_hours: factsSummary.labor?.foh?.hours ?? null,
-      foh_cost: factsSummary.labor?.foh?.cost ?? null,
-      boh_hours: factsSummary.labor?.boh?.hours ?? null,
-      boh_cost: factsSummary.labor?.boh?.cost ?? null,
-      health_score: healthData?.health_score ?? null,
-      // Comp data
-      total_comps: compExceptions?.summary?.total_comps ?? reportSummary.total_comps ?? 0,
-      comp_pct: compExceptions?.summary?.comp_pct ?? 0,
-      comp_exception_count: compExceptions?.summary?.exception_count ?? 0,
-      comp_critical_count: compExceptions?.summary?.critical_count ?? 0,
-      comp_overall_assessment: compReview?.summary?.overallAssessment ?? null,
-      // Incident context
-      incident_triggers: [
-        ...(triggers?.revenue_attestation_required ? ['revenue_variance'] : []),
-        ...(triggers?.comp_resolution_required ? ['comp_exceptions'] : []),
-        ...(triggers?.labor_attestation_required ? ['labor_variance'] : []),
-        ...(triggers?.incident_log_required ? ['incident_required'] : []),
-      ],
-      // Entertainment context
-      has_entertainment: hasEntertainment,
-      entertainment_cost: shiftLog?.total_entertainment_cost ?? null,
-      entertainment_pct: shiftLog?.entertainment_pct ?? null,
-      // Culinary context
-      has_culinary: hasCulinary,
-      eightysixed_count: culinaryLog?.eightysixed_items?.length ?? 0,
-      culinary_rating: culinaryLog?.overall_rating ?? null,
-    };
-
-    fetch('/api/ai/attestation-narrative', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(body),
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(json => {
-        if (!cancelled && json.data?.revenue_narrative) {
-          setNarratives(json.data);
-        }
-      })
-      .catch((err) => {
-        console.error('[AttestationStepper] Narrative fetch failed:', err);
-      })
-      .finally(() => { if (!cancelled) setNarrativeLoading(false); });
-
-    return () => { cancelled = true; };
-  }, [open, venueId, reportSummary, factsSummary, date]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -449,7 +379,6 @@ export function AttestationStepper({
   const handleSubmitAndClose = async (amendmentReason?: string) => {
     const result = await submitAttestation(amendmentReason);
     if (result?.success) {
-      // Small delay so user sees the success state
       setTimeout(() => onClose(), 800);
     }
     return result;
@@ -508,11 +437,9 @@ export function AttestationStepper({
                   totalComps={reportSummary?.total_comps ?? 0}
                   forecast={factsSummary?.forecast}
                   variance={factsSummary?.variance}
-                  foodSales={factsSummary?.food_sales}
-                  beverageSales={factsSummary?.beverage_sales}
+                  foodSales={factsSummary?.food_sales || undefined}
+                  beverageSales={factsSummary?.beverage_sales || undefined}
                   beveragePct={factsSummary?.beverage_pct}
-                  narrative={narratives?.revenue_narrative}
-                  narrativeLoading={narrativeLoading}
                 />
               )}
               {activeStep.id === 'comps' && (
@@ -525,8 +452,7 @@ export function AttestationStepper({
                   netSales={reportSummary?.net_sales ?? 0}
                   exceptionSummary={compExceptions?.summary ?? null}
                   reviewSummary={compReview?.summary ?? null}
-                  narrative={narratives?.comp_narrative}
-                  narrativeLoading={narrativeLoading}
+                  compsByReason={compsByReason}
                   attestation={attestation}
                   onUpdate={updateField}
                 />
@@ -541,8 +467,6 @@ export function AttestationStepper({
                   netSales={reportSummary?.net_sales ?? 0}
                   covers={reportSummary?.total_covers ?? 0}
                   laborExceptions={laborExceptions}
-                  narrative={narratives?.labor_narrative}
-                  narrativeLoading={narrativeLoading}
                 />
               )}
               {activeStep.id === 'incidents' && (
@@ -553,8 +477,6 @@ export function AttestationStepper({
                   disabled={isLocked}
                   healthScore={healthData?.health_score}
                   healthStatus={healthData?.status}
-                  narrative={narratives?.incident_narrative}
-                  narrativeLoading={narrativeLoading}
                   attestation={attestation}
                   onUpdate={updateField}
                 />
@@ -564,10 +486,17 @@ export function AttestationStepper({
                   actions={coachingActions}
                   onAdd={addCoaching}
                   disabled={isLocked}
-                  narrative={narratives?.coaching_narrative}
-                  narrativeLoading={narrativeLoading}
                   attestation={attestation}
                   onUpdate={updateField}
+                />
+              )}
+              {activeStep.id === 'guest' && (
+                <GuestStep
+                  notableGuests={notableGuests}
+                  peopleWeKnow={peopleWeKnow}
+                  attestation={attestation}
+                  onUpdate={updateField}
+                  disabled={isLocked}
                 />
               )}
               {activeStep.id === 'entertainment' && venueId && (
@@ -577,8 +506,6 @@ export function AttestationStepper({
                   shiftLog={shiftLog}
                   onShiftLogUpdate={setShiftLog}
                   disabled={isLocked}
-                  narrative={narratives?.entertainment_narrative}
-                  narrativeLoading={narrativeLoading}
                   attestation={attestation}
                   onUpdate={updateField}
                 />
@@ -590,8 +517,6 @@ export function AttestationStepper({
                   culinaryLog={culinaryLog}
                   onCulinaryLogUpdate={setCulinaryLog}
                   disabled={isLocked}
-                  narrative={narratives?.culinary_narrative}
-                  narrativeLoading={narrativeLoading}
                   attestation={attestation}
                   onUpdate={updateField}
                 />
@@ -611,6 +536,18 @@ export function AttestationStepper({
                   onSubmit={handleSubmitAndClose}
                   steps={steps}
                   onStepClick={setCurrentStep}
+                  reportSummary={reportSummary}
+                  factsSummary={factsSummary}
+                  compExceptions={compExceptions}
+                  healthData={healthData}
+                  venueId={venueId}
+                  venueName={venueName}
+                  date={date}
+                  shiftLog={shiftLog}
+                  culinaryLog={culinaryLog}
+                  notableGuests={notableGuests}
+                  peopleWeKnow={peopleWeKnow}
+                  updateField={updateField}
                 />
               )}
             </>

@@ -3,9 +3,8 @@
  * Usage: node scripts/backfill-cache.mjs 2026-01-01 2026-02-09
  */
 
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SUPABASE_KEY = 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
-const CRON_SECRET = 'CRON_SECRET_REDACTED';
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY, CRON_SECRET } from './_config.mjs';
+const SUPABASE_KEY = SUPABASE_SERVICE_KEY;
 const API_BASE = 'https://opsos-restaurant-app.vercel.app';
 
 const VENUES = [

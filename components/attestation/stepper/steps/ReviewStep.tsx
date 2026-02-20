@@ -1,42 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
   CheckCircle2,
   XCircle,
-  Minus,
   Lock,
   Loader2,
   ClipboardCheck,
+  Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import type { NightlyAttestation, TriggerResult, CompResolution, NightlyIncident, CoachingAction } from '@/lib/attestation/types';
 import type { CompletionState } from '@/components/attestation/useAttestation';
 import {
-  REVENUE_VARIANCE_LABELS,
-  LABOR_VARIANCE_LABELS,
   COMP_RESOLUTION_LABELS,
-  REVENUE_TAG_LABELS,
-  LABOR_TAG_LABELS,
-  COMP_TAG_LABELS,
-  INCIDENT_TAG_LABELS,
-  COACHING_TAG_LABELS,
-  ENTERTAINMENT_TAG_LABELS,
-  CULINARY_TAG_LABELS,
-  type RevenueVarianceReason,
-  type LaborVarianceReason,
   type CompResolutionCode,
-  type RevenueTag,
-  type LaborTag,
-  type CompTag,
-  type IncidentTag,
-  type CoachingTag,
-  type EntertainmentTag,
-  type CulinaryTag,
 } from '@/lib/attestation/types';
 import type { StepConfig } from '../StepIndicator';
+import type { ShiftLog } from '@/lib/entertainment/types';
+import type { CulinaryShiftLog } from '@/lib/culinary/types';
 
 interface Props {
   attestation: NightlyAttestation | null;
@@ -52,6 +37,69 @@ interface Props {
   onSubmit: (amendmentReason?: string) => Promise<any>;
   steps: StepConfig[];
   onStepClick: (index: number) => void;
+  // Context for closing narrative
+  reportSummary: { net_sales: number; total_covers: number; total_comps: number } | null;
+  factsSummary: {
+    food_sales?: number;
+    beverage_sales?: number;
+    beverage_pct?: number;
+    forecast?: { net_sales: number | null; covers: number | null } | null;
+    variance?: {
+      vs_forecast_pct: number | null;
+      vs_sdlw_pct: number | null;
+      vs_sdly_pct: number | null;
+    } | null;
+    labor?: {
+      total_hours: number;
+      labor_cost: number;
+      labor_pct: number;
+      splh: number;
+      ot_hours: number;
+      employee_count: number;
+      covers_per_labor_hour: number | null;
+      foh: { hours: number; cost: number; employee_count: number } | null;
+      boh: { hours: number; cost: number; employee_count: number } | null;
+      other: { hours: number; cost: number; employee_count: number } | null;
+    } | null;
+  } | null;
+  compExceptions: {
+    summary: {
+      total_comps: number;
+      net_sales: number;
+      comp_pct: number;
+      comp_pct_status: 'ok' | 'warning' | 'critical';
+      exception_count: number;
+      critical_count: number;
+      warning_count: number;
+    };
+    exceptions: any[];
+  } | null;
+  healthData: { health_score: number; status: string } | null;
+  venueId: string | undefined;
+  venueName: string;
+  date: string;
+  shiftLog: ShiftLog | null;
+  culinaryLog: CulinaryShiftLog | null;
+  notableGuests?: Array<{
+    check_id: string;
+    server: string;
+    covers: number;
+    payment: number;
+    table_name: string;
+    cardholder_name: string | null;
+    tip_percent: number | null;
+    items: string[];
+  }>;
+  peopleWeKnow?: Array<{
+    first_name: string;
+    last_name: string;
+    is_vip: boolean;
+    tags: string[] | null;
+    party_size: number;
+    total_payment: number;
+    status: string;
+  }>;
+  updateField: (fields: Partial<NightlyAttestation>) => void;
 }
 
 const MODULE_LABELS: Record<keyof CompletionState, string> = {
@@ -60,14 +108,14 @@ const MODULE_LABELS: Record<keyof CompletionState, string> = {
   labor: 'Labor',
   incidents: 'Incidents',
   coaching: 'Coaching',
+  guest: 'Guest',
   entertainment: 'Entertainment',
   culinary: 'Culinary',
 };
 
-function StatusIcon({ status }: { status: string }) {
+function StatusIcon({ status }: { status: 'complete' | 'incomplete' }) {
   if (status === 'complete') return <CheckCircle2 className="h-4 w-4 text-sage" />;
-  if (status === 'incomplete') return <XCircle className="h-4 w-4 text-error" />;
-  return <Minus className="h-4 w-4 text-muted-foreground" />;
+  return <XCircle className="h-4 w-4 text-error" />;
 }
 
 export function ReviewStep({
@@ -84,15 +132,180 @@ export function ReviewStep({
   onSubmit,
   steps,
   onStepClick,
+  reportSummary,
+  factsSummary,
+  compExceptions,
+  healthData,
+  venueName,
+  date,
+  notableGuests = [],
+  peopleWeKnow = [],
+  updateField,
 }: Props) {
   const [showAmend, setShowAmend] = useState(false);
   const [amendReason, setAmendReason] = useState('');
   const [actionsCreated, setActionsCreated] = useState<number | null>(null);
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [narrativeError, setNarrativeError] = useState<string | null>(null);
 
-  const requiredModules = Object.entries(completionState).filter(
-    ([, v]) => v !== 'not_required' && v !== 'always_optional',
-  );
-  const completedCount = requiredModules.filter(([, v]) => v === 'complete').length;
+  const allModules = Object.entries(completionState);
+  const completedCount = allModules.filter(([, v]) => v === 'complete').length;
+
+  // ---------------------------------------------------------------------------
+  // Closing narrative generation
+  // ---------------------------------------------------------------------------
+  const generateNarrative = useCallback(async () => {
+    if (!attestation || !reportSummary) return;
+
+    setNarrativeLoading(true);
+    setNarrativeError(null);
+
+    try {
+      const avgCheck =
+        reportSummary.total_covers > 0
+          ? reportSummary.net_sales / reportSummary.total_covers
+          : 0;
+
+      const res = await fetch('/api/ai/closing-narrative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          date,
+          venueName,
+          // Raw data
+          net_sales: reportSummary.net_sales,
+          total_covers: reportSummary.total_covers,
+          avg_check: avgCheck,
+          food_sales: factsSummary?.food_sales ?? 0,
+          beverage_sales: factsSummary?.beverage_sales ?? 0,
+          beverage_pct: factsSummary?.beverage_pct ?? 0,
+          forecast_net_sales: factsSummary?.forecast?.net_sales ?? null,
+          vs_forecast_pct: factsSummary?.variance?.vs_forecast_pct ?? null,
+          vs_sdlw_pct: factsSummary?.variance?.vs_sdlw_pct ?? null,
+          vs_sdly_pct: factsSummary?.variance?.vs_sdly_pct ?? null,
+          labor_cost: factsSummary?.labor?.labor_cost ?? 0,
+          labor_pct: factsSummary?.labor?.labor_pct ?? 0,
+          splh: factsSummary?.labor?.splh ?? 0,
+          ot_hours: factsSummary?.labor?.ot_hours ?? 0,
+          total_labor_hours: factsSummary?.labor?.total_hours ?? 0,
+          employee_count: factsSummary?.labor?.employee_count ?? 0,
+          total_comps: reportSummary.total_comps,
+          comp_pct: compExceptions?.summary?.comp_pct ?? 0,
+          comp_exception_count: compExceptions?.summary?.exception_count ?? 0,
+          health_score: healthData?.health_score ?? null,
+          // Manager inputs — revenue (structured prompts)
+          revenue_driver: attestation.revenue_driver ?? null,
+          revenue_mgmt_impact: attestation.revenue_mgmt_impact ?? null,
+          revenue_lost_opportunity: attestation.revenue_lost_opportunity ?? null,
+          revenue_demand_signal: attestation.revenue_demand_signal ?? null,
+          revenue_quality: attestation.revenue_quality ?? null,
+          revenue_action: attestation.revenue_action ?? null,
+          revenue_tags: attestation.revenue_tags ?? [],
+          revenue_notes: attestation.revenue_notes ?? null,
+          // Comp structured prompts
+          comp_driver: attestation.comp_driver ?? null,
+          comp_pattern: attestation.comp_pattern ?? null,
+          comp_compliance: attestation.comp_compliance ?? null,
+          comp_tags: attestation.comp_tags ?? [],
+          comp_notes: attestation.comp_notes ?? null,
+          comp_acknowledged: attestation.comp_acknowledged ?? false,
+          // Labor structured prompts
+          labor_foh_coverage: attestation.labor_foh_coverage ?? null,
+          labor_boh_performance: attestation.labor_boh_performance ?? null,
+          labor_decision: attestation.labor_decision ?? null,
+          labor_change: attestation.labor_change ?? null,
+          labor_tags: attestation.labor_tags ?? [],
+          labor_notes: attestation.labor_notes ?? null,
+          labor_foh_notes: attestation.labor_foh_notes ?? null,
+          labor_boh_notes: attestation.labor_boh_notes ?? null,
+          labor_acknowledged: attestation.labor_acknowledged ?? false,
+          comp_resolutions: compResolutions.map((r) => ({
+            check_id: r.check_id,
+            resolution_code: r.resolution_code,
+            notes: r.resolution_notes,
+          })),
+          incident_tags: attestation.incident_tags ?? [],
+          incident_notes: attestation.incident_notes ?? null,
+          incidents_acknowledged: attestation.incidents_acknowledged ?? false,
+          incidents: incidents.map((i) => ({
+            category: i.incident_type,
+            severity: i.severity,
+            description: i.description,
+          })),
+          // Coaching structured prompts
+          coaching_standout: attestation.coaching_standout ?? null,
+          coaching_development: attestation.coaching_development ?? null,
+          coaching_team_focus: attestation.coaching_team_focus ?? null,
+          coaching_tags: attestation.coaching_tags ?? [],
+          coaching_notes: attestation.coaching_notes ?? null,
+          coaching_acknowledged: attestation.coaching_acknowledged ?? false,
+          coaching_actions: coachingActions.map((a) => ({
+            employee_name: a.employee_name,
+            action_type: a.coaching_type,
+            description: a.reason,
+          })),
+          top_spenders: notableGuests.map(g => ({
+            server: g.server,
+            covers: g.covers,
+            payment: g.payment,
+            table_name: g.table_name,
+            cardholder_name: g.cardholder_name,
+            items: g.items,
+          })),
+          known_vips: peopleWeKnow.map(v => ({
+            name: `${v.first_name} ${v.last_name}`.trim(),
+            is_vip: v.is_vip,
+            party_size: v.party_size,
+            total_payment: v.total_payment,
+          })),
+          // Guest structured prompts
+          guest_vip_notable: attestation.guest_vip_notable ?? null,
+          guest_experience: attestation.guest_experience ?? null,
+          guest_opportunity: attestation.guest_opportunity ?? null,
+          guest_tags: attestation.guest_tags ?? [],
+          guest_notes: attestation.guest_notes ?? null,
+          guest_acknowledged: attestation.guest_acknowledged ?? false,
+          entertainment_tags: attestation.entertainment_tags ?? [],
+          entertainment_notes: attestation.entertainment_notes ?? null,
+          culinary_tags: attestation.culinary_tags ?? [],
+          culinary_notes: attestation.culinary_notes ?? null,
+          trigger_reasons: [
+            ...(triggers?.revenue_triggers ?? []),
+            ...(triggers?.labor_triggers ?? []),
+            ...(triggers?.incident_triggers ?? []),
+          ],
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to generate closing summary');
+      }
+
+      const data = await res.json();
+      updateField({ closing_narrative: data.narrative });
+    } catch (err: any) {
+      setNarrativeError(err.message || 'Failed to generate closing summary');
+    } finally {
+      setNarrativeLoading(false);
+    }
+  }, [
+    attestation,
+    reportSummary,
+    factsSummary,
+    compExceptions,
+    healthData,
+    compResolutions,
+    incidents,
+    coachingActions,
+    notableGuests,
+    peopleWeKnow,
+    triggers,
+    date,
+    venueName,
+    updateField,
+  ]);
 
   const handleSubmit = async () => {
     const result = await onSubmit();
@@ -110,6 +323,66 @@ export function ReviewStep({
     }
   };
 
+  const hasNarrative = !!attestation?.closing_narrative;
+
+  // Helper: count how many structured prompts are filled for a module
+  function promptsFilledCount(keys: readonly string[]): number {
+    return keys.filter(k => ((attestation?.[k as keyof NightlyAttestation] as string)?.length ?? 0) >= 20).length;
+  }
+
+  // Helper: build summary text for each module row
+  function moduleSummary(key: string): string {
+    switch (key) {
+      case 'revenue': {
+        const filled = promptsFilledCount(['revenue_driver', 'revenue_mgmt_impact', 'revenue_lost_opportunity', 'revenue_demand_signal', 'revenue_quality', 'revenue_action']);
+        return filled > 0 ? `${filled}/6 prompts` : '';
+      }
+      case 'comps': {
+        const parts: string[] = [];
+        const filled = promptsFilledCount(['comp_driver', 'comp_pattern', 'comp_compliance']);
+        if (filled > 0) parts.push(`${filled}/3 prompts`);
+        if (compResolutions.length > 0) parts.push(`${compResolutions.length} resolved`);
+        if (attestation?.comp_acknowledged && filled === 0) parts.push('Acknowledged');
+        return parts.join(', ');
+      }
+      case 'labor': {
+        const filled = promptsFilledCount(['labor_foh_coverage', 'labor_boh_performance', 'labor_decision', 'labor_change']);
+        if (filled > 0) return `${filled}/4 prompts`;
+        if (attestation?.labor_acknowledged) return 'Acknowledged';
+        return '';
+      }
+      case 'incidents': {
+        const parts: string[] = [];
+        if ((attestation?.incident_notes?.length ?? 0) >= 10) parts.push('Noted');
+        if (incidents.length > 0) parts.push(`${incidents.length} logged`);
+        if (attestation?.incidents_acknowledged && (attestation?.incident_notes?.length ?? 0) < 10) parts.push('Acknowledged');
+        return parts.join(', ');
+      }
+      case 'coaching': {
+        const parts: string[] = [];
+        const filled = promptsFilledCount(['coaching_standout', 'coaching_development', 'coaching_team_focus']);
+        if (filled > 0) parts.push(`${filled}/3 prompts`);
+        if (coachingActions.length > 0)
+          parts.push(`${coachingActions.length} action${coachingActions.length !== 1 ? 's' : ''}`);
+        if (attestation?.coaching_acknowledged && filled === 0) parts.push('Acknowledged');
+        return parts.join(', ');
+      }
+      case 'guest': {
+        const parts: string[] = [];
+        const filled = promptsFilledCount(['guest_vip_notable', 'guest_experience', 'guest_opportunity']);
+        if (filled > 0) parts.push(`${filled}/3 prompts`);
+        if (attestation?.guest_acknowledged && filled === 0) parts.push('Acknowledged');
+        return parts.join(', ');
+      }
+      case 'entertainment':
+        return completionState.entertainment === 'complete' ? 'Rated' : '';
+      case 'culinary':
+        return completionState.culinary === 'complete' ? 'Rated' : '';
+      default:
+        return '';
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -121,10 +394,10 @@ export function ReviewStep({
       <Card>
         <CardContent className="p-4">
           <div className="space-y-2">
-            {Object.entries(completionState).map(([key, status]) => {
+            {allModules.map(([key, status]) => {
               const moduleKey = key as keyof CompletionState;
-              // Find matching step index for navigation
-              const stepIndex = steps.findIndex(s => s.id === key);
+              const stepIndex = steps.findIndex((s) => s.id === key);
+              const summary = moduleSummary(key);
 
               return (
                 <button
@@ -134,26 +407,9 @@ export function ReviewStep({
                 >
                   <StatusIcon status={status} />
                   <span className="text-sm font-medium flex-1">{MODULE_LABELS[moduleKey]}</span>
-
-                  {/* Summary text */}
-                  <span className="text-xs text-muted-foreground">
-                    {key === 'revenue' && attestation?.revenue_confirmed === true && 'Confirmed'}
-                    {key === 'revenue' && attestation?.revenue_variance_reason &&
-                      REVENUE_VARIANCE_LABELS[attestation.revenue_variance_reason as RevenueVarianceReason]}
-                    {key === 'labor' && attestation?.labor_confirmed === true && 'Confirmed'}
-                    {key === 'labor' && attestation?.labor_variance_reason &&
-                      LABOR_VARIANCE_LABELS[attestation.labor_variance_reason as LaborVarianceReason]}
-                    {key === 'comps' && compResolutions.length > 0 &&
-                      `${compResolutions.length} resolved`}
-                    {key === 'incidents' && incidents.length > 0 &&
-                      `${incidents.length} logged`}
-                    {key === 'coaching' && coachingActions.length > 0 &&
-                      `${coachingActions.length} action${coachingActions.length !== 1 ? 's' : ''}`}
-                    {key === 'entertainment' && status === 'complete' && 'Rated'}
-                    {key === 'culinary' && status === 'complete' && 'Rated'}
-                    {status === 'not_required' && 'Not required'}
-                    {status === 'always_optional' && coachingActions.length === 0 && 'Optional'}
-                  </span>
+                  {summary && (
+                    <span className="text-xs text-muted-foreground">{summary}</span>
+                  )}
                 </button>
               );
             })}
@@ -161,98 +417,63 @@ export function ReviewStep({
         </CardContent>
       </Card>
 
-      {/* Selected driver tags */}
-      {((attestation?.revenue_tags && attestation.revenue_tags.length > 0) ||
-        (attestation?.labor_tags && attestation.labor_tags.length > 0) ||
-        (attestation?.comp_tags && attestation.comp_tags.length > 0) ||
-        (attestation?.incident_tags && attestation.incident_tags.length > 0) ||
-        (attestation?.coaching_tags && attestation.coaching_tags.length > 0) ||
-        (attestation?.entertainment_tags && attestation.entertainment_tags.length > 0) ||
-        (attestation?.culinary_tags && attestation.culinary_tags.length > 0)) && (
+      {/* Manager narratives summary */}
+      {(attestation?.revenue_notes || attestation?.labor_foh_notes || attestation?.labor_boh_notes ||
+        attestation?.comp_notes || attestation?.incident_notes || attestation?.coaching_notes ||
+        attestation?.guest_notes || attestation?.entertainment_notes || attestation?.culinary_notes) && (
         <Card>
           <CardContent className="p-4 space-y-3">
-            {attestation?.revenue_tags && attestation.revenue_tags.length > 0 && (
+            {attestation?.revenue_notes && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Revenue Drivers</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.revenue_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {REVENUE_TAG_LABELS[tag as RevenueTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Revenue</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.revenue_notes}</p>
               </div>
             )}
-            {attestation?.labor_tags && attestation.labor_tags.length > 0 && (
+            {(attestation?.labor_foh_notes || attestation?.labor_boh_notes) && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Labor Drivers</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.labor_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {LABOR_TAG_LABELS[tag as LaborTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Labor</h4>
+                {attestation?.labor_foh_notes && (
+                  <p className="text-sm text-foreground/80 line-clamp-2"><span className="text-xs font-medium text-muted-foreground">FOH:</span> {attestation.labor_foh_notes}</p>
+                )}
+                {attestation?.labor_boh_notes && (
+                  <p className="text-sm text-foreground/80 line-clamp-2 mt-1"><span className="text-xs font-medium text-muted-foreground">BOH:</span> {attestation.labor_boh_notes}</p>
+                )}
               </div>
             )}
-            {attestation?.comp_tags && attestation.comp_tags.length > 0 && (
+            {attestation?.comp_notes && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Comp Drivers</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.comp_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {COMP_TAG_LABELS[tag as CompTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Comps</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.comp_notes}</p>
               </div>
             )}
-            {attestation?.incident_tags && attestation.incident_tags.length > 0 && (
+            {attestation?.incident_notes && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Incident Drivers</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.incident_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {INCIDENT_TAG_LABELS[tag as IncidentTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Incidents</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.incident_notes}</p>
               </div>
             )}
-            {attestation?.coaching_tags && attestation.coaching_tags.length > 0 && (
+            {attestation?.coaching_notes && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Coaching Focus</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.coaching_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {COACHING_TAG_LABELS[tag as CoachingTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Coaching</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.coaching_notes}</p>
               </div>
             )}
-            {attestation?.entertainment_tags && attestation.entertainment_tags.length > 0 && (
+            {attestation?.guest_notes && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Entertainment</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.entertainment_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {ENTERTAINMENT_TAG_LABELS[tag as EntertainmentTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Guest</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.guest_notes}</p>
               </div>
             )}
-            {attestation?.culinary_tags && attestation.culinary_tags.length > 0 && (
+            {attestation?.entertainment_notes && (
               <div>
-                <h4 className="text-xs font-semibold text-muted-foreground mb-1.5">Culinary</h4>
-                <div className="flex flex-wrap gap-1">
-                  {attestation.culinary_tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-[11px] font-medium bg-brass/10 text-brass rounded">
-                      {CULINARY_TAG_LABELS[tag as CulinaryTag] || tag}
-                    </span>
-                  ))}
-                </div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Entertainment</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.entertainment_notes}</p>
+              </div>
+            )}
+            {attestation?.culinary_notes && (
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground mb-1">Culinary</h4>
+                <p className="text-sm text-foreground/80 line-clamp-2">{attestation.culinary_notes}</p>
               </div>
             )}
           </CardContent>
@@ -278,6 +499,84 @@ export function ReviewStep({
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* AI Closing Summary */}
+      {!isLocked && (
+        <Card className="border-brass/30">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-brass" />
+                <h4 className="text-sm font-semibold">AI Closing Summary</h4>
+              </div>
+              {hasNarrative && !narrativeLoading && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={generateNarrative}
+                  className="h-7 text-xs text-muted-foreground"
+                >
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Regenerate
+                </Button>
+              )}
+            </div>
+
+            {narrativeLoading ? (
+              <div className="flex items-center gap-2 py-6 justify-center text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating closing summary...
+              </div>
+            ) : hasNarrative ? (
+              <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                {attestation!.closing_narrative}
+              </p>
+            ) : (
+              <div className="text-center py-4 space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Generate an AI-powered closing summary that synthesizes tonight's data with your attestation inputs.
+                </p>
+                <Button
+                  variant="brass"
+                  size="sm"
+                  onClick={generateNarrative}
+                  disabled={!reportSummary}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                  Generate Closing Summary
+                </Button>
+              </div>
+            )}
+
+            {narrativeError && (
+              <div className="text-xs text-error bg-error/5 border border-error/20 rounded-md px-3 py-2">
+                {narrativeError}
+              </div>
+            )}
+
+            {!hasNarrative && !narrativeLoading && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                Required before submission
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Show saved narrative on locked attestations */}
+      {isLocked && attestation?.closing_narrative && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-brass" />
+              <h4 className="text-sm font-semibold">Closing Summary</h4>
+            </div>
+            <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap">
+              {attestation.closing_narrative}
+            </p>
           </CardContent>
         </Card>
       )}
@@ -339,10 +638,9 @@ export function ReviewStep({
         <div className="border border-brass/30 rounded-md p-4 bg-muted/20">
           <div className="flex items-center justify-between">
             <div className="text-sm text-muted-foreground">
-              {requiredModules.length === 0 ? (
-                'No modules required — submit when ready'
-              ) : (
-                <>{completedCount} of {requiredModules.length} required module{requiredModules.length !== 1 ? 's' : ''} complete</>
+              {completedCount} of {allModules.length} modules complete
+              {completedCount === allModules.length && !hasNarrative && (
+                <span className="block text-xs mt-0.5">Generate closing summary to submit</span>
               )}
             </div>
             <Button

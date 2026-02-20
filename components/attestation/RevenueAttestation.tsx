@@ -1,16 +1,12 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
 import { AlertTriangle } from 'lucide-react';
-import { NarrativeCard } from '@/components/attestation/NarrativeCard';
-import { TagSelector } from '@/components/attestation/TagSelector';
-import type { NightlyAttestation, TriggerResult, RevenueTag } from '@/lib/attestation/types';
+import type { NightlyAttestation, TriggerResult, RevenuePromptKey } from '@/lib/attestation/types';
 import {
-  REVENUE_TAGS,
-  REVENUE_TAG_LABELS,
-  REVENUE_TAG_BY_CATEGORY,
-  REVENUE_TAG_CATEGORY_LABELS,
+  GUIDED_PROMPTS,
+  REVENUE_PROMPT_KEYS,
+  REVENUE_PROMPT_PLACEHOLDERS,
+  REVENUE_PROMPT_MIN_LENGTH,
 } from '@/lib/attestation/types';
 
 interface Props {
@@ -18,23 +14,56 @@ interface Props {
   attestation: NightlyAttestation | null;
   onUpdate: (fields: Partial<NightlyAttestation>) => void;
   disabled: boolean;
-  narrative?: string | null;
-  narrativeLoading?: boolean;
 }
 
-export function RevenueAttestation({ triggers, attestation, onUpdate, disabled, narrative, narrativeLoading }: Props) {
-  const selectedTags = (attestation?.revenue_tags || []) as RevenueTag[];
+const TEXTAREA_CLASS =
+  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none';
+
+function PromptField({
+  promptKey,
+  value,
+  disabled,
+  onUpdate,
+}: {
+  promptKey: RevenuePromptKey;
+  value: string;
+  disabled: boolean;
+  onUpdate: (fields: Partial<NightlyAttestation>) => void;
+}) {
+  const len = value.length;
+  const belowMin = len > 0 && len < REVENUE_PROMPT_MIN_LENGTH;
 
   return (
-    <div className="space-y-4">
-      {/* AI Narrative */}
-      <NarrativeCard
-        narrative={narrative ?? null}
-        loading={narrativeLoading ?? false}
-        title="AI Sales Brief"
+    <div className="space-y-1.5">
+      <h4 className="text-sm font-medium">{GUIDED_PROMPTS[promptKey]}</h4>
+      <textarea
+        className={TEXTAREA_CLASS}
+        placeholder={REVENUE_PROMPT_PLACEHOLDERS[promptKey]}
+        rows={2}
+        maxLength={500}
+        value={value}
+        onChange={(e) => onUpdate({ [promptKey]: e.target.value })}
+        onBlur={(e) => onUpdate({ [promptKey]: e.target.value })}
+        disabled={disabled}
       />
+      <div className="flex items-center justify-between">
+        {belowMin && (
+          <span className="text-[11px] text-muted-foreground">
+            Minimum {REVENUE_PROMPT_MIN_LENGTH} characters
+          </span>
+        )}
+        <span className="text-[11px] text-muted-foreground ml-auto">
+          {len}/500
+        </span>
+      </div>
+    </div>
+  );
+}
 
-      {/* Trigger reasons — contextual callout */}
+export function RevenueAttestation({ triggers, attestation, onUpdate, disabled }: Props) {
+  return (
+    <div className="space-y-4">
+      {/* Trigger reasons — auto-detected contextual flags */}
       {triggers?.revenue_triggers && triggers.revenue_triggers.length > 0 && (
         <div className="bg-brass/5 border border-brass/20 rounded-md p-3 space-y-1">
           <div className="flex items-center gap-1.5 text-sm font-medium text-brass">
@@ -49,41 +78,16 @@ export function RevenueAttestation({ triggers, attestation, onUpdate, disabled, 
         </div>
       )}
 
-      {/* Driver Tags */}
-      <Card className="border-muted">
-        <CardContent className="p-4">
-          <TagSelector<RevenueTag>
-            tags={REVENUE_TAGS}
-            labels={REVENUE_TAG_LABELS}
-            selected={selectedTags}
-            onChange={(tags) => onUpdate({ revenue_tags: tags } as any)}
-            disabled={disabled}
-            categories={REVENUE_TAG_BY_CATEGORY as Record<string, RevenueTag[]>}
-            categoryLabels={REVENUE_TAG_CATEGORY_LABELS as Record<string, string>}
-            title="What drove tonight's performance?"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Notes */}
-      <div className="space-y-1">
-        <label className="text-xs text-muted-foreground">
-          Manager notes (optional, 500 char max)
-        </label>
-        <Textarea
-          placeholder="Additional context..."
-          rows={2}
-          maxLength={500}
-          defaultValue={attestation?.revenue_notes || ''}
-          onBlur={(e) => {
-            const val = e.target.value.trim();
-            if (val !== (attestation?.revenue_notes || '')) {
-              onUpdate({ revenue_notes: val || null } as any);
-            }
-          }}
+      {/* 6 structured revenue prompts */}
+      {REVENUE_PROMPT_KEYS.map((key) => (
+        <PromptField
+          key={key}
+          promptKey={key}
+          value={(attestation?.[key] as string) ?? ''}
           disabled={disabled}
+          onUpdate={onUpdate}
         />
-      </div>
+      ))}
     </div>
   );
 }

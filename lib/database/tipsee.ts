@@ -6,13 +6,13 @@
 import { Pool } from 'pg';
 import { getServiceClient } from '@/lib/supabase/service';
 
-// TipSee database configuration
+// TipSee database configuration — credentials MUST be in environment variables
 const TIPSEE_CONFIG = {
-  host: process.env.TIPSEE_DB_HOST || 'TIPSEE_HOST_REDACTED',
-  user: process.env.TIPSEE_DB_USER || 'TIPSEE_USERNAME_REDACTED',
+  host: process.env.TIPSEE_DB_HOST!,
+  user: process.env.TIPSEE_DB_USER!,
   port: parseInt(process.env.TIPSEE_DB_PORT || '5432'),
   database: process.env.TIPSEE_DB_NAME || 'postgres',
-  password: process.env.TIPSEE_DB_PASSWORD || 'TIPSEE_PASSWORD_REDACTED',
+  password: process.env.TIPSEE_DB_PASSWORD!,
   ssl: { rejectUnauthorized: false },
   max: 15, // Increased from 5 to handle 10 parallel queries + headroom for concurrent users
   idleTimeoutMillis: 30000,
@@ -240,7 +240,7 @@ export async function fetchNightlyReport(
       [locationUuid, date]
     )),
 
-    // 4: Menu Items Sold (top 10 food + top 10 beverage)
+    // 4: Menu Items Sold (top 10 food + top 10 beverage + top 10 other)
     timed('4:menuItems', pool.query(
       `WITH ranked_items AS (
         SELECT
@@ -249,28 +249,64 @@ export async function fetchNightlyReport(
           SUM(ci.quantity) as qty,
           SUM(ci.price * ci.quantity) as net_total,
           ROW_NUMBER() OVER (
-            PARTITION BY CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
-                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
-                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
-                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
-                              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
-                         THEN 'Beverage' ELSE 'Food' END
+            PARTITION BY CASE
+              WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
+              THEN 'Beverage'
+              WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%food%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%appetizer%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%entree%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%dessert%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%salad%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%soup%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%side%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%brunch%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%lunch%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%dinner%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%starter%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%snack%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%raw bar%'
+                OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%sushi%'
+              THEN 'Food'
+              ELSE 'Other'
+            END
             ORDER BY SUM(ci.price * ci.quantity) DESC
           ) as rn,
-          CASE WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
-                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
-                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
-                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
-                    OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
-               THEN 'Beverage' ELSE 'Food' END as item_type
+          CASE
+            WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%bev%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%wine%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%beer%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%liquor%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%cocktail%'
+            THEN 'Beverage'
+            WHEN LOWER(COALESCE(ci.parent_category, '')) LIKE '%food%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%appetizer%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%entree%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%dessert%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%salad%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%soup%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%side%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%brunch%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%lunch%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%dinner%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%starter%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%snack%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%raw bar%'
+              OR LOWER(COALESCE(ci.parent_category, '')) LIKE '%sushi%'
+            THEN 'Food'
+            ELSE 'Other'
+          END as item_type
         FROM public.tipsee_check_items ci
         WHERE ci.location_uuid = $1 AND ci.trading_day = $2
         GROUP BY ci.name, ci.parent_category
       )
-      SELECT name, parent_category, qty, net_total
+      SELECT name, parent_category, qty, net_total, item_type
       FROM ranked_items
       WHERE rn <= 10
-      ORDER BY item_type, net_total DESC`,
+      ORDER BY CASE item_type WHEN 'Food' THEN 1 WHEN 'Beverage' THEN 2 ELSE 3 END, net_total DESC`,
       [locationUuid, date]
     )),
 
@@ -598,6 +634,7 @@ export interface IntraDaySummary {
   net_sales: number;
   food_sales: number;
   beverage_sales: number;
+  other_sales: number;
   comps_total: number;
   voids_total: number;
 }
@@ -634,8 +671,20 @@ export async function fetchIntraDaySummary(
             OR LOWER(COALESCE(parent_category, '')) LIKE '%beer%'
             OR LOWER(COALESCE(parent_category, '')) LIKE '%liquor%'
             OR LOWER(COALESCE(parent_category, '')) LIKE '%cocktail%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%spirit%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%draft%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%drink%'
           THEN 'Beverage'
-          ELSE 'Food'
+          WHEN LOWER(COALESCE(parent_category, '')) LIKE '%food%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%entree%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%appetizer%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%dessert%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%salad%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%soup%'
+            OR LOWER(COALESCE(parent_category, '')) LIKE '%side%'
+            OR COALESCE(parent_category, '') = ''
+          THEN 'Food'
+          ELSE 'Other'
         END as sales_type,
         COALESCE(SUM(price * quantity), 0) as total
       FROM public.tipsee_check_items
@@ -649,21 +698,29 @@ export async function fetchIntraDaySummary(
     ? cleanRow(summaryResult.rows[0])
     : { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, comps_total: 0, voids_total: 0 };
 
-  let food_sales = 0;
-  let beverage_sales = 0;
+  // Item-level gross per category (used as distribution weights)
+  let grossFood = 0, grossBev = 0, grossOther = 0;
   for (const row of categoryResult.rows) {
     const clean = cleanRow(row);
-    if (clean.sales_type === 'Food') food_sales = clean.total;
-    else beverage_sales = clean.total;
+    if (clean.sales_type === 'Food') grossFood = clean.total;
+    else if (clean.sales_type === 'Beverage') grossBev = clean.total;
+    else grossOther = clean.total;
   }
+
+  // Proportionally allocate check-level net_sales across categories.
+  // Item prices don't sum to check revenue (packages, minimums, pricing structures).
+  const grossTotal = grossFood + grossBev + grossOther;
+  const netSales = summary.net_sales;
+  const ratio = grossTotal > 0 && netSales > 0 ? netSales / grossTotal : 1;
 
   return {
     total_checks: summary.total_checks,
     total_covers: summary.total_covers,
     gross_sales: summary.gross_sales,
-    net_sales: summary.net_sales,
-    food_sales,
-    beverage_sales,
+    net_sales: netSales,
+    food_sales: Math.round(grossFood * ratio * 100) / 100,
+    beverage_sales: Math.round(grossBev * ratio * 100) / 100,
+    other_sales: Math.round(grossOther * ratio * 100) / 100,
     comps_total: summary.comps_total,
     voids_total: summary.voids_total,
   };
@@ -742,6 +799,7 @@ export async function fetchSimphonyIntraDaySummary(
     net_sales: row.net_sales,
     food_sales: row.food_sales,
     beverage_sales: row.beverage_sales,
+    other_sales: 0,
     comps_total: row.comps_total,
     voids_total: row.voids_total,
   };
@@ -811,6 +869,7 @@ export async function fetchSimphonyBIIntraDaySummary(
     net_sales: netSales,
     food_sales: foodSales,
     beverage_sales: bevSales,
+    other_sales: 0,
     comps_total: comps,
     voids_total: voids,
   };
@@ -981,13 +1040,16 @@ const COMP_THRESHOLDS = {
 
 function isApprovedReason(reason: string, approvedReasons?: Array<{ name: string }>): boolean {
   const normalized = reason.toLowerCase().trim();
+  const compacted = normalized.replace(/\s+/g, ''); // "good will" → "goodwill"
   const reasonList = approvedReasons
     ? approvedReasons.map(r => r.name.toLowerCase())
     : APPROVED_COMP_REASONS;
 
-  return reasonList.some(approved =>
-    normalized.includes(approved) || approved.includes(normalized)
-  );
+  return reasonList.some(approved => {
+    const approvedCompacted = approved.replace(/\s+/g, '');
+    return normalized.includes(approved) || approved.includes(normalized)
+      || compacted.includes(approvedCompacted) || approvedCompacted.includes(compacted);
+  });
 }
 
 function isPromoterReason(reason: string): boolean {

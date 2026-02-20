@@ -3,8 +3,11 @@
  * Usage: npx tsx scripts/backfill-etl.ts [days]
  */
 
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SERVICE_ROLE_KEY = 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 async function syncDate(date: string): Promise<{ success: boolean; summary: any }> {
   const url = `${SUPABASE_URL}/functions/v1/etl-sync?date=${date}`;

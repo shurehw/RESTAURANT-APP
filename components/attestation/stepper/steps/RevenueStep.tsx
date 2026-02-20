@@ -18,12 +18,13 @@ interface Props {
     vs_forecast_pct: number | null;
     vs_sdlw_pct: number | null;
     vs_sdly_pct: number | null;
+    vs_forecast_covers_pct?: number | null;
+    vs_sdlw_covers_pct?: number | null;
+    vs_sdly_covers_pct?: number | null;
   } | null;
   foodSales?: number;
   beverageSales?: number;
   beveragePct?: number;
-  narrative?: string | null;
-  narrativeLoading?: boolean;
 }
 
 export function RevenueStep({
@@ -39,8 +40,6 @@ export function RevenueStep({
   foodSales,
   beverageSales,
   beveragePct,
-  narrative,
-  narrativeLoading,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -60,8 +59,6 @@ export function RevenueStep({
         attestation={attestation}
         onUpdate={onUpdate}
         disabled={disabled}
-        narrative={narrative}
-        narrativeLoading={narrativeLoading}
       />
     </div>
   );

@@ -21,7 +21,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const TIPSEE_CONFIG = {
   host: process.env.TIPSEE_DB_HOST || 'TIPSEE_HOST_REDACTED',
-  user: process.env.TIPSEE_DB_USER || 'TIPSEE_USERNAME_REDACTED',
+  user: process.env.TIPSEE_DB_USER,
   port: parseInt(process.env.TIPSEE_DB_PORT || '5432'),
   database: process.env.TIPSEE_DB_NAME || 'postgres',
   password: process.env.TIPSEE_DB_PASSWORD,

@@ -60,13 +60,19 @@ async function computeHash(data: Record<string, unknown>): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
 }
 
-// Get TipSee connection
+// Get TipSee connection — credentials MUST be set as Supabase Edge Function secrets
 function getTipseeClient(): Client {
+  const host = Deno.env.get('TIPSEE_DB_HOST');
+  const user = Deno.env.get('TIPSEE_DB_USER');
+  const password = Deno.env.get('TIPSEE_DB_PASSWORD');
+  if (!host || !user || !password) {
+    throw new Error('TipSee credentials not configured. Set TIPSEE_DB_HOST, TIPSEE_DB_USER, TIPSEE_DB_PASSWORD as edge function secrets.');
+  }
   return new Client({
-    hostname: Deno.env.get('TIPSEE_DB_HOST') || 'TIPSEE_HOST_REDACTED',
+    hostname: host,
     port: parseInt(Deno.env.get('TIPSEE_DB_PORT') || '5432'),
-    user: Deno.env.get('TIPSEE_DB_USER') || 'TIPSEE_USERNAME_REDACTED',
-    password: Deno.env.get('TIPSEE_DB_PASSWORD') || 'TIPSEE_PASSWORD_REDACTED',
+    user,
+    password,
     database: Deno.env.get('TIPSEE_DB_NAME') || 'postgres',
     tls: { enabled: true, enforce: false },
   });
@@ -189,8 +195,8 @@ async function syncVenueDay(
     `;
     rowsExtracted += categoryResult.rows.length;
 
-    // Calculate category breakdowns
-    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
+    // Calculate category breakdowns (gross weights for proportional allocation)
+    let grossFood = 0, grossBev = 0, grossWine = 0, grossLiquor = 0, grossBeer = 0, grossOther = 0;
     let totalItemsSold = 0;
 
     for (const row of categoryResult.rows) {
@@ -199,12 +205,37 @@ async function syncVenueDay(
       totalItemsSold += Number(row.quantity_sold) || 0;
 
       switch (categoryType) {
-        case 'food': foodSales += sales; break;
-        case 'wine': wineSales += sales; beverageSales += sales; break;
-        case 'liquor': liquorSales += sales; beverageSales += sales; break;
-        case 'beer': beerSales += sales; beverageSales += sales; break;
-        case 'beverage': beverageSales += sales; break;
-        default: otherSales += sales;
+        case 'food': grossFood += sales; break;
+        case 'wine': grossWine += sales; grossBev += sales; break;
+        case 'liquor': grossLiquor += sales; grossBev += sales; break;
+        case 'beer': grossBeer += sales; grossBev += sales; break;
+        case 'beverage': grossBev += sales; break;
+        default: grossOther += sales;
+      }
+    }
+
+    // Distribute check-level net_sales across categories by their gross proportions.
+    // Item-level price*quantity can be 2-5x check-level revenue at high-end venues
+    // (table minimums, packages, bottle service), so we use gross ratios as weights.
+    const grossTotal = grossFood + grossBev + grossOther;
+    const venueNetSales = Number(summary.net_sales) || 0;
+    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
+
+    if (grossTotal > 0 && venueNetSales > 0) {
+      const ratio = venueNetSales / grossTotal;
+      foodSales = Math.round(grossFood * ratio * 100) / 100;
+      beverageSales = Math.round(grossBev * ratio * 100) / 100;
+      wineSales = Math.round(grossWine * ratio * 100) / 100;
+      liquorSales = Math.round(grossLiquor * ratio * 100) / 100;
+      beerSales = Math.round(grossBeer * ratio * 100) / 100;
+      otherSales = Math.round(grossOther * ratio * 100) / 100;
+      // Absorb rounding remainder into the largest bucket
+      const allocated = foodSales + beverageSales + otherSales;
+      const remainder = Math.round((venueNetSales - allocated) * 100) / 100;
+      if (Math.abs(remainder) > 0) {
+        if (foodSales >= beverageSales && foodSales >= otherSales) foodSales += remainder;
+        else if (beverageSales >= otherSales) beverageSales += remainder;
+        else otherSales += remainder;
       }
     }
 

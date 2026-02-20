@@ -80,7 +80,7 @@ export async function computeDistributionCurves(
   venueId: string,
   tipseeLocationUuid: string,
   timezone: string,
-  lookbackDays: number = 90
+  lookbackDays: number = 730
 ): Promise<{ curves_upserted: number; day_types_computed: string[] }> {
   const pool = getTipseePool();
   const supabase = getServiceClient();
@@ -257,7 +257,7 @@ export async function computeDistributionCurves(
 // ============================================================================
 
 export async function computeAllVenueCurves(
-  lookbackDays: number = 90
+  lookbackDays: number = 730
 ): Promise<CurveComputeResult[]> {
   const pool = getTipseePool();
   const mappings = await getVenueTipseeMappings();

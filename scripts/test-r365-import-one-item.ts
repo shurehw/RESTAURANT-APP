@@ -2,8 +2,8 @@ import fetch from 'node-fetch';
 
 const R365_BASE_URL = 'https://hwood.restaurant365.com';
 const ODATA_BASE_URL = 'https://odata.restaurant365.net';
-const USERNAME = 'jshure';
-const PASSWORD = 'R365_PASSWORD_REDACTED';
+const USERNAME = process.env.R365_USERNAME!;
+const PASSWORD = process.env.R365_PASSWORD!;
 const DOMAIN = 'hwood';
 
 interface AuthResponse {

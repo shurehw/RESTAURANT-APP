@@ -10,15 +10,24 @@ import type {
   NightlyIncident,
   CoachingAction,
 } from '@/lib/attestation/types';
+import {
+  REVENUE_PROMPT_KEYS,
+  COMP_PROMPT_KEYS,
+  LABOR_PROMPT_KEYS,
+  COACHING_PROMPT_KEYS,
+  GUEST_PROMPT_KEYS,
+  STRUCTURED_PROMPT_MIN_LENGTH,
+} from '@/lib/attestation/types';
 
 export interface CompletionState {
-  revenue: 'complete' | 'incomplete' | 'not_required';
-  comps: 'complete' | 'incomplete' | 'not_required';
-  labor: 'complete' | 'incomplete' | 'not_required';
-  incidents: 'complete' | 'incomplete' | 'not_required';
-  coaching: 'always_optional';
-  entertainment: 'complete' | 'incomplete' | 'not_required';
-  culinary: 'complete' | 'incomplete' | 'not_required';
+  revenue: 'complete' | 'incomplete';
+  comps: 'complete' | 'incomplete';
+  labor: 'complete' | 'incomplete';
+  incidents: 'complete' | 'incomplete';
+  coaching: 'complete' | 'incomplete';
+  guest: 'complete' | 'incomplete';
+  entertainment: 'complete' | 'incomplete';
+  culinary: 'complete' | 'incomplete';
 }
 
 /** Extract error message from API JSON response { error: '...' } */
@@ -284,48 +293,46 @@ export function useAttestation(
   // -----------------------------------------------------------------------
   // Completion state
   // -----------------------------------------------------------------------
+  // Revenue: all 6 structured prompts must meet min length.
+  // Comps/Labor/Coaching/Guest: all structured prompts filled OR acknowledged.
+  // Incidents: notes >= 10 chars OR acknowledged (uses IncidentLog, not structured prompts).
+  // Tags are AI-extracted metadata — not required for completion.
+  const revenueComplete = REVENUE_PROMPT_KEYS.every(
+    (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
+  );
+  const compsPromptsComplete = COMP_PROMPT_KEYS.every(
+    (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
+  );
+  const laborPromptsComplete = LABOR_PROMPT_KEYS.every(
+    (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
+  );
+  const coachingPromptsComplete = COACHING_PROMPT_KEYS.every(
+    (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
+  );
+  const guestPromptsComplete = GUEST_PROMPT_KEYS.every(
+    (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
+  );
   const completionState: CompletionState = {
-    revenue: !triggers?.revenue_attestation_required
-      ? 'not_required'
-      : (attestation?.revenue_tags?.length ?? 0) > 0
-        ? 'complete'
-        : 'incomplete',
-    comps: !triggers?.comp_resolution_required
-      ? 'not_required'
-      : (triggers.flagged_comps?.length || 0) <= compResolutions.length
-        ? 'complete'
-        : 'incomplete',
-    labor: !triggers?.labor_attestation_required
-      ? 'not_required'
-      : (attestation?.labor_tags?.length ?? 0) > 0
-        ? 'complete'
-        : 'incomplete',
-    incidents: !triggers?.incident_log_required
-      ? 'not_required'
-      : incidents.length > 0
-        ? 'complete'
-        : 'incomplete',
-    coaching: 'always_optional',
-    entertainment: !options?.entertainmentRequired
-      ? 'not_required'
-      : options?.entertainmentComplete
-        ? 'complete'
-        : 'incomplete',
-    culinary: !options?.culinaryRequired
-      ? 'not_required'
-      : options?.culinaryComplete
-        ? 'complete'
-        : 'incomplete',
+    revenue: revenueComplete ? 'complete' : 'incomplete',
+    comps: (compsPromptsComplete || !!attestation?.comp_acknowledged)
+      && (!triggers?.comp_resolution_required || (triggers.flagged_comps?.length || 0) <= compResolutions.length)
+      ? 'complete' : 'incomplete',
+    labor: (laborPromptsComplete || !!attestation?.labor_acknowledged)
+      ? 'complete' : 'incomplete',
+    incidents: (attestation?.incident_notes?.length ?? 0) >= 10 || !!attestation?.incidents_acknowledged
+      ? 'complete' : 'incomplete',
+    coaching: (coachingPromptsComplete || !!attestation?.coaching_acknowledged)
+      ? 'complete' : 'incomplete',
+    guest: (guestPromptsComplete || !!attestation?.guest_acknowledged)
+      ? 'complete' : 'incomplete',
+    entertainment: options?.entertainmentComplete ? 'complete' : 'incomplete',
+    culinary: options?.culinaryComplete ? 'complete' : 'incomplete',
   };
 
   const canSubmit =
     attestation?.status === 'draft' &&
-    completionState.revenue !== 'incomplete' &&
-    completionState.comps !== 'incomplete' &&
-    completionState.labor !== 'incomplete' &&
-    completionState.incidents !== 'incomplete' &&
-    completionState.entertainment !== 'incomplete' &&
-    completionState.culinary !== 'incomplete';
+    !!attestation?.closing_narrative &&
+    Object.values(completionState).every(v => v === 'complete');
 
   const isLocked = attestation?.status === 'submitted' || attestation?.status === 'amended';
 

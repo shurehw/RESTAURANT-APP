@@ -43,6 +43,10 @@ from forecaster import (
     model_router,
     ModelConfig,
     TIER_C_MIN,
+    DEFAULT_PROPHET_PARAMS,
+    VENUE_CLASS_PROPHET_PARAMS,
+    get_venue_anomaly_dates,
+    filter_anomaly_days,
 )
 
 
@@ -51,6 +55,7 @@ def fit_prophet_holdout(
     holdout_days: int,
     weather_mode: str = "off",
     historical_weather: Optional[pd.DataFrame] = None,
+    prophet_params: Optional[Dict] = None,
 ) -> pd.DataFrame:
     """
     Fit Prophet on train_df, predict holdout_days beyond the training end.
@@ -85,7 +90,10 @@ def fit_prophet_holdout(
             else:
                 prophet_df[c] = prophet_df[c].fillna(0)
 
-    model = build_prophet_model(weather_mode=weather_mode if has_weather else "off")
+    model = build_prophet_model(
+        weather_mode=weather_mode if has_weather else "off",
+        prophet_params=prophet_params,
+    )
     model.fit(prophet_df)
 
     future = model.make_future_dataframe(periods=holdout_days, freq="D")
@@ -250,13 +258,16 @@ def run_backtest(venue_id: Optional[str] = None, holdout_days: int = 90):
                 all_v3.append({"label": location_name, "n": 0, "mape": None,
                                "within_10": None, "within_20": None, "bias": None})
 
-            # --- V4 (gated) ---
+            # --- V4 (gated + tuned params) ---
             if config.use_prophet:
                 train_v4 = clean_training_data(train_raw) if config.use_outlier_removal else train_raw
-                print(f"  Training V4 (weather={config.use_weather})...")
+                pp = config.prophet_params
+                print(f"  Training V4 (weather={config.use_weather}, "
+                      f"cps={pp['changepoint_prior_scale']}, sps={pp['seasonality_prior_scale']})...")
                 v4_fc = fit_prophet_holdout(
                     train_v4, actual_holdout_days,
                     weather_mode=config.use_weather, historical_weather=hist_weather,
+                    prophet_params=config.prophet_params,
                 )
                 v4_holdout = v4_fc[v4_fc["ds"] > cutoff_date]
                 all_v4.append(compute_metrics(actuals, v4_holdout, location_name))

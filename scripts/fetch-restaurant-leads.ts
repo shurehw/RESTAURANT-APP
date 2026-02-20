@@ -7,8 +7,8 @@ import * as fs from 'fs';
 import { createClient } from '@supabase/supabase-js';
 
 const BASE_URL = 'https://leads.restaurantactivityreport.com/RARWebApi/api';
-const EMAIL = 'RAR_EMAIL_REDACTED';
-const PASSWORD = 'RAR_PASSWORD_REDACTED';
+const EMAIL = process.env.RAR_EMAIL!;
+const PASSWORD = process.env.RAR_PASSWORD!;
 
 // Supabase config
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;

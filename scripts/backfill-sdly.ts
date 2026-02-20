@@ -18,11 +18,11 @@ import { Pool } from 'pg';
 import { createClient } from '@supabase/supabase-js';
 
 const pool = new Pool({
-  host: process.env.TIPSEE_DB_HOST || 'TIPSEE_HOST_REDACTED',
-  user: process.env.TIPSEE_DB_USER || 'TIPSEE_USERNAME_REDACTED',
+  host: process.env.TIPSEE_DB_HOST,
+  user: process.env.TIPSEE_DB_USER,
   port: parseInt(process.env.TIPSEE_DB_PORT || '5432'),
   database: process.env.TIPSEE_DB_NAME || 'postgres',
-  password: process.env.TIPSEE_DB_PASSWORD || 'TIPSEE_PASSWORD_REDACTED',
+  password: process.env.TIPSEE_DB_PASSWORD,
   ssl: { rejectUnauthorized: false },
   max: 5,
   connectionTimeoutMillis: 20000,

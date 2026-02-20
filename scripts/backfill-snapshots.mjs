@@ -15,11 +15,9 @@
  *   node scripts/backfill-snapshots.mjs 2026-02-10        # single date
  *   node scripts/backfill-snapshots.mjs 2026-02-01 2026-02-14  # date range
  */
-import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 import pg from 'pg';
-
-config({ path: '.env.local' });
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY, TIPSEE_CONFIG } from './_config.mjs';
 
 // Parse date args
 const args = process.argv.slice(2);
@@ -35,16 +33,9 @@ if (args.length === 0) {
   endDate = args[1];
 }
 
-const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-const tipseePool = new pg.Pool({
-  host: 'TIPSEE_HOST_REDACTED',
-  user: 'TIPSEE_USERNAME_REDACTED',
-  password: 'TIPSEE_PASSWORD_REDACTED',
-  database: 'postgres',
-  port: 5432,
-  ssl: { rejectUnauthorized: false },
-});
+const tipseePool = new pg.Pool(TIPSEE_CONFIG);
 
 // Generate array of dates from start to end
 function getDateRange(start, end) {

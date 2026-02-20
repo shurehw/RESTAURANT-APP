@@ -13,7 +13,7 @@ import { join } from 'path';
 
 const BASE_URL = 'https://opsos-restaurant-app.vercel.app';
 const EMAIL = 'jacob@hwoodgroup.com';
-const PASSWORD = 'password123';
+const PASSWORD = process.env.OPSOS_TEST_PASSWORD;
 const SCREENSHOT_DIR = 'scripts/audit-screenshots';
 const REPORT_PATH = 'scripts/audit-report.json';
 

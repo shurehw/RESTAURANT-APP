@@ -3,12 +3,13 @@
 import tls from 'tls';
 import crypto from 'crypto';
 import net from 'net';
+import { TIPSEE_CONFIG } from './_config.mjs';
 
-const HOST = 'TIPSEE_HOST_REDACTED';
-const PORT = 5432;
-const USER = 'TIPSEE_USERNAME_REDACTED';
-const PASS = 'TIPSEE_PASSWORD_REDACTED';
-const DB   = 'postgres';
+const HOST = TIPSEE_CONFIG.host;
+const PORT = TIPSEE_CONFIG.port;
+const USER = TIPSEE_CONFIG.user;
+const PASS = TIPSEE_CONFIG.password;
+const DB   = TIPSEE_CONFIG.database;
 
 const QUERY = `
   SELECT

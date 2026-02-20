@@ -90,15 +90,18 @@ export function PeriodGaugeCard({
 export function PeriodCategoryMixCard({
   foodSales,
   bevSales,
+  otherSales = 0,
   priorBevPct,
 }: {
   foodSales: number;
   bevSales: number;
+  otherSales?: number;
   priorBevPct: number | null;
 }) {
-  const total = foodSales + bevSales;
+  const total = foodSales + bevSales + otherSales;
   const foodPct = total > 0 ? (foodSales / total) * 100 : 0;
   const bevPct = total > 0 ? (bevSales / total) * 100 : 0;
+  const otherPct = total > 0 ? (otherSales / total) * 100 : 0;
 
   return (
     <Card>
@@ -121,12 +124,24 @@ export function PeriodCategoryMixCard({
               <span className="text-muted-foreground ml-1">({bevPct.toFixed(0)}%)</span>
             </div>
           </div>
+          {otherSales > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span>Other</span>
+              <div className="text-right">
+                <span className="font-medium">{fmtCurrency(otherSales)}</span>
+                <span className="text-muted-foreground ml-1">({otherPct.toFixed(0)}%)</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {total > 0 && (
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
             <div className="bg-opsos-brass transition-all" style={{ width: `${foodPct}%` }} />
             <div className="bg-opsos-sage transition-all" style={{ width: `${bevPct}%` }} />
+            {otherSales > 0 && (
+              <div className="bg-muted-foreground/30 transition-all" style={{ width: `${otherPct}%` }} />
+            )}
           </div>
         )}
 

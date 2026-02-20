@@ -3,8 +3,8 @@
  * Usage: node scripts/check-accuracy.mjs
  */
 
-const SUPABASE_URL = 'https://mnraeesscqsaappkaldb.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'SUPABASE_SERVICE_ROLE_KEY_REDACTED';
+import { SUPABASE_URL, SUPABASE_SERVICE_KEY } from './_config.mjs';
+const SUPABASE_KEY = SUPABASE_SERVICE_KEY;
 
 async function query(table, params = '') {
   const url = `${SUPABASE_URL}/rest/v1/${table}?${params}`;
