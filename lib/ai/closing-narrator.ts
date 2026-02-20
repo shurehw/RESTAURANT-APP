@@ -364,15 +364,22 @@ Write a unified closing summary for the manager's nightly attestation.
 ${sections.join('\n\n')}
 
 ## Instructions
-Write a 4-8 sentence closing narrative that:
-1. Opens with the night's headline — top-line sales performance vs expectations
-2. Highlights what drove the night (using the manager's own driver tags and notes)
-3. References notable guests, top spenders, or VIPs when present (use specific spend amounts, not names — protect guest privacy)
-4. Calls out any flagged items, unresolved incidents, or follow-up actions
-5. Notes labor efficiency and comp activity in context
-6. Closes with any open items for the next shift
+Write a closing narrative in 4 short paragraphs, separated by blank lines:
 
-Tone: Executive briefing — direct, factual, specific numbers. No bullet points, no headers, no markdown formatting. Write in third person ("The venue..." not "You..."). Do NOT wrap in quotes. Return the narrative text only.`;
+**Paragraph 1 — Headline & Revenue**: Top-line sales result vs forecast/SDLW, covers, avg check, what drove demand. 2-3 sentences.
+
+**Paragraph 2 — Guest & Entertainment**: Notable high-spend tables (use dollar amounts, not guest names), VIP activity, bottle service, entertainment energy. 2-3 sentences. Skip if no guest/entertainment data.
+
+**Paragraph 3 — Operations**: Labor efficiency (% of sales, OT, SPLH), comp activity and context, any incidents and resolution status. 2-3 sentences.
+
+**Paragraph 4 — Team & Next Shift**: FOH and BOH standouts and development needs by name, team focus items, and open items for the next shift. 2-3 sentences.
+
+Rules:
+- Tone: Executive briefing — direct, factual, specific dollar amounts and percentages
+- Third person ("The venue..." not "You...")
+- No bullet points, no headers, no bold, no markdown — just plain text paragraphs separated by blank lines
+- Do NOT wrap in quotes
+- Return the narrative text only`;
 }
 
 // ---------------------------------------------------------------------------
