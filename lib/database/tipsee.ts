@@ -926,6 +926,63 @@ export async function fetchSimphonyIntraDaySummary(
 }
 
 // ============================================================================
+// SIMPHONY ITEM-LEVEL QUERY — tipsee_simphony_sales_items (per-check items)
+// ============================================================================
+
+/**
+ * Fetch intra-day summary from Simphony per-item data.
+ * TipSee syncs item-level data (tipsee_simphony_sales_items) which may be
+ * available even when the aggregate table (tipsee_simphony_sales) is not.
+ * Uses menu dimensions to classify food vs beverage.
+ */
+export async function fetchSimphonyItemSummary(
+  locationUuids: string[],
+  date: string
+): Promise<IntraDaySummary> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      COUNT(DISTINCT i.check_number) as total_checks,
+      COUNT(DISTINCT i.check_number) as total_covers,
+      COALESCE(SUM(i.sales_total), 0) as gross_sales,
+      COALESCE(SUM(i.sales_total) + SUM(i.discount_total), 0) as net_sales,
+      ABS(COALESCE(SUM(i.discount_total), 0)) as comps_total,
+      0 as voids_total,
+      COALESCE(SUM(CASE
+        WHEN LOWER(COALESCE(m.major_group_name, '')) IN ('beverage', 'beverages', 'bar', 'drinks', 'wine', 'beer', 'liquor')
+          OR i.revenue_center_number = 2
+        THEN i.sales_total ELSE 0 END), 0) as beverage_sales,
+      COALESCE(SUM(CASE
+        WHEN LOWER(COALESCE(m.major_group_name, '')) NOT IN ('beverage', 'beverages', 'bar', 'drinks', 'wine', 'beer', 'liquor')
+          AND i.revenue_center_number != 2
+        THEN i.sales_total ELSE 0 END), 0) as food_sales
+    FROM public.tipsee_simphony_sales_items i
+    LEFT JOIN public.tipsee_simphony_menu_dimensions m
+      ON m.location_uuid = i.location_uuid AND m.menu_item_number = i.menu_item_number
+    WHERE i.location_uuid = ANY($1) AND i.trading_day = $2`,
+    [locationUuids, date]
+  );
+
+  const row = result.rows[0] ? cleanRow(result.rows[0]) : {
+    total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0,
+    comps_total: 0, voids_total: 0, beverage_sales: 0, food_sales: 0,
+  };
+
+  return {
+    total_checks: row.total_checks,
+    total_covers: row.total_covers,
+    gross_sales: row.gross_sales,
+    net_sales: row.net_sales,
+    food_sales: row.food_sales,
+    beverage_sales: row.beverage_sales,
+    other_sales: 0,
+    comps_total: row.comps_total,
+    voids_total: row.voids_total,
+  };
+}
+
+// ============================================================================
 // SIMPHONY BI API — Direct Oracle Simphony polling (bypasses TipSee batch)
 // ============================================================================
 
@@ -1597,9 +1654,64 @@ export interface CheckSummary {
 }
 
 /**
+ * Fetch open check summaries built from items (for checks not yet in tipsee_checks).
+ * Mirrors the blended query logic used in sales pace.
+ */
+async function fetchOpenCheckSummariesFromItems(
+  locationUuids: string[],
+  date: string
+): Promise<CheckSummary[]> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      ci.check_id as id,
+      COALESCE(MIN(ci.table_name), 'Unknown') as table_name,
+      COALESCE(MIN(ci.employee_name), 'Unknown') as employee_name,
+      0 as guest_count,
+      COALESCE(SUM(ci.price * ci.quantity), 0) as sub_total,
+      COALESCE(SUM(ci.price * ci.quantity), 0) - COALESCE(SUM(ci.comp_total), 0) - COALESCE(SUM(ci.void_value), 0) as revenue_total,
+      COALESCE(SUM(ci.comp_total), 0) as comp_total,
+      COALESCE(SUM(ci.void_value), 0) as void_total,
+      MIN(ci.created_at) as open_time,
+      NULL as close_time,
+      true as is_open,
+      0 as payment_total,
+      0 as tip_total
+    FROM public.tipsee_check_items ci
+    LEFT JOIN public.tipsee_checks c
+      ON ci.check_id = c.id AND c.trading_day = $2
+    WHERE ci.location_uuid = ANY($1) AND ci.trading_day = $2
+      AND c.id IS NULL  -- only items from checks not yet in tipsee_checks
+    GROUP BY ci.check_id`,
+    [locationUuids, date]
+  );
+
+  return result.rows.map(row => {
+    const r = cleanRow(row);
+    return {
+      id: r.id,
+      table_name: r.table_name || 'Unknown',
+      employee_name: r.employee_name || 'Unknown',
+      guest_count: r.guest_count || 0,
+      sub_total: r.sub_total || 0,
+      revenue_total: r.revenue_total || 0,
+      comp_total: r.comp_total || 0,
+      void_total: r.void_total || 0,
+      open_time: r.open_time,
+      close_time: r.close_time || null,
+      is_open: r.is_open,
+      payment_total: r.payment_total || 0,
+      tip_total: r.tip_total || 0,
+    } as CheckSummary;
+  });
+}
+
+/**
  * Fetch all checks for a venue on a given date.
- * Single query with LEFT JOIN LATERAL for payment totals (no N+1).
- * Client-side sorting/filtering — returns all checks in one call.
+ * Includes both:
+ * - Checks in tipsee_checks (open and closed)
+ * - Open checks built from items (not yet in tipsee_checks)
  */
 export async function fetchChecksForDate(
   locationUuids: string[],
@@ -1634,24 +1746,14 @@ export async function fetchChecksForDate(
       WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
       ORDER BY c.open_time DESC`;
 
-  // limit=0 means fetch all (no LIMIT/OFFSET)
-  const checksQuery = limit > 0
-    ? pool.query(`${baseSql} LIMIT $3 OFFSET $4`, [locationUuids, date, limit, offset])
-    : pool.query(baseSql, [locationUuids, date]);
-
-  const [countResult, result] = await Promise.all([
-    pool.query(
-      `SELECT COUNT(*) as total
-      FROM public.tipsee_checks
-      WHERE location_uuid = ANY($1) AND trading_day = $2`,
-      [locationUuids, date]
-    ),
-    checksQuery,
+  // Always fetch all checks (no limit) when merging with items
+  const [result, openChecks] = await Promise.all([
+    pool.query(baseSql, [locationUuids, date]),
+    fetchOpenCheckSummariesFromItems(locationUuids, date),
   ]);
 
-  const total = parseInt(countResult.rows[0]?.total || '0', 10);
-
-  const checks = result.rows.map(row => {
+  // Merge checks from tipsee_checks with virtual open checks from items
+  const checksFromTable = result.rows.map(row => {
     const r = cleanRow(row);
     return {
       id: r.id,
@@ -1670,7 +1772,15 @@ export async function fetchChecksForDate(
     } as CheckSummary;
   });
 
-  return { checks, total };
+  // Combine and sort by open_time DESC
+  const allChecks = [...checksFromTable, ...openChecks].sort((a, b) =>
+    new Date(b.open_time).getTime() - new Date(a.open_time).getTime()
+  );
+
+  // Apply pagination to merged results
+  const checks = limit > 0 ? allChecks.slice(offset, offset + limit) : allChecks;
+
+  return { checks, total: allChecks.length };
 }
 
 export interface CheckItemDetail {
