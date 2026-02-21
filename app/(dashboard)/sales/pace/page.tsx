@@ -1569,33 +1569,35 @@ export default function LivePulsePage() {
             <TabsTrigger value="ytd">YTD</TabsTrigger>
           </TabsList>
         </Tabs>
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-1 ml-auto">
           <DateSelector
             selectedDate={selectedDate}
             onDateChange={handleDateChange}
             onToday={handleToday}
           />
-          {selectedVenue && !isAllVenues && viewMode === 'today' && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setReservationsSheetOpen(true)}
-              >
-                <CalendarCheck className="h-4 w-4 mr-1.5" />
-                Reservations
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setChecksSheetOpen(true)}
-              >
-                <Receipt className="h-4 w-4 mr-1.5" />
-                Checks
-              </Button>
-            </>
-          )}
         </div>
+        {selectedVenue && !isAllVenues && viewMode === 'today' && (
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => setReservationsSheetOpen(true)}
+            >
+              <CalendarCheck className="h-4 w-4 mr-1.5" />
+              Reservations
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => setChecksSheetOpen(true)}
+            >
+              <Receipt className="h-4 w-4 mr-1.5" />
+              Checks
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* No venue selected */}
