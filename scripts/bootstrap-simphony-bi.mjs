@@ -338,8 +338,8 @@ async function main() {
   let locRef = MANUAL_LOC_REF;
 
   if (!locRef && locations) {
-    // Try to find Dallas
-    const flat = Array.isArray(locations) ? locations : [];
+    // API returns { locations: [...] } — unwrap if needed
+    const flat = Array.isArray(locations) ? locations : (locations.locations || []);
     const dallas = flat.find(l =>
       (l.locName || l.name || '').toLowerCase().includes('dallas') ||
       (l.locName || l.name || '').toLowerCase().includes('delilah')

@@ -275,7 +275,7 @@ async function handleGroupEnrichment(date: string) {
 
     // Fetch all latest snapshots in parallel
     const snapshots = await Promise.all(
-      venueIds.map(vid => getLatestSnapshot(vid, date))
+      venueIds.map((vid: string) => getLatestSnapshot(vid, date))
     );
 
     const venueResult = { data: activeVenues };
@@ -284,7 +284,7 @@ async function handleGroupEnrichment(date: string) {
       (venueResult.data || []).map((v: { id: string; name: string }) => [v.id, v.name])
     );
 
-    const venues: VenueEnrichment[] = venueIds.map((vid, i) =>
+    const venues: VenueEnrichment[] = venueIds.map((vid: string, i: number) =>
       buildEnrichmentFromSnapshot(vid, nameMap.get(vid) || vid, snapshots[i])
     );
 
@@ -304,7 +304,7 @@ async function handleGroupEnrichment(date: string) {
       Promise.all(
         missingComps.map(v => fetchCompDayFact(svc, v.venue_id, date))
       ),
-      ...venueIds.map(vid => {
+      ...venueIds.map((vid: string) => {
         const uuids = locationMap.get(vid) || [];
         return uuids.length > 0 ? fetchCompsByReason(uuids, date, vid) : Promise.resolve([]);
       }),
@@ -318,7 +318,7 @@ async function handleGroupEnrichment(date: string) {
     });
 
     // Attach comp-by-reason to each venue
-    venueIds.forEach((vid, i) => {
+    venueIds.forEach((_vid: string, i: number) => {
       const venue = venues[i];
       if (venue.comps) venue.comps.by_reason = compReasonResults[i] || [];
     });
