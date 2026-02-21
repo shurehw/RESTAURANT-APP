@@ -1322,7 +1322,7 @@ function PeriodGroupSummary({ data }: { data: PeriodResponse }) {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════
 
-const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
+const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes to match poll interval
 
 export default function LivePulsePage() {
   const { selectedVenue, isAllVenues } = useVenue();
@@ -1477,9 +1477,12 @@ export default function LivePulsePage() {
   // Auto-refresh every 5 minutes (only in "today" mode)
   useEffect(() => {
     if (viewMode !== 'today') return;
-    const interval = setInterval(fetchData, REFRESH_INTERVAL_MS);
+    const interval = setInterval(() => {
+      fetchData();
+      fetchEnrichment();
+    }, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [fetchData, viewMode]);
+  }, [fetchData, fetchEnrichment, viewMode]);
 
   // Supabase Realtime: instant refresh when new snapshots are written
   const supabaseRef = useRef(createClient());
@@ -1500,6 +1503,7 @@ export default function LivePulsePage() {
         },
         () => {
           fetchData();
+          fetchEnrichment();
         }
       )
       .subscribe();
@@ -1507,7 +1511,7 @@ export default function LivePulsePage() {
     return () => {
       supabaseRef.current.removeChannel(channel);
     };
-  }, [selectedVenue, isAllVenues, fetchData]);
+  }, [selectedVenue, isAllVenues, fetchData, fetchEnrichment]);
 
   const handleToday = () => {
     setSelectedDate(null); // null = let server compute today
