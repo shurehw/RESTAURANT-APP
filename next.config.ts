@@ -41,6 +41,13 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: '/manifest.json',
+        headers: [
+          ...securityHeaders,
+          { key: 'Content-Type', value: 'application/manifest+json' },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: securityHeaders,
       },

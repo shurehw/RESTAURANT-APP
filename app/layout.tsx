@@ -27,7 +27,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#FFFFFF",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#FF5A1F" },
+  ],
 };
 
 export const metadata: Metadata = {
@@ -52,7 +55,7 @@ export const metadata: Metadata = {
       { url: "/icons/pulse-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/pulse-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/pulse-192.png", sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {

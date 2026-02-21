@@ -4,7 +4,7 @@
   "description": "Real-time sales pace during service",
   "start_url": "/sales/pace",
   "scope": "/",
-  "id": "/pulse",
+  "id": "/sales/pace",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#FFFFFF",
