@@ -8,6 +8,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import type { ViolationStatus } from '@/lib/enforcement/state-machine';
 
 // ============================================================================
 // Types
@@ -20,6 +21,8 @@ export type ViolationType =
   | 'staffing_gap';
 
 export type ViolationSeverity = 'info' | 'warning' | 'critical';
+
+export type { ViolationStatus } from '@/lib/enforcement/state-machine';
 
 export type ActionType =
   | 'alert'
@@ -58,6 +61,30 @@ export interface Violation {
   shift_period: string | null;
   created_at: string;
   updated_at: string;
+  // State machine fields
+  status: ViolationStatus;
+  ack_at: string | null;
+  ack_by: string | null;
+  action_at: string | null;
+  action_by: string | null;
+  action_summary: string | null;
+  verified_at: string | null;
+  verified_by: string | null;
+  verification_required: boolean;
+  waived_at: string | null;
+  waived_by: string | null;
+  waiver_reason: string | null;
+  // Evidence + impact
+  policy_snapshot: Record<string, any> | null;
+  evidence: Record<string, any> | null;
+  derived_metrics: Record<string, any> | null;
+  estimated_impact_usd: number | null;
+  impact_confidence: 'high' | 'medium' | 'low' | null;
+  impact_inputs: Record<string, any> | null;
+  // Escalation
+  escalation_level: number;
+  escalated_at: string | null;
+  recurrence_count: number;
 }
 
 export interface Action {
@@ -124,6 +151,13 @@ export interface CreateViolationInput {
   source_id?: string;
   business_date: string;
   shift_period?: string;
+  // Evidence + impact (optional, populated by enforcement cron)
+  policy_snapshot?: Record<string, any>;
+  evidence?: Record<string, any>;
+  derived_metrics?: Record<string, any>;
+  estimated_impact_usd?: number;
+  impact_confidence?: 'high' | 'medium' | 'low';
+  impact_inputs?: Record<string, any>;
 }
 
 export interface CreateActionInput {
@@ -173,11 +207,30 @@ export async function createViolation(
       source_id: input.source_id || null,
       business_date: input.business_date,
       shift_period: input.shift_period || null,
+      status: 'open',
+      verification_required: input.severity === 'critical',
+      policy_snapshot: input.policy_snapshot || null,
+      evidence: input.evidence || null,
+      derived_metrics: input.derived_metrics || null,
+      estimated_impact_usd: input.estimated_impact_usd || null,
+      impact_confidence: input.impact_confidence || null,
+      impact_inputs: input.impact_inputs || null,
+      escalation_level: 0,
+      recurrence_count: 0,
     })
     .select()
     .single();
 
   if (error) throw error;
+
+  // Insert created event
+  await supabase.from('violation_events').insert({
+    violation_id: data.id,
+    event_type: 'created',
+    to_status: 'open',
+    occurred_at: new Date().toISOString(),
+  });
+
   return data;
 }
 
@@ -238,7 +291,9 @@ export async function getViolationsByDateRange(
 }
 
 /**
- * Resolve a violation
+ * Resolve a violation.
+ * Uses legacy resolve path for backward compatibility — auto-transitions through
+ * intermediate states if the violation hasn't gone through the full lifecycle.
  */
 export async function resolveViolation(
   violationId: string,
@@ -247,19 +302,14 @@ export async function resolveViolation(
 ): Promise<void> {
   const supabase = await createClient();
 
-  const { error } = await supabase
-    .from('control_plane_violations')
-    .update({
-      resolved_at: new Date().toISOString(),
-      resolved_by: resolvedBy,
-      resolution_note: resolutionNote || null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', violationId);
+  const { legacyResolve } = await import('@/lib/enforcement/state-machine');
+  const result = await legacyResolve(supabase, violationId, resolvedBy, resolutionNote);
 
-  if (error) throw error;
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to resolve violation');
+  }
 
-  // Audit log
+  // Keep legacy audit log for compatibility
   await supabase.from('control_plane_violations_audit').insert({
     violation_id: violationId,
     action: 'resolved',

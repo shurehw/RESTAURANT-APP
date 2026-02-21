@@ -151,9 +151,10 @@ export async function POST(request: NextRequest) {
         const venueT0 = Date.now();
         console.log(`[sync-tipsee] Syncing ${venue.name} (${venue.tipsee_location_uuid.substring(0, 8)}...)`);
 
-        // Detect POS type — Avero venues use venue_day_facts, not TipSee Upserve tables
+        // Detect POS type — Avero and Simphony venues use venue_day_facts,
+        // only Upserve venues query TipSee check-level tables directly
         const posType = await getPosTypeForLocations([venue.tipsee_location_uuid]);
-        const report = posType === 'avero'
+        const report = (posType === 'avero' || posType === 'simphony')
           ? await fetchNightlyReportFromFacts(businessDate, venue.id)
           : await fetchNightlyReport(businessDate, venue.tipsee_location_uuid);
         const queryDuration = Date.now() - venueT0;

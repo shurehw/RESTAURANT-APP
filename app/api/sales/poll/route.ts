@@ -27,6 +27,7 @@ import {
 import {
   fetchIntraDayItemSummary,
   fetchSimphonyIntraDaySummary,
+  fetchSimphonyItemSummary,
   fetchSimphonyBIIntraDaySummary,
   getPosTypeForLocations,
   fetchLaborSummary,
@@ -141,12 +142,12 @@ async function processVenue(venueId: string): Promise<{
       summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, other_sales: 0, comps_total: 0, voids_total: 0 };
     }
 
-    // Fall back to blended item+check query
+    // Fallback: Simphony item-level data (per-check items from TipSee)
     if (summary.net_sales === 0 && summary.total_checks === 0) {
-      summary = await fetchIntraDayItemSummary(locationUuids, businessDate);
+      summary = await fetchSimphonyItemSummary(locationUuids, businessDate);
     }
 
-    // Final fallback: Simphony batch sales table
+    // Fallback: Simphony batch aggregate table
     if (summary.net_sales === 0 && summary.total_checks === 0) {
       summary = await fetchSimphonyIntraDaySummary(locationUuids, businessDate);
     }
@@ -161,10 +162,12 @@ async function processVenue(venueId: string): Promise<{
   }
 
   // Skip duplicate: if net_sales and checks haven't changed since last snapshot, don't store
+  // Use Math.round on cents to avoid floating-point precision mismatches between
+  // TipSee (pg numeric → cleanRow parseFloat) and Supabase (json → normalizeSnapshot parseFloat)
   const lastSnap = await getLatestSnapshot(venueId, businessDate);
   if (
     lastSnap &&
-    lastSnap.net_sales === summary.net_sales &&
+    Math.round(lastSnap.net_sales * 100) === Math.round(summary.net_sales * 100) &&
     lastSnap.checks_count === summary.total_checks
   ) {
     return { snapshot_stored: false, net_sales: summary.net_sales, covers: summary.total_covers, checks: summary.total_checks, skipped_reason: 'no_change' };

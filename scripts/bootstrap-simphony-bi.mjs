@@ -15,9 +15,11 @@
  *   SIMPHONY_BI_LOC_REF    (skip discovery, set Dallas locRef directly)
  */
 
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
-import 'dotenv/config';
 
 // ── Config ──────────────────────────────────────────────────────────────
 

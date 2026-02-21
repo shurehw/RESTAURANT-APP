@@ -11,6 +11,7 @@ import { getServiceClient } from '@/lib/supabase/service';
 import {
   bootstrapTokens,
   refreshTokens,
+  getDiscountDimensions,
   SimphonyAuthExpiredError,
   type SimphonyBIConfig,
   type SimphonyTokenSet,
@@ -230,4 +231,37 @@ export async function getSimphonyLocationMapping(
 
   mappingCache.set(venueId, { data, ts: Date.now() });
   return data;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// DISCOUNT DIMENSIONS CACHE
+// ══════════════════════════════════════════════════════════════════════════
+
+const DIMENSION_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const discountDimCache = new Map<string, { data: Map<number, string>; ts: number }>();
+
+/**
+ * Get discount num → name mapping for a Simphony venue (cached 24h).
+ * Returns null if venue has no Simphony BI mapping.
+ */
+export async function getCachedDiscountDimensions(
+  venueId: string
+): Promise<Map<number, string> | null> {
+  const cached = discountDimCache.get(venueId);
+  if (cached && Date.now() - cached.ts < DIMENSION_CACHE_TTL_MS) return cached.data;
+
+  const mapping = await getSimphonyLocationMapping(venueId);
+  if (!mapping) return null;
+
+  const idToken = await getValidIdToken(mapping.org_identifier);
+  const config = await getSimphonyConfig(mapping.org_identifier);
+  const dimensions = await getDiscountDimensions(config, idToken, mapping.loc_ref);
+
+  const nameMap = new Map<number, string>();
+  for (const d of dimensions) {
+    nameMap.set(d.num, d.name);
+  }
+
+  discountDimCache.set(venueId, { data: nameMap, ts: Date.now() });
+  return nameMap;
 }

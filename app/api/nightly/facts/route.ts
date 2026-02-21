@@ -2,14 +2,16 @@
  * Nightly Facts API
  * Fetches pre-aggregated data from fact tables (faster than live TipSee queries)
  *
- * GET /api/nightly/facts?date=2024-01-15&venue_id=xxx
- * GET /api/nightly/facts?action=mappings - Get venue-TipSee mappings
+ * GET /api/nightly/facts?date=2024-01-15&venue_id=xxx       — single venue
+ * GET /api/nightly/facts?date=2024-01-15&venue_id=all       — group-wide
+ * GET /api/nightly/facts?action=mappings                     — venue-TipSee mappings
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear, getSamePeriodLastYear, FiscalCalendarType } from '@/lib/fiscal-calendar';
 import { fetchLaborSummary } from '@/lib/database/tipsee'; // Fallback for live query
+import { getActiveSalesPaceVenues, getVenueFiscalConfig } from '@/lib/database/sales-pace';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -45,6 +47,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ mappings });
     }
 
+    // Group-wide view: aggregate across all active venues
+    if (venueId === 'all') {
+      if (!date) {
+        return NextResponse.json({ error: 'date is required' }, { status: 400 });
+      }
+      return handleGroupFacts(date, viewMode);
+    }
+
     // Require date and venue_id for fact queries
     if (!date || !venueId) {
       return NextResponse.json(
@@ -52,16 +62,6 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Calculate comparison dates
-    const currentDate = new Date(date);
-    const sdlwDate = new Date(currentDate);
-    sdlwDate.setDate(sdlwDate.getDate() - 7);
-    const sdlwDateStr = sdlwDate.toISOString().split('T')[0];
-
-    const sdlyDate = new Date(currentDate);
-    sdlyDate.setFullYear(sdlyDate.getFullYear() - 1);
-    const sdlyDateStr = sdlyDate.toISOString().split('T')[0];
 
     // Fetch venue org, fiscal settings, and TipSee mapping in parallel
     const [venueOrgResult, mappingResult] = await Promise.all([
@@ -104,76 +104,14 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Get fiscal period info for PTD calculation
-    const fiscalPeriod = getFiscalPeriod(date, fiscalCalendarType, fiscalYearStartDate);
-
-    // PTD (Period-to-Date): Start of fiscal period → selected date
-    const periodStartStr = fiscalPeriod.periodStartDate;
-
-    // For PTD comparison: same relative days into PREVIOUS period
-    // Go back to before current period starts to land in previous period
-    const currentPeriodStart = new Date(fiscalPeriod.periodStartDate);
-    const prevPeriodDate = new Date(currentPeriodStart);
-    prevPeriodDate.setDate(prevPeriodDate.getDate() - 1); // Go to last day of previous period
-    const prevPeriodInfo = getFiscalPeriod(prevPeriodDate.toISOString().split('T')[0], fiscalCalendarType, fiscalYearStartDate);
-    const prevPeriodStartStr = prevPeriodInfo.periodStartDate;
-
-    // Calculate days into current period (using local dates)
-    const periodStartParts = periodStartStr.split('-').map(Number);
-    const dateParts = date.split('-').map(Number);
-    const periodStartDate = new Date(periodStartParts[0], periodStartParts[1] - 1, periodStartParts[2]);
-    const targetDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-    const daysIntoPeriod = Math.floor((targetDate.getTime() - periodStartDate.getTime()) / (24 * 60 * 60 * 1000));
-
-    // Calculate equivalent end date in previous period
-    const prevStartParts = prevPeriodStartStr.split('-').map(Number);
-    const prevPeriodStartDate = new Date(prevStartParts[0], prevStartParts[1] - 1, prevStartParts[2]);
-    const prevPeriodEndDate = new Date(prevPeriodStartDate);
-    prevPeriodEndDate.setDate(prevPeriodEndDate.getDate() + daysIntoPeriod);
-    const prevPeriodEndStr = prevPeriodEndDate.toISOString().split('T')[0];
-
-    // WTD (Week-to-Date): Monday → selected date (calendar week, not fiscal)
-    const dayOfWeek = targetDate.getDay();
-    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const weekStartDate = new Date(targetDate);
-    weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
-    const weekStartStr = weekStartDate.toISOString().split('T')[0];
-
-    // WTD Last Week: Same Mon→Day range but 7 days earlier
-    const lastWeekWeekStart = new Date(weekStartDate);
-    lastWeekWeekStart.setDate(lastWeekWeekStart.getDate() - 7);
-    const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
-    const lastWeekSameDayStr = sdlwDateStr;
-
-    // SWLY (Same Week Last Year): Same Mon→DOW range but ~52 weeks back
-    const swlyWeekStart = new Date(weekStartDate);
-    swlyWeekStart.setFullYear(swlyWeekStart.getFullYear() - 1);
-    // Align to Monday of that week (year shift may land on different DOW)
-    const swlyDow = swlyWeekStart.getDay();
-    const swlyDaysFromMon = swlyDow === 0 ? 6 : swlyDow - 1;
-    swlyWeekStart.setDate(swlyWeekStart.getDate() - swlyDaysFromMon);
-    const swlyWeekStartStr = swlyWeekStart.toISOString().split('T')[0];
-    // Same number of days into the week
-    const swlyWeekEnd = new Date(swlyWeekStart);
-    swlyWeekEnd.setDate(swlyWeekEnd.getDate() + daysFromMonday);
-    const swlyWeekEndStr = swlyWeekEnd.toISOString().split('T')[0];
-
-    // PTD SPLY (Same Period Last Year): for year-over-year period comparison
-    const ptdSply = getSamePeriodLastYear(date, fiscalCalendarType, fiscalYearStartDate);
-
-    // YTD (Year-to-Date): FY start → selected date
-    const fyStartStr = getFiscalYearStart(date, fiscalCalendarType, fiscalYearStartDate);
-
-    // YTD prior year: same FY start last year → equivalent date last year
-    const fyStartParts = fyStartStr.split('-').map(Number);
-    const fyStartDateObj = new Date(fyStartParts[0], fyStartParts[1] - 1, fyStartParts[2]);
-    const daysIntoFY = Math.floor((targetDate.getTime() - fyStartDateObj.getTime()) / (24 * 60 * 60 * 1000));
-    const lyFyStartDateObj = new Date(fyStartDateObj);
-    lyFyStartDateObj.setFullYear(lyFyStartDateObj.getFullYear() - 1);
-    const lyFyStartStr = lyFyStartDateObj.toISOString().split('T')[0];
-    const lyFyEndDateObj = new Date(lyFyStartDateObj);
-    lyFyEndDateObj.setDate(lyFyEndDateObj.getDate() + daysIntoFY);
-    const lyFyEndStr = lyFyEndDateObj.toISOString().split('T')[0];
+    const ranges = computeDateRanges(date, fiscalCalendarType, fiscalYearStartDate);
+    const {
+      sdlwDateStr, sdlyDateStr, periodStartStr, prevPeriodStartStr, prevPeriodEndStr,
+      weekStartStr, lastWeekWeekStartStr, lastWeekSameDayStr,
+      swlyWeekStartStr, swlyWeekEndStr, ptdSply,
+      fyStartStr, lyFyStartStr, lyFyEndStr,
+      fiscalPeriod, daysIntoPeriod, daysFromMonday,
+    } = ranges;
 
     // ══════════════════════════════════════════════════════════════════════════
     // CONDITIONAL QUERY FETCHING (Performance Optimization)
@@ -650,12 +588,7 @@ export async function GET(request: NextRequest) {
       { net_sales: 0, covers: 0 }
     );
 
-    // Calculate variance percentages
-    const calcVariance = (actual: number, comparison: number | null | undefined): number | null => {
-      if (!comparison || comparison === 0) return null;
-      return ((actual - comparison) / comparison) * 100;
-    };
-
+    // Calculate variance percentages (uses file-level calcVariance)
     const actualNetSales = summary.net_sales || 0;
     const actualCovers = summary.covers_count || 0;
 
@@ -1177,4 +1110,725 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// DATE RANGE COMPUTATION (shared by single-venue and group handlers)
+// ══════════════════════════════════════════════════════════════════════════
+
+interface DateRanges {
+  sdlwDateStr: string;
+  sdlyDateStr: string;
+  periodStartStr: string;
+  prevPeriodStartStr: string;
+  prevPeriodEndStr: string;
+  weekStartStr: string;
+  lastWeekWeekStartStr: string;
+  lastWeekSameDayStr: string;
+  swlyWeekStartStr: string;
+  swlyWeekEndStr: string;
+  ptdSply: { startDate: string; endDate: string };
+  fyStartStr: string;
+  lyFyStartStr: string;
+  lyFyEndStr: string;
+  fiscalPeriod: ReturnType<typeof getFiscalPeriod>;
+  daysIntoPeriod: number;
+  daysFromMonday: number;
+}
+
+function computeDateRanges(
+  date: string,
+  fiscalCalendarType: FiscalCalendarType,
+  fiscalYearStartDate: string | null,
+): DateRanges {
+  const currentDate = new Date(date);
+  const sdlwDate = new Date(currentDate);
+  sdlwDate.setDate(sdlwDate.getDate() - 7);
+  const sdlwDateStr = sdlwDate.toISOString().split('T')[0];
+
+  const sdlyDate = new Date(currentDate);
+  sdlyDate.setFullYear(sdlyDate.getFullYear() - 1);
+  const sdlyDateStr = sdlyDate.toISOString().split('T')[0];
+
+  const fiscalPeriod = getFiscalPeriod(date, fiscalCalendarType, fiscalYearStartDate);
+  const periodStartStr = fiscalPeriod.periodStartDate;
+
+  const currentPeriodStart = new Date(fiscalPeriod.periodStartDate);
+  const prevPeriodDate = new Date(currentPeriodStart);
+  prevPeriodDate.setDate(prevPeriodDate.getDate() - 1);
+  const prevPeriodInfo = getFiscalPeriod(prevPeriodDate.toISOString().split('T')[0], fiscalCalendarType, fiscalYearStartDate);
+  const prevPeriodStartStr = prevPeriodInfo.periodStartDate;
+
+  const periodStartParts = periodStartStr.split('-').map(Number);
+  const dateParts = date.split('-').map(Number);
+  const periodStartDate = new Date(periodStartParts[0], periodStartParts[1] - 1, periodStartParts[2]);
+  const targetDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+  const daysIntoPeriod = Math.floor((targetDate.getTime() - periodStartDate.getTime()) / (24 * 60 * 60 * 1000));
+
+  const prevStartParts = prevPeriodStartStr.split('-').map(Number);
+  const prevPeriodStartDate = new Date(prevStartParts[0], prevStartParts[1] - 1, prevStartParts[2]);
+  const prevPeriodEndDate = new Date(prevPeriodStartDate);
+  prevPeriodEndDate.setDate(prevPeriodEndDate.getDate() + daysIntoPeriod);
+  const prevPeriodEndStr = prevPeriodEndDate.toISOString().split('T')[0];
+
+  const dayOfWeek = targetDate.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStartDate = new Date(targetDate);
+  weekStartDate.setDate(weekStartDate.getDate() - daysFromMonday);
+  const weekStartStr = weekStartDate.toISOString().split('T')[0];
+
+  const lastWeekWeekStart = new Date(weekStartDate);
+  lastWeekWeekStart.setDate(lastWeekWeekStart.getDate() - 7);
+  const lastWeekWeekStartStr = lastWeekWeekStart.toISOString().split('T')[0];
+  const lastWeekSameDayStr = sdlwDateStr;
+
+  const swlyWeekStart = new Date(weekStartDate);
+  swlyWeekStart.setFullYear(swlyWeekStart.getFullYear() - 1);
+  const swlyDow = swlyWeekStart.getDay();
+  const swlyDaysFromMon = swlyDow === 0 ? 6 : swlyDow - 1;
+  swlyWeekStart.setDate(swlyWeekStart.getDate() - swlyDaysFromMon);
+  const swlyWeekStartStr = swlyWeekStart.toISOString().split('T')[0];
+  const swlyWeekEnd = new Date(swlyWeekStart);
+  swlyWeekEnd.setDate(swlyWeekEnd.getDate() + daysFromMonday);
+  const swlyWeekEndStr = swlyWeekEnd.toISOString().split('T')[0];
+
+  const ptdSply = getSamePeriodLastYear(date, fiscalCalendarType, fiscalYearStartDate);
+  const fyStartStr = getFiscalYearStart(date, fiscalCalendarType, fiscalYearStartDate);
+
+  const fyStartParts = fyStartStr.split('-').map(Number);
+  const fyStartDateObj = new Date(fyStartParts[0], fyStartParts[1] - 1, fyStartParts[2]);
+  const daysIntoFY = Math.floor((targetDate.getTime() - fyStartDateObj.getTime()) / (24 * 60 * 60 * 1000));
+  const lyFyStartDateObj = new Date(fyStartDateObj);
+  lyFyStartDateObj.setFullYear(lyFyStartDateObj.getFullYear() - 1);
+  const lyFyStartStr = lyFyStartDateObj.toISOString().split('T')[0];
+  const lyFyEndDateObj = new Date(lyFyStartDateObj);
+  lyFyEndDateObj.setDate(lyFyEndDateObj.getDate() + daysIntoFY);
+  const lyFyEndStr = lyFyEndDateObj.toISOString().split('T')[0];
+
+  return {
+    sdlwDateStr, sdlyDateStr, periodStartStr, prevPeriodStartStr, prevPeriodEndStr,
+    weekStartStr, lastWeekWeekStartStr, lastWeekSameDayStr,
+    swlyWeekStartStr, swlyWeekEndStr, ptdSply,
+    fyStartStr, lyFyStartStr, lyFyEndStr,
+    fiscalPeriod, daysIntoPeriod, daysFromMonday,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// GROUP-WIDE HANDLER
+// ══════════════════════════════════════════════════════════════════════════
+
+// Variance helper (reused from single-venue handler)
+function calcVariance(actual: number, comparison: number | null | undefined): number | null {
+  if (!comparison || comparison === 0) return null;
+  return ((actual - comparison) / comparison) * 100;
+}
+
+// Aggregate venue_day_facts rows across venues into a single summary
+function aggregateVenueDayFacts(rows: any[]): any {
+  if (rows.length === 0) return null;
+  const totalNetSales = rows.reduce((s, r) => s + (r.net_sales || 0), 0);
+  const totalCovers = rows.reduce((s, r) => s + (r.covers_count || 0), 0);
+  const totalComps = rows.reduce((s, r) => s + (r.comps_total || 0), 0);
+  const totalVoids = rows.reduce((s, r) => s + (r.voids_total || 0), 0);
+  const totalTips = rows.reduce((s, r) => s + (r.tips_total || 0), 0);
+  const totalChecks = rows.reduce((s, r) => s + (r.checks_count || 0), 0);
+  const totalGross = rows.reduce((s, r) => s + (r.gross_sales || 0), 0);
+  const totalTax = rows.reduce((s, r) => s + (r.taxes_total || 0), 0);
+  const totalFood = rows.reduce((s, r) => s + (r.food_sales || 0), 0);
+  const totalBev = rows.reduce((s, r) => s + (r.beverage_sales || 0), 0);
+  const totalWine = rows.reduce((s, r) => s + (r.wine_sales || 0), 0);
+  const totalLiquor = rows.reduce((s, r) => s + (r.liquor_sales || 0), 0);
+  const totalBeer = rows.reduce((s, r) => s + (r.beer_sales || 0), 0);
+  return {
+    net_sales: totalNetSales,
+    gross_sales: totalGross,
+    covers_count: totalCovers,
+    checks_count: totalChecks,
+    comps_total: totalComps,
+    voids_total: totalVoids,
+    tips_total: totalTips,
+    taxes_total: totalTax,
+    food_sales: totalFood,
+    beverage_sales: totalBev,
+    wine_sales: totalWine,
+    liquor_sales: totalLiquor,
+    beer_sales: totalBeer,
+    avg_check: totalChecks > 0 ? totalNetSales / totalChecks : 0,
+    avg_cover: totalCovers > 0 ? totalNetSales / totalCovers : 0,
+    beverage_pct: (totalFood + totalBev) > 0 ? (totalBev / (totalFood + totalBev)) * 100 : 0,
+  };
+}
+
+// Aggregate labor_day_facts rows across venues
+function aggregateGroupLabor(rows: any[], totalNetSales: number, totalCovers: number): any {
+  if (!rows || rows.length === 0) return null;
+  const totals = rows.reduce((acc, row) => ({
+    total_hours: acc.total_hours + (row.total_hours || 0),
+    labor_cost: acc.labor_cost + (row.labor_cost || 0),
+    ot_hours: acc.ot_hours + (row.ot_hours || 0),
+    employee_count: acc.employee_count + (row.employee_count || 0),
+    foh_hours: acc.foh_hours + (row.foh_hours || 0),
+    foh_cost: acc.foh_cost + (row.foh_cost || 0),
+    foh_employee_count: acc.foh_employee_count + (row.foh_employee_count || 0),
+    boh_hours: acc.boh_hours + (row.boh_hours || 0),
+    boh_cost: acc.boh_cost + (row.boh_cost || 0),
+    boh_employee_count: acc.boh_employee_count + (row.boh_employee_count || 0),
+    other_hours: acc.other_hours + (row.other_hours || 0),
+    other_cost: acc.other_cost + (row.other_cost || 0),
+    other_employee_count: acc.other_employee_count + (row.other_employee_count || 0),
+  }), {
+    total_hours: 0, labor_cost: 0, ot_hours: 0, employee_count: 0,
+    foh_hours: 0, foh_cost: 0, foh_employee_count: 0,
+    boh_hours: 0, boh_cost: 0, boh_employee_count: 0,
+    other_hours: 0, other_cost: 0, other_employee_count: 0,
+  });
+
+  const buildDept = (hours: number, cost: number, empCount: number) =>
+    (hours > 0 || cost > 0) ? { hours, cost, employee_count: empCount } : null;
+
+  return {
+    total_hours: totals.total_hours,
+    labor_cost: totals.labor_cost,
+    labor_pct: totalNetSales > 0 ? (totals.labor_cost / totalNetSales) * 100 : 0,
+    splh: totals.total_hours > 0 ? totalNetSales / totals.total_hours : 0,
+    ot_hours: totals.ot_hours,
+    covers_per_labor_hour: totals.total_hours > 0 ? totalCovers / totals.total_hours : 0,
+    employee_count: totals.employee_count,
+    foh: buildDept(totals.foh_hours, totals.foh_cost, totals.foh_employee_count),
+    boh: buildDept(totals.boh_hours, totals.boh_cost, totals.boh_employee_count),
+    other: buildDept(totals.other_hours, totals.other_cost, totals.other_employee_count),
+  };
+}
+
+async function handleGroupFacts(date: string, viewMode: string) {
+  const supabase = getServiceClient();
+
+  // 1. Get all active venues
+  const activeVenues = await getActiveSalesPaceVenues();
+  if (activeVenues.length === 0) {
+    return NextResponse.json({ date, has_data: false, is_group: true, venues: [], message: 'No active venues' });
+  }
+
+  const venueIds = activeVenues.map(v => v.venue_id);
+
+  // 2. Get venue names + fiscal config
+  const [venueResult, fiscalConfig] = await Promise.all([
+    (supabase as any).from('venues').select('id, name').in('id', venueIds),
+    getVenueFiscalConfig(venueIds[0]),
+  ]);
+  const nameMap = new Map<string, string>(
+    (venueResult.data || []).map((v: any) => [v.id, v.name])
+  );
+
+  const fiscalCalendarType = fiscalConfig.calendarType;
+  const fiscalYearStartDate = fiscalConfig.fyStartDate;
+
+  // 3. Compute date ranges
+  const ranges = computeDateRanges(date, fiscalCalendarType, fiscalYearStartDate);
+  const {
+    sdlwDateStr, sdlyDateStr, periodStartStr, prevPeriodStartStr, prevPeriodEndStr,
+    weekStartStr, lastWeekWeekStartStr, lastWeekSameDayStr,
+    swlyWeekStartStr, swlyWeekEndStr, ptdSply,
+    fyStartStr, lyFyStartStr, lyFyEndStr,
+    fiscalPeriod, daysIntoPeriod, daysFromMonday,
+  } = ranges;
+
+  // 4. Batch queries: .in('venue_id', venueIds)
+  const coreQueries = [
+    // 1. venue_day_facts for selected date
+    (supabase as any).from('venue_day_facts').select('*').in('venue_id', venueIds).eq('business_date', date),
+    // 2. category_day_facts for selected date
+    (supabase as any).from('category_day_facts').select('*').in('venue_id', venueIds).eq('business_date', date).order('gross_sales', { ascending: false }),
+    // 3. labor_day_facts for selected date
+    (supabase as any).from('labor_day_facts').select('*').in('venue_id', venueIds).eq('business_date', date),
+    // 4. forecasts_with_bias for selected date
+    (supabase as any).from('forecasts_with_bias').select('venue_id, covers_predicted, covers_lower, covers_upper, revenue_predicted').in('venue_id', venueIds).eq('business_date', date),
+    // 5. SDLW venue_day_facts
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count, beverage_pct, food_sales, beverage_sales, comps_total, checks_count, gross_sales').in('venue_id', venueIds).eq('business_date', sdlwDateStr),
+    // 6. SDLY venue_day_facts
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count, beverage_pct, food_sales, beverage_sales, comps_total').in('venue_id', venueIds).eq('business_date', sdlyDateStr),
+    // 7. PTD this period
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', periodStartStr).lte('business_date', date),
+    // 8. PTD last period
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', prevPeriodStartStr).lte('business_date', prevPeriodEndStr),
+    // 9. WTD this week
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', weekStartStr).lte('business_date', date),
+    // 10. WTD last week
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', lastWeekWeekStartStr).lte('business_date', lastWeekSameDayStr),
+    // 11. SWLY
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', swlyWeekStartStr).lte('business_date', swlyWeekEndStr),
+    // 12. PTD SPLY
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', ptdSply.startDate).lte('business_date', ptdSply.endDate),
+    // 13. YTD this year
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', fyStartStr).lte('business_date', date),
+    // 14. YTD last year
+    (supabase as any).from('venue_day_facts').select('venue_id, net_sales, covers_count').in('venue_id', venueIds).gte('business_date', lyFyStartStr).lte('business_date', lyFyEndStr),
+  ];
+
+  // WTD/PTD period detail queries
+  const wtdQueries = viewMode === 'wtd' || viewMode === 'ptd' ? [
+    (supabase as any).from('server_day_facts').select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date, venue_id').in('venue_id', venueIds).gte('business_date', weekStartStr).lte('business_date', date),
+    (supabase as any).from('category_day_facts').select('category, gross_sales, comps_total, voids_total, quantity_sold, venue_id').in('venue_id', venueIds).gte('business_date', weekStartStr).lte('business_date', date),
+    (supabase as any).from('item_day_facts').select('menu_item_name, gross_sales, quantity_sold, parent_category, venue_id').in('venue_id', venueIds).gte('business_date', weekStartStr).lte('business_date', date),
+    (supabase as any).from('labor_day_facts').select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count, venue_id').in('venue_id', venueIds).gte('business_date', weekStartStr).lte('business_date', date),
+  ] : [];
+
+  const ptdQueries = viewMode === 'ptd' ? [
+    (supabase as any).from('server_day_facts').select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date, venue_id').in('venue_id', venueIds).gte('business_date', periodStartStr).lte('business_date', date),
+    (supabase as any).from('category_day_facts').select('category, gross_sales, comps_total, voids_total, quantity_sold, venue_id').in('venue_id', venueIds).gte('business_date', periodStartStr).lte('business_date', date),
+    (supabase as any).from('item_day_facts').select('menu_item_name, gross_sales, quantity_sold, parent_category, venue_id').in('venue_id', venueIds).gte('business_date', periodStartStr).lte('business_date', date),
+    (supabase as any).from('labor_day_facts').select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count, venue_id').in('venue_id', venueIds).gte('business_date', periodStartStr).lte('business_date', date),
+    (supabase as any).from('venue_day_facts').select('business_date, net_sales, covers_count, venue_id').in('venue_id', venueIds).gte('business_date', periodStartStr).lte('business_date', date).order('business_date'),
+    (supabase as any).from('venue_day_facts').select('business_date, net_sales, covers_count, venue_id').in('venue_id', venueIds).gte('business_date', prevPeriodStartStr).lte('business_date', prevPeriodEndStr).order('business_date'),
+  ] : [];
+
+  const ytdQueries = viewMode === 'ytd' ? [
+    (supabase as any).from('server_day_facts').select('employee_name, employee_role, gross_sales, checks_count, covers_count, tips_total, avg_turn_mins, business_date, venue_id').in('venue_id', venueIds).gte('business_date', fyStartStr).lte('business_date', date),
+    (supabase as any).from('category_day_facts').select('category, gross_sales, comps_total, voids_total, quantity_sold, venue_id').in('venue_id', venueIds).gte('business_date', fyStartStr).lte('business_date', date),
+    (supabase as any).from('item_day_facts').select('menu_item_name, gross_sales, quantity_sold, parent_category, venue_id').in('venue_id', venueIds).gte('business_date', fyStartStr).lte('business_date', date),
+    (supabase as any).from('labor_day_facts').select('total_hours, labor_cost, ot_hours, employee_count, foh_hours, foh_cost, foh_employee_count, boh_hours, boh_cost, boh_employee_count, other_hours, other_cost, other_employee_count, venue_id').in('venue_id', venueIds).gte('business_date', fyStartStr).lte('business_date', date),
+    (supabase as any).from('venue_day_facts').select('business_date, net_sales, covers_count, venue_id').in('venue_id', venueIds).gte('business_date', fyStartStr).lte('business_date', date).order('business_date'),
+    (supabase as any).from('venue_day_facts').select('business_date, net_sales, covers_count, venue_id').in('venue_id', venueIds).gte('business_date', lyFyStartStr).lte('business_date', lyFyEndStr).order('business_date'),
+  ] : [];
+
+  const allQueries = [...coreQueries, ...wtdQueries, ...ptdQueries, ...ytdQueries];
+  const results = await Promise.all(allQueries);
+
+  // Destructure core results
+  const allVenueDayFacts: any[] = results[0].data || [];
+  const allCategoryFacts: any[] = results[1].data || [];
+  const allLaborFacts: any[] = results[2].data || [];
+  const allForecasts: any[] = results[3].data || [];
+  const allSdlwFacts: any[] = results[4].data || [];
+  const allSdlyFacts: any[] = results[5].data || [];
+  const ptdThisRows: any[] = results[6].data || [];
+  const ptdLastRows: any[] = results[7].data || [];
+  const wtdThisRows: any[] = results[8].data || [];
+  const wtdLastRows: any[] = results[9].data || [];
+  const swlyRows: any[] = results[10].data || [];
+  const ptdSplyRows: any[] = results[11].data || [];
+  const ytdThisRows: any[] = results[12].data || [];
+  const ytdLastRows: any[] = results[13].data || [];
+
+  if (allVenueDayFacts.length === 0) {
+    return NextResponse.json({
+      date, has_data: false, is_group: true, venues: [],
+      message: 'No fact data for this date across any venue.',
+    });
+  }
+
+  // WTD/PTD/YTD detail results
+  const coreOffset = 14;
+  const wtdOffset = coreOffset;
+  const serverWtdRows = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset]?.data || [] : [];
+  const categoryWtdRows = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset + 1]?.data || [] : [];
+  const itemWtdRows = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset + 2]?.data || [] : [];
+  const laborWtdRows = viewMode === 'wtd' || viewMode === 'ptd' ? results[wtdOffset + 3]?.data || [] : [];
+
+  const ptdOffset = wtdOffset + (viewMode === 'wtd' || viewMode === 'ptd' ? 4 : 0);
+  const serverPtdRows = viewMode === 'ptd' ? results[ptdOffset]?.data || [] : [];
+  const categoryPtdRows = viewMode === 'ptd' ? results[ptdOffset + 1]?.data || [] : [];
+  const itemPtdRows = viewMode === 'ptd' ? results[ptdOffset + 2]?.data || [] : [];
+  const laborPtdRows = viewMode === 'ptd' ? results[ptdOffset + 3]?.data || [] : [];
+  const ptdDailyCurrentRows = viewMode === 'ptd' ? results[ptdOffset + 4]?.data || [] : [];
+  const ptdDailyPriorRows = viewMode === 'ptd' ? results[ptdOffset + 5]?.data || [] : [];
+
+  const ytdOffset2 = ptdOffset + (viewMode === 'ptd' ? 6 : 0);
+  const serverYtdRows = viewMode === 'ytd' ? results[ytdOffset2]?.data || [] : [];
+  const categoryYtdRows = viewMode === 'ytd' ? results[ytdOffset2 + 1]?.data || [] : [];
+  const itemYtdRows = viewMode === 'ytd' ? results[ytdOffset2 + 2]?.data || [] : [];
+  const laborYtdRows = viewMode === 'ytd' ? results[ytdOffset2 + 3]?.data || [] : [];
+  const ytdDailyCurrentRows = viewMode === 'ytd' ? results[ytdOffset2 + 4]?.data || [] : [];
+  const ytdDailyPriorRows = viewMode === 'ytd' ? results[ytdOffset2 + 5]?.data || [] : [];
+
+  // 5. Build per-venue data
+  const sumRows = (rows: any[], vid: string) =>
+    rows.filter(r => r.venue_id === vid).reduce(
+      (acc, r) => ({ net_sales: acc.net_sales + (r.net_sales || 0), covers: acc.covers + (r.covers_count || 0) }),
+      { net_sales: 0, covers: 0 }
+    );
+
+  const venues = venueIds.map(vid => {
+    const dayFact = allVenueDayFacts.find(f => f.venue_id === vid);
+    if (!dayFact) return null;
+
+    const laborFact = allLaborFacts.find(f => f.venue_id === vid);
+    const forecast = allForecasts.find(f => f.venue_id === vid);
+    const sdlw = allSdlwFacts.find(f => f.venue_id === vid);
+    const sdly = allSdlyFacts.find(f => f.venue_id === vid);
+
+    return {
+      venue_id: vid,
+      venue_name: nameMap.get(vid) || vid,
+      summary: {
+        net_sales: dayFact.net_sales || 0,
+        gross_sales: dayFact.gross_sales || 0,
+        covers_count: dayFact.covers_count || 0,
+        checks_count: dayFact.checks_count || 0,
+        avg_check: dayFact.avg_check || 0,
+        avg_cover: dayFact.avg_cover || 0,
+        beverage_pct: dayFact.beverage_pct || 0,
+        comps_total: dayFact.comps_total || 0,
+        voids_total: dayFact.voids_total || 0,
+        tips_total: dayFact.tips_total || 0,
+        food_sales: dayFact.food_sales || 0,
+        beverage_sales: dayFact.beverage_sales || 0,
+      },
+      labor: laborFact ? {
+        total_hours: laborFact.total_hours || 0,
+        labor_cost: laborFact.labor_cost || 0,
+        labor_pct: laborFact.labor_pct || 0,
+        splh: laborFact.splh || 0,
+        ot_hours: laborFact.ot_hours || 0,
+      } : null,
+      forecast: forecast ? {
+        revenue_predicted: forecast.revenue_predicted,
+        covers_predicted: forecast.covers_predicted,
+      } : null,
+      variance: {
+        vs_sdlw_pct: calcVariance(dayFact.net_sales || 0, sdlw?.net_sales),
+        vs_sdly_pct: calcVariance(dayFact.net_sales || 0, sdly?.net_sales),
+        vs_forecast_pct: calcVariance(dayFact.net_sales || 0, forecast?.revenue_predicted),
+      },
+    };
+  }).filter(Boolean) as any[];
+
+  // 6. Group totals
+  const groupSummary = aggregateVenueDayFacts(allVenueDayFacts);
+  const groupLabor = aggregateGroupLabor(allLaborFacts, groupSummary.net_sales, groupSummary.covers_count);
+
+  const groupForecast = {
+    net_sales: allForecasts.reduce((s, f) => s + (f.revenue_predicted || 0), 0),
+    covers: allForecasts.reduce((s, f) => s + (f.covers_predicted || 0), 0),
+  };
+
+  // Sum comparison totals for variance
+  const totalSdlwNetSales = allSdlwFacts.reduce((s, f) => s + (f.net_sales || 0), 0);
+  const totalSdlwCovers = allSdlwFacts.reduce((s, f) => s + (f.covers_count || 0), 0);
+  const totalSdlyNetSales = allSdlyFacts.reduce((s, f) => s + (f.net_sales || 0), 0);
+  const totalSdlyCovers = allSdlyFacts.reduce((s, f) => s + (f.covers_count || 0), 0);
+  const sumTotal = (rows: any[]) => rows.reduce(
+    (acc, r) => ({ net_sales: acc.net_sales + (r.net_sales || 0), covers: acc.covers + (r.covers_count || 0) }),
+    { net_sales: 0, covers: 0 }
+  );
+
+  const ptdThis = sumTotal(ptdThisRows);
+  const ptdLast = sumTotal(ptdLastRows);
+  const wtdThis = sumTotal(wtdThisRows);
+  const wtdLast = sumTotal(wtdLastRows);
+  const swlyT = sumTotal(swlyRows);
+  const ptdSplyT = sumTotal(ptdSplyRows);
+  const ytdThis = sumTotal(ytdThisRows);
+  const ytdLast = sumTotal(ytdLastRows);
+
+  // Reuse aggregation helpers from single-venue handler (defined inline in GET)
+  // We duplicate them here since they're file-level functions used by both paths.
+  function aggServerData(rows: any[]): any[] {
+    const byServer = new Map<string, any>();
+    for (const row of rows) {
+      const key = row.employee_name;
+      const existing = byServer.get(key) || {
+        employee_name: row.employee_name, employee_role: row.employee_role || '',
+        gross_sales: 0, checks_count: 0, covers_count: 0, tips_total: 0,
+        turn_mins_sum: 0, turn_mins_count: 0, days: new Set<string>(),
+      };
+      existing.gross_sales += row.gross_sales || 0;
+      existing.checks_count += row.checks_count || 0;
+      existing.covers_count += row.covers_count || 0;
+      existing.tips_total += row.tips_total || 0;
+      if (row.avg_turn_mins > 0) { existing.turn_mins_sum += row.avg_turn_mins; existing.turn_mins_count++; }
+      existing.days.add(row.business_date);
+      byServer.set(key, existing);
+    }
+    return Array.from(byServer.values())
+      .map(s => ({
+        employee_name: s.employee_name, employee_role_name: s.employee_role,
+        tickets: s.checks_count, covers: s.covers_count, net_sales: s.gross_sales,
+        avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
+        avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
+        avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
+        tip_pct: s.gross_sales > 0 && s.tips_total > 0 ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null,
+        total_tips: s.tips_total, days_worked: s.days.size,
+      }))
+      .sort((a: any, b: any) => b.net_sales - a.net_sales);
+  }
+
+  function aggCategories(rows: any[]): any[] {
+    const byCategory = new Map<string, { sales: number; comps: number; voids: number; qty: number }>();
+    for (const row of rows) {
+      const category = row.category || 'Other';
+      const existing = byCategory.get(category) || { sales: 0, comps: 0, voids: 0, qty: 0 };
+      existing.sales += row.gross_sales || 0;
+      existing.comps += row.comps_total || 0;
+      existing.voids += row.voids_total || 0;
+      existing.qty += row.quantity_sold || 0;
+      byCategory.set(category, existing);
+    }
+    return Array.from(byCategory.entries())
+      .map(([category, data]) => ({
+        category, gross_sales: data.sales, comps: data.comps, voids: data.voids,
+        net_sales: data.sales - data.comps - data.voids, quantity: data.qty,
+      }))
+      .sort((a, b) => b.net_sales - a.net_sales);
+  }
+
+  function aggItems(rows: any[]): any[] {
+    const byItem = new Map<string, { name: string; sales: number; qty: number; category: string }>();
+    for (const row of rows) {
+      const name = row.menu_item_name;
+      const existing = byItem.get(name) || { name, sales: 0, qty: 0, category: row.parent_category || 'Other' };
+      existing.sales += row.gross_sales || 0;
+      existing.qty += row.quantity_sold || 0;
+      byItem.set(name, existing);
+    }
+    return Array.from(byItem.values())
+      .map(item => ({ name: item.name, qty: item.qty, net_total: item.sales, category: item.category }))
+      .sort((a, b) => b.net_total - a.net_total)
+      .slice(0, 15);
+  }
+
+  function aggLabor(rows: any[], totalNetSales: number, totalCovers: number): any {
+    if (!rows || rows.length === 0) return null;
+    return aggregateGroupLabor(rows, totalNetSales, totalCovers);
+  }
+
+  // WTD/PTD/YTD aggregations
+  const serversWtd = aggServerData(serverWtdRows);
+  const serversPtd = aggServerData(serverPtdRows);
+  const serversYtd = aggServerData(serverYtdRows);
+  const categoriesWtd = aggCategories(categoryWtdRows);
+  const categoriesPtd = aggCategories(categoryPtdRows);
+  const categoriesYtd = aggCategories(categoryYtdRows);
+  const itemsWtd = aggItems(itemWtdRows);
+  const itemsPtd = aggItems(itemPtdRows);
+  const itemsYtd = aggItems(itemYtdRows);
+  const laborWtd = aggLabor(laborWtdRows, wtdThis.net_sales, wtdThis.covers);
+  const laborPtd = aggLabor(laborPtdRows, ptdThis.net_sales, ptdThis.covers);
+  const laborYtd = aggLabor(laborYtdRows, ytdThis.net_sales, ytdThis.covers);
+
+  // PTD week breakdown (same logic as single-venue but with group rows)
+  let ptdWeeks: any[] = [];
+  if (viewMode === 'ptd' && ptdDailyCurrentRows.length > 0) {
+    const pStartParts = periodStartStr.split('-').map(Number);
+    const pStart = new Date(pStartParts[0], pStartParts[1] - 1, pStartParts[2]);
+    const ppStartParts = prevPeriodStartStr.split('-').map(Number);
+    const ppStart = new Date(ppStartParts[0], ppStartParts[1] - 1, ppStartParts[2]);
+
+    const pattern = fiscalCalendarType === 'standard'
+      ? [4, 4, 5]
+      : (fiscalCalendarType === '4-4-5' ? [4, 4, 5] : fiscalCalendarType === '4-5-4' ? [4, 5, 4] : [5, 4, 4]);
+    const periodInQuarter = ((fiscalPeriod.fiscalPeriod - 1) % 3);
+    const weeksInPeriod = fiscalCalendarType === 'standard' ? Math.ceil((new Date(fiscalPeriod.periodEndDate).getDate()) / 7) : pattern[periodInQuarter];
+    const prevPeriodInfo2 = getFiscalPeriod(
+      new Date(new Date(fiscalPeriod.periodStartDate).getTime() - 86400000).toISOString().split('T')[0],
+      fiscalCalendarType, fiscalYearStartDate
+    );
+    const prevPeriodInQuarter = ((prevPeriodInfo2.fiscalPeriod - 1) % 3);
+    const weeksInPrevPeriod = fiscalCalendarType === 'standard' ? Math.ceil((new Date(prevPeriodInfo2.periodEndDate).getDate()) / 7) : pattern[prevPeriodInQuarter];
+
+    // Aggregate daily rows across venues by date
+    const dailyByDate = new Map<string, { net_sales: number; covers: number }>();
+    for (const r of ptdDailyCurrentRows) {
+      const key = r.business_date;
+      const existing = dailyByDate.get(key) || { net_sales: 0, covers: 0 };
+      existing.net_sales += r.net_sales || 0;
+      existing.covers += r.covers_count || 0;
+      dailyByDate.set(key, existing);
+    }
+    const priorDailyByDate = new Map<string, { net_sales: number; covers: number }>();
+    for (const r of ptdDailyPriorRows) {
+      const key = r.business_date;
+      const existing = priorDailyByDate.get(key) || { net_sales: 0, covers: 0 };
+      existing.net_sales += r.net_sales || 0;
+      existing.covers += r.covers_count || 0;
+      priorDailyByDate.set(key, existing);
+    }
+
+    for (let w = 0; w < weeksInPeriod; w++) {
+      const ws = new Date(pStart); ws.setDate(ws.getDate() + w * 7);
+      const we = new Date(ws); we.setDate(we.getDate() + 6);
+      const wsStr = ws.toISOString().split('T')[0];
+      const weStr = we.toISOString().split('T')[0];
+
+      let weekSales = 0, weekCovers = 0;
+      dailyByDate.forEach((v, d) => { if (d >= wsStr && d <= weStr) { weekSales += v.net_sales; weekCovers += v.covers; } });
+
+      let priorSales: number | null = null, priorCovers: number | null = null;
+      if (w < weeksInPrevPeriod) {
+        const pws = new Date(ppStart); pws.setDate(pws.getDate() + w * 7);
+        const pwe = new Date(pws); pwe.setDate(pwe.getDate() + 6);
+        const pwsStr = pws.toISOString().split('T')[0];
+        const pweStr = pwe.toISOString().split('T')[0];
+        priorSales = 0; priorCovers = 0;
+        priorDailyByDate.forEach((v, d) => { if (d >= pwsStr && d <= pweStr) { priorSales! += v.net_sales; priorCovers! += v.covers; } });
+      }
+
+      ptdWeeks.push({
+        week: w + 1, label: `Week ${w + 1}`,
+        start_date: wsStr, end_date: weStr > date ? date : weStr,
+        net_sales: weekSales, covers: weekCovers,
+        prior_net_sales: priorSales, prior_covers: priorCovers,
+      });
+    }
+  }
+
+  // YTD period breakdown
+  let ytdPeriods: any[] = [];
+  if (viewMode === 'ytd' && ytdDailyCurrentRows.length > 0) {
+    const allPeriods = getAllPeriodsInFiscalYear(fyStartStr, fiscalCalendarType);
+    const lyAllPeriods = getAllPeriodsInFiscalYear(lyFyStartStr, fiscalCalendarType);
+
+    // Aggregate daily rows across venues by date
+    const dailyByDate = new Map<string, { net_sales: number; covers: number }>();
+    for (const r of ytdDailyCurrentRows) {
+      const key = r.business_date;
+      const existing = dailyByDate.get(key) || { net_sales: 0, covers: 0 };
+      existing.net_sales += r.net_sales || 0;
+      existing.covers += r.covers_count || 0;
+      dailyByDate.set(key, existing);
+    }
+    const priorDailyByDate = new Map<string, { net_sales: number; covers: number }>();
+    for (const r of ytdDailyPriorRows) {
+      const key = r.business_date;
+      const existing = priorDailyByDate.get(key) || { net_sales: 0, covers: 0 };
+      existing.net_sales += r.net_sales || 0;
+      existing.covers += r.covers_count || 0;
+      priorDailyByDate.set(key, existing);
+    }
+
+    for (let i = 0; i < allPeriods.length; i++) {
+      const period = allPeriods[i];
+      if (period.startDate > date) break;
+      const effectiveEnd = period.endDate > date ? date : period.endDate;
+
+      let periodSales = 0, periodCovers = 0;
+      dailyByDate.forEach((v, d) => { if (d >= period.startDate && d <= effectiveEnd) { periodSales += v.net_sales; periodCovers += v.covers; } });
+
+      let priorSales: number | null = null, priorCovers: number | null = null;
+      if (i < lyAllPeriods.length) {
+        const lyPeriod = lyAllPeriods[i];
+        const lyEffectiveEnd = period.endDate > date
+          ? (() => {
+              const daysIntoPd = Math.floor((new Date(effectiveEnd).getTime() - new Date(period.startDate).getTime()) / 86400000);
+              const lyEnd = new Date(lyPeriod.startDate);
+              lyEnd.setDate(lyEnd.getDate() + daysIntoPd);
+              return lyEnd.toISOString().split('T')[0];
+            })()
+          : lyPeriod.endDate;
+        priorSales = 0; priorCovers = 0;
+        priorDailyByDate.forEach((v, d) => { if (d >= lyPeriod.startDate && d <= lyEffectiveEnd) { priorSales! += v.net_sales; priorCovers! += v.covers; } });
+      }
+
+      ytdPeriods.push({
+        period: period.period, label: `P${period.period}`,
+        start_date: period.startDate, end_date: effectiveEnd,
+        net_sales: periodSales, covers: periodCovers,
+        prior_net_sales: priorSales, prior_covers: priorCovers,
+      });
+    }
+  }
+
+  // 7. Build response
+  const response = {
+    date,
+    has_data: true,
+    is_group: true,
+    venues,
+    totals: {
+      summary: {
+        trading_day: date,
+        total_checks: groupSummary.checks_count,
+        total_covers: groupSummary.covers_count,
+        gross_sales: groupSummary.gross_sales,
+        net_sales: groupSummary.net_sales,
+        sub_total: groupSummary.net_sales,
+        total_tax: groupSummary.taxes_total,
+        total_comps: groupSummary.comps_total,
+        total_voids: groupSummary.voids_total,
+        tips_total: groupSummary.tips_total,
+        food_sales: groupSummary.food_sales,
+        beverage_sales: groupSummary.beverage_sales,
+        wine_sales: groupSummary.wine_sales,
+        liquor_sales: groupSummary.liquor_sales,
+        beer_sales: groupSummary.beer_sales,
+        avg_check: groupSummary.avg_check,
+        avg_cover: groupSummary.avg_cover,
+        beverage_pct: groupSummary.beverage_pct,
+      },
+      labor: groupLabor,
+      categories: aggCategories(allCategoryFacts),
+      forecast: {
+        net_sales: groupForecast.net_sales || null,
+        covers: groupForecast.covers || null,
+        covers_lower: null,
+        covers_upper: null,
+      },
+      variance: {
+        vs_forecast_pct: calcVariance(groupSummary.net_sales, groupForecast.net_sales),
+        vs_forecast_covers_pct: calcVariance(groupSummary.covers_count, groupForecast.covers),
+        sdlw_net_sales: totalSdlwNetSales,
+        sdlw_covers: totalSdlwCovers,
+        vs_sdlw_pct: calcVariance(groupSummary.net_sales, totalSdlwNetSales),
+        vs_sdlw_covers_pct: calcVariance(groupSummary.covers_count, totalSdlwCovers),
+        sdly_net_sales: totalSdlyNetSales,
+        sdly_covers: totalSdlyCovers,
+        vs_sdly_pct: calcVariance(groupSummary.net_sales, totalSdlyNetSales),
+        vs_sdly_covers_pct: calcVariance(groupSummary.covers_count, totalSdlyCovers),
+        ptd_net_sales: ptdThis.net_sales,
+        ptd_covers: ptdThis.covers,
+        ptd_lw_net_sales: ptdLast.net_sales,
+        ptd_lw_covers: ptdLast.covers,
+        vs_ptd_pct: calcVariance(ptdThis.net_sales, ptdLast.net_sales),
+        vs_ptd_covers_pct: calcVariance(ptdThis.covers, ptdLast.covers),
+        wtd_net_sales: wtdThis.net_sales,
+        wtd_covers: wtdThis.covers,
+        wtd_lw_net_sales: wtdLast.net_sales,
+        wtd_lw_covers: wtdLast.covers,
+        vs_wtd_pct: calcVariance(wtdThis.net_sales, wtdLast.net_sales),
+        vs_wtd_covers_pct: calcVariance(wtdThis.covers, wtdLast.covers),
+        wtd_swly_net_sales: swlyT.net_sales,
+        wtd_swly_covers: swlyT.covers,
+        vs_wtd_swly_pct: calcVariance(wtdThis.net_sales, swlyT.net_sales),
+        vs_wtd_swly_covers_pct: calcVariance(wtdThis.covers, swlyT.covers),
+        ptd_sply_net_sales: ptdSplyT.net_sales,
+        ptd_sply_covers: ptdSplyT.covers,
+        vs_ptd_sply_pct: calcVariance(ptdThis.net_sales, ptdSplyT.net_sales),
+        vs_ptd_sply_covers_pct: calcVariance(ptdThis.covers, ptdSplyT.covers),
+        ytd_net_sales: ytdThis.net_sales,
+        ytd_covers: ytdThis.covers,
+        ytd_ly_net_sales: ytdLast.net_sales,
+        ytd_ly_covers: ytdLast.covers,
+        vs_ytd_pct: calcVariance(ytdThis.net_sales, ytdLast.net_sales),
+        vs_ytd_covers_pct: calcVariance(ytdThis.covers, ytdLast.covers),
+      },
+    },
+    fiscal: {
+      calendar_type: fiscalCalendarType,
+      fy_start_date: fyStartStr,
+      fiscal_year: fiscalPeriod.fiscalYear,
+      fiscal_quarter: fiscalPeriod.fiscalQuarter,
+      fiscal_period: fiscalPeriod.fiscalPeriod,
+      period_start_date: fiscalPeriod.periodStartDate,
+      period_end_date: fiscalPeriod.periodEndDate,
+      week_in_period: fiscalPeriod.weekInPeriod,
+    },
+    servers_wtd: serversWtd,
+    servers_ptd: serversPtd,
+    servers_ytd: serversYtd,
+    categories_wtd: categoriesWtd,
+    categories_ptd: categoriesPtd,
+    categories_ytd: categoriesYtd,
+    items_wtd: itemsWtd,
+    items_ptd: itemsPtd,
+    items_ytd: itemsYtd,
+    labor_wtd: laborWtd,
+    labor_ptd: laborPtd,
+    labor_ytd: laborYtd,
+    ptd_weeks: ptdWeeks,
+    ytd_periods: ytdPeriods,
+  };
+
+  console.log(`[nightly/facts] group ${viewMode} date=${date} venues=${venues.length} revenue=$${Math.round(groupSummary.net_sales)}`);
+  return NextResponse.json(response);
 }

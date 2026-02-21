@@ -301,6 +301,119 @@ export async function syncVenueDaySimphony(
       }, { onConflict: 'venue_id,business_date,source_system' });
     rowsLoaded++;
 
+    // Sync labor from 7Shifts punch tables (same source as all venues)
+    const netSales = parseFloat(row.net_sales) || 0;
+    const totalCovers = parseInt(row.total_covers) || 0;
+
+    // Primary: tipsee_7shifts_punches
+    const laborResult = await pool.query(
+      `SELECT
+        COUNT(*) as punch_count,
+        COUNT(DISTINCT user_id) as employee_count,
+        COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0) as total_hours,
+        COALESCE(SUM(
+          EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
+          CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END
+        ), 0) as labor_cost
+      FROM public.tipsee_7shifts_punches
+      WHERE location_uuid = $1 AND clocked_in::date = $2::date
+        AND clocked_out IS NOT NULL AND deleted IS NOT TRUE`,
+      [tipseeLocationUuid, businessDate]
+    );
+    rowsExtracted++;
+
+    let laborRow = laborResult.rows[0];
+    let laborTable = 'tipsee_7shifts_punches';
+
+    // Fallback: new_tipsee_punches with wage join
+    if (!laborRow || parseInt(laborRow.punch_count) === 0) {
+      const fb1 = await pool.query(
+        `SELECT
+          COUNT(*) as punch_count,
+          COUNT(DISTINCT p.user_id) as employee_count,
+          COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+          COALESCE(SUM(
+            EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
+            COALESCE(w.wage_cents, 0) / 100
+          ), 0) as labor_cost
+        FROM public.new_tipsee_punches p
+        LEFT JOIN LATERAL (
+          SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
+          WHERE user_id = p.user_id AND effective_date <= p.clocked_in::date
+          ORDER BY effective_date DESC LIMIT 1
+        ) w ON true
+        WHERE p.location_uuid = $1 AND p.clocked_in::date = $2::date
+          AND p.clocked_out IS NOT NULL AND p.is_deleted IS NOT TRUE`,
+        [tipseeLocationUuid, businessDate]
+      );
+      if (fb1.rows[0] && parseInt(fb1.rows[0].punch_count) > 0) {
+        laborRow = fb1.rows[0];
+        laborTable = 'new_tipsee_punches';
+      }
+    }
+
+    if (laborRow && parseInt(laborRow.punch_count) > 0) {
+      // OT hours
+      let otHours = 0;
+      const otQuery = laborTable === 'tipsee_7shifts_punches'
+        ? `SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+           FROM public.tipsee_7shifts_punches
+           WHERE location_uuid = $1 AND clocked_in::date = $2::date AND clocked_out IS NOT NULL AND deleted IS NOT TRUE
+           GROUP BY user_id HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8`
+        : `SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
+           FROM public.new_tipsee_punches
+           WHERE location_uuid = $1 AND clocked_in::date = $2::date AND clocked_out IS NOT NULL AND is_deleted IS NOT TRUE
+           GROUP BY user_id HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8`;
+      const otResult = await pool.query(otQuery, [tipseeLocationUuid, businessDate]);
+      otHours = otResult.rows.reduce((sum: number, r: any) => sum + Math.max(0, parseFloat(r.daily_hours) - 8), 0);
+
+      // FOH/BOH breakdown (only from tipsee_7shifts_punches)
+      let fohHours = 0, fohCost = 0, fohEmpCount = 0;
+      let bohHours = 0, bohCost = 0, bohEmpCount = 0;
+      let otherHours = 0, otherCost = 0, otherEmpCount = 0;
+
+      if (laborTable === 'tipsee_7shifts_punches') {
+        const deptResult = await pool.query(
+          `SELECT
+            CASE WHEN d.name = 'FOH' THEN 'FOH' WHEN d.name = 'BOH' THEN 'BOH' ELSE 'Other' END as dept_group,
+            COUNT(DISTINCT p.user_id) as employee_count,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
+            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
+              CASE WHEN COALESCE(p.hourly_wage, 0) > 100 THEN COALESCE(p.hourly_wage, 0) / 100.0 ELSE COALESCE(p.hourly_wage, 0) END
+            ), 0) as labor_cost
+          FROM public.tipsee_7shifts_punches p
+          LEFT JOIN (SELECT DISTINCT ON (id) id, name FROM public.departments) d ON d.id = p.department_id
+          WHERE p.location_uuid = $1 AND p.clocked_in::date = $2::date
+            AND p.clocked_out IS NOT NULL AND p.deleted IS NOT TRUE
+          GROUP BY dept_group`,
+          [tipseeLocationUuid, businessDate]
+        );
+        for (const r of deptResult.rows) {
+          if (r.dept_group === 'FOH') { fohHours = parseFloat(r.total_hours) || 0; fohCost = parseFloat(r.labor_cost) || 0; fohEmpCount = parseInt(r.employee_count) || 0; }
+          else if (r.dept_group === 'BOH') { bohHours = parseFloat(r.total_hours) || 0; bohCost = parseFloat(r.labor_cost) || 0; bohEmpCount = parseInt(r.employee_count) || 0; }
+          else { otherHours = parseFloat(r.total_hours) || 0; otherCost = parseFloat(r.labor_cost) || 0; otherEmpCount = parseInt(r.employee_count) || 0; }
+        }
+      }
+
+      await (supabase as any).from('labor_day_facts').upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        total_hours: parseFloat(laborRow.total_hours) || 0,
+        ot_hours: otHours,
+        labor_cost: parseFloat(laborRow.labor_cost) || 0,
+        punch_count: parseInt(laborRow.punch_count) || 0,
+        employee_count: parseInt(laborRow.employee_count) || 0,
+        net_sales: netSales,
+        covers: totalCovers,
+        foh_hours: fohHours, foh_cost: fohCost, foh_employee_count: fohEmpCount,
+        boh_hours: bohHours, boh_cost: bohCost, boh_employee_count: bohEmpCount,
+        other_hours: otherHours, other_cost: otherCost, other_employee_count: otherEmpCount,
+        last_synced_at: new Date().toISOString(),
+        etl_run_id: etlRunId,
+      }, { onConflict: 'venue_id,business_date' });
+      rowsLoaded++;
+    }
+
     await (supabase as any).from('etl_runs').update({
       status: 'success', finished_at: new Date().toISOString(),
       rows_extracted: rowsExtracted, rows_loaded: rowsLoaded,

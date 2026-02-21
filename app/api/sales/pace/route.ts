@@ -150,6 +150,7 @@ async function handleGroupView(request: NextRequest) {
         return {
           venue_id: v.venue_id,
           venue_name: venue?.name || v.venue_id,
+          timezone: tz,
           ...pace,
         };
       })

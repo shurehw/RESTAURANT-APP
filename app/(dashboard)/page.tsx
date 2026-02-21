@@ -1,7 +1,7 @@
 /**
- * Dashboard Landing — Action Center + Operator Intelligence
+ * Dashboard Landing — Action Center + Operator Intelligence + Enforcement Scores
  * Enforcement-first landing: shows all active violations across OpSOS systems
- * Owner/admin also see an intelligence feed (signals, patterns, ownership alerts)
+ * Owner/admin also see intelligence feed and composite enforcement scores
  */
 
 import { requireUser } from '@/lib/auth/require-user';
@@ -9,7 +9,9 @@ import { getActiveViolations } from '@/lib/database/enforcement';
 import { getActiveIntelligence } from '@/lib/database/operator-intelligence';
 import { ViolationFeed } from '@/components/action-center/violation-feed';
 import { IntelligenceFeed } from '@/components/operator/IntelligenceFeed';
+import { DisciplineScores } from '@/components/home/DisciplineScores';
 import { ShieldAlert } from 'lucide-react';
+import { getServiceClient } from '@/lib/supabase/service';
 
 export default async function DashboardPage() {
   const { profile } = await requireUser();
@@ -23,13 +25,59 @@ export default async function DashboardPage() {
     // RPC may not exist yet — render empty state
   }
 
-  // Operator-only: fetch intelligence items
+  // Operator-only: fetch intelligence items + enforcement scores
   let intelligence: any[] = [];
+  let venueScores: any[] = [];
+  let managerScores: any[] = [];
   if (isOperator) {
     try {
       intelligence = await getActiveIntelligence(profile.org_id!, { limit: 30 });
     } catch {
       // Table may not exist yet — render empty state
+    }
+
+    // Fetch latest enforcement scores
+    try {
+      const supabase = getServiceClient() as any;
+      const today = new Date().toISOString().split('T')[0];
+      const cutoff7d = new Date();
+      cutoff7d.setDate(cutoff7d.getDate() - 7);
+      const cutoffStr = cutoff7d.toISOString().split('T')[0];
+
+      const [venueResult, managerResult] = await Promise.all([
+        supabase
+          .from('enforcement_scores')
+          .select('entity_id, entity_name, score, components, business_date')
+          .eq('org_id', profile.org_id!)
+          .eq('entity_type', 'venue')
+          .gte('business_date', cutoffStr)
+          .order('business_date', { ascending: false })
+          .limit(100),
+        supabase
+          .from('enforcement_scores')
+          .select('entity_id, entity_name, score, components, business_date')
+          .eq('org_id', profile.org_id!)
+          .eq('entity_type', 'manager')
+          .gte('business_date', cutoffStr)
+          .order('business_date', { ascending: false })
+          .limit(100),
+      ]);
+
+      // Deduplicate to latest per entity
+      const dedup = (rows: any[]) => {
+        const map = new Map<string, any>();
+        for (const row of rows || []) {
+          if (!map.has(row.entity_id) || row.business_date > map.get(row.entity_id).business_date) {
+            map.set(row.entity_id, row);
+          }
+        }
+        return Array.from(map.values()).sort((a, b) => a.score - b.score);
+      };
+
+      venueScores = dedup(venueResult.data || []);
+      managerScores = dedup(managerResult.data || []);
+    } catch {
+      // Table may not exist yet
     }
   }
 
@@ -74,6 +122,14 @@ export default async function DashboardPage() {
           </div>
           <IntelligenceFeed items={intelligence} orgId={profile.org_id!} />
         </div>
+      )}
+
+      {/* Enforcement Scores — operator only */}
+      {isOperator && (venueScores.length > 0 || managerScores.length > 0) && (
+        <DisciplineScores
+          venueScores={venueScores}
+          managerScores={managerScores}
+        />
       )}
 
       {/* Action Center — visible to all roles */}

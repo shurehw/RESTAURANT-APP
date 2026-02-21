@@ -63,6 +63,31 @@ export interface SimphonyLocation {
   isActive?: boolean;
 }
 
+// Discount endpoints
+export interface SimphonyDiscountEntry {
+  dscNum: number;
+  ttl: number;
+  cnt: number;
+}
+
+export interface SimphonyDiscountDailyTotals {
+  locRef: string;
+  busDt: string;
+  revenueCenters: Array<{
+    rvcNum: number;
+    discounts: SimphonyDiscountEntry[];
+  }>;
+}
+
+export interface SimphonyDiscountDimension {
+  num: number;
+  name: string;
+  mstrNum?: number;
+  mstrName?: string;
+  posPercent?: number;
+  rptGrpName?: string;
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // PKCE HELPERS
 // ══════════════════════════════════════════════════════════════════════════
@@ -377,6 +402,70 @@ export async function getRevenueCenterDimensions(
   }
 
   return await res.json() as any[];
+}
+
+/**
+ * Get discount daily totals — per-discount-type breakdown by revenue center.
+ * Returns dscNum (discount number) + ttl (total $) + cnt (times applied).
+ * Join with getDiscountDimensions to get human-readable names.
+ */
+export async function getDiscountDailyTotals(
+  config: SimphonyBIConfig,
+  idToken: string,
+  locRef: string,
+  busDt: string
+): Promise<SimphonyDiscountDailyTotals> {
+  const url = `${config.appServer}/bi/v1/${config.orgIdentifier}/getDiscountDailyTotals`;
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ locRef, busDt }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Simphony getDiscountDailyTotals failed: ${res.status} - ${text.slice(0, 300)}`
+    );
+  }
+
+  return await res.json() as SimphonyDiscountDailyTotals;
+}
+
+/**
+ * Get discount dimensions — metadata for all configured discount types.
+ * Returns num → name mapping (e.g. 15253 → "Manager Comp").
+ */
+export async function getDiscountDimensions(
+  config: SimphonyBIConfig,
+  idToken: string,
+  locRef: string
+): Promise<SimphonyDiscountDimension[]> {
+  const url = `${config.appServer}/bi/v1/${config.orgIdentifier}/getDiscountDimensions`;
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ locRef }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Simphony getDiscountDimensions failed: ${res.status} - ${text.slice(0, 300)}`
+    );
+  }
+
+  const data = await res.json() as any;
+  // Response shape: { locRef, discounts: [...] }
+  return (data.discounts || data) as SimphonyDiscountDimension[];
 }
 
 // ══════════════════════════════════════════════════════════════════════════

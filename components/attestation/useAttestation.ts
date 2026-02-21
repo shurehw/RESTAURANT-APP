@@ -80,7 +80,7 @@ export function useAttestation(
   // Init: create or fetch attestation draft
   // -----------------------------------------------------------------------
   const initAttestation = useCallback(async () => {
-    if (!venueId || !businessDate || initRef.current) return;
+    if (!venueId || venueId === 'all' || !businessDate || initRef.current) return;
     initRef.current = true;
     setLoading(true);
     setError(null);

@@ -482,7 +482,7 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 }
 
 export default function NightlyReportPage() {
-  const { selectedVenue } = useVenue();
+  const { selectedVenue, setSelectedVenue, isAllVenues } = useVenue();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -526,6 +526,20 @@ export default function NightlyReportPage() {
   const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
   const [checkDetailOpen, setCheckDetailOpen] = useState(false);
   const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
+
+  // Group view state (when "All Venues" is selected)
+  const [groupData, setGroupData] = useState<{
+    venues: Array<{
+      venue_id: string;
+      venue_name: string;
+      summary: { net_sales: number; covers_count: number; avg_check: number; avg_cover: number; beverage_pct: number; comps_total: number; food_sales: number; beverage_sales: number; gross_sales: number; checks_count: number };
+      labor: { total_hours: number; labor_cost: number; labor_pct: number; splh: number; ot_hours: number } | null;
+      forecast: { revenue_predicted: number | null; covers_predicted: number | null } | null;
+      variance: { vs_sdlw_pct: number | null; vs_sdly_pct: number | null; vs_forecast_pct: number | null };
+    }>;
+    totals: any;
+    fiscal: any;
+  } | null>(null);
 
   // Handler for view mode changes (updates URL)
   function handleViewChange(newView: ViewMode) {
@@ -753,19 +767,66 @@ export default function NightlyReportPage() {
   // Get TipSee location UUID from selected venue via mapping
   const currentMapping = mappings.find(m => m.venue_id === selectedVenue?.id);
   const locationUuid = currentMapping?.tipsee_location_uuid || null;
-  const isAllVenues = selectedVenue?.id === 'all';
 
   // Fetch report when date or location changes
   useEffect(() => {
     async function fetchReport() {
       if (!selectedVenue?.id || !date) return;
 
-      // Handle "All Venues" - nightly report requires a specific venue
+      // Group view: aggregate facts across all venues
       if (isAllVenues) {
-        setError('Please select a specific venue for the nightly report');
+        setLoading(true);
+        setError(null);
         setReport(null);
-        setFactsSummary(null);
-        setLoading(false);
+        setGroupData(null);
+        setCompExceptions(null);
+        setEnrichment(null);
+        setPaceData(null);
+        setHealthData(null);
+        try {
+          const res = await fetch(
+            `/api/nightly/facts?date=${date}&venue_id=all&view=${viewMode}`,
+            { credentials: 'include' }
+          );
+          if (!res.ok) throw new Error(`Facts API returned ${res.status}`);
+          const data = await res.json();
+          if (data.has_data) {
+            setGroupData({ venues: data.venues, totals: data.totals, fiscal: data.fiscal });
+            setFactsSummary({
+              ...data.totals.summary,
+              salesByCategory: data.totals.categories,
+              labor: data.totals.labor,
+              forecast: data.totals.forecast,
+              variance: data.totals.variance,
+              fiscal: data.fiscal,
+              servers_wtd: data.servers_wtd,
+              categories_wtd: data.categories_wtd,
+              items_wtd: data.items_wtd,
+              labor_wtd: data.labor_wtd,
+              servers_ptd: data.servers_ptd,
+              categories_ptd: data.categories_ptd,
+              items_ptd: data.items_ptd,
+              labor_ptd: data.labor_ptd,
+              servers_ytd: data.servers_ytd,
+              categories_ytd: data.categories_ytd,
+              items_ytd: data.items_ytd,
+              labor_ytd: data.labor_ytd,
+              ptd_weeks: data.ptd_weeks,
+              ytd_periods: data.ytd_periods,
+            });
+            setFactsError(null);
+          } else {
+            setGroupData(null);
+            setFactsSummary(null);
+            setError('No data available for this date');
+          }
+        } catch (err: any) {
+          setError(err.message);
+          setGroupData(null);
+          setFactsSummary(null);
+        } finally {
+          setLoading(false);
+        }
         return;
       }
 
@@ -785,6 +846,7 @@ export default function NightlyReportPage() {
 
       setLoading(true);
       setError(null);
+      setGroupData(null);
       setCompExceptions(null);
       setCompNotes({});
 
@@ -926,7 +988,51 @@ export default function NightlyReportPage() {
 
   // Refetch facts when view mode changes (WTD/PTD need different aggregations)
   useEffect(() => {
-    if (!selectedVenue?.id || !date || !report) return;
+    if (!selectedVenue?.id || !date) return;
+
+    // Group view: refetch with new viewMode via the same group endpoint
+    if (isAllVenues) {
+      setLoadingFacts(true);
+      setFactsError(null);
+      fetch(`/api/nightly/facts?date=${date}&venue_id=all&view=${viewMode}`, { credentials: 'include' })
+        .then(res => {
+          if (!res.ok) throw new Error(`Facts API returned ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (data?.has_data) {
+            setGroupData({ venues: data.venues, totals: data.totals, fiscal: data.fiscal });
+            setFactsSummary({
+              ...data.totals.summary,
+              salesByCategory: data.totals.categories,
+              labor: data.totals.labor,
+              forecast: data.totals.forecast,
+              variance: data.totals.variance,
+              fiscal: data.fiscal,
+              servers_wtd: data.servers_wtd, categories_wtd: data.categories_wtd,
+              items_wtd: data.items_wtd, labor_wtd: data.labor_wtd,
+              servers_ptd: data.servers_ptd, categories_ptd: data.categories_ptd,
+              items_ptd: data.items_ptd, labor_ptd: data.labor_ptd,
+              servers_ytd: data.servers_ytd, categories_ytd: data.categories_ytd,
+              items_ytd: data.items_ytd, labor_ytd: data.labor_ytd,
+              ptd_weeks: data.ptd_weeks, ytd_periods: data.ytd_periods,
+            });
+            setFactsError(null);
+          } else {
+            setFactsSummary(null);
+            setGroupData(null);
+          }
+        })
+        .catch(err => {
+          console.error('Group facts fetch error:', err);
+          setFactsError(err.message || 'Failed to load group data');
+        })
+        .finally(() => setLoadingFacts(false));
+      return;
+    }
+
+    // Single venue: refetch facts with new viewMode
+    if (!report) return;
 
     setLoadingFacts(true);
     setFactsError(null);
@@ -973,7 +1079,7 @@ export default function NightlyReportPage() {
         setFactsSummary(null);
       })
       .finally(() => setLoadingFacts(false));
-  }, [viewMode, selectedVenue?.id, date, report]);
+  }, [viewMode, selectedVenue?.id, date, report, isAllVenues]);
 
   function changeDate(days: number) {
     const d = new Date(date);
@@ -1084,15 +1190,32 @@ export default function NightlyReportPage() {
                 </Button>
               </>
             )}
-            {att.attestation && !loading && (
-              <Button
-                variant={att.isLocked ? 'outline' : 'brass'}
-                size="sm"
-                onClick={() => setAttestStepperOpen(true)}
-              >
-                <ClipboardCheck className="h-4 w-4 mr-1.5" />
-                {att.isLocked ? 'View Attestation' : 'Attest'}
-              </Button>
+            {selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
+              att.attestation ? (
+                <Button
+                  variant={att.isLocked ? 'outline' : 'brass'}
+                  size="sm"
+                  onClick={() => setAttestStepperOpen(true)}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                  {att.isLocked ? 'View Attestation' : 'Attest'}
+                </Button>
+              ) : att.loading ? (
+                <Button variant="outline" size="sm" disabled>
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  Loading…
+                </Button>
+              ) : att.error ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-300"
+                  onClick={() => window.location.reload()}
+                >
+                  <AlertTriangle className="h-4 w-4 mr-1.5" />
+                  Retry
+                </Button>
+              ) : null
             )}
           </div>
         </div>
@@ -1793,7 +1916,95 @@ export default function NightlyReportPage() {
             );
           })()}
 
-          {/* Main Content Grid */}
+          {/* Group Venue Breakdown Table */}
+          {isAllVenues && groupData && groupData.venues.length > 0 && (
+            <Card>
+              <CardHeader className="border-b border-brass/20 py-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-brass" />
+                  Venue Breakdown
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-muted-foreground">
+                      <th className="text-left px-4 py-2.5 font-medium">Venue</th>
+                      <th className="text-right px-3 py-2.5 font-medium">Net Sales</th>
+                      <th className="text-right px-3 py-2.5 font-medium">Covers</th>
+                      <th className="text-right px-3 py-2.5 font-medium hidden md:table-cell">Avg Check</th>
+                      <th className="text-right px-3 py-2.5 font-medium hidden lg:table-cell">Bev %</th>
+                      <th className="text-right px-3 py-2.5 font-medium hidden md:table-cell">Comps</th>
+                      <th className="text-right px-3 py-2.5 font-medium hidden lg:table-cell">Labor %</th>
+                      <th className="text-right px-3 py-2.5 font-medium">vs SDLW</th>
+                      <th className="text-right px-3 py-2.5 font-medium hidden md:table-cell">vs Fcst</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupData.venues.map((v) => (
+                      <tr
+                        key={v.venue_id}
+                        className="border-b border-border last:border-0 hover:bg-muted/50 cursor-pointer transition-colors"
+                        onClick={() => {
+                          const venue = { id: v.venue_id, name: v.venue_name };
+                          setSelectedVenue(venue);
+                        }}
+                      >
+                        <td className="px-4 py-2.5 font-medium">{v.venue_name}</td>
+                        <td className="text-right px-3 py-2.5 tabular-nums">${(v.summary.net_sales || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-3 py-2.5 tabular-nums">{v.summary.covers_count || 0}</td>
+                        <td className="text-right px-3 py-2.5 tabular-nums hidden md:table-cell">${(v.summary.avg_cover || v.summary.avg_check || 0).toFixed(2)}</td>
+                        <td className="text-right px-3 py-2.5 tabular-nums hidden lg:table-cell">{(v.summary.beverage_pct || 0).toFixed(1)}%</td>
+                        <td className="text-right px-3 py-2.5 tabular-nums text-error hidden md:table-cell">${(v.summary.comps_total || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                        <td className="text-right px-3 py-2.5 tabular-nums hidden lg:table-cell">{v.labor ? `${v.labor.labor_pct.toFixed(1)}%` : '—'}</td>
+                        <td className="text-right px-3 py-2.5">
+                          {v.variance.vs_sdlw_pct != null ? (
+                            <span className={v.variance.vs_sdlw_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                              {v.variance.vs_sdlw_pct >= 0 ? '+' : ''}{v.variance.vs_sdlw_pct.toFixed(1)}%
+                            </span>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </td>
+                        <td className="text-right px-3 py-2.5 hidden md:table-cell">
+                          {v.variance.vs_forecast_pct != null ? (
+                            <span className={v.variance.vs_forecast_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                              {v.variance.vs_forecast_pct >= 0 ? '+' : ''}{v.variance.vs_forecast_pct.toFixed(1)}%
+                            </span>
+                          ) : <span className="text-muted-foreground">—</span>}
+                        </td>
+                      </tr>
+                    ))}
+                    {/* Group Totals Row */}
+                    <tr className="font-bold border-t-2 border-brass/30 bg-muted/30">
+                      <td className="px-4 py-2.5">Group Total</td>
+                      <td className="text-right px-3 py-2.5 tabular-nums">${(groupData.totals.summary.net_sales || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                      <td className="text-right px-3 py-2.5 tabular-nums">{groupData.totals.summary.total_covers || 0}</td>
+                      <td className="text-right px-3 py-2.5 tabular-nums hidden md:table-cell">${(groupData.totals.summary.avg_cover || groupData.totals.summary.avg_check || 0).toFixed(2)}</td>
+                      <td className="text-right px-3 py-2.5 tabular-nums hidden lg:table-cell">{(groupData.totals.summary.beverage_pct || 0).toFixed(1)}%</td>
+                      <td className="text-right px-3 py-2.5 tabular-nums text-error hidden md:table-cell">${(groupData.totals.summary.total_comps || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</td>
+                      <td className="text-right px-3 py-2.5 tabular-nums hidden lg:table-cell">{groupData.totals.labor ? `${groupData.totals.labor.labor_pct.toFixed(1)}%` : '—'}</td>
+                      <td className="text-right px-3 py-2.5">
+                        {groupData.totals.variance.vs_sdlw_pct != null ? (
+                          <span className={groupData.totals.variance.vs_sdlw_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                            {groupData.totals.variance.vs_sdlw_pct >= 0 ? '+' : ''}{groupData.totals.variance.vs_sdlw_pct.toFixed(1)}%
+                          </span>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="text-right px-3 py-2.5 hidden md:table-cell">
+                        {groupData.totals.variance.vs_forecast_pct != null ? (
+                          <span className={groupData.totals.variance.vs_forecast_pct >= 0 ? 'text-emerald-600' : 'text-red-500'}>
+                            {groupData.totals.variance.vs_forecast_pct >= 0 ? '+' : ''}{groupData.totals.variance.vs_forecast_pct.toFixed(1)}%
+                          </span>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Main Content Grid — single venue only */}
+          {!isAllVenues && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
             <Card>
@@ -2188,9 +2399,11 @@ export default function NightlyReportPage() {
               </CardContent>
             </Card>
           </div>
+          )}
 
-          {/* VIP Activity */}
-          {viewMode === 'nightly' ? (
+          {/* VIP Activity — single venue only */}
+          {!isAllVenues && (
+          viewMode === 'nightly' ? (
             <Card>
               <CardHeader className="border-b border-brass/20">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -2334,10 +2547,10 @@ export default function NightlyReportPage() {
                 </p>
               </CardContent>
             </Card>
-          )}
+          ))}
 
-          {/* Inline Attestation Status Banner */}
-          {att.attestation && (
+          {/* Inline Attestation Status Banner — single venue only */}
+          {!isAllVenues && att.attestation && (
             <Card
               className={`cursor-pointer transition-colors ${
                 att.isLocked
@@ -2409,8 +2622,8 @@ export default function NightlyReportPage() {
             </Card>
           )}
 
-          {/* Server Detail Modal */}
-          <ServerDetailModal
+          {/* Server Detail Modal — single venue only */}
+          {!isAllVenues && <ServerDetailModal
             server={selectedServer}
             teamAverages={serverTeamAverages || {
               avg_covers: 0, avg_net_sales: 0, avg_ticket: 0,
@@ -2425,10 +2638,10 @@ export default function NightlyReportPage() {
               setServerModalOpen(false);
               setSelectedServer(null);
             }}
-          />
+          />}
 
-          {/* Attestation Stepper Modal */}
-          <AttestationStepper
+          {/* Attestation Stepper Modal — single venue only */}
+          {!isAllVenues && <AttestationStepper
             open={attestStepperOpen}
             onClose={() => setAttestStepperOpen(false)}
             venueId={selectedVenue?.id}
@@ -2474,7 +2687,7 @@ export default function NightlyReportPage() {
               tip_pct: s.tip_pct ?? 0,
             }))}
             discountsTotal={report?.discounts?.reduce((sum, d) => sum + (d.amount || 0), 0) ?? 0}
-          />
+          />}
 
           {/* Check & Reservation Sheets */}
           {selectedVenue && !isAllVenues && (

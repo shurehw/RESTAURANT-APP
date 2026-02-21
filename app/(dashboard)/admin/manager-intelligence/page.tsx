@@ -116,6 +116,7 @@ export default function ManagerIntelligencePage() {
   const [venues, setVenues] = useState<Array<{ id: string; name: string }>>([]);
   const [managers, setManagers] = useState<ManagerComparison[]>([]);
   const [intelligence, setIntelligence] = useState<IntelligenceItem[]>([]);
+  const [reliabilityScores, setReliabilityScores] = useState<Map<string, number>>(new Map());
   const [selectedManager, setSelectedManager] = useState<ManagerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -177,11 +178,18 @@ export default function ManagerIntelligencePage() {
         const compareParams = new URLSearchParams({ org_id: orgId!, mode: 'compare', days: '90' });
         if (venueId) compareParams.set('venue_id', venueId);
 
-        const [compRes, intelRes] = await Promise.all([
+        const scoresParams = new URLSearchParams({
+          org_id: orgId!,
+          entity_type: 'manager',
+          days: '7',
+        });
+
+        const [compRes, intelRes, scoresRes] = await Promise.all([
           venueId
             ? fetch(`/api/attestation/signals/analytics?${compareParams}`, { headers })
             : Promise.resolve(null),
           fetch(`/api/operator/intelligence?${params}`, { headers }),
+          fetch(`/api/enforcement/scores?${scoresParams}`, { headers }).catch(() => null),
         ]);
 
         if (compRes && compRes.ok) {
@@ -192,6 +200,15 @@ export default function ManagerIntelligencePage() {
         if (intelRes.ok) {
           const intelData = await intelRes.json();
           setIntelligence(intelData.items || []);
+        }
+
+        if (scoresRes && scoresRes.ok) {
+          const scoresData = await scoresRes.json();
+          const scoreMap = new Map<string, number>();
+          for (const s of scoresData.scores || []) {
+            scoreMap.set(s.entity_id, s.latest_score);
+          }
+          setReliabilityScores(scoreMap);
         }
       } catch (err: any) {
         setError(err.message || 'Failed to fetch data');
@@ -377,6 +394,7 @@ export default function ManagerIntelligencePage() {
                     <thead>
                       <tr className="border-b text-left">
                         <th className="pb-2 pr-4 font-medium">Manager</th>
+                        <th className="pb-2 pr-4 font-medium text-center">Reliability</th>
                         <th className="pb-2 pr-4 font-medium text-center">Nights</th>
                         <th className="pb-2 pr-4 font-medium text-center">Command</th>
                         <th className="pb-2 pr-4 font-medium text-center">Follow-Through</th>
@@ -394,6 +412,9 @@ export default function ManagerIntelligencePage() {
                         >
                           <td className="py-3 pr-4 font-medium">
                             {mgr.manager_name || 'Unknown'}
+                          </td>
+                          <td className="py-3 pr-4 text-center">
+                            <ReliabilityBadge score={reliabilityScores.get(mgr.manager_id)} />
                           </td>
                           <td className="py-3 pr-4 text-center text-muted-foreground">
                             {mgr.total_attestations}
@@ -726,5 +747,27 @@ function FlagCard({
         <div className="text-[10px] text-muted-foreground mt-1">{detail}</div>
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Reliability Badge (composite enforcement score)
+// ---------------------------------------------------------------------------
+
+function ReliabilityBadge({ score }: { score: number | undefined }) {
+  if (score === undefined) {
+    return <span className="text-muted-foreground text-xs">-</span>;
+  }
+
+  const color = score >= 70
+    ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+    : score >= 40
+      ? 'bg-amber-100 text-amber-700 border-amber-200'
+      : 'bg-red-100 text-red-700 border-red-200';
+
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold border ${color}`}>
+      {score}
+    </span>
   );
 }
