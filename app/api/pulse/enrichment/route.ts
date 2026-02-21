@@ -169,6 +169,36 @@ async function fetchLaborDayFact(
   };
 }
 
+async function fetchCompDayFact(
+  svc: any,
+  venueId: string,
+  date: string
+): Promise<VenueEnrichment['comps']> {
+  const { data } = await svc
+    .from('venue_day_facts')
+    .select('net_sales, comps_total, discounts_total')
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  const netSales = Number(data.net_sales) || 0;
+  const compsTotal = Math.max(0, Number(data.comps_total) || 0) + Math.max(0, Number(data.discounts_total) || 0);
+  if (compsTotal === 0) return null;
+
+  return {
+    total: compsTotal,
+    pct: netSales > 0 ? (compsTotal / netSales) * 100 : 0,
+    net_sales: netSales,
+    exception_count: 0,
+    critical_count: 0,
+    warning_count: 0,
+    top_exceptions: [],
+    by_reason: [],
+  };
+}
+
 async function getTipseeLocationUuids(svc: any, venueIds: string[]): Promise<Map<string, string[]>> {
   const { data } = await (svc as any)
     .from('venue_tipsee_mapping')
@@ -202,15 +232,20 @@ async function handleSingleVenue(venueId: string, date: string) {
 
     // Fetch comp breakdown by reason from TipSee
     const locationUuids = locationMap.get(venueId) || [];
-    const [laborFallback, compsByReason] = await Promise.all([
+    const [laborFallback, compsByReason, compFallback] = await Promise.all([
       // Fallback: if snapshot has no labor, check labor_day_facts
       !result.labor
         ? fetchLaborDayFact(svc, venueId, date, Number(snapshot?.net_sales) || 0, Number(snapshot?.covers_count) || 0, Number(snapshot?.comps_total) || 0)
         : Promise.resolve(null),
-      locationUuids.length > 0 ? fetchCompsByReason(locationUuids, date) : Promise.resolve([]),
+      locationUuids.length > 0 ? fetchCompsByReason(locationUuids, date, venueId) : Promise.resolve([]),
+      // Fallback: if snapshot has no comps, check venue_day_facts
+      !result.comps
+        ? fetchCompDayFact(svc, venueId, date)
+        : Promise.resolve(null),
     ]);
 
     if (laborFallback) result.labor = laborFallback;
+    if (compFallback) result.comps = compFallback;
     if (result.comps) result.comps.by_reason = compsByReason;
 
     return NextResponse.json(result);
@@ -223,19 +258,27 @@ async function handleSingleVenue(venueId: string, date: string) {
 
 async function handleGroupEnrichment(date: string) {
   try {
-    const activeVenues = await getActiveSalesPaceVenues();
-    if (activeVenues.length === 0) {
+    const svc = getServiceClient();
+
+    // Get ALL active venues (not just ones with sales pace polling enabled)
+    // This ensures enrichment works for all venues with data
+    const { data: activeVenues, error: venueError } = await (svc as any)
+      .from('venues')
+      .select('id, name')
+      .eq('is_active', true);
+
+    if (venueError || !activeVenues || activeVenues.length === 0) {
       return NextResponse.json({ venues: [], totals: null });
     }
 
-    const svc = getServiceClient();
-    const venueIds = activeVenues.map(v => v.venue_id);
+    const venueIds = activeVenues.map((v: { id: string }) => v.id);
 
-    // Fetch venue names + all latest snapshots in parallel
-    const [venueResult, ...snapshots] = await Promise.all([
-      (svc as any).from('venues').select('id, name').in('id', venueIds),
-      ...venueIds.map(vid => getLatestSnapshot(vid, date)),
-    ]);
+    // Fetch all latest snapshots in parallel
+    const snapshots = await Promise.all(
+      venueIds.map(vid => getLatestSnapshot(vid, date))
+    );
+
+    const venueResult = { data: activeVenues };
 
     const nameMap = new Map<string, string>(
       (venueResult.data || []).map((v: { id: string; name: string }) => [v.id, v.name])
@@ -248,23 +291,30 @@ async function handleGroupEnrichment(date: string) {
     // Fetch tipsee location UUIDs for comp-by-reason
     const locationMap = await getTipseeLocationUuids(svc, venueIds);
 
-    // Parallel: labor fallbacks + comp-by-reason for all venues
+    // Parallel: labor fallbacks + comp fallbacks + comp-by-reason for all venues
     const missingLabor = venues.filter(v => !v.labor);
-    const [laborFallbacks, ...compReasonResults] = await Promise.all([
+    const missingComps = venues.filter(v => !v.comps);
+    const [laborFallbacks, compFallbacks, ...compReasonResults] = await Promise.all([
       Promise.all(
         missingLabor.map(v => {
           const snap = snapshots[venueIds.indexOf(v.venue_id)];
           return fetchLaborDayFact(svc, v.venue_id, date, Number(snap?.net_sales) || 0, Number(snap?.covers_count) || 0, Number(snap?.comps_total) || 0);
         })
       ),
+      Promise.all(
+        missingComps.map(v => fetchCompDayFact(svc, v.venue_id, date))
+      ),
       ...venueIds.map(vid => {
         const uuids = locationMap.get(vid) || [];
-        return uuids.length > 0 ? fetchCompsByReason(uuids, date) : Promise.resolve([]);
+        return uuids.length > 0 ? fetchCompsByReason(uuids, date, vid) : Promise.resolve([]);
       }),
     ]);
 
     missingLabor.forEach((v, i) => {
       if (laborFallbacks[i]) v.labor = laborFallbacks[i];
+    });
+    missingComps.forEach((v, i) => {
+      if (compFallbacks[i]) v.comps = compFallbacks[i];
     });
 
     // Attach comp-by-reason to each venue
