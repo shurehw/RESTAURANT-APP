@@ -6,7 +6,7 @@
 
 -- Savings Events: Track individual savings opportunities
 CREATE TABLE IF NOT EXISTS savings_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   venue_id UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
   event_date DATE NOT NULL DEFAULT CURRENT_DATE,
   savings_type TEXT NOT NULL CHECK (savings_type IN (
