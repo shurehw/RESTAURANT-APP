@@ -310,11 +310,11 @@ export function CommandTrigger() {
   return (
     <button
       onClick={toggleCommandPanel}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-opsos-brass/30 bg-opsos-brass/5 hover:bg-opsos-brass/10 text-foreground hover:border-opsos-brass/50 transition-colors shadow-sm"
       title="Command (Ctrl+K)"
     >
-      <Command className="w-3.5 h-3.5" />
-      <span className="text-xs font-medium">Command</span>
+      <Command className="w-4 h-4" />
+      <span className="text-xs font-semibold">Command</span>
     </button>
   );
 }

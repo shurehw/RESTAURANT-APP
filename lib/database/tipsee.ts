@@ -1007,9 +1007,16 @@ export interface CompByReason {
 
 export async function fetchCompsByReason(
   locationUuids: string[],
-  date: string
+  date: string,
+  venueId?: string
 ): Promise<CompByReason[]> {
   if (locationUuids.length === 0) return [];
+
+  const posType = await getPosTypeForLocations(locationUuids);
+  if (posType === 'simphony') {
+    return fetchSimphonyCompsByReason(locationUuids, date, venueId);
+  }
+
   const pool = getTipseePool();
 
   const result = await pool.query(
@@ -1032,6 +1039,78 @@ export async function fetchCompsByReason(
 }
 
 /**
+ * Simphony comp breakdown — tries BI API for per-discount-type names,
+ * falls back to TipSee aggregate discount_total by revenue center.
+ */
+async function fetchSimphonyCompsByReason(
+  locationUuids: string[],
+  date: string,
+  venueId?: string
+): Promise<CompByReason[]> {
+  // Try Simphony BI API for per-discount-type breakdown
+  if (venueId) {
+    try {
+      const { getCachedDiscountDimensions, getSimphonyLocationMapping, getValidIdToken, getSimphonyConfig } = await import('@/lib/database/simphony-tokens');
+      const { getDiscountDailyTotals } = await import('@/lib/integrations/simphony-bi');
+
+      const mapping = await getSimphonyLocationMapping(venueId);
+      if (mapping) {
+        const [dimMap, idToken, config] = await Promise.all([
+          getCachedDiscountDimensions(venueId),
+          getValidIdToken(mapping.org_identifier),
+          getSimphonyConfig(mapping.org_identifier),
+        ]);
+
+        const totals = await getDiscountDailyTotals(config, idToken, mapping.loc_ref, date);
+
+        // Aggregate across all revenue centers by discount number
+        const byDiscount = new Map<number, { ttl: number; cnt: number }>();
+        for (const rc of totals.revenueCenters || []) {
+          for (const d of rc.discounts || []) {
+            const existing = byDiscount.get(d.dscNum) || { ttl: 0, cnt: 0 };
+            existing.ttl += Math.abs(d.ttl || 0);
+            existing.cnt += d.cnt || 0;
+            byDiscount.set(d.dscNum, existing);
+          }
+        }
+
+        if (byDiscount.size > 0) {
+          const results: CompByReason[] = [];
+          for (const [dscNum, { ttl, cnt }] of byDiscount) {
+            const name = dimMap?.get(dscNum) || `Discount #${dscNum}`;
+            results.push({ reason: name, count: cnt, total: ttl });
+          }
+          return results.sort((a, b) => b.total - a.total);
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[comps] Simphony BI discount breakdown failed for ${venueId}: ${err.message}`);
+      // Fall through to TipSee aggregate
+    }
+  }
+
+  // Fallback: TipSee aggregate discount_total by revenue center
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      COALESCE(NULLIF(TRIM(revenue_center_name), ''), 'RC ' || revenue_center_number) as rc_name,
+      check_count as count,
+      ABS(COALESCE(discount_total, 0)) as total
+    FROM public.tipsee_simphony_sales
+    WHERE location_uuid = ANY($1) AND trading_day = $2 AND discount_total != 0
+    ORDER BY ABS(discount_total) DESC`,
+    [locationUuids, date]
+  );
+
+  return result.rows.map(r => ({
+    reason: `Discounts - ${r.rc_name}`,
+    count: parseInt(r.count) || 1,
+    total: parseFloat(r.total) || 0,
+  }));
+}
+
+/**
  * Aggregate comps by reason over a date range (for period views).
  */
 export async function fetchCompsByReasonForRange(
@@ -1040,6 +1119,30 @@ export async function fetchCompsByReasonForRange(
   endDate: string
 ): Promise<CompByReason[]> {
   if (locationUuids.length === 0) return [];
+
+  const posType = await getPosTypeForLocations(locationUuids);
+  if (posType === 'simphony') {
+    const pool = getTipseePool();
+    const result = await pool.query(
+      `SELECT
+        COALESCE(NULLIF(TRIM(revenue_center_name), ''), 'RC ' || revenue_center_number) as rc_name,
+        SUM(check_count)::int as count,
+        ABS(COALESCE(SUM(discount_total), 0)) as total
+      FROM public.tipsee_simphony_sales
+      WHERE location_uuid = ANY($1)
+        AND trading_day >= $2 AND trading_day <= $3
+        AND discount_total != 0
+      GROUP BY COALESCE(NULLIF(TRIM(revenue_center_name), ''), 'RC ' || revenue_center_number)
+      ORDER BY ABS(SUM(discount_total)) DESC`,
+      [locationUuids, startDate, endDate]
+    );
+    return result.rows.map(r => ({
+      reason: `Discounts - ${r.rc_name}`,
+      count: parseInt(r.count) || 1,
+      total: parseFloat(r.total) || 0,
+    }));
+  }
+
   const pool = getTipseePool();
 
   const result = await pool.query(
@@ -1197,6 +1300,12 @@ export async function fetchCompExceptions(
     daily_comp_pct_critical?: number;
   }
 ): Promise<CompExceptionsResult> {
+  // Route Simphony venues to aggregate-only exception detection
+  const posType = await getPosTypeForLocations([locationUuid]);
+  if (posType === 'simphony') {
+    return fetchSimphonyCompExceptions(date, locationUuid, settings);
+  }
+
   const pool = getTipseePool();
   const exceptions: CompException[] = [];
 
@@ -1386,6 +1495,85 @@ export async function fetchCompExceptions(
   });
 
   return { summary, exceptions };
+}
+
+/**
+ * Simphony comp exceptions — aggregate-only detection.
+ * Simphony has no per-check comp detail, only revenue-center-level discount_total.
+ * We can only check daily comp % against thresholds.
+ */
+async function fetchSimphonyCompExceptions(
+  date: string,
+  locationUuid: string,
+  settings?: {
+    approved_reasons?: Array<{ name: string }>;
+    high_value_comp_threshold?: number;
+    high_comp_pct_threshold?: number;
+    daily_comp_pct_warning?: number;
+    daily_comp_pct_critical?: number;
+  }
+): Promise<CompExceptionsResult> {
+  const pool = getTipseePool();
+
+  const thresholds = {
+    highValue: settings?.high_value_comp_threshold ?? COMP_THRESHOLDS.HIGH_VALUE_COMP,
+    dailyWarning: settings?.daily_comp_pct_warning ?? COMP_THRESHOLDS.DAILY_COMP_PCT_WARNING,
+    dailyCritical: settings?.daily_comp_pct_critical ?? COMP_THRESHOLDS.DAILY_COMP_PCT_CRITICAL,
+  };
+
+  const result = await pool.query(
+    `SELECT
+      COALESCE(SUM(net_sales), 0) as net_sales,
+      ABS(COALESCE(SUM(discount_total), 0)) as total_comps
+    FROM public.tipsee_simphony_sales
+    WHERE location_uuid = $1 AND trading_day = $2`,
+    [locationUuid, date]
+  );
+
+  const row = result.rows[0] || { net_sales: 0, total_comps: 0 };
+  const netSales = parseFloat(row.net_sales) || 0;
+  const totalComps = parseFloat(row.total_comps) || 0;
+  const compPct = netSales > 0 ? totalComps / netSales : 0;
+
+  const exceptions: CompException[] = [];
+
+  // Only aggregate-level checks are possible for Simphony
+  if (totalComps >= thresholds.highValue) {
+    exceptions.push({
+      type: 'high_value',
+      severity: 'warning',
+      check_id: 'aggregate',
+      table_name: 'All',
+      server: 'Simphony Aggregate',
+      comp_total: totalComps,
+      check_total: netSales,
+      reason: 'Discounts (Simphony)',
+      comped_items: [],
+      message: `Daily discounts: $${totalComps.toFixed(2)}`,
+      details: `Simphony aggregate discount exceeds $${thresholds.highValue} threshold`,
+    });
+  }
+
+  let compPctStatus: 'ok' | 'warning' | 'critical' = 'ok';
+  if (compPct >= thresholds.dailyCritical) {
+    compPctStatus = 'critical';
+  } else if (compPct >= thresholds.dailyWarning) {
+    compPctStatus = 'warning';
+  }
+
+  return {
+    summary: {
+      date,
+      total_comps: totalComps,
+      net_sales: netSales,
+      comp_pct: compPct * 100,
+      comp_pct_status: compPctStatus,
+      exception_count: exceptions.length,
+      critical_count: exceptions.filter(e => e.severity === 'critical').length,
+      warning_count: exceptions.filter(e => e.severity === 'warning').length,
+    },
+    exceptions,
+  };
 }
 
 // ============================================================================
@@ -1832,6 +2020,7 @@ export interface ReservationSummary {
   venue_seating_area_name: string | null;
   notes: string | null;
   client_requests: string | null;
+  table_number: string | null;
 }
 
 export async function fetchReservationsForDate(
@@ -1857,7 +2046,8 @@ export async function fetchReservationsForDate(
         reservation_type,
         venue_seating_area_name,
         notes,
-        client_requests
+        client_requests,
+        array_to_string(table_numbers, ', ') as table_number
       FROM public.full_reservations
       WHERE location_uuid = ANY($1::uuid[]) AND date = $2
         AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'CONFIRMED', 'PENDING', 'PAID', 'CANCELLED')
@@ -1884,6 +2074,7 @@ export async function fetchReservationsForDate(
       venue_seating_area_name: r.venue_seating_area_name || null,
       notes: r.notes || null,
       client_requests: r.client_requests || null,
+      table_number: r.table_number || null,
     } as ReservationSummary;
   });
 
