@@ -17,7 +17,16 @@ interface VenueMapping {
   tipsee_location_uuid: string;
 }
 
+// Vercel Cron sends GET requests
+export async function GET(request: NextRequest) {
+  return handleSync(request);
+}
+
 export async function POST(request: NextRequest) {
+  return handleSync(request);
+}
+
+async function handleSync(request: NextRequest) {
   const t0 = Date.now();
 
   // ── 1. Verify Cron Secret ──

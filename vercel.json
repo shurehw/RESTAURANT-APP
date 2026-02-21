@@ -113,6 +113,10 @@
     {
       "path": "/api/cron/enforce",
       "schedule": "30 5 * * *"
+    },
+    {
+      "path": "/api/etl/sync?action=yesterday",
+      "schedule": "0 4 * * *"
     }
   ]
 }
