@@ -1412,9 +1412,15 @@ export default function LivePulsePage() {
     try {
       const venueParam = isAllVenues ? 'all' : selectedVenue!.id;
       const dateParam = selectedDate ? `&date=${selectedDate}` : `&date=${new Date().toISOString().slice(0, 10)}`;
-      const res = await fetch(`/api/pulse/enrichment?venue_id=${venueParam}${dateParam}`);
-      if (!res.ok) return;
+      const url = `/api/pulse/enrichment?venue_id=${venueParam}${dateParam}`;
+      console.log('[Pulse] Fetching enrichment:', url);
+      const res = await fetch(url);
+      if (!res.ok) {
+        console.error('[Pulse] Enrichment fetch failed:', res.status, await res.text());
+        return;
+      }
       const json = await res.json();
+      console.log('[Pulse] Enrichment data:', json);
       if (isAllVenues) {
         setGroupEnrichment(json);
         setEnrichment(null);
@@ -1422,8 +1428,8 @@ export default function LivePulsePage() {
         setEnrichment(json);
         setGroupEnrichment(null);
       }
-    } catch {
-      // Non-critical — labor/comp cards just won't show
+    } catch (err) {
+      console.error('[Pulse] Enrichment error:', err);
     } finally {
       setEnrichmentLoading(false);
     }
