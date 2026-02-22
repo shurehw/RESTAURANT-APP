@@ -162,15 +162,18 @@ async function processVenue(venueId: string): Promise<{
   }
 
   // Skip duplicate: if net_sales and checks haven't changed since last snapshot, don't store
+  // UNLESS 25+ minutes have passed (ensures at least one row per 30-min display bucket)
   // Use Math.round on cents to avoid floating-point precision mismatches between
   // TipSee (pg numeric → cleanRow parseFloat) and Supabase (json → normalizeSnapshot parseFloat)
   const lastSnap = await getLatestSnapshot(venueId, businessDate);
-  if (
-    lastSnap &&
-    Math.round(lastSnap.net_sales * 100) === Math.round(summary.net_sales * 100) &&
-    lastSnap.checks_count === summary.total_checks
-  ) {
-    return { snapshot_stored: false, net_sales: summary.net_sales, covers: summary.total_covers, checks: summary.total_checks, skipped_reason: 'no_change' };
+  if (lastSnap) {
+    const sameData =
+      Math.round(lastSnap.net_sales * 100) === Math.round(summary.net_sales * 100) &&
+      lastSnap.checks_count === summary.total_checks;
+    const minutesSinceLast = (Date.now() - new Date(lastSnap.snapshot_at).getTime()) / 60_000;
+    if (sameData && minutesSinceLast < 25) {
+      return { snapshot_stored: false, net_sales: summary.net_sales, covers: summary.total_covers, checks: summary.total_checks, skipped_reason: 'no_change' };
+    }
   }
 
   // Fetch labor + comp data in parallel (non-blocking — sales snapshot still stores even if these fail)

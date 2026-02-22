@@ -583,17 +583,20 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
     );
   }
 
-  // Thin to one snapshot per hour (keep last snapshot in each hour bucket)
-  const hourly = new Map<string, SalesSnapshot>();
+  // Thin to one snapshot per hour (closest to :00), display rounded to the hour
+  const hourBest = new Map<string, { snap: SalesSnapshot; dist: number }>();
   for (const s of snapshots) {
     const d = new Date(s.snapshot_at);
     const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}`;
-    // snapshots are chronological — later ones overwrite, so we keep the latest per hour
-    hourly.set(key, s);
+    const dist = Math.min(d.getMinutes(), 60 - d.getMinutes());
+    const existing = hourBest.get(key);
+    if (!existing || dist < existing.dist) {
+      hourBest.set(key, { snap: s, dist });
+    }
   }
 
-  // Sorted newest-first; delta = difference from the previous (older) snapshot
-  const sorted = [...hourly.values()].reverse();
+  // Sorted newest-first; delta = difference from the previous (older) displayed snapshot
+  const sorted = [...hourBest.values()].map(b => b.snap).reverse();
 
   return (
     <div className="overflow-x-auto">
@@ -621,7 +624,11 @@ function SnapshotTable({ snapshots }: { snapshots: SalesSnapshot[] }) {
                 <td className="py-2 pr-4">
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-3 w-3 text-muted-foreground" />
-                    {formatTime(s.snapshot_at)}
+                    {(() => {
+                      const d = new Date(s.snapshot_at);
+                      d.setMinutes(0, 0, 0);
+                      return d.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+                    })()}
                   </div>
                 </td>
                 <td className="py-2 pr-4 text-right font-medium">{formatCurrency(s.net_sales)}</td>
