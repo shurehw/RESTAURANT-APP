@@ -1,8 +1,8 @@
 // Pulse PWA Service Worker v3
 // Network-first for API (live data), stale-while-revalidate for shell, offline fallback
 
-const CACHE_VERSION = 'pulse-v4';
-const API_CACHE = 'pulse-api-v4';
+const CACHE_VERSION = 'pulse-v5';
+const API_CACHE = 'pulse-api-v5';
 const MAX_API_ENTRIES = 50;
 const OFFLINE_URL = '/offline.html';
 
