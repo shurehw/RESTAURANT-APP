@@ -7,7 +7,8 @@ export const dynamic = 'force-dynamic';
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BarChart3, TrendingUp, DollarSign, Package, Download } from "lucide-react";
+import { BarChart3, TrendingUp, DollarSign, Package, Download, CalendarCheck } from "lucide-react";
+import Link from "next/link";
 
 export default async function ReportsPage() {
   return (
@@ -29,6 +30,26 @@ export default async function ReportsPage() {
 
       {/* Report Categories */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Weekly Agenda */}
+        <Link href="/reports/weekly">
+          <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-lg bg-brass/10 flex items-center justify-center">
+                <CalendarCheck className="w-6 h-6 text-brass" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-1">Weekly Agenda</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  7-day executive overview with AI summary
+                </p>
+                <span className="text-sm text-brass hover:text-brass">
+                  View Agenda →
+                </span>
+              </div>
+            </div>
+          </Card>
+        </Link>
+
         {/* P&L Reports */}
         <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="flex items-start gap-4">
