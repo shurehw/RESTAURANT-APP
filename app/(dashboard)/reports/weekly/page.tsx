@@ -284,6 +284,8 @@ export default function WeeklyAgendaPage() {
     setError(null);
     setNarrative(null);
     setGmNotesSaved(false);
+    setShareUrl(null);
+    setShareCopied(false);
     try {
       const res = await fetch(`/api/reports/weekly?venue_id=${selectedVenueId}&week_start=${weekStart}`);
       if (!res.ok) {
