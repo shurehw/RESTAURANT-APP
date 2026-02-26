@@ -117,6 +117,10 @@
     {
       "path": "/api/etl/sync?action=yesterday",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/etl/sync?action=reviews",
+      "schedule": "15 */6 * * *"
     }
   ]
 }
