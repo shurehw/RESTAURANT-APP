@@ -42,7 +42,7 @@ export async function POST(
     );
   }
 
-  const result = await resolveIntakeViolation(violationId, user.id, reason.trim());
+  const result = await resolveIntakeViolation(violationId, user.id, reason.trim(), orgUser.role);
 
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 500 });

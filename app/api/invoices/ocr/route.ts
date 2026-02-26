@@ -434,47 +434,43 @@ async function processInvoice(
       const { checkIntakePolicy, recordIntakePolicyViolations } = await import('@/lib/enforcement/intake-policy');
 
       const settings = await getProcurementSettingsForVenue(venueId);
-      const vendorEnf = settings.intake_vendor_enforcement;
-      const specEnf = settings.intake_spec_enforcement;
+      // Enforcement is always on — no 'off' mode exists
+      const policyResult = await checkIntakePolicy(invoiceId, settings.org_id, {
+        intake_vendor_enforcement: settings.intake_vendor_enforcement,
+        intake_spec_enforcement: settings.intake_spec_enforcement,
+        intake_spec_fields: settings.intake_spec_fields,
+        intake_block_requires_override: settings.intake_block_requires_override,
+        intake_override_role: settings.intake_override_role,
+      });
 
-      if (vendorEnf !== 'off' || specEnf !== 'off') {
-        const policyResult = await checkIntakePolicy(invoiceId, settings.org_id, {
-          intake_vendor_enforcement: vendorEnf,
-          intake_spec_enforcement: specEnf,
-          intake_spec_fields: settings.intake_spec_fields,
-          intake_block_requires_override: settings.intake_block_requires_override,
-          intake_override_role: settings.intake_override_role,
-        });
+      if (policyResult.violations.length > 0) {
+        // Get org_id from venue for recording
+        const svc = createServiceClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { data: venueOrg } = await svc
+          .from('venues')
+          .select('organization_id')
+          .eq('id', venueId)
+          .single();
 
-        if (policyResult.violations.length > 0) {
-          // Get org_id from venue for recording
-          const svc = createServiceClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        await recordIntakePolicyViolations(
+          policyResult,
+          invoiceId,
+          venueOrg?.organization_id || settings.org_id,
+          venueId
+        );
+
+        intakeViolations = policyResult.summary;
+        if (policyResult.blocked) {
+          normalized.warnings.push(
+            `Invoice blocked: ${policyResult.summary.total} intake policy violation(s) require override before approval.`
           );
-          const { data: venueOrg } = await svc
-            .from('venues')
-            .select('organization_id')
-            .eq('id', venueId)
-            .single();
-
-          await recordIntakePolicyViolations(
-            policyResult,
-            invoiceId,
-            venueOrg?.organization_id || settings.org_id,
-            venueId
+        } else if (policyResult.summary.total > 0) {
+          normalized.warnings.push(
+            `${policyResult.summary.total} intake policy warning(s) detected.`
           );
-
-          intakeViolations = policyResult.summary;
-          if (policyResult.blocked) {
-            normalized.warnings.push(
-              `Invoice blocked: ${policyResult.summary.total} intake policy violation(s) require override before approval.`
-            );
-          } else if (policyResult.summary.total > 0) {
-            normalized.warnings.push(
-              `${policyResult.summary.total} intake policy warning(s) detected.`
-            );
-          }
         }
       }
     } catch (intakeErr: any) {

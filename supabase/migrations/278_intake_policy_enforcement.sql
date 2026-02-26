@@ -47,18 +47,18 @@ COMMENT ON COLUMN items.specifications IS
 
 ALTER TABLE procurement_settings
   ADD COLUMN IF NOT EXISTS intake_vendor_enforcement TEXT NOT NULL DEFAULT 'warn'
-    CHECK (intake_vendor_enforcement IN ('off', 'warn', 'block')),
+    CHECK (intake_vendor_enforcement IN ('warn', 'block')),
   ADD COLUMN IF NOT EXISTS intake_spec_enforcement TEXT NOT NULL DEFAULT 'warn'
-    CHECK (intake_spec_enforcement IN ('off', 'warn', 'block')),
+    CHECK (intake_spec_enforcement IN ('warn', 'block')),
   ADD COLUMN IF NOT EXISTS intake_spec_fields TEXT[] NOT NULL DEFAULT
     ARRAY['brand', 'grade', 'trim', 'species', 'cut', 'pack_size'],
   ADD COLUMN IF NOT EXISTS intake_block_requires_override BOOLEAN NOT NULL DEFAULT TRUE,
   ADD COLUMN IF NOT EXISTS intake_override_role TEXT NOT NULL DEFAULT 'admin';
 
 COMMENT ON COLUMN procurement_settings.intake_vendor_enforcement IS
-  'How to handle non-preferred vendor invoices: off/warn/block';
+  'How to handle non-preferred vendor invoices: warn/block. Enforcement is continuous and non-negotiable.';
 COMMENT ON COLUMN procurement_settings.intake_spec_enforcement IS
-  'How to handle spec mismatches on invoice lines: off/warn/block';
+  'How to handle spec mismatches on invoice lines: warn/block. Enforcement is continuous and non-negotiable.';
 COMMENT ON COLUMN procurement_settings.intake_spec_fields IS
   'Which specification fields to compare (e.g. brand, grade, trim)';
 COMMENT ON COLUMN procurement_settings.intake_block_requires_override IS

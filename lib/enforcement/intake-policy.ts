@@ -2,7 +2,14 @@
  * Intake Policy Enforcement
  *
  * Validates invoices against preferred vendor preferences and
- * canonical item specifications. Tunable rails, not optional rules.
+ * canonical item specifications.
+ *
+ * THESIS: The rules are always on. The rails are fixed.
+ *         Calibration is allowed. Escape is not.
+ *
+ * - Enforcement levels are 'warn' or 'block' — no 'off' mode
+ * - On RPC error, the system fails CLOSED (blocks the invoice)
+ * - Overrides require authority verification and escalate to control plane
  *
  * Flow:
  *   1. Invoice created (OCR or manual)
@@ -16,8 +23,8 @@ import { getServiceClient } from '@/lib/supabase/service';
 // ── Types ──────────────────────────────────────────────────────
 
 export interface IntakePolicySettings {
-  intake_vendor_enforcement: 'off' | 'warn' | 'block';
-  intake_spec_enforcement: 'off' | 'warn' | 'block';
+  intake_vendor_enforcement: 'warn' | 'block';
+  intake_spec_enforcement: 'warn' | 'block';
   intake_spec_fields: string[];
   intake_block_requires_override: boolean;
   intake_override_role: string;
@@ -39,6 +46,7 @@ export interface IntakePolicyViolation {
 export interface IntakePolicyResult {
   violations: IntakePolicyViolation[];
   blocked: boolean;
+  error?: string; // Non-empty when enforcement failed closed
   summary: {
     vendor_violations: number;
     spec_violations: number;
@@ -53,6 +61,9 @@ export interface IntakePolicyResult {
  * Run intake policy checks against an invoice.
  * Calls the `check_intake_policy` SQL function and maps results
  * through settings to determine enforcement actions.
+ *
+ * FAIL CLOSED: If the RPC errors, returns a synthetic critical
+ * violation that blocks the invoice until the system recovers.
  */
 export async function checkIntakePolicy(
   invoiceId: string,
@@ -61,26 +72,27 @@ export async function checkIntakePolicy(
 ): Promise<IntakePolicyResult> {
   const supabase = getServiceClient();
 
-  // Skip entirely if both checks are off
-  if (settings.intake_vendor_enforcement === 'off' && settings.intake_spec_enforcement === 'off') {
-    return {
-      violations: [],
-      blocked: false,
-      summary: { vendor_violations: 0, spec_violations: 0, total: 0, highest_severity: 'info' },
-    };
-  }
-
   const { data: rawViolations, error } = await (supabase as any).rpc('check_intake_policy', {
     p_invoice_id: invoiceId,
     p_org_id: orgId,
   });
 
+  // FAIL CLOSED: If detection fails, block until system is verified
   if (error) {
-    console.error('[IntakePolicy] check_intake_policy error:', error.message);
+    console.error('[IntakePolicy] check_intake_policy error — failing closed:', error.message);
     return {
-      violations: [],
-      blocked: false,
-      summary: { vendor_violations: 0, spec_violations: 0, total: 0, highest_severity: 'info' },
+      violations: [{
+        invoice_line_id: '',
+        item_id: null,
+        vendor_id: '',
+        violation_type: 'spec_missing',
+        severity: 'critical',
+        enforcement_action: 'block',
+        message: `Intake policy check unavailable (${error.message}). Invoice blocked until enforcement is verified.`,
+      }],
+      blocked: true,
+      error: error.message,
+      summary: { vendor_violations: 0, spec_violations: 1, total: 1, highest_severity: 'critical' },
     };
   }
 
@@ -101,10 +113,6 @@ export async function checkIntakePolicy(
   for (const raw of rawViolations) {
     const isVendor = raw.violation_type === 'non_preferred_vendor';
     const isSpec = raw.violation_type === 'spec_mismatch' || raw.violation_type === 'spec_missing';
-
-    // Skip violations for disabled enforcement types
-    if (isVendor && settings.intake_vendor_enforcement === 'off') continue;
-    if (isSpec && settings.intake_spec_enforcement === 'off') continue;
 
     // Filter spec violations to only enforced fields
     if (isSpec && raw.field_name && !settings.intake_spec_fields.includes(raw.field_name)) continue;
@@ -174,12 +182,12 @@ export async function recordIntakePolicyViolations(
     org_id: orgId,
     venue_id: venueId,
     invoice_id: invoiceId,
-    invoice_line_id: v.invoice_line_id,
+    invoice_line_id: v.invoice_line_id || null,
     violation_type: v.violation_type,
     severity: v.severity,
     enforcement_action: v.enforcement_action,
     item_id: v.item_id,
-    vendor_id: v.vendor_id,
+    vendor_id: v.vendor_id || null,
     field_name: v.field_name || null,
     expected_value: v.expected_value || null,
     actual_value: v.actual_value || null,
@@ -234,26 +242,103 @@ export async function recordIntakePolicyViolations(
 
 /**
  * Resolve an intake policy violation (manager override).
+ *
+ * Requires:
+ *   - userId must have the required override role (verified here)
+ *   - overrideReason must be non-empty
+ *   - Creates a control_plane_violations entry recording the override
  */
 export async function resolveIntakeViolation(
   violationId: string,
   userId: string,
-  overrideReason: string
+  overrideReason: string,
+  userRole: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!overrideReason || overrideReason.trim().length === 0) {
+    return { success: false, error: 'Override reason is required' };
+  }
+
   const supabase = getServiceClient();
 
+  // 1. Fetch the violation to verify it exists and get context
+  const { data: violation, error: fetchError } = await (supabase as any)
+    .from('intake_policy_violations')
+    .select('*, invoices:invoice_id(venue_id)')
+    .eq('id', violationId)
+    .single();
+
+  if (fetchError || !violation) {
+    return { success: false, error: 'Violation not found' };
+  }
+
+  if (violation.resolved) {
+    return { success: false, error: 'Violation already resolved' };
+  }
+
+  // 2. Verify authority — check user role against required override role
+  //    Fetch org settings to get the configured override role
+  const { data: settings } = await (supabase as any)
+    .from('procurement_settings')
+    .select('intake_override_role')
+    .eq('org_id', violation.org_id)
+    .eq('is_active', true)
+    .order('version', { ascending: false })
+    .limit(1)
+    .single();
+
+  const requiredRole = settings?.intake_override_role || 'admin';
+  const authorizedRoles = requiredRole === 'owner' ? ['owner'] : ['admin', 'owner'];
+
+  if (!authorizedRoles.includes(userRole)) {
+    return {
+      success: false,
+      error: `Override requires ${requiredRole} role. Your role: ${userRole}`,
+    };
+  }
+
+  // 3. Mark violation as resolved
   const { error } = await (supabase as any)
     .from('intake_policy_violations')
     .update({
       resolved: true,
       resolved_at: new Date().toISOString(),
       resolved_by: userId,
-      override_reason: overrideReason,
+      override_reason: overrideReason.trim(),
       updated_at: new Date().toISOString(),
     })
     .eq('id', violationId);
 
   if (error) return { success: false, error: error.message };
+
+  // 4. Escalate to control plane — record the override as an auditable event
+  const businessDate = new Date().toISOString().split('T')[0];
+  await (supabase as any)
+    .from('control_plane_violations')
+    .insert({
+      org_id: violation.org_id,
+      venue_id: violation.invoices?.venue_id || violation.venue_id,
+      violation_type: 'intake_policy',
+      severity: 'warning',
+      title: `Intake policy override: ${violation.violation_type}`,
+      description: `Override by ${userRole} (${userId}): "${overrideReason.trim()}". Original violation: ${violation.message}`,
+      metadata: {
+        override: true,
+        original_violation_id: violationId,
+        original_violation_type: violation.violation_type,
+        override_by: userId,
+        override_role: userRole,
+        override_reason: overrideReason.trim(),
+        invoice_id: violation.invoice_id,
+      },
+      source_table: 'intake_policy_violations',
+      source_id: violationId,
+      business_date: businessDate,
+      status: 'open',
+      verification_required: false,
+      escalation_level: 0,
+      recurrence_count: 0,
+    });
+
   return { success: true };
 }
 
@@ -283,6 +368,8 @@ export async function getViolationsForInvoice(
 
 /**
  * Check if an invoice has unresolved block-severity violations.
+ *
+ * FAIL CLOSED: If the query errors, assume blocked.
  */
 export async function hasUnresolvedBlocks(invoiceId: string): Promise<{
   blocked: boolean;
@@ -298,9 +385,14 @@ export async function hasUnresolvedBlocks(invoiceId: string): Promise<{
     .eq('enforcement_action', 'block')
     .eq('resolved', false);
 
+  // FAIL CLOSED: if we can't check, assume blocked
   if (error) {
-    console.error('[IntakePolicy] Failed to check blocks:', error.message);
-    return { blocked: false, count: 0, violations: [] };
+    console.error('[IntakePolicy] Failed to check blocks — failing closed:', error.message);
+    return {
+      blocked: true,
+      count: 1,
+      violations: [{ id: '', message: 'Unable to verify intake policy status. Approval blocked.', violation_type: 'spec_missing' }],
+    };
   }
 
   return {

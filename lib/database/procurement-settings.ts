@@ -30,12 +30,18 @@ export interface ProcurementSettings {
   // Purchasing rules
   require_purchasing_authorization: boolean;
 
-  // Intake policy enforcement
-  intake_vendor_enforcement: 'off' | 'warn' | 'block';
-  intake_spec_enforcement: 'off' | 'warn' | 'block';
+  // Intake policy enforcement (tunable rails — no 'off' mode, enforcement is non-negotiable)
+  intake_vendor_enforcement: 'warn' | 'block';
+  intake_spec_enforcement: 'warn' | 'block';
   intake_spec_fields: string[];
   intake_block_requires_override: boolean;
   intake_override_role: string;
+
+  // COGS variance enforcement
+  cogs_variance_warning_pct: number;
+  cogs_variance_critical_pct: number;
+  cogs_min_mapping_coverage_pct: number;
+  inventory_exception_enforcement: boolean;
 
   // Version metadata
   effective_from?: string;
@@ -109,6 +115,10 @@ export function getDefaultProcurementSettings(): Omit<ProcurementSettings, 'org_
     intake_spec_fields: ['brand', 'grade', 'trim', 'species', 'cut', 'pack_size'],
     intake_block_requires_override: true,
     intake_override_role: 'admin',
+    cogs_variance_warning_pct: 1.5,
+    cogs_variance_critical_pct: 3.0,
+    cogs_min_mapping_coverage_pct: 75.0,
+    inventory_exception_enforcement: true,
   };
 }
 
@@ -239,6 +249,10 @@ export async function updateProcurementSettings(
         intake_spec_fields: updates.intake_spec_fields ?? current.intake_spec_fields,
         intake_block_requires_override: updates.intake_block_requires_override ?? current.intake_block_requires_override,
         intake_override_role: updates.intake_override_role ?? current.intake_override_role,
+        cogs_variance_warning_pct: updates.cogs_variance_warning_pct ?? current.cogs_variance_warning_pct,
+        cogs_variance_critical_pct: updates.cogs_variance_critical_pct ?? current.cogs_variance_critical_pct,
+        cogs_min_mapping_coverage_pct: updates.cogs_min_mapping_coverage_pct ?? current.cogs_min_mapping_coverage_pct,
+        inventory_exception_enforcement: updates.inventory_exception_enforcement ?? current.inventory_exception_enforcement,
         effective_from: new Date().toISOString(),
         effective_to: null,
         is_active: true,
@@ -444,6 +458,10 @@ function normalizeProcurementSettings(row: any): ProcurementSettings {
     intake_spec_fields: row.intake_spec_fields || ['brand', 'grade', 'trim', 'species', 'cut', 'pack_size'],
     intake_block_requires_override: row.intake_block_requires_override ?? true,
     intake_override_role: row.intake_override_role || 'admin',
+    cogs_variance_warning_pct: parseFloat(row.cogs_variance_warning_pct) || 1.5,
+    cogs_variance_critical_pct: parseFloat(row.cogs_variance_critical_pct) || 3.0,
+    cogs_min_mapping_coverage_pct: parseFloat(row.cogs_min_mapping_coverage_pct) || 75.0,
+    inventory_exception_enforcement: row.inventory_exception_enforcement ?? true,
     effective_from: row.effective_from,
     effective_to: row.effective_to,
   };
