@@ -8,8 +8,11 @@
  * Per-org processing:
  * 1. Comp exception detection → violations
  * 2. Labor exception detection → violations
- * 3. Escalation ladder (time, recurrence, cross-venue)
- * 4. Composite scoring (manager + venue)
+ * 3. COGS variance detection → violations
+ * 4. Inventory exception detection → violations
+ * 5. Sales pace detection → violations
+ * 6. Escalation ladder (time, recurrence, cross-venue)
+ * 7. Composite scoring (manager + venue)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -19,6 +22,9 @@ import { detectLaborExceptions, type LaborMetrics } from '@/lib/database/labor-e
 import { getActiveOperationalStandards } from '@/lib/database/operational-standards';
 import { getLaborBounds } from '@/lib/database/system-bounds';
 import { getActiveCompSettings } from '@/lib/database/comp-settings';
+import { getActiveProcurementSettings, type ProcurementSettings } from '@/lib/database/procurement-settings';
+import { detectAllInventoryExceptions } from '@/lib/database/inventory-exceptions';
+import { getSalesPaceSettings, computePaceStatus } from '@/lib/database/sales-pace';
 import { runEscalationLadder } from '@/lib/enforcement/escalation';
 import { computeEnforcementScores } from '@/lib/enforcement/scoring';
 import type { ViolationType, ViolationSeverity } from '@/lib/database/enforcement';
@@ -170,6 +176,13 @@ async function processOrg(
     laborBounds = await getLaborBounds();
   } catch {
     // Will skip labor detection
+  }
+
+  let procurementSettings: ProcurementSettings | undefined;
+  try {
+    procurementSettings = await getActiveProcurementSettings(orgId);
+  } catch {
+    // Will use defaults for COGS detection
   }
 
   // Get TipSee location mappings for comp detection
@@ -382,9 +395,46 @@ async function processOrg(
         errors.push(`Labor detection failed (${venue.name}): ${err.message}`);
       }
     }
+
+    // ── 3. COGS Variance Detection ──
+    if (procurementSettings) {
+      try {
+        const cogsCount = await detectCogsVariance(
+          supabase, orgId, venue.id, venue.name,
+          businessDate, procurementSettings, errors,
+        );
+        violationsCreated += cogsCount;
+      } catch (err: any) {
+        errors.push(`COGS detection failed (${venue.name}): ${err.message}`);
+      }
+    }
+
+    // ── 4. Inventory Exception Detection ──
+    if (procurementSettings?.inventory_exception_enforcement) {
+      try {
+        const invCount = await detectAndCreateInventoryViolations(
+          supabase, orgId, venue.id, venue.name,
+          businessDate, procurementSettings, errors,
+        );
+        violationsCreated += invCount;
+      } catch (err: any) {
+        errors.push(`Inventory detection failed (${venue.name}): ${err.message}`);
+      }
+    }
+
+    // ── 5. Sales Pace Detection ──
+    try {
+      const paceCount = await detectSalesPaceViolation(
+        supabase, orgId, venue.id, venue.name,
+        businessDate, errors,
+      );
+      violationsCreated += paceCount;
+    } catch (err: any) {
+      errors.push(`Sales pace detection failed (${venue.name}): ${err.message}`);
+    }
   }
 
-  // ── 3. Run Escalation Ladder ──
+  // ── 6. Run Escalation Ladder ──
   let escalation = { time_escalated: 0, recurrence_flagged: 0, systemic_flagged: 0, silence_penalized: 0, stall_penalized: 0 };
   try {
     escalation = await runEscalationLadder(orgId);
@@ -392,7 +442,7 @@ async function processOrg(
     errors.push(`Escalation failed: ${err.message}`);
   }
 
-  // ── 4. Compute Scores ──
+  // ── 7. Compute Scores ──
   let scores = { managers: 0, venues: 0 };
   try {
     const scoreResult = await computeEnforcementScores(orgId, businessDate);
@@ -566,4 +616,456 @@ function subtractDays(dateStr: string, days: number): string {
   const d = new Date(dateStr);
   d.setDate(d.getDate() - days);
   return d.toISOString().split('T')[0];
+}
+
+// ============================================================================
+// COGS Variance Detection
+// ============================================================================
+
+async function detectCogsVariance(
+  supabase: any,
+  orgId: string,
+  venueId: string,
+  venueName: string,
+  businessDate: string,
+  settings: ProcurementSettings,
+  errors: string[],
+): Promise<number> {
+  let created = 0;
+
+  // Gate: check mapping coverage — skip if too low to trust
+  const { data: coverage } = await supabase
+    .from('v_menu_item_mapping_coverage')
+    .select('sales_coverage_pct')
+    .eq('venue_id', venueId)
+    .maybeSingle();
+
+  const salesCoveragePct = parseFloat(coverage?.sales_coverage_pct) || 0;
+  if (salesCoveragePct < settings.cogs_min_mapping_coverage_pct) {
+    return 0;
+  }
+
+  // Query daily_variance for this venue + date
+  const { data: variance } = await supabase
+    .from('daily_variance')
+    .select('actual_cogs_pct, budget_cogs_pct, cogs_variance_pct, cogs_status, actual_sales')
+    .eq('venue_id', venueId)
+    .eq('business_date', businessDate)
+    .maybeSingle();
+
+  if (!variance || variance.cogs_status === 'no_budget' || !variance.cogs_variance_pct) {
+    return 0;
+  }
+
+  // Evaluate against org-level thresholds (override SQL view defaults)
+  const variancePct = parseFloat(variance.cogs_variance_pct);
+  if (variancePct <= 0) return 0; // Under budget = no violation
+
+  let severity: ViolationSeverity | null = null;
+  if (variancePct >= settings.cogs_variance_critical_pct) {
+    severity = 'critical';
+  } else if (variancePct >= settings.cogs_variance_warning_pct) {
+    severity = 'warning';
+  }
+
+  if (!severity) return 0;
+
+  // Dedup
+  const sourceId = `cogs_variance_${venueId}_${businessDate}`;
+  const exists = await checkViolationExists(supabase, orgId, sourceId);
+  if (exists) return 0;
+
+  // Dollar impact: excess COGS % × actual sales
+  const actualSales = parseFloat(variance.actual_sales) || 0;
+  const estimatedImpactUsd = actualSales > 0
+    ? Math.round((variancePct / 100) * actualSales * 100) / 100
+    : undefined;
+
+  try {
+    await createViolationService(supabase, {
+      org_id: orgId,
+      venue_id: venueId,
+      violation_type: 'cogs_variance',
+      severity,
+      title: `COGS ${variancePct.toFixed(1)}pp over budget`,
+      description: `Actual COGS: ${parseFloat(variance.actual_cogs_pct).toFixed(1)}% | Budget: ${parseFloat(variance.budget_cogs_pct).toFixed(1)}% | Variance: +${variancePct.toFixed(1)}pp`,
+      metadata: {
+        actual_cogs_pct: parseFloat(variance.actual_cogs_pct),
+        budget_cogs_pct: parseFloat(variance.budget_cogs_pct),
+        cogs_variance_pct: variancePct,
+        mapping_coverage_pct: salesCoveragePct,
+      },
+      source_table: 'daily_variance',
+      source_id: sourceId,
+      business_date: businessDate,
+      policy_snapshot: {
+        type: 'cogs_thresholds',
+        cogs_variance_warning_pct: settings.cogs_variance_warning_pct,
+        cogs_variance_critical_pct: settings.cogs_variance_critical_pct,
+        cogs_min_mapping_coverage_pct: settings.cogs_min_mapping_coverage_pct,
+        actual_coverage_pct: salesCoveragePct,
+        captured_at: new Date().toISOString(),
+      },
+      evidence: {
+        actual_cogs_pct: parseFloat(variance.actual_cogs_pct),
+        budget_cogs_pct: parseFloat(variance.budget_cogs_pct),
+        cogs_variance_pct: variancePct,
+        actual_sales: actualSales,
+      },
+      derived_metrics: {
+        cogs_variance_pp: variancePct,
+        sales_coverage_pct: salesCoveragePct,
+      },
+      estimated_impact_usd: estimatedImpactUsd,
+      impact_confidence: salesCoveragePct >= 90 ? 'high' : 'medium',
+      impact_inputs: estimatedImpactUsd ? {
+        method: 'excess_cogs_pct_x_actual_sales',
+        variance_pct: variancePct,
+        actual_sales: actualSales,
+        mapping_coverage: salesCoveragePct,
+      } : undefined,
+    });
+    created++;
+  } catch (err: any) {
+    errors.push(`COGS violation failed (${venueName}): ${err.message}`);
+  }
+
+  return created;
+}
+
+// ============================================================================
+// Inventory Exception Detection
+// ============================================================================
+
+async function detectAndCreateInventoryViolations(
+  supabase: any,
+  orgId: string,
+  venueId: string,
+  venueName: string,
+  businessDate: string,
+  settings: ProcurementSettings,
+  errors: string[],
+): Promise<number> {
+  let created = 0;
+
+  const results = await detectAllInventoryExceptions(venueId, businessDate, settings);
+
+  // ── Cost Spikes ──
+  for (const spike of results.cost_spikes) {
+    const sourceId = `inv_cost_spike_${spike.item_id}_${spike.effective_date}`;
+    const exists = await checkViolationExists(supabase, orgId, sourceId);
+    if (exists) continue;
+
+    const severity: ViolationSeverity = spike.z_score >= 3.0 ? 'critical' : 'warning';
+
+    try {
+      await createViolationService(supabase, {
+        org_id: orgId,
+        venue_id: venueId,
+        violation_type: 'inventory_exception',
+        severity,
+        title: `Cost spike: ${spike.item_name} +${spike.variance_pct.toFixed(0)}%`,
+        description: `${spike.item_name} cost jumped from $${spike.avg_cost.toFixed(2)} to $${spike.new_cost.toFixed(2)} (z-score: ${spike.z_score.toFixed(1)})`,
+        metadata: {
+          exception_type: 'cost_spike',
+          item_id: spike.item_id,
+          item_name: spike.item_name,
+          vendor_id: spike.vendor_id,
+          vendor_name: spike.vendor_name,
+          z_score: spike.z_score,
+          variance_pct: spike.variance_pct,
+        },
+        source_table: 'item_cost_history',
+        source_id: sourceId,
+        business_date: businessDate,
+        evidence: {
+          new_cost: spike.new_cost,
+          avg_cost: spike.avg_cost,
+          std_dev: spike.std_dev,
+          z_score: spike.z_score,
+        },
+        estimated_impact_usd: Math.abs(spike.new_cost - spike.avg_cost),
+        impact_confidence: 'medium',
+        impact_inputs: {
+          method: 'cost_delta_per_unit',
+          new_cost: spike.new_cost,
+          avg_cost: spike.avg_cost,
+        },
+      });
+      created++;
+    } catch (err: any) {
+      errors.push(`Cost spike violation failed (${venueName}, ${spike.item_name}): ${err.message}`);
+    }
+  }
+
+  // ── Inventory Shrink ──
+  for (const shrink of results.shrink_exceptions) {
+    const sourceId = `inv_shrink_${shrink.count_id}_${shrink.count_date}`;
+    const exists = await checkViolationExists(supabase, orgId, sourceId);
+    if (exists) continue;
+
+    const severity: ViolationSeverity =
+      shrink.total_shrink_cost >= (settings.shrink_cost_critical || 2000) ? 'critical' : 'warning';
+
+    try {
+      await createViolationService(supabase, {
+        org_id: orgId,
+        venue_id: venueId,
+        violation_type: 'inventory_exception',
+        severity,
+        title: `Inventory shrink: $${shrink.total_shrink_cost.toFixed(0)} (${shrink.shrink_pct.toFixed(1)}%)`,
+        description: `Shrink detected on count ${shrink.count_date}: $${shrink.total_shrink_cost.toFixed(2)} / $${shrink.total_counted_value.toFixed(2)} total`,
+        metadata: {
+          exception_type: 'shrink',
+          count_id: shrink.count_id,
+          count_date: shrink.count_date,
+          top_items: shrink.high_shrink_items.slice(0, 5).map((i) => ({
+            name: i.item_name,
+            cost: i.shrink_cost,
+          })),
+        },
+        source_table: 'inventory_counts',
+        source_id: sourceId,
+        business_date: businessDate,
+        evidence: {
+          total_shrink_cost: shrink.total_shrink_cost,
+          total_counted_value: shrink.total_counted_value,
+          shrink_pct: shrink.shrink_pct,
+          item_count: shrink.high_shrink_items.length,
+        },
+        estimated_impact_usd: shrink.total_shrink_cost,
+        impact_confidence: 'high',
+        impact_inputs: {
+          method: 'direct_shrink_cost',
+          total_shrink_cost: shrink.total_shrink_cost,
+        },
+      });
+      created++;
+    } catch (err: any) {
+      errors.push(`Shrink violation failed (${venueName}): ${err.message}`);
+    }
+  }
+
+  // ── Recipe Cost Drift ──
+  for (const drift of results.recipe_drift) {
+    const sourceId = `inv_recipe_drift_${drift.recipe_id}_${businessDate}`;
+    const exists = await checkViolationExists(supabase, orgId, sourceId);
+    if (exists) continue;
+
+    const severity: ViolationSeverity =
+      Math.abs(drift.drift_pct) >= (settings.recipe_drift_critical_pct || 20) ? 'critical' : 'warning';
+
+    try {
+      await createViolationService(supabase, {
+        org_id: orgId,
+        venue_id: venueId,
+        violation_type: 'inventory_exception',
+        severity,
+        title: `Recipe drift: ${drift.recipe_name} ${drift.drift_pct > 0 ? '+' : ''}${drift.drift_pct.toFixed(0)}%`,
+        description: `${drift.recipe_name} cost moved from $${drift.previous_cost.toFixed(2)} to $${drift.current_cost.toFixed(2)} (${drift.drift_pct.toFixed(1)}% drift)`,
+        metadata: {
+          exception_type: 'recipe_drift',
+          recipe_id: drift.recipe_id,
+          recipe_name: drift.recipe_name,
+          drift_pct: drift.drift_pct,
+        },
+        source_table: 'recipe_costs',
+        source_id: sourceId,
+        business_date: businessDate,
+        evidence: {
+          current_cost: drift.current_cost,
+          previous_cost: drift.previous_cost,
+          drift_pct: drift.drift_pct,
+        },
+        estimated_impact_usd: Math.abs(drift.current_cost - drift.previous_cost),
+        impact_confidence: 'low',
+        impact_inputs: {
+          method: 'recipe_cost_delta_per_unit',
+          current_cost: drift.current_cost,
+          previous_cost: drift.previous_cost,
+        },
+      });
+      created++;
+    } catch (err: any) {
+      errors.push(`Recipe drift violation failed (${venueName}, ${drift.recipe_name}): ${err.message}`);
+    }
+  }
+
+  // ── Par Level Violations ──
+  for (const par of results.par_violations) {
+    const sourceId = `inv_par_${par.item_id}_${businessDate}`;
+    const exists = await checkViolationExists(supabase, orgId, sourceId);
+    if (exists) continue;
+
+    try {
+      await createViolationService(supabase, {
+        org_id: orgId,
+        venue_id: venueId,
+        violation_type: 'inventory_exception',
+        severity: 'warning',
+        title: `Below par: ${par.item_name} (${par.quantity_on_hand}/${par.par_level})`,
+        description: `${par.item_name} on-hand: ${par.quantity_on_hand}, reorder point: ${par.reorder_point}, par: ${par.par_level}. Deficit: ${par.deficit}`,
+        metadata: {
+          exception_type: 'par_violation',
+          item_id: par.item_id,
+          item_name: par.item_name,
+          sku: par.sku,
+        },
+        source_table: 'inventory_balances',
+        source_id: sourceId,
+        business_date: businessDate,
+        evidence: {
+          quantity_on_hand: par.quantity_on_hand,
+          reorder_point: par.reorder_point,
+          par_level: par.par_level,
+          deficit: par.deficit,
+        },
+        estimated_impact_usd: par.estimated_order_cost,
+        impact_confidence: 'low',
+        impact_inputs: {
+          method: 'estimated_order_cost',
+          estimated_order_cost: par.estimated_order_cost,
+        },
+      });
+      created++;
+    } catch (err: any) {
+      errors.push(`Par violation failed (${venueName}, ${par.item_name}): ${err.message}`);
+    }
+  }
+
+  return created;
+}
+
+// ============================================================================
+// Sales Pace Detection
+// ============================================================================
+
+async function detectSalesPaceViolation(
+  supabase: any,
+  orgId: string,
+  venueId: string,
+  venueName: string,
+  businessDate: string,
+  errors: string[],
+): Promise<number> {
+  // Get venue's sales pace settings — skip if not configured
+  const paceSettings = await getSalesPaceSettings(venueId);
+  if (!paceSettings || !paceSettings.is_active) return 0;
+
+  // Get the latest snapshot for the business date (end-of-day state)
+  const { data: latestSnapshot } = await supabase
+    .from('sales_snapshots')
+    .select('gross_sales, net_sales, covers_count, checks_count')
+    .eq('venue_id', venueId)
+    .eq('business_date', businessDate)
+    .order('snapshot_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!latestSnapshot) return 0;
+
+  const actualSales = parseFloat(latestSnapshot.gross_sales) || 0;
+  if (actualSales <= 0) return 0;
+
+  // Get target: forecast revenue or SDLW gross sales
+  let targetSales = 0;
+
+  if (paceSettings.use_forecast) {
+    const { data: forecast } = await supabase
+      .from('forecasts_with_bias')
+      .select('revenue_predicted')
+      .eq('venue_id', venueId)
+      .eq('business_date', businessDate)
+      .order('revenue_predicted', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (forecast) {
+      targetSales = parseFloat(forecast.revenue_predicted) || 0;
+    }
+  }
+
+  // Fallback to SDLW if no forecast or forecast disabled
+  if (targetSales <= 0 && paceSettings.use_sdlw) {
+    const sdlwDate = subtractDays(businessDate, 7);
+    const { data: sdlwFact } = await supabase
+      .from('venue_day_facts')
+      .select('gross_sales')
+      .eq('venue_id', venueId)
+      .eq('business_date', sdlwDate)
+      .maybeSingle();
+
+    if (sdlwFact) {
+      targetSales = parseFloat(sdlwFact.gross_sales) || 0;
+    }
+  }
+
+  if (targetSales <= 0) return 0; // No target = no enforcement
+
+  // Compute pace status using venue-configured thresholds
+  const status = computePaceStatus(actualSales, targetSales, paceSettings);
+  if (status === 'on_pace' || status === 'no_target') return 0;
+
+  // Dedup
+  const sourceId = `sales_pace_${venueId}_${businessDate}`;
+  const exists = await checkViolationExists(supabase, orgId, sourceId);
+  if (exists) return 0;
+
+  const variancePct = ((actualSales - targetSales) / targetSales) * 100;
+  const severity: ViolationSeverity = status === 'critical' ? 'critical' : 'warning';
+  const shortfallUsd = Math.max(0, targetSales - actualSales);
+
+  try {
+    await createViolationService(supabase, {
+      org_id: orgId,
+      venue_id: venueId,
+      violation_type: 'sales_pace',
+      severity,
+      title: `Sales ${Math.abs(variancePct).toFixed(0)}% below target`,
+      description: `Actual: $${actualSales.toFixed(0)} | Target: $${targetSales.toFixed(0)} | Shortfall: $${shortfallUsd.toFixed(0)} (${Math.abs(variancePct).toFixed(1)}%)`,
+      metadata: {
+        actual_sales: actualSales,
+        target_sales: targetSales,
+        variance_pct: variancePct,
+        pace_status: status,
+        target_source: paceSettings.use_forecast && targetSales > 0 ? 'forecast' : 'sdlw',
+        covers_count: parseInt(latestSnapshot.covers_count) || 0,
+        checks_count: parseInt(latestSnapshot.checks_count) || 0,
+      },
+      source_table: 'sales_snapshots',
+      source_id: sourceId,
+      business_date: businessDate,
+      shift_period: 'dinner',
+      policy_snapshot: {
+        type: 'sales_pace_settings',
+        pace_warning_pct: paceSettings.pace_warning_pct,
+        pace_critical_pct: paceSettings.pace_critical_pct,
+        use_forecast: paceSettings.use_forecast,
+        use_sdlw: paceSettings.use_sdlw,
+        captured_at: new Date().toISOString(),
+      },
+      evidence: {
+        actual_sales: actualSales,
+        target_sales: targetSales,
+        variance_pct: variancePct,
+        covers_count: parseInt(latestSnapshot.covers_count) || 0,
+      },
+      derived_metrics: {
+        shortfall_usd: shortfallUsd,
+        variance_pct: variancePct,
+        target_source: paceSettings.use_forecast && targetSales > 0 ? 'forecast' : 'sdlw',
+      },
+      estimated_impact_usd: shortfallUsd,
+      impact_confidence: 'high',
+      impact_inputs: {
+        method: 'sales_shortfall',
+        actual_sales: actualSales,
+        target_sales: targetSales,
+      },
+    });
+    return 1;
+  } catch (err: any) {
+    errors.push(`Sales pace violation failed (${venueName}): ${err.message}`);
+    return 0;
+  }
 }

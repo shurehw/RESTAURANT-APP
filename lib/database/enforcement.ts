@@ -19,7 +19,9 @@ export type ViolationType =
   | 'sales_pace'
   | 'greeting_delay'
   | 'staffing_gap'
-  | 'intake_policy';
+  | 'intake_policy'
+  | 'cogs_variance'
+  | 'inventory_exception';
 
 export type ViolationSeverity = 'info' | 'warning' | 'critical';
 
