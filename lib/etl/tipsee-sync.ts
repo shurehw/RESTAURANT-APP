@@ -7,6 +7,15 @@ import { Pool } from 'pg';
 import { createHash } from 'crypto';
 import { getTipseePool } from '@/lib/database/tipsee';
 import { getServiceClient } from '@/lib/supabase/service';
+import {
+  getActiveToastVenues,
+  getToastVenueConfig,
+  fetchToastOrders,
+  aggregateToastOrders,
+  aggregateToastServers,
+  aggregateToastItems,
+  updateToastSyncStatus,
+} from '@/lib/integrations/toast';
 
 // Types for fact tables
 export interface VenueDayFact {
@@ -1021,6 +1030,9 @@ export async function syncVenueDay(
       rowsLoaded++;
     }
 
+    // Auto-discover new menu items for COGS mapping
+    await syncMenuItemMappings(venueId, supabase);
+
     // Update ETL run as successful
     await (supabase as any)
       .from('etl_runs')
@@ -1069,13 +1081,205 @@ export async function syncVenueDay(
 }
 
 /**
+ * Extract and load data for a Toast POS venue and date.
+ * Calls Toast Orders API v2 directly (no TipSee middleware).
+ */
+export async function syncVenueDayToast(
+  venueId: string,
+  businessDate: string
+): Promise<SyncResult> {
+  const startTime = Date.now();
+  const supabase = getServiceClient();
+
+  const config = await getToastVenueConfig(venueId);
+  if (!config) {
+    return {
+      success: false, etl_run_id: '', venue_id: venueId,
+      business_date: businessDate, rows_extracted: 0, rows_loaded: 0,
+      duration_ms: Date.now() - startTime, error: 'No Toast config found',
+    };
+  }
+
+  const { data: etlRun, error: etlError } = await (supabase as any)
+    .from('etl_runs')
+    .insert({
+      source: 'toast',
+      venue_id: venueId,
+      business_date: businessDate,
+      status: 'running',
+    })
+    .select()
+    .single();
+
+  if (etlError || !etlRun) {
+    return {
+      success: false, etl_run_id: '', venue_id: venueId,
+      business_date: businessDate, rows_extracted: 0, rows_loaded: 0,
+      duration_ms: Date.now() - startTime,
+      error: `Failed to create ETL run: ${etlError?.message}`,
+    };
+  }
+
+  const etlRunId = (etlRun as any).id;
+  let rowsExtracted = 0;
+  let rowsLoaded = 0;
+
+  try {
+    // Fetch all orders for the day from Toast
+    const orders = await fetchToastOrders(config, businessDate);
+    rowsExtracted = orders.length;
+
+    if (orders.length === 0) {
+      await (supabase as any).from('etl_runs').update({
+        status: 'success', finished_at: new Date().toISOString(),
+        rows_extracted: 0, rows_loaded: 0,
+      }).eq('id', etlRunId);
+
+      await updateToastSyncStatus(venueId, 'success');
+      return {
+        success: true, etl_run_id: etlRunId, venue_id: venueId,
+        business_date: businessDate, rows_extracted: 0, rows_loaded: 0,
+        duration_ms: Date.now() - startTime,
+      };
+    }
+
+    // Aggregate into day-level summary
+    const day = aggregateToastOrders(orders);
+
+    // Upsert venue_day_facts
+    await (supabase as any)
+      .from('venue_day_facts')
+      .upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        gross_sales: day.gross_sales,
+        net_sales: day.net_sales,
+        food_sales: day.food_sales,
+        beverage_sales: day.beverage_sales,
+        wine_sales: day.wine_sales,
+        liquor_sales: day.liquor_sales,
+        beer_sales: day.beer_sales,
+        other_sales: day.other_sales,
+        comps_total: day.comps_total,
+        voids_total: day.voids_total,
+        taxes_total: day.taxes_total,
+        tips_total: day.tips_total,
+        checks_count: day.checks_count,
+        covers_count: day.covers_count,
+        items_sold: day.items_sold,
+        is_complete: true,
+        last_synced_at: new Date().toISOString(),
+        etl_run_id: etlRunId,
+      }, { onConflict: 'venue_id,business_date' });
+    rowsLoaded++;
+
+    // Upsert source snapshot for audit
+    await (supabase as any)
+      .from('source_day_snapshot')
+      .upsert({
+        venue_id: venueId,
+        business_date: businessDate,
+        source_system: 'toast',
+        source_gross_sales: day.gross_sales,
+        source_net_sales: day.net_sales,
+        source_total_checks: day.checks_count,
+        source_total_covers: day.covers_count,
+        source_total_tax: day.taxes_total,
+        source_total_comps: day.comps_total,
+        source_total_voids: day.voids_total,
+        raw_hash: computeHash(day),
+        etl_run_id: etlRunId,
+        extracted_at: new Date().toISOString(),
+      }, { onConflict: 'venue_id,business_date,source_system' });
+    rowsLoaded++;
+
+    // Server day facts
+    const servers = aggregateToastServers(orders);
+    for (const s of servers) {
+      await (supabase as any)
+        .from('server_day_facts')
+        .upsert({
+          venue_id: venueId,
+          business_date: businessDate,
+          employee_name: s.employee_name,
+          employee_role: s.employee_role,
+          gross_sales: Math.round(s.gross_sales * 100) / 100,
+          checks_count: s.checks_count,
+          covers_count: s.covers_count,
+          tips_total: Math.round(s.tips_total * 100) / 100,
+          comps_total: Math.round(s.comps_total * 100) / 100,
+          avg_turn_mins: 0,
+        }, { onConflict: 'venue_id,business_date,employee_name' });
+      rowsLoaded++;
+    }
+
+    // Item day facts (top 100)
+    const items = aggregateToastItems(orders);
+    for (const item of items) {
+      await (supabase as any)
+        .from('item_day_facts')
+        .upsert({
+          venue_id: venueId,
+          business_date: businessDate,
+          menu_item_name: item.menu_item_name,
+          parent_category: item.parent_category,
+          category: item.category,
+          quantity_sold: item.quantity_sold,
+          gross_sales: Math.round(item.gross_sales * 100) / 100,
+          net_sales: Math.round(item.net_sales * 100) / 100,
+          comps_total: Math.round(item.comps_total * 100) / 100,
+          voids_total: Math.round(item.voids_total * 100) / 100,
+        }, { onConflict: 'venue_id,business_date,menu_item_name' });
+      rowsLoaded++;
+    }
+
+    // Auto-discover new menu items for COGS mapping
+    await syncMenuItemMappings(venueId, supabase);
+
+    // Update ETL run
+    await (supabase as any).from('etl_runs').update({
+      status: 'success',
+      finished_at: new Date().toISOString(),
+      rows_extracted: rowsExtracted,
+      rows_loaded: rowsLoaded,
+    }).eq('id', etlRunId);
+
+    await updateToastSyncStatus(venueId, 'success');
+
+    return {
+      success: true, etl_run_id: etlRunId, venue_id: venueId,
+      business_date: businessDate, rows_extracted: rowsExtracted,
+      rows_loaded: rowsLoaded, duration_ms: Date.now() - startTime,
+    };
+  } catch (error: any) {
+    console.error(`Toast sync error for ${venueId}:`, error);
+
+    await (supabase as any).from('etl_runs').update({
+      status: 'failed', finished_at: new Date().toISOString(),
+      error_message: error.message, rows_extracted: rowsExtracted, rows_loaded: rowsLoaded,
+    }).eq('id', etlRunId);
+
+    await updateToastSyncStatus(venueId, 'error', error.message);
+
+    return {
+      success: false, etl_run_id: etlRunId, venue_id: venueId,
+      business_date: businessDate, rows_extracted: rowsExtracted,
+      rows_loaded: rowsLoaded, duration_ms: Date.now() - startTime,
+      error: error.message,
+    };
+  }
+}
+
+/**
  * Sync all mapped venues for a specific date
  */
 export async function syncAllVenuesForDate(businessDate: string): Promise<SyncResult[]> {
   const mappings = await getVenueTipseeMappings();
   const pool = getTipseePool();
   const results: SyncResult[] = [];
+  const processedVenueIds = new Set<string>();
 
+  // 1. TipSee-mapped venues (Upserve, Simphony, Avero)
   for (const mapping of mappings) {
     const posType = await getPosType(pool, mapping.tipsee_location_uuid);
     console.log(`Syncing ${mapping.venue_name} for ${businessDate} (${posType})...`);
@@ -1089,6 +1293,18 @@ export async function syncAllVenuesForDate(businessDate: string): Promise<SyncRe
       result = await syncVenueDay(mapping.venue_id, mapping.tipsee_location_uuid, businessDate);
     }
 
+    processedVenueIds.add(mapping.venue_id);
+    results.push(result);
+    console.log(`  ${result.success ? '✓' : '✗'} ${result.rows_loaded} rows in ${result.duration_ms}ms`);
+  }
+
+  // 2. Toast venues (direct API, no TipSee mapping)
+  const toastVenues = await getActiveToastVenues();
+  for (const tv of toastVenues) {
+    if (processedVenueIds.has(tv.venue_id)) continue;
+    console.log(`Syncing ${tv.venue_name} for ${businessDate} (toast)...`);
+
+    const result = await syncVenueDayToast(tv.venue_id, businessDate);
     results.push(result);
     console.log(`  ${result.success ? '✓' : '✗'} ${result.rows_loaded} rows in ${result.duration_ms}ms`);
   }
@@ -1167,4 +1383,48 @@ export async function backfillDateRange(
   }
 
   return { total, successful, failed };
+}
+
+/**
+ * Auto-discover new menu items from item_day_facts and insert unmapped rows
+ * into menu_item_recipe_map. Never overwrites existing mappings.
+ */
+async function syncMenuItemMappings(
+  venueId: string,
+  supabase: ReturnType<typeof getServiceClient>
+): Promise<number> {
+  try {
+    const { data: unmapped, error } = await (supabase as any).rpc(
+      'discover_unmapped_menu_items',
+      { p_venue_id: venueId }
+    );
+
+    if (error || !unmapped || unmapped.length === 0) return 0;
+
+    const mappings = unmapped.map((item: any) => ({
+      venue_id: venueId,
+      menu_item_name: item.menu_item_name,
+      recipe_id: null,
+      is_active: true,
+      confidence: 'auto_discovered',
+    }));
+
+    const { error: upsertError } = await (supabase as any)
+      .from('menu_item_recipe_map')
+      .upsert(mappings, {
+        onConflict: 'venue_id,menu_item_name',
+        ignoreDuplicates: true,
+      });
+
+    if (upsertError) {
+      console.error('Failed to sync menu item mappings:', upsertError.message);
+      return 0;
+    }
+
+    return mappings.length;
+  } catch (err: any) {
+    // Non-fatal — don't fail the ETL run for mapping discovery
+    console.error('Menu item mapping sync error:', err.message);
+    return 0;
+  }
 }

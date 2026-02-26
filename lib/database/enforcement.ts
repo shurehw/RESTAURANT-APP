@@ -18,7 +18,8 @@ export type ViolationType =
   | 'comp_exception'
   | 'sales_pace'
   | 'greeting_delay'
-  | 'staffing_gap';
+  | 'staffing_gap'
+  | 'intake_policy';
 
 export type ViolationSeverity = 'info' | 'warning' | 'critical';
 

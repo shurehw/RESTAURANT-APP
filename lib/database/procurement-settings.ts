@@ -30,6 +30,13 @@ export interface ProcurementSettings {
   // Purchasing rules
   require_purchasing_authorization: boolean;
 
+  // Intake policy enforcement
+  intake_vendor_enforcement: 'off' | 'warn' | 'block';
+  intake_spec_enforcement: 'off' | 'warn' | 'block';
+  intake_spec_fields: string[];
+  intake_block_requires_override: boolean;
+  intake_override_role: string;
+
   // Version metadata
   effective_from?: string;
   effective_to?: string | null;
@@ -97,6 +104,11 @@ export function getDefaultProcurementSettings(): Omit<ProcurementSettings, 'org_
     recipe_drift_critical_pct: 20,
     recipe_drift_lookback_days: 30,
     require_purchasing_authorization: false,
+    intake_vendor_enforcement: 'warn',
+    intake_spec_enforcement: 'warn',
+    intake_spec_fields: ['brand', 'grade', 'trim', 'species', 'cut', 'pack_size'],
+    intake_block_requires_override: true,
+    intake_override_role: 'admin',
   };
 }
 
@@ -222,6 +234,11 @@ export async function updateProcurementSettings(
         recipe_drift_critical_pct: updates.recipe_drift_critical_pct ?? current.recipe_drift_critical_pct,
         recipe_drift_lookback_days: updates.recipe_drift_lookback_days ?? current.recipe_drift_lookback_days,
         require_purchasing_authorization: updates.require_purchasing_authorization ?? current.require_purchasing_authorization,
+        intake_vendor_enforcement: updates.intake_vendor_enforcement ?? current.intake_vendor_enforcement,
+        intake_spec_enforcement: updates.intake_spec_enforcement ?? current.intake_spec_enforcement,
+        intake_spec_fields: updates.intake_spec_fields ?? current.intake_spec_fields,
+        intake_block_requires_override: updates.intake_block_requires_override ?? current.intake_block_requires_override,
+        intake_override_role: updates.intake_override_role ?? current.intake_override_role,
         effective_from: new Date().toISOString(),
         effective_to: null,
         is_active: true,
@@ -422,6 +439,11 @@ function normalizeProcurementSettings(row: any): ProcurementSettings {
     recipe_drift_critical_pct: parseFloat(row.recipe_drift_critical_pct),
     recipe_drift_lookback_days: row.recipe_drift_lookback_days,
     require_purchasing_authorization: row.require_purchasing_authorization,
+    intake_vendor_enforcement: row.intake_vendor_enforcement || 'warn',
+    intake_spec_enforcement: row.intake_spec_enforcement || 'warn',
+    intake_spec_fields: row.intake_spec_fields || ['brand', 'grade', 'trim', 'species', 'cut', 'pack_size'],
+    intake_block_requires_override: row.intake_block_requires_override ?? true,
+    intake_override_role: row.intake_override_role || 'admin',
     effective_from: row.effective_from,
     effective_to: row.effective_to,
   };

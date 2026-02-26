@@ -15,7 +15,6 @@ import type {
   InventoryShrinkException,
   RecipeCostDriftException,
   ParLevelViolationException,
-  PROCUREMENT_DEFAULTS,
 } from '@/lib/database/inventory-exceptions';
 
 // ── Cost Spike Feedback ─────────────────────────────────────────
@@ -165,14 +164,16 @@ export async function generateShrinkFeedback(params: {
   businessDate: string;
   exceptions: InventoryShrinkException[];
   signalIds: string[];
+  shrinkCostCritical?: number;
 }): Promise<FeedbackObject[]> {
   if (params.exceptions.length === 0) return [];
 
+  const criticalThreshold = params.shrinkCostCritical ?? 2000;
   const results: FeedbackObject[] = [];
 
   for (let i = 0; i < params.exceptions.length; i++) {
     const ex = params.exceptions[i];
-    const severity = ex.total_shrink_cost >= 2000 ? 'critical' : 'warning';
+    const severity = ex.total_shrink_cost >= criticalThreshold ? 'critical' : 'warning';
 
     const topItems = ex.high_shrink_items
       .slice(0, 5)
@@ -216,14 +217,16 @@ export async function generateRecipeDriftFeedback(params: {
   businessDate: string;
   exceptions: RecipeCostDriftException[];
   signalIds: string[];
+  recipeDriftCriticalPct?: number;
 }): Promise<FeedbackObject[]> {
   if (params.exceptions.length === 0) return [];
 
+  const criticalPct = params.recipeDriftCriticalPct ?? 20;
   const results: FeedbackObject[] = [];
 
   for (let i = 0; i < params.exceptions.length; i++) {
     const ex = params.exceptions[i];
-    const severity = Math.abs(ex.drift_pct) >= 20 ? 'critical' : 'warning';
+    const severity = Math.abs(ex.drift_pct) >= criticalPct ? 'critical' : 'warning';
     const direction = ex.drift_pct > 0 ? 'increased' : 'decreased';
 
     results.push(await createFeedbackObject({

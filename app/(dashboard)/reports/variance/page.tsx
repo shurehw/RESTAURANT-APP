@@ -2,14 +2,13 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Food Cost Variance Report
- * Shows theoretical vs actual food cost analysis
+ * Theoretical vs Actual analysis using live TipSee data + recipe mappings
  */
 
 import { createClient } from '@/lib/supabase/server';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Upload, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, Link2 } from 'lucide-react';
 
 export default async function VarianceReportPage() {
   const supabase = await createClient();
@@ -35,11 +34,17 @@ export default async function VarianceReportPage() {
   const varianceDollars = totalActual - totalTheoretical;
   const variancePct = totalTheoretical > 0 ? ((varianceDollars / totalTheoretical) * 100) : 0;
 
-  // Check POS mapping status
-  const { data: unmappedItems, count: unmappedCount } = await supabase
-    .from('pos_items')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_mapped', false);
+  // Check mapping coverage (from live menu_item_recipe_map)
+  const { data: coverageRows } = await supabase
+    .from('v_menu_item_mapping_coverage')
+    .select('*');
+
+  // Aggregate across all venues the user has access to
+  const totalItems = coverageRows?.reduce((sum, r) => sum + (r.total_items || 0), 0) || 0;
+  const unmappedItems = coverageRows?.reduce((sum, r) => sum + (r.unmapped_items || 0), 0) || 0;
+  const salesCoveragePct = coverageRows?.length
+    ? Math.round(coverageRows.reduce((sum, r) => sum + (r.sales_coverage_pct || 0), 0) / coverageRows.length)
+    : 0;
 
   return (
     <div>
@@ -51,32 +56,42 @@ export default async function VarianceReportPage() {
             Theoretical vs Actual Analysis • Last 30 Days
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <a href="/reports/variance/import">
-              <Upload className="w-4 h-4 mr-2" />
-              Import POS Sales
-            </a>
-          </Button>
-          <Button variant="brass" asChild>
-            <a href="/reports/variance/map-items">
-              Map POS Items {unmappedCount && unmappedCount > 0 && `(${unmappedCount})`}
-            </a>
-          </Button>
-        </div>
+        <Button variant="brass" asChild>
+          <a href="/reports/variance/map-items">
+            <Link2 className="w-4 h-4 mr-2" />
+            Map Menu Items {unmappedItems > 0 && `(${unmappedItems})`}
+          </a>
+        </Button>
       </div>
 
-      {/* Warning if unmapped items */}
-      {unmappedCount && unmappedCount > 0 && (
+      {/* Coverage banner */}
+      {totalItems > 0 && unmappedItems > 0 && (
         <Card className="p-4 mb-6 bg-opsos-error-50 border-opsos-error-200">
           <div className="flex items-start gap-3">
-            <div className="text-opsos-error-600 font-semibold">⚠</div>
+            <div className="text-opsos-error-600 font-semibold text-lg">!</div>
             <div>
               <h4 className="font-semibold text-opsos-error-800">
-                {unmappedCount} unmapped POS items
+                {unmappedItems} of {totalItems} menu items unmapped
               </h4>
               <p className="text-sm text-opsos-error-700">
-                Map these items to recipes for accurate theoretical calculations.
+                {salesCoveragePct}% of sales revenue is covered by mapped items.
+                Map remaining items for more accurate theoretical COGS.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {totalItems > 0 && unmappedItems === 0 && (
+        <Card className="p-4 mb-6 bg-opsos-sage-50 border-opsos-sage-200">
+          <div className="flex items-start gap-3">
+            <div className="text-opsos-sage-600 font-semibold text-lg">&#10003;</div>
+            <div>
+              <h4 className="font-semibold text-opsos-sage-800">
+                All {totalItems} menu items mapped
+              </h4>
+              <p className="text-sm text-opsos-sage-700">
+                100% sales coverage. Theoretical COGS is fully computed.
               </p>
             </div>
           </div>
@@ -135,7 +150,10 @@ export default async function VarianceReportPage() {
           <div className="text-center py-12 text-muted-foreground">
             <Calendar className="w-12 h-12 mx-auto mb-4 opacity-20" />
             <p className="mb-2">No variance data available</p>
-            <p className="text-sm">Import POS sales data to see theoretical vs actual analysis</p>
+            <p className="text-sm">
+              Map menu items to recipes to see theoretical vs actual analysis.
+              Data flows automatically from your POS.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">

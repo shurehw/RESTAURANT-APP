@@ -141,7 +141,7 @@ export async function detectCostSpikes(
       item_id,
       vendor_id,
       venue_id,
-      cost,
+      unit_cost,
       effective_date,
       source,
       source_id
@@ -199,14 +199,14 @@ export async function detectCostSpikes(
     // Fetch historical stats (excluding today's entries)
     const { data: history } = await (supabase as any)
       .from('item_cost_history')
-      .select('cost')
+      .select('unit_cost')
       .eq('item_id', itemId)
       .gte('effective_date', lookbackDate.toISOString())
       .lt('effective_date', oneDayAgo.toISOString());
 
     if (!history || history.length < minHistory) continue;
 
-    const costs = history.map((h: any) => Number(h.cost));
+    const costs = history.map((h: any) => Number(h.unit_cost));
     const avg = costs.reduce((a: number, b: number) => a + b, 0) / costs.length;
     const variance = costs.reduce((a: number, b: number) => a + Math.pow(b - avg, 2), 0) / costs.length;
     const stdDev = Math.sqrt(variance);
@@ -214,7 +214,7 @@ export async function detectCostSpikes(
     if (stdDev === 0) continue; // No variance in history — can't compute z-score
 
     for (const entry of entries) {
-      const newCost = Number(entry.cost);
+      const newCost = Number(entry.unit_cost);
       const zScore = (newCost - avg) / stdDev;
 
       if (Math.abs(zScore) >= zThreshold) {
@@ -244,50 +244,16 @@ export async function detectCostSpikes(
 
 /**
  * Fetch unresolved invoice variances at or above warning severity.
+ * TODO: The invoice_variances table does not exist yet. This detector
+ * is stubbed to return empty until the table is created.
  */
 export async function detectInvoiceVariances(
   venueId: string
 ): Promise<InvoiceVarianceException[]> {
-  const supabase = getServiceClient();
-
-  const { data, error } = await (supabase as any)
-    .from('invoice_variances')
-    .select(`
-      id,
-      invoice_id,
-      variance_type,
-      severity,
-      line_count,
-      total_variance_amount,
-      variance_pct,
-      invoices!inner (
-        invoice_number,
-        invoice_date,
-        venue_id,
-        vendor_id,
-        vendors ( name )
-      )
-    `)
-    .eq('invoices.venue_id', venueId)
-    .eq('resolved', false)
-    .in('severity', ['warning', 'critical']);
-
-  if (error || !data) return [];
-
-  return data.map((row: any) => ({
-    id: row.id,
-    invoice_id: row.invoice_id,
-    invoice_number: row.invoices?.invoice_number || null,
-    venue_id: venueId,
-    vendor_id: row.invoices?.vendor_id || '',
-    vendor_name: row.invoices?.vendors?.name || 'Unknown Vendor',
-    variance_type: row.variance_type,
-    severity: row.severity,
-    line_count: row.line_count || 0,
-    total_variance_amount: Number(row.total_variance_amount) || 0,
-    variance_pct: Number(row.variance_pct) || 0,
-    invoice_date: row.invoices?.invoice_date || '',
-  }));
+  // invoice_variances table has not been created in any migration.
+  // Return empty to avoid runtime errors. When the table is built,
+  // restore the query logic against it.
+  return [];
 }
 
 // ── 3. Inventory Shrink Detection ───────────────────────────────

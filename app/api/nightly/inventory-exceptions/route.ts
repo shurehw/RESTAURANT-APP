@@ -356,6 +356,7 @@ async function processVenue(
             businessDate,
             exceptions: exceptions.shrink_exceptions,
             signalIds: [],
+            shrinkCostCritical: settings.shrink_cost_critical,
           })
         : Promise.resolve([]),
       exceptions.recipe_drift.length > 0
@@ -365,6 +366,7 @@ async function processVenue(
             businessDate,
             exceptions: exceptions.recipe_drift,
             signalIds: [],
+            recipeDriftCriticalPct: settings.recipe_drift_critical_pct,
           })
         : Promise.resolve([]),
       exceptions.par_violations.length > 5 // only create feedback for >5 items (warning+)

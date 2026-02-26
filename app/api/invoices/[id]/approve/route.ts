@@ -36,7 +36,21 @@ export async function POST(
       );
     }
 
-    // 2. Check if all items are mapped (optional validation - can be made strict)
+    // 2. Check for unresolved intake policy block violations
+    const { hasUnresolvedBlocks } = await import('@/lib/enforcement/intake-policy');
+    const blockCheck = await hasUnresolvedBlocks(id);
+    if (blockCheck.blocked) {
+      return NextResponse.json(
+        {
+          error: 'Invoice has unresolved intake policy violations',
+          details: `${blockCheck.count} block-severity violation(s) must be resolved or overridden before approval.`,
+          violations: blockCheck.violations,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 3. Check if all items are mapped (optional validation - can be made strict)
     const { data: unmappedLines, error: linesError } = await supabase
       .from('invoice_lines')
       .select('id')
@@ -50,7 +64,7 @@ export async function POST(
 
     const hasUnmappedItems = unmappedLines && unmappedLines.length > 0;
 
-    // 3. Update invoice status to approved
+    // 4. Update invoice status to approved
     const { error: updateError } = await supabase
       .from('invoices')
       .update({

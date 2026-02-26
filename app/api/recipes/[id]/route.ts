@@ -213,8 +213,19 @@ export async function PATCH(
       .select('line_cost')
       .eq('recipe_id', id);
 
+    // Fetch venue labor rate (default $15/hr)
+    let laborRate = 15;
+    if (existingRecipe.venue_id) {
+      const { data: venue } = await supabase
+        .from('venues')
+        .select('labor_rate_per_hour')
+        .eq('id', existingRecipe.venue_id)
+        .single();
+      if (venue?.labor_rate_per_hour) laborRate = venue.labor_rate_per_hour;
+    }
+
     const ingredientCost = costData?.reduce((sum, row) => sum + (row.line_cost || 0), 0) || 0;
-    const laborCost = ((labor_minutes || 0) / 60) * 15; // TODO: Use venue labor rate
+    const laborCost = ((labor_minutes || 0) / 60) * laborRate;
     const totalCost = ingredientCost + laborCost;
     const costPerUnit = (yield_qty || 1) > 0 ? totalCost / (yield_qty || 1) : 0;
 
