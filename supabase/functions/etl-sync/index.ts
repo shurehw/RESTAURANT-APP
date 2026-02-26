@@ -60,19 +60,13 @@ async function computeHash(data: Record<string, unknown>): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
 }
 
-// Get TipSee connection — credentials MUST be set as Supabase Edge Function secrets
+// Get TipSee connection
 function getTipseeClient(): Client {
-  const host = Deno.env.get('TIPSEE_DB_HOST');
-  const user = Deno.env.get('TIPSEE_DB_USER');
-  const password = Deno.env.get('TIPSEE_DB_PASSWORD');
-  if (!host || !user || !password) {
-    throw new Error('TipSee credentials not configured. Set TIPSEE_DB_HOST, TIPSEE_DB_USER, TIPSEE_DB_PASSWORD as edge function secrets.');
-  }
   return new Client({
-    hostname: host,
+    hostname: Deno.env.get('TIPSEE_DB_HOST') || 'tipsee-002.postgres.database.azure.com',
     port: parseInt(Deno.env.get('TIPSEE_DB_PORT') || '5432'),
-    user,
-    password,
+    user: Deno.env.get('TIPSEE_DB_USER') || 'finance_HAggarwal_read_only',
+    password: Deno.env.get('TIPSEE_DB_PASSWORD') || 'finance_HAggarwal_read_only_password',
     database: Deno.env.get('TIPSEE_DB_NAME') || 'postgres',
     tls: { enabled: true, enforce: false },
   });
@@ -195,8 +189,8 @@ async function syncVenueDay(
     `;
     rowsExtracted += categoryResult.rows.length;
 
-    // Calculate category breakdowns (gross weights for proportional allocation)
-    let grossFood = 0, grossBev = 0, grossWine = 0, grossLiquor = 0, grossBeer = 0, grossOther = 0;
+    // Calculate category breakdowns
+    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
     let totalItemsSold = 0;
 
     for (const row of categoryResult.rows) {
@@ -205,37 +199,12 @@ async function syncVenueDay(
       totalItemsSold += Number(row.quantity_sold) || 0;
 
       switch (categoryType) {
-        case 'food': grossFood += sales; break;
-        case 'wine': grossWine += sales; grossBev += sales; break;
-        case 'liquor': grossLiquor += sales; grossBev += sales; break;
-        case 'beer': grossBeer += sales; grossBev += sales; break;
-        case 'beverage': grossBev += sales; break;
-        default: grossOther += sales;
-      }
-    }
-
-    // Distribute check-level net_sales across categories by their gross proportions.
-    // Item-level price*quantity can be 2-5x check-level revenue at high-end venues
-    // (table minimums, packages, bottle service), so we use gross ratios as weights.
-    const grossTotal = grossFood + grossBev + grossOther;
-    const venueNetSales = Number(summary.net_sales) || 0;
-    let foodSales = 0, beverageSales = 0, wineSales = 0, liquorSales = 0, beerSales = 0, otherSales = 0;
-
-    if (grossTotal > 0 && venueNetSales > 0) {
-      const ratio = venueNetSales / grossTotal;
-      foodSales = Math.round(grossFood * ratio * 100) / 100;
-      beverageSales = Math.round(grossBev * ratio * 100) / 100;
-      wineSales = Math.round(grossWine * ratio * 100) / 100;
-      liquorSales = Math.round(grossLiquor * ratio * 100) / 100;
-      beerSales = Math.round(grossBeer * ratio * 100) / 100;
-      otherSales = Math.round(grossOther * ratio * 100) / 100;
-      // Absorb rounding remainder into the largest bucket
-      const allocated = foodSales + beverageSales + otherSales;
-      const remainder = Math.round((venueNetSales - allocated) * 100) / 100;
-      if (Math.abs(remainder) > 0) {
-        if (foodSales >= beverageSales && foodSales >= otherSales) foodSales += remainder;
-        else if (beverageSales >= otherSales) beverageSales += remainder;
-        else otherSales += remainder;
+        case 'food': foodSales += sales; break;
+        case 'wine': wineSales += sales; beverageSales += sales; break;
+        case 'liquor': liquorSales += sales; beverageSales += sales; break;
+        case 'beer': beerSales += sales; beverageSales += sales; break;
+        case 'beverage': beverageSales += sales; break;
+        default: otherSales += sales;
       }
     }
 
@@ -403,185 +372,6 @@ async function syncVenueDay(
         last_synced_at: new Date().toISOString(),
         etl_run_id: etlRunId,
       }, { onConflict: 'venue_id,business_date,menu_item_name' });
-      rowsLoaded++;
-    }
-
-    // 11. Extract and upsert labor_day_facts
-    // Primary: tipsee_7shifts_punches (most complete, hourly_wage inline in cents)
-    // Fallback 1: new_tipsee_punches + wage join
-    // Fallback 2: punches (old table, stale for LA)
-    const laborSummaryResult = await tipsee.queryObject<{
-      punch_count: bigint;
-      employee_count: bigint;
-      total_hours: number;
-      labor_cost: number;
-    }>`
-      SELECT
-        COUNT(*) as punch_count,
-        COUNT(DISTINCT user_id) as employee_count,
-        COALESCE(SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600), 0) as total_hours,
-        COALESCE(SUM(
-          EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600 *
-          CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END
-        ), 0) as labor_cost
-      FROM public.tipsee_7shifts_punches
-      WHERE location_uuid = ${tipseeLocationUuid}
-        AND clocked_in::date = ${businessDate}::date
-        AND clocked_out IS NOT NULL
-        AND deleted IS NOT TRUE
-    `;
-    rowsExtracted++;
-
-    let laborRow = laborSummaryResult.rows[0];
-    let laborTable = 'tipsee_7shifts_punches';
-
-    // Fallback 1: new_tipsee_punches with wage join
-    if (!laborRow || Number(laborRow.punch_count) === 0) {
-      const fb1Result = await tipsee.queryObject<{
-        punch_count: bigint;
-        employee_count: bigint;
-        total_hours: number;
-        labor_cost: number;
-      }>`
-        SELECT
-          COUNT(*) as punch_count,
-          COUNT(DISTINCT p.user_id) as employee_count,
-          COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
-          COALESCE(SUM(
-            EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 *
-            COALESCE(w.wage_cents, 0) / 100
-          ), 0) as labor_cost
-        FROM public.new_tipsee_punches p
-        LEFT JOIN LATERAL (
-          SELECT wage_cents FROM public.new_tipsee_7shifts_users_wages
-          WHERE user_id = p.user_id
-            AND effective_date <= p.clocked_in::date
-          ORDER BY effective_date DESC
-          LIMIT 1
-        ) w ON true
-        WHERE p.location_uuid = ${tipseeLocationUuid}
-          AND p.clocked_in::date = ${businessDate}::date
-          AND p.clocked_out IS NOT NULL
-          AND p.is_deleted IS NOT TRUE
-      `;
-      if (fb1Result.rows[0] && Number(fb1Result.rows[0].punch_count) > 0) {
-        laborRow = fb1Result.rows[0];
-        laborTable = 'new_tipsee_punches';
-      }
-    }
-
-    // Fallback 2: old punches table
-    if (!laborRow || Number(laborRow.punch_count) === 0) {
-      const fb2Result = await tipsee.queryObject<{
-        punch_count: bigint;
-        employee_count: bigint;
-        total_hours: number;
-        labor_cost: number;
-      }>`
-        SELECT
-          COUNT(*) as punch_count,
-          COUNT(DISTINCT user_id) as employee_count,
-          COALESCE(SUM(total_hours), 0) as total_hours,
-          COALESCE(SUM(total_hours * CASE WHEN COALESCE(hourly_wage, 0) > 100 THEN COALESCE(hourly_wage, 0) / 100.0 ELSE COALESCE(hourly_wage, 0) END), 0) as labor_cost
-        FROM public.punches
-        WHERE location_uuid = ${tipseeLocationUuid}
-          AND trading_day = ${businessDate}
-          AND deleted IS NOT TRUE
-          AND clocked_out IS NOT NULL
-      `;
-      if (fb2Result.rows[0] && Number(fb2Result.rows[0].punch_count) > 0) {
-        laborRow = fb2Result.rows[0];
-        laborTable = 'punches';
-      }
-    }
-
-    if (laborRow && Number(laborRow.punch_count) > 0) {
-      // Calculate OT hours from whichever table had data
-      let otHours = 0;
-      if (laborTable === 'tipsee_7shifts_punches') {
-        const otResult = await tipsee.queryObject<{
-          user_id: string;
-          daily_hours: number;
-        }>`
-          SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
-          FROM public.tipsee_7shifts_punches
-          WHERE location_uuid = ${tipseeLocationUuid}
-            AND clocked_in::date = ${businessDate}::date
-            AND clocked_out IS NOT NULL
-            AND deleted IS NOT TRUE
-          GROUP BY user_id
-          HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8
-        `;
-        otHours = otResult.rows.reduce((sum, r) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
-      } else if (laborTable === 'new_tipsee_punches') {
-        const otResult = await tipsee.queryObject<{
-          user_id: string;
-          daily_hours: number;
-        }>`
-          SELECT user_id, SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) as daily_hours
-          FROM public.new_tipsee_punches
-          WHERE location_uuid = ${tipseeLocationUuid}
-            AND clocked_in::date = ${businessDate}::date
-            AND clocked_out IS NOT NULL
-            AND is_deleted IS NOT TRUE
-          GROUP BY user_id
-          HAVING SUM(EXTRACT(EPOCH FROM (clocked_out - clocked_in)) / 3600) > 8
-        `;
-        otHours = otResult.rows.reduce((sum, r) => sum + Math.max(0, Number(r.daily_hours) - 8), 0);
-      }
-
-      // FOH/BOH breakdown (only from tipsee_7shifts_punches)
-      let fohHours = 0, fohCost = 0, fohEmpCount = 0;
-      let bohHours = 0, bohCost = 0, bohEmpCount = 0;
-      let otherHours = 0, otherCost = 0, otherEmpCount = 0;
-
-      if (laborTable === 'tipsee_7shifts_punches') {
-        const deptResult = await tipsee.queryObject<{
-          dept_group: string;
-          employee_count: bigint;
-          total_hours: number;
-          labor_cost: number;
-        }>`
-          SELECT
-            CASE WHEN d.name = 'FOH' THEN 'FOH' WHEN d.name = 'BOH' THEN 'BOH' ELSE 'Other' END as dept_group,
-            COUNT(DISTINCT p.user_id) as employee_count,
-            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600), 0) as total_hours,
-            COALESCE(SUM(EXTRACT(EPOCH FROM (p.clocked_out - p.clocked_in)) / 3600 * CASE WHEN COALESCE(p.hourly_wage, 0) > 100 THEN COALESCE(p.hourly_wage, 0) / 100.0 ELSE COALESCE(p.hourly_wage, 0) END), 0) as labor_cost
-          FROM public.tipsee_7shifts_punches p
-          LEFT JOIN (SELECT DISTINCT ON (id) id, name FROM public.departments) d ON d.id = p.department_id
-          WHERE p.location_uuid = ${tipseeLocationUuid} AND p.clocked_in::date = ${businessDate}::date
-            AND p.clocked_out IS NOT NULL AND p.deleted IS NOT TRUE
-          GROUP BY dept_group
-        `;
-        for (const r of deptResult.rows) {
-          if (r.dept_group === 'FOH') { fohHours = Number(r.total_hours) || 0; fohCost = Number(r.labor_cost) || 0; fohEmpCount = Number(r.employee_count) || 0; }
-          else if (r.dept_group === 'BOH') { bohHours = Number(r.total_hours) || 0; bohCost = Number(r.labor_cost) || 0; bohEmpCount = Number(r.employee_count) || 0; }
-          else { otherHours = Number(r.total_hours) || 0; otherCost = Number(r.labor_cost) || 0; otherEmpCount = Number(r.employee_count) || 0; }
-        }
-      }
-
-      await supabase.from('labor_day_facts').upsert({
-        venue_id: venueId,
-        business_date: businessDate,
-        total_hours: Number(laborRow.total_hours) || 0,
-        ot_hours: otHours,
-        labor_cost: Number(laborRow.labor_cost) || 0,
-        punch_count: Number(laborRow.punch_count) || 0,
-        employee_count: Number(laborRow.employee_count) || 0,
-        net_sales: Number(summary.net_sales) || 0,
-        covers: Number(summary.total_covers) || 0,
-        foh_hours: fohHours,
-        foh_cost: fohCost,
-        foh_employee_count: fohEmpCount,
-        boh_hours: bohHours,
-        boh_cost: bohCost,
-        boh_employee_count: bohEmpCount,
-        other_hours: otherHours,
-        other_cost: otherCost,
-        other_employee_count: otherEmpCount,
-        last_synced_at: new Date().toISOString(),
-        etl_run_id: etlRunId,
-      }, { onConflict: 'venue_id,business_date' });
       rowsLoaded++;
     }
 

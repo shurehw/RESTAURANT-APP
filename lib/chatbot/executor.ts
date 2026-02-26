@@ -27,6 +27,8 @@ import {
   getCurrentInventory,
   getLiveSalesPace,
   getPeriodComparison,
+  getVenueDayContext,
+  getLaborEfficiency,
 } from './supabase-queries';
 import {
   fetchCheckDetail,
@@ -408,6 +410,20 @@ export async function executeTool(
           }),
           toolName
         );
+
+      case 'get_venue_day_context':
+        return formatResults(
+          await getVenueDayContext(ctx.pool, ctx.supabase, filtered.locationUuids, filtered.venueIds, dates),
+          toolName
+        );
+
+      case 'get_labor_efficiency': {
+        const dayOfWeek = parseDayOfWeek(toolInput.day_of_week);
+        return formatResults(
+          await getLaborEfficiency(ctx.supabase, filtered.venueIds, { ...dates, dayOfWeek }),
+          toolName
+        );
+      }
 
       default:
         return `Unknown tool: ${toolName}.`;

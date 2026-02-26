@@ -39,11 +39,17 @@ export default async function AdminLayout({
                 >
                   Organizations
                 </Link>
-                <Link 
-                  href="/platform-admin/users" 
+                <Link
+                  href="/platform-admin/users"
                   className="px-3 py-2 rounded-md text-sm font-medium hover:bg-red-600"
                 >
                   Users
+                </Link>
+                <Link
+                  href="/platform-admin/onboard"
+                  className="px-3 py-2 rounded-md text-sm font-medium hover:bg-red-600"
+                >
+                  Onboard
                 </Link>
               </nav>
             </div>

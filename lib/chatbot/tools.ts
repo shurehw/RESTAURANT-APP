@@ -418,4 +418,49 @@ export const CHATBOT_TOOLS: Anthropic.Tool[] = [
       required: ['view'],
     },
   },
+  {
+    name: 'get_venue_day_context',
+    description:
+      'Get per-day context for a venue: detects brunch service (by hourly check distribution — checks opened before 4 PM), anomaly flags (buyouts, private events, soft closures), and service type breakdown. Use for "did Miami have brunch?", "which Sundays had brunch service?", "any anomalies last week?", or "what kind of service did we run on Sunday?" Also useful before interpreting Sunday performance — brunch Sundays have very different revenue/cover patterns than dinner-only Sundays.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+        venue: VENUE_PARAM,
+      },
+      required: ['start_date'],
+    },
+  },
+  {
+    name: 'get_labor_efficiency',
+    description:
+      'Get daily labor efficiency metrics: SPLH (Sales Per Labor Hour), CPLH (Covers Per Labor Hour), labor cost %, overtime hours, employee count, and FOH/BOH breakdowns. Use for "what\'s our SPLH?", "how efficient is labor?", "CPLH this week?", "labor cost percentage?", or "FOH vs BOH hours". Returns one row per day with all computed metrics. Supports day_of_week filter for day-specific averages (e.g. "average SPLH on Saturdays").',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        start_date: {
+          type: 'string',
+          description: 'Start date in YYYY-MM-DD format',
+        },
+        end_date: {
+          type: 'string',
+          description: 'End date in YYYY-MM-DD format. Defaults to start_date.',
+        },
+        day_of_week: {
+          type: 'string',
+          enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
+          description: 'Filter to only a specific day of the week. Omit to include all days.',
+        },
+        venue: VENUE_PARAM,
+      },
+      required: ['start_date'],
+    },
+  },
 ];

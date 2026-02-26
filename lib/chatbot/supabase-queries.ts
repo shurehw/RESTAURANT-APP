@@ -6,6 +6,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Pool } from 'pg';
 import {
   getLatestSnapshot,
   getForecastForDate,
@@ -337,4 +338,184 @@ export async function getPeriodComparison(
     current_splh: curLaborHours > 0 ? (cur.net_sales / curLaborHours).toFixed(2) : 'N/A',
     prior_labor_cost: priLaborCost || 'N/A',
   }];
+}
+
+// ---------------------------------------------------------------------------
+// 8. Venue Day Context — brunch detection (by check open_time) + anomaly flags
+// ---------------------------------------------------------------------------
+
+/** Brunch cutoff: checks opened before this hour (local/server time) indicate brunch service */
+const BRUNCH_CUTOFF_HOUR = 16; // 4 PM
+/** Minimum checks before the cutoff to classify as brunch (avoids false positives from stray early opens) */
+const BRUNCH_MIN_EARLY_CHECKS = 3;
+
+export async function getVenueDayContext(
+  pool: Pool,
+  supabase: SupabaseClient,
+  locationUuids: string[],
+  venueIds: string[],
+  params: { startDate: string; endDate: string }
+): Promise<Record<string, any>[]> {
+  // 1. Hourly check distribution from TipSee (detects brunch by open_time)
+  const hourlyResult = await pool.query(
+    `SELECT
+      trading_day::text as business_date,
+      EXTRACT(HOUR FROM open_time)::int as hour,
+      COUNT(*) as check_count,
+      SUM(guest_count) as covers,
+      SUM(revenue_total) as revenue
+    FROM public.tipsee_checks
+    WHERE location_uuid = ANY($1::uuid[])
+      AND trading_day >= $2
+      AND trading_day <= $3
+      AND open_time IS NOT NULL
+    GROUP BY trading_day, EXTRACT(HOUR FROM open_time)
+    ORDER BY trading_day, hour`,
+    [locationUuids, params.startDate, params.endDate]
+  );
+
+  // 2. Anomaly flags from Supabase
+  const { data: anomalies } = await supabase
+    .from('venue_day_anomalies')
+    .select('business_date, anomaly_type, actual_covers, expected_covers, ratio, notes')
+    .in('venue_id', venueIds)
+    .gte('business_date', params.startDate)
+    .lte('business_date', params.endDate)
+    .is('resolved_at', null)
+    .order('business_date');
+
+  // Group hourly rows by business_date
+  const hoursByDate: Record<string, { hour: number; check_count: number; covers: number; revenue: number }[]> = {};
+  for (const row of hourlyResult.rows) {
+    const d = row.business_date;
+    if (!hoursByDate[d]) hoursByDate[d] = [];
+    hoursByDate[d].push({
+      hour: row.hour,
+      check_count: parseInt(row.check_count, 10),
+      covers: parseInt(row.covers, 10) || 0,
+      revenue: parseFloat(row.revenue) || 0,
+    });
+  }
+
+  // Build anomaly lookup
+  const anomalyMap: Record<string, Record<string, any>> = {};
+  for (const a of anomalies || []) {
+    anomalyMap[a.business_date] = a;
+  }
+
+  // Compute per-date context
+  const allDatesArr = Array.from(new Set(Object.keys(hoursByDate).concat(Object.keys(anomalyMap)))).sort();
+  const results: Record<string, any>[] = [];
+
+  for (const date of allDatesArr) {
+    const hours = hoursByDate[date] || [];
+    const anomaly = anomalyMap[date];
+
+    const earlyChecks = hours.filter(h => h.hour < BRUNCH_CUTOFF_HOUR);
+    const earlyCheckCount = earlyChecks.reduce((s, h) => s + h.check_count, 0);
+    const earlyCovers = earlyChecks.reduce((s, h) => s + h.covers, 0);
+    const earlyRevenue = earlyChecks.reduce((s, h) => s + h.revenue, 0);
+    const totalChecks = hours.reduce((s, h) => s + h.check_count, 0);
+    const totalRevenue = hours.reduce((s, h) => s + h.revenue, 0);
+
+    const hasBrunch = earlyCheckCount >= BRUNCH_MIN_EARLY_CHECKS;
+    const dayOfWeek = new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
+
+    const row: Record<string, any> = {
+      business_date: date,
+      day_of_week: dayOfWeek,
+      had_brunch_service: hasBrunch,
+      total_checks: totalChecks,
+      total_revenue: Math.round(totalRevenue),
+    };
+
+    if (hasBrunch) {
+      row.brunch_checks = earlyCheckCount;
+      row.brunch_covers = earlyCovers;
+      row.brunch_revenue = Math.round(earlyRevenue);
+      row.brunch_pct_of_revenue = totalRevenue > 0
+        ? `${((earlyRevenue / totalRevenue) * 100).toFixed(1)}%`
+        : 'N/A';
+      const firstHour = earlyChecks.length > 0 ? Math.min(...earlyChecks.map(h => h.hour)) : null;
+      if (firstHour != null) row.earliest_check_hour = `${firstHour}:00`;
+    }
+
+    if (anomaly) {
+      row.anomaly_type = anomaly.anomaly_type;
+      row.anomaly_notes = anomaly.notes;
+      row.anomaly_actual_covers = anomaly.actual_covers;
+      row.anomaly_expected_covers = anomaly.expected_covers;
+    }
+
+    results.push(row);
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// 9. Labor Efficiency — SPLH, CPLH, labor %, FOH/BOH breakdown
+// ---------------------------------------------------------------------------
+
+export async function getLaborEfficiency(
+  supabase: SupabaseClient,
+  venueIds: string[],
+  params: { startDate: string; endDate: string; dayOfWeek?: number }
+): Promise<Record<string, any>[]> {
+  const { data, error } = await supabase
+    .from('labor_day_facts')
+    .select(`
+      business_date, venue_id,
+      total_hours, ot_hours, labor_cost,
+      punch_count, employee_count,
+      net_sales, covers,
+      labor_pct, splh, covers_per_labor_hour,
+      foh_hours, foh_cost, foh_employee_count,
+      boh_hours, boh_cost, boh_employee_count,
+      other_hours, other_cost
+    `)
+    .in('venue_id', venueIds)
+    .gte('business_date', params.startDate)
+    .lte('business_date', params.endDate)
+    .order('business_date', { ascending: false })
+    .limit(MAX_ROWS);
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  // Apply day-of-week filter if specified
+  const filtered = params.dayOfWeek != null
+    ? data.filter((r: any) => new Date(r.business_date + 'T12:00:00').getDay() === params.dayOfWeek)
+    : data;
+
+  return filtered.map((r: any) => {
+    const row: Record<string, any> = {
+      business_date: r.business_date,
+      net_sales: parseFloat(r.net_sales) || 0,
+      covers: parseInt(r.covers) || 0,
+      total_hours: parseFloat(r.total_hours) || 0,
+      ot_hours: parseFloat(r.ot_hours) || 0,
+      labor_cost: parseFloat(r.labor_cost) || 0,
+      employee_count: parseInt(r.employee_count) || 0,
+      labor_pct: r.labor_pct ? `${parseFloat(r.labor_pct).toFixed(1)}%` : 'N/A',
+      splh: parseFloat(r.splh) || 0,
+      cplh: parseFloat(r.covers_per_labor_hour) || 0,
+    };
+
+    // FOH/BOH breakdown if available
+    const fohHours = parseFloat(r.foh_hours) || 0;
+    const bohHours = parseFloat(r.boh_hours) || 0;
+    if (fohHours > 0 || bohHours > 0) {
+      row.foh_hours = fohHours;
+      row.foh_cost = parseFloat(r.foh_cost) || 0;
+      row.foh_employees = parseInt(r.foh_employee_count) || 0;
+      row.boh_hours = bohHours;
+      row.boh_cost = parseFloat(r.boh_cost) || 0;
+      row.boh_employees = parseInt(r.boh_employee_count) || 0;
+      row.foh_splh = fohHours > 0 ? Math.round((parseFloat(r.net_sales) || 0) / fohHours) : 0;
+      row.boh_splh = bohHours > 0 ? Math.round((parseFloat(r.net_sales) || 0) / bohHours) : 0;
+    }
+
+    return row;
+  });
 }

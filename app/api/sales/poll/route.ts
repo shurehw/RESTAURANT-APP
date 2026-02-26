@@ -34,6 +34,7 @@ import {
   fetchCompExceptions,
 } from '@/lib/database/tipsee';
 import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
+import { getToastVenueConfig, fetchToastIntraDaySummary } from '@/lib/integrations/toast';
 
 const CRON_SECRET = process.env.CRON_SECRET || process.env.CV_CRON_SECRET;
 
@@ -116,44 +117,48 @@ async function processVenue(venueId: string): Promise<{
     return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'outside_service_hours' };
   }
 
-  // Get TipSee mapping
-  const locationUuids = await getTipseeMappingForVenue(venueId);
-  if (locationUuids.length === 0) {
-    return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'no_tipsee_mapping' };
-  }
-
   // Determine business date (before 5 AM local = previous day)
   const businessDate = getBusinessDateForTimezone(tz);
 
-  // Fetch running totals using blended query:
-  // - Closed checks: authoritative revenue_total (true-up as each check closes)
-  // - Open tabs: item-level sums for checks not yet closed (real-time)
-  // This gives live sales during service and automatically true-ups to
-  // authoritative numbers as tabs close — no EOD switch needed.
-  const posType = await getPosTypeForLocations(locationUuids);
+  // Get TipSee mapping
+  const locationUuids = await getTipseeMappingForVenue(venueId);
   let summary;
 
-  if (posType === 'simphony') {
-    // Simphony venues: try BI API first (live ~90s from POS)
-    try {
-      summary = await fetchSimphonyBIIntraDaySummary(venueId, businessDate);
-    } catch (err: any) {
-      console.warn(`[sales-poll] Simphony BI API failed for ${venueId}: ${err.message}`);
-      summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, other_sales: 0, comps_total: 0, voids_total: 0 };
+  if (locationUuids.length === 0) {
+    // No TipSee mapping — check for Toast direct integration
+    const toastConfig = await getToastVenueConfig(venueId);
+    if (!toastConfig) {
+      return { snapshot_stored: false, net_sales: 0, covers: 0, checks: 0, skipped_reason: 'no_pos_mapping' };
     }
 
-    // Fallback: Simphony item-level data (per-check items from TipSee)
-    if (summary.net_sales === 0 && summary.total_checks === 0) {
-      summary = await fetchSimphonyItemSummary(locationUuids, businessDate);
-    }
-
-    // Fallback: Simphony batch aggregate table
-    if (summary.net_sales === 0 && summary.total_checks === 0) {
-      summary = await fetchSimphonyIntraDaySummary(locationUuids, businessDate);
-    }
+    // Toast venue: fetch via direct API
+    summary = await fetchToastIntraDaySummary(venueId, businessDate);
   } else {
-    // Upserve venues: blended query (closed check revenue + open tab items)
-    summary = await fetchIntraDayItemSummary(locationUuids, businessDate);
+    // TipSee-mapped venue: route by POS type
+    const posType = await getPosTypeForLocations(locationUuids);
+
+    if (posType === 'simphony') {
+      // Simphony venues: try BI API first (live ~90s from POS)
+      try {
+        summary = await fetchSimphonyBIIntraDaySummary(venueId, businessDate);
+      } catch (err: any) {
+        console.warn(`[sales-poll] Simphony BI API failed for ${venueId}: ${err.message}`);
+        summary = { total_checks: 0, total_covers: 0, gross_sales: 0, net_sales: 0, food_sales: 0, beverage_sales: 0, other_sales: 0, comps_total: 0, voids_total: 0 };
+      }
+
+      // Fallback: Simphony item-level data (per-check items from TipSee)
+      if (summary.net_sales === 0 && summary.total_checks === 0) {
+        summary = await fetchSimphonyItemSummary(locationUuids, businessDate);
+      }
+
+      // Fallback: Simphony batch aggregate table
+      if (summary.net_sales === 0 && summary.total_checks === 0) {
+        summary = await fetchSimphonyIntraDaySummary(locationUuids, businessDate);
+      }
+    } else {
+      // Upserve venues: blended query (closed check revenue + open tab items)
+      summary = await fetchIntraDayItemSummary(locationUuids, businessDate);
+    }
   }
 
   // Skip if no sales activity yet
@@ -177,22 +182,28 @@ async function processVenue(venueId: string): Promise<{
   }
 
   // Fetch labor + comp data in parallel (non-blocking — sales snapshot still stores even if these fail)
+  // Toast venues have no TipSee location UUID, so labor/comp lookups are skipped
+  const tipseeLocationUuid = locationUuids.length > 0 ? locationUuids[0] : null;
   const [laborResult, compResult] = await Promise.allSettled([
-    fetchLaborSummary(locationUuids[0], businessDate, summary.net_sales, summary.total_covers),
-    (async () => {
-      const compSettings = await getCompSettingsForVenue(venueId);
-      return fetchCompExceptions(
-        businessDate,
-        locationUuids[0],
-        compSettings ? {
-          approved_reasons: compSettings.approved_reasons,
-          high_value_comp_threshold: compSettings.high_value_comp_threshold,
-          high_comp_pct_threshold: compSettings.high_comp_pct_threshold,
-          daily_comp_pct_warning: compSettings.daily_comp_pct_warning,
-          daily_comp_pct_critical: compSettings.daily_comp_pct_critical,
-        } : undefined
-      );
-    })(),
+    tipseeLocationUuid
+      ? fetchLaborSummary(tipseeLocationUuid, businessDate, summary.net_sales, summary.total_covers)
+      : Promise.resolve(null),
+    tipseeLocationUuid
+      ? (async () => {
+          const compSettings = await getCompSettingsForVenue(venueId);
+          return fetchCompExceptions(
+            businessDate,
+            tipseeLocationUuid,
+            compSettings ? {
+              approved_reasons: compSettings.approved_reasons,
+              high_value_comp_threshold: compSettings.high_value_comp_threshold,
+              high_comp_pct_threshold: compSettings.high_comp_pct_threshold,
+              daily_comp_pct_warning: compSettings.daily_comp_pct_warning,
+              daily_comp_pct_critical: compSettings.daily_comp_pct_critical,
+            } : undefined
+          );
+        })()
+      : Promise.resolve(null),
   ]);
 
   const labor = laborResult.status === 'fulfilled' ? laborResult.value : null;
