@@ -96,7 +96,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
         data-pwa-hide
         className={`
           fixed inset-y-0 left-0 z-40
-          lg:static lg:z-auto lg:inset-auto lg:h-screen lg:sticky lg:top-0
+          lg:sticky lg:top-0 lg:z-auto lg:inset-auto lg:h-dvh
           w-64 bg-opsos-sage-600 border-r-2 border-brass
           flex flex-col flex-shrink-0
           transform transition-transform duration-300 ease-in-out
