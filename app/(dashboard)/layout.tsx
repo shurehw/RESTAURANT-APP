@@ -75,7 +75,7 @@ export default async function DashboardLayout({
 
   return (
     <VenueProvider initialVenues={venues || []}>
-      <div className="flex min-h-screen bg-background overflow-x-hidden">
+      <div className="flex min-h-screen bg-background">
         {/* Skip to main content — keyboard/screen-reader shortcut */}
         <a
           href="#main-content"
@@ -94,7 +94,7 @@ export default async function DashboardLayout({
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
           {/* Topbar — hidden in PWA standalone mode */}
           <div data-pwa-hide>
             <Topbar
