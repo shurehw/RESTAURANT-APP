@@ -55,6 +55,17 @@ export default async function DashboardLayout({
     .eq("id", orgId)
     .single();
 
+  // Fetch user display name (email may be undefined on legacy cookie fallback)
+  let displayName = user.email?.split('@')[0];
+  if (!displayName) {
+    const { data: dbUser } = await supabase
+      .from("users")
+      .select("full_name, email")
+      .eq("id", user.id)
+      .maybeSingle();
+    displayName = dbUser?.full_name || dbUser?.email?.split('@')[0];
+  }
+
   // Fetch venues for topbar selector
   const { data: venues } = await supabase
     .from("venues")
@@ -89,7 +100,7 @@ export default async function DashboardLayout({
           criticalViolationCount={criticalViolationCount}
           organizationSlug={organization?.slug}
           userRole={userRole}
-          userName={user.email?.split('@')[0]}
+          userName={displayName}
           userEmail={user.email}
         />
 
