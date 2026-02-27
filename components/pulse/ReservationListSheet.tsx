@@ -21,8 +21,22 @@ import {
   LogIn,
   LogOut,
   SlidersHorizontal,
+  DollarSign,
+  Receipt,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+
+// ─── Types ──────────────────────────────────────────────────────────
+
+interface MatchedCheck {
+  id: string;
+  revenue_total: number;
+  employee_name: string;
+  tip_total: number;
+  comp_total: number;
+  guest_count: number;
+}
 
 interface Reservation {
   id: string;
@@ -41,6 +55,22 @@ interface Reservation {
   venue_seating_area_name: string | null;
   notes: string | null;
   client_requests: string | null;
+  table_number: string | null;
+  matched_checks: MatchedCheck[] | null;
+  matched_revenue: number;
+}
+
+interface UnmatchedCheck {
+  id: string;
+  table_name: string;
+  employee_name: string;
+  guest_count: number;
+  revenue_total: number;
+  comp_total: number;
+  tip_total: number;
+  open_time: string | null;
+  close_time: string | null;
+  is_open: boolean;
 }
 
 interface ReservationListSheetProps {
@@ -49,19 +79,29 @@ interface ReservationListSheetProps {
   venueId: string;
   venueName: string;
   date: string;
+  onSelectCheck?: (checkId: string) => void;
 }
 
-type SortField = 'time' | 'name' | 'party' | 'status';
-type FilterStatus = 'seated' | 'arrived' | 'confirmed' | 'complete' | 'cancelled' | 'paid' | 'vip';
+type TabValue = 'all' | 'reservations' | 'checks';
+type SortField = 'time' | 'name' | 'spend';
 
-const SORT_LABELS: Record<SortField, string> = {
-  time: 'Time',
-  name: 'Name',
-  party: 'Party',
-  status: 'Status',
+// ─── Helpers ────────────────────────────────────────────────────────
+
+const fmtTime = (time: string | null) => {
+  if (!time) return '';
+  if (time.match(/^\d{2}:\d{2}/)) {
+    const [h, m] = time.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+  }
+  try {
+    return new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  } catch { return ''; }
 };
 
-const SORT_ORDER: SortField[] = ['time', 'name', 'party', 'status'];
+const fmt = (n: number) =>
+  n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 const STATUS_COLORS: Record<string, string> = {
   SEATED: 'border-emerald-500 text-emerald-500',
@@ -73,30 +113,16 @@ const STATUS_COLORS: Record<string, string> = {
   PAID: 'border-violet-500 text-violet-500',
 };
 
-const fmtTime = (time: string | null) => {
-  if (!time) return '';
-  // arrival_time is "HH:MM:SS" format
-  if (time.match(/^\d{2}:\d{2}/)) {
-    const [h, m] = time.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
-  }
-  // ISO timestamp
-  try {
-    return new Date(time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  } catch { return ''; }
+const STATUS_ORDER: Record<string, number> = {
+  SEATED: 1, ARRIVED: 2, CONFIRMED: 3, PENDING: 4, PAID: 5, COMPLETE: 6, CANCELLED: 7,
 };
 
-const STATUS_ORDER: Record<string, number> = {
-  SEATED: 1,
-  ARRIVED: 2,
-  CONFIRMED: 3,
-  PENDING: 4,
-  PAID: 5,
-  COMPLETE: 6,
-  CANCELLED: 7,
-};
+// Unified row for "All" tab interleaving
+type UnifiedRow =
+  | { kind: 'reso'; data: Reservation; sortTime: string }
+  | { kind: 'check'; data: UnmatchedCheck; sortTime: string };
+
+// ─── Component ──────────────────────────────────────────────────────
 
 export function ReservationListSheet({
   isOpen,
@@ -104,156 +130,216 @@ export function ReservationListSheet({
   venueId,
   venueName,
   date,
+  onSelectCheck,
 }: ReservationListSheetProps) {
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [checks, setChecks] = useState<UnmatchedCheck[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<TabValue>('all');
   const [search, setSearch] = useState('');
   const [sortField, setSortField] = useState<SortField>('time');
-  const [filters, setFilters] = useState<Set<FilterStatus>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('');
   const [bookedByFilter, setBookedByFilter] = useState('');
-  const [total, setTotal] = useState(0);
+  const [serverFilter, setServerFilter] = useState('');
+  const [vipOnly, setVipOnly] = useState(false);
 
+  // Fetch data
   useEffect(() => {
     if (!isOpen) return;
-
     setLoading(true);
     setError(null);
 
     fetch(`/api/sales/reservations?venue_id=${venueId}&date=${date}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Server error (${res.status})`);
-        return res.json();
+      .then(async res => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || `Server error (${res.status})`);
+        return data;
       })
       .then(data => {
-        if (data.error) {
-          setError(data.error);
-        } else {
-          setReservations(data.reservations || []);
-          setTotal(data.total || 0);
-        }
+        setReservations(data.reservations || []);
+        setChecks(data.checks || []);
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
   }, [isOpen, venueId, date]);
 
-  const filtered = useMemo(() => {
-    let list = reservations;
+  // ─── Filtered + sorted data ──────────────────────────────────────
 
-    // Text search
+  const filteredResos = useMemo(() => {
+    let list = reservations;
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter(
-        r =>
-          `${r.first_name} ${r.last_name}`.toLowerCase().includes(q) ||
-          (r.booked_by || '').toLowerCase().includes(q) ||
-          (r.notes || '').toLowerCase().includes(q)
+      list = list.filter(r =>
+        `${r.first_name} ${r.last_name}`.toLowerCase().includes(q) ||
+        (r.booked_by || '').toLowerCase().includes(q) ||
+        (r.notes || '').toLowerCase().includes(q) ||
+        (r.table_number || '').toLowerCase().includes(q)
       );
     }
-
-    // Status filters
-    if (filters.has('seated')) list = list.filter(r => r.status === 'SEATED');
-    if (filters.has('arrived')) list = list.filter(r => r.status === 'ARRIVED');
-    if (filters.has('confirmed')) list = list.filter(r => r.status === 'CONFIRMED');
-    if (filters.has('complete')) list = list.filter(r => r.status === 'COMPLETE');
-    if (filters.has('cancelled')) list = list.filter(r => r.status === 'CANCELLED');
-    if (filters.has('paid')) list = list.filter(r => r.status === 'PAID');
-    if (filters.has('vip')) list = list.filter(r => r.is_vip);
-
-    // Booked by filter
+    if (statusFilter) list = list.filter(r => r.status === statusFilter);
     if (bookedByFilter) list = list.filter(r => r.booked_by === bookedByFilter);
-
-    // Sort
+    if (vipOnly) list = list.filter(r => r.is_vip);
     return [...list].sort((a, b) => {
       if (sortField === 'name') return `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`);
-      if (sortField === 'party') return b.party_size - a.party_size;
-      if (sortField === 'status') return (STATUS_ORDER[a.status] || 9) - (STATUS_ORDER[b.status] || 9);
-      // time: sort by arrival_time
-      const aTime = a.arrival_time || '99:99';
-      const bTime = b.arrival_time || '99:99';
-      return aTime.localeCompare(bTime);
+      if (sortField === 'spend') return (b.matched_revenue || 0) - (a.matched_revenue || 0);
+      return (a.arrival_time || '99:99').localeCompare(b.arrival_time || '99:99');
     });
-  }, [reservations, search, filters, bookedByFilter, sortField]);
+  }, [reservations, search, statusFilter, bookedByFilter, vipOnly, sortField]);
 
-  const totals = useMemo(() => {
-    const covers = filtered.reduce((s, r) => s + r.party_size, 0);
-    const vips = filtered.filter(r => r.is_vip).length;
-    return { covers, vips, count: filtered.length };
-  }, [filtered]);
-
-  const cycleSortField = () => {
-    setSortField(prev => {
-      const idx = SORT_ORDER.indexOf(prev);
-      return SORT_ORDER[(idx + 1) % SORT_ORDER.length];
+  const filteredChecks = useMemo(() => {
+    let list = checks;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(c =>
+        c.employee_name.toLowerCase().includes(q) ||
+        c.table_name.toLowerCase().includes(q)
+      );
+    }
+    if (serverFilter) list = list.filter(c => c.employee_name === serverFilter);
+    return [...list].sort((a, b) => {
+      if (sortField === 'name') return a.employee_name.localeCompare(b.employee_name);
+      if (sortField === 'spend') return b.revenue_total - a.revenue_total;
+      // time: newest first for checks
+      const aT = a.open_time || '';
+      const bT = b.open_time || '';
+      return bT.localeCompare(aT);
     });
-  };
+  }, [checks, search, serverFilter, sortField]);
 
-  const toggleFilter = (flag: FilterStatus) => {
-    setFilters(prev => {
-      const next = new Set(prev);
-      // Clear other status filters when selecting a new one (mutually exclusive)
-      if (['seated', 'arrived', 'confirmed', 'complete', 'cancelled', 'paid'].includes(flag)) {
-        next.delete('seated');
-        next.delete('arrived');
-        next.delete('confirmed');
-        next.delete('complete');
-        next.delete('cancelled');
-        next.delete('paid');
-        if (!prev.has(flag)) next.add(flag);
-      } else {
-        if (next.has(flag)) next.delete(flag);
-        else next.add(flag);
-      }
-      return next;
-    });
-  };
+  // All tab: interleave both types by time
+  const allRows = useMemo<UnifiedRow[]>(() => {
+    const rows: UnifiedRow[] = [];
+    for (const r of filteredResos) rows.push({ kind: 'reso', data: r, sortTime: r.arrival_time || '99:99' });
+    for (const c of filteredChecks) rows.push({ kind: 'check', data: c, sortTime: c.open_time || '' });
 
-  // Counts for filter badges
-  const filterCounts = useMemo(() => ({
-    seated: reservations.filter(r => r.status === 'SEATED').length,
-    arrived: reservations.filter(r => r.status === 'ARRIVED').length,
-    confirmed: reservations.filter(r => r.status === 'CONFIRMED').length,
-    complete: reservations.filter(r => r.status === 'COMPLETE').length,
-    cancelled: reservations.filter(r => r.status === 'CANCELLED').length,
-    paid: reservations.filter(r => r.status === 'PAID').length,
-    vip: reservations.filter(r => r.is_vip).length,
-  }), [reservations]);
+    if (sortField === 'spend') {
+      return rows.sort((a, b) => {
+        const aSpend = a.kind === 'reso' ? (a.data.matched_revenue || 0) : a.data.revenue_total;
+        const bSpend = b.kind === 'reso' ? (b.data.matched_revenue || 0) : b.data.revenue_total;
+        return bSpend - aSpend;
+      });
+    }
+    if (sortField === 'name') {
+      return rows.sort((a, b) => {
+        const aName = a.kind === 'reso' ? `${a.data.last_name} ${a.data.first_name}` : a.data.employee_name;
+        const bName = b.kind === 'reso' ? `${b.data.last_name} ${b.data.first_name}` : b.data.employee_name;
+        return aName.localeCompare(bName);
+      });
+    }
+    // time sort: ascending
+    return rows.sort((a, b) => a.sortTime.localeCompare(b.sortTime));
+  }, [filteredResos, filteredChecks, sortField]);
 
-  // Unique booked-by sources for dropdown
+  // ─── Totals per tab ──────────────────────────────────────────────
+
+  const resoTotals = useMemo(() => ({
+    count: filteredResos.length,
+    covers: filteredResos.reduce((s, r) => s + r.party_size, 0),
+    revenue: filteredResos.reduce((s, r) => s + (r.matched_revenue || 0), 0),
+    vips: filteredResos.filter(r => r.is_vip).length,
+    matched: filteredResos.filter(r => r.matched_checks && r.matched_checks.length > 0).length,
+  }), [filteredResos]);
+
+  const checkTotals = useMemo(() => ({
+    count: filteredChecks.length,
+    covers: filteredChecks.reduce((s, c) => s + c.guest_count, 0),
+    revenue: filteredChecks.reduce((s, c) => s + c.revenue_total, 0),
+    tips: filteredChecks.reduce((s, c) => s + c.tip_total, 0),
+  }), [filteredChecks]);
+
+  // ─── Filter options ──────────────────────────────────────────────
+
+  const statuses = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const r of reservations) counts[r.status] = (counts[r.status] || 0) + 1;
+    return Object.entries(counts).sort((a, b) => (STATUS_ORDER[a[0]] || 9) - (STATUS_ORDER[b[0]] || 9));
+  }, [reservations]);
+
   const uniqueBookers = useMemo(() =>
     [...new Set(reservations.map(r => r.booked_by).filter(Boolean) as string[])].sort(),
   [reservations]);
 
-  const hasActiveFilters = search || filters.size > 0 || !!bookedByFilter;
-  const activeFilterCount = filters.size + (bookedByFilter ? 1 : 0);
+  const uniqueServers = useMemo(() =>
+    [...new Set(checks.map(c => c.employee_name).filter(Boolean))].sort(),
+  [checks]);
+
+  const hasActiveFilters = !!statusFilter || !!bookedByFilter || !!serverFilter || vipOnly;
+  const activeFilterCount = [statusFilter, bookedByFilter, serverFilter, vipOnly].filter(Boolean).length;
+
+  const handleResoClick = (reso: Reservation) => {
+    if (!onSelectCheck || !reso.matched_checks?.length) return;
+    const best = reso.matched_checks.reduce((a, b) => b.revenue_total > a.revenue_total ? b : a);
+    onSelectCheck(best.id);
+  };
+
+  const cycleSortField = () => {
+    const order: SortField[] = ['time', 'spend', 'name'];
+    setSortField(prev => order[(order.indexOf(prev) + 1) % order.length]);
+  };
+
+  const clearFilters = () => {
+    setStatusFilter('');
+    setBookedByFilter('');
+    setServerFilter('');
+    setVipOnly(false);
+    setSearch('');
+  };
+
+  // ─── Visible list ────────────────────────────────────────────────
+
+  const visibleCount = tab === 'all' ? allRows.length
+    : tab === 'reservations' ? filteredResos.length
+    : filteredChecks.length;
+
+  const totalRaw = reservations.length + checks.length;
+
+  // ─── Render ───────────────────────────────────────────────────────
 
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose()}>
       <SheetContent side="bottom" className="h-[85vh] flex flex-col p-0">
         <SheetHeader className="px-4 pt-4 pb-2">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2">
-              <CalendarCheck className="h-4 w-4" />
-              Reservations
-              {!loading && (
-                <Badge variant="default" className="text-xs">
-                  {hasActiveFilters ? `${totals.count} of ${total}` : total}
-                </Badge>
-              )}
-            </SheetTitle>
-          </div>
+          <SheetTitle className="flex items-center gap-2">
+            <Receipt className="h-4 w-4" />
+            Checks
+            {!loading && (
+              <Badge variant="default" className="text-xs">
+                {hasActiveFilters || search ? `${visibleCount} of ${totalRaw}` : totalRaw}
+              </Badge>
+            )}
+          </SheetTitle>
           <SheetDescription className="text-xs">
             {venueName} &middot; {date}
           </SheetDescription>
         </SheetHeader>
+
+        {/* Tab bar */}
+        <div className="px-4 pb-1 flex items-center gap-1">
+          {(['all', 'reservations', 'checks'] as TabValue[]).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                tab === t
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+              }`}
+            >
+              {t === 'all' ? `All (${reservations.length + checks.length})`
+                : t === 'reservations' ? `Resos (${reservations.length})`
+                : `Checks (${checks.length})`}
+            </button>
+          ))}
+        </div>
 
         {/* Search + sort + filter bar */}
         <div className="px-4 pb-1 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
             <Input
-              placeholder="Search name or booker..."
+              placeholder={tab === 'checks' ? 'Search server or table...' : 'Search name, server, or table...'}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-8 h-9 text-sm"
@@ -275,15 +361,28 @@ export function ReservationListSheet({
           </Button>
           <Button variant="outline" size="sm" onClick={cycleSortField} className="h-9 text-xs whitespace-nowrap">
             <ArrowUpDown className="h-3.5 w-3.5 mr-1" />
-            {SORT_LABELS[sortField]}
+            {sortField === 'time' ? 'Time' : sortField === 'spend' ? 'Spend' : 'Name'}
           </Button>
         </div>
 
         {/* Collapsible filters */}
         {filtersOpen && (
           <div className="px-4 pb-2 flex items-center gap-1.5 overflow-x-auto">
-            {/* Booked by dropdown */}
-            {uniqueBookers.length > 1 && (
+            {/* Status filter (reservation) */}
+            {(tab !== 'checks') && statuses.length > 1 && (
+              <select
+                value={statusFilter}
+                onChange={e => setStatusFilter(e.target.value)}
+                className="h-7 text-[11px] px-2 rounded-md border border-input bg-background text-foreground shrink-0 appearance-none cursor-pointer"
+              >
+                <option value="">All Status</option>
+                {statuses.map(([s, n]) => (
+                  <option key={s} value={s}>{s} ({n})</option>
+                ))}
+              </select>
+            )}
+            {/* Booked by (reservation) */}
+            {(tab !== 'checks') && uniqueBookers.length > 1 && (
               <select
                 value={bookedByFilter}
                 onChange={e => setBookedByFilter(e.target.value)}
@@ -295,82 +394,41 @@ export function ReservationListSheet({
                 ))}
               </select>
             )}
-            {filterCounts.vip > 0 && (
+            {/* Server filter (checks) */}
+            {(tab !== 'reservations') && uniqueServers.length > 1 && (
+              <select
+                value={serverFilter}
+                onChange={e => setServerFilter(e.target.value)}
+                className="h-7 text-[11px] px-2 rounded-md border border-input bg-background text-foreground shrink-0 appearance-none cursor-pointer"
+              >
+                <option value="">All Servers</option>
+                {uniqueServers.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            )}
+            {/* VIP toggle (reservation) */}
+            {(tab !== 'checks') && resoTotals.vips > 0 && (
               <Button
-                variant={filters.has('vip') ? 'default' : 'outline'}
+                variant={vipOnly ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => toggleFilter('vip')}
+                onClick={() => setVipOnly(v => !v)}
                 className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
               >
                 <Star className="h-3 w-3" />
-                VIP ({filterCounts.vip})
+                VIP ({reservations.filter(r => r.is_vip).length})
               </Button>
             )}
-            {filterCounts.seated > 0 && (
-              <Button
-                variant={filters.has('seated') ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleFilter('seated')}
-                className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
-              >
-                Seated ({filterCounts.seated})
-              </Button>
-            )}
-            {filterCounts.arrived > 0 && (
-              <Button
-                variant={filters.has('arrived') ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleFilter('arrived')}
-                className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
-              >
-                Arrived ({filterCounts.arrived})
-              </Button>
-            )}
-            {filterCounts.confirmed > 0 && (
-              <Button
-                variant={filters.has('confirmed') ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleFilter('confirmed')}
-                className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
-              >
-                Confirmed ({filterCounts.confirmed})
-              </Button>
-            )}
-            {filterCounts.complete > 0 && (
-              <Button
-                variant={filters.has('complete') ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleFilter('complete')}
-                className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
-              >
-                Complete ({filterCounts.complete})
-              </Button>
-            )}
-            {filterCounts.paid > 0 && (
-              <Button
-                variant={filters.has('paid') ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleFilter('paid')}
-                className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
-              >
-                Paid ({filterCounts.paid})
-              </Button>
-            )}
-            {filterCounts.cancelled > 0 && (
-              <Button
-                variant={filters.has('cancelled') ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => toggleFilter('cancelled')}
-                className="h-7 text-[11px] px-2.5 gap-1 shrink-0"
-              >
-                Cancelled ({filterCounts.cancelled})
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-[11px] px-2 shrink-0 text-muted-foreground">
+                Clear
               </Button>
             )}
           </div>
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-2" style={{ paddingBottom: filtered.length > 0 ? undefined : 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="flex-1 overflow-y-auto px-4 pb-2" style={{ paddingBottom: visibleCount > 0 ? undefined : 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' }}>
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -381,98 +439,258 @@ export function ReservationListSheet({
             <div className="text-sm text-red-500 py-8 text-center">{error}</div>
           )}
 
-          {!loading && !error && filtered.length === 0 && (
+          {!loading && !error && visibleCount === 0 && (
             <div className="text-sm text-muted-foreground py-8 text-center">
-              No reservations found.
+              {tab === 'reservations' ? 'No reservations found.'
+                : tab === 'checks' ? 'No checks found.'
+                : 'No data found.'}
             </div>
           )}
 
-          {!loading && filtered.map(reso => (
-            <div
-              key={reso.id}
-              className="w-full text-left px-3 py-2.5 rounded-md border-b border-border/50 last:border-0 flex items-center gap-3"
-            >
-              {/* Left: time */}
-              <div className="min-w-[60px]">
-                <div className="text-xs font-medium">{fmtTime(reso.arrival_time)}</div>
-                {reso.booked_by && (
-                  <div className="text-[11px] text-muted-foreground truncate max-w-[80px]">{reso.booked_by}</div>
-                )}
-              </div>
-
-              {/* Center: name + party + meta */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate flex items-center gap-1.5">
-                  {reso.is_vip && <Star className="h-3 w-3 text-amber-500 shrink-0 fill-amber-500" />}
-                  {reso.first_name} {reso.last_name}
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-0.5">
-                    <Users className="h-3 w-3" />
-                    {reso.party_size}
-                  </span>
-                  {reso.seated_time && (
-                    <span className="flex items-center gap-0.5">
-                      <LogIn className="h-3 w-3" />
-                      {fmtTime(reso.seated_time)}
-                    </span>
-                  )}
-                  {reso.left_time && (
-                    <span className="flex items-center gap-0.5">
-                      <LogOut className="h-3 w-3" />
-                      {fmtTime(reso.left_time)}
-                    </span>
-                  )}
-                  {reso.min_price != null && reso.min_price > 0 && (
-                    <span className="text-amber-500">
-                      min ${reso.min_price.toLocaleString()}
-                    </span>
-                  )}
-                </div>
-                {(reso.notes || reso.client_requests) && (
-                  <div className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
-                    {reso.notes || reso.client_requests}
-                  </div>
-                )}
-              </div>
-
-              {/* Right: status */}
-              <div className="text-right shrink-0">
-                <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${STATUS_COLORS[reso.status] || ''}`}>
-                  {reso.status}
-                </Badge>
-                {reso.venue_seating_area_name && (
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                    {reso.venue_seating_area_name}
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Reservations tab */}
+          {!loading && tab === 'reservations' && filteredResos.map(reso => (
+            <ResoRow key={reso.id} reso={reso} onSelectCheck={onSelectCheck} onClick={handleResoClick} />
           ))}
+
+          {/* Checks tab */}
+          {!loading && tab === 'checks' && filteredChecks.map(check => (
+            <CheckRow key={check.id} check={check} onSelectCheck={onSelectCheck} />
+          ))}
+
+          {/* All tab */}
+          {!loading && tab === 'all' && allRows.map(row =>
+            row.kind === 'reso'
+              ? <ResoRow key={`r-${row.data.id}`} reso={row.data} onSelectCheck={onSelectCheck} onClick={handleResoClick} />
+              : <CheckRow key={`c-${row.data.id}`} check={row.data} onSelectCheck={onSelectCheck} />
+          )}
         </div>
 
-        {/* Summary footer */}
-        {!loading && filtered.length > 0 && (
+        {/* Footer */}
+        {!loading && visibleCount > 0 && (
           <div className="border-t border-border px-4 py-2.5 flex items-center justify-between text-xs text-muted-foreground bg-muted/30" style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom, 0px))' }}>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1">
-                <CalendarCheck className="h-3 w-3" />
-                {totals.count} reservations
-              </span>
-              <span className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {totals.covers} covers
-              </span>
-            </div>
-            {totals.vips > 0 && (
-              <span className="flex items-center gap-1">
-                <Star className="h-3 w-3 text-amber-500" />
-                {totals.vips} VIP
-              </span>
+            {tab === 'checks' ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <Receipt className="h-3 w-3" />
+                    {checkTotals.count} checks
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {checkTotals.covers} covers
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1 font-medium text-foreground">
+                    <DollarSign className="h-3 w-3" />
+                    {fmt(checkTotals.revenue)}
+                  </span>
+                  {checkTotals.tips > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Tips: {fmt(checkTotals.tips)}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : tab === 'reservations' ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <CalendarCheck className="h-3 w-3" />
+                    {resoTotals.count} reservations
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {resoTotals.covers} covers
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  {resoTotals.revenue > 0 && (
+                    <span className="flex items-center gap-1 font-medium text-foreground">
+                      <DollarSign className="h-3 w-3" />
+                      {fmt(resoTotals.revenue)}
+                      <span className="text-muted-foreground font-normal">({resoTotals.matched} matched)</span>
+                    </span>
+                  )}
+                  {resoTotals.vips > 0 && (
+                    <span className="flex items-center gap-1">
+                      <Star className="h-3 w-3 text-amber-500" />
+                      {resoTotals.vips} VIP
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <CalendarCheck className="h-3 w-3" />
+                    {resoTotals.count} resos
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Receipt className="h-3 w-3" />
+                    {checkTotals.count} checks
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    {resoTotals.covers + checkTotals.covers} covers
+                  </span>
+                </div>
+                <span className="flex items-center gap-1 font-medium text-foreground">
+                  <DollarSign className="h-3 w-3" />
+                  {fmt(resoTotals.revenue + checkTotals.revenue)}
+                </span>
+              </>
             )}
           </div>
         )}
       </SheetContent>
     </Sheet>
+  );
+}
+
+// ─── Row Components ─────────────────────────────────────────────────
+
+function ResoRow({
+  reso,
+  onSelectCheck,
+  onClick,
+}: {
+  reso: Reservation;
+  onSelectCheck?: (id: string) => void;
+  onClick: (r: Reservation) => void;
+}) {
+  const hasCheck = reso.matched_checks && reso.matched_checks.length > 0;
+  const hasSpend = reso.matched_revenue > 0;
+  const isClickable = hasCheck && !!onSelectCheck;
+
+  return (
+    <div
+      onClick={() => isClickable && onClick(reso)}
+      className={`w-full text-left px-3 py-2.5 rounded-md border-b border-border/50 last:border-0 flex items-center gap-3 ${
+        isClickable ? 'cursor-pointer hover:bg-muted/50 active:bg-muted transition-colors' : ''
+      }`}
+    >
+      <div className="min-w-[60px]">
+        <div className="text-xs font-medium">{fmtTime(reso.arrival_time)}</div>
+        {reso.table_number ? (
+          <div className="text-[11px] text-muted-foreground font-mono">T{reso.table_number}</div>
+        ) : reso.booked_by ? (
+          <div className="text-[11px] text-muted-foreground truncate max-w-[80px]">{reso.booked_by}</div>
+        ) : null}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate flex items-center gap-1.5">
+          {reso.is_vip && <Star className="h-3 w-3 text-amber-500 shrink-0 fill-amber-500" />}
+          {reso.first_name} {reso.last_name}
+        </div>
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-0.5">
+            <Users className="h-3 w-3" />
+            {reso.party_size}
+          </span>
+          {reso.seated_time && (
+            <span className="flex items-center gap-0.5">
+              <LogIn className="h-3 w-3" />
+              {fmtTime(reso.seated_time)}
+            </span>
+          )}
+          {reso.left_time && (
+            <span className="flex items-center gap-0.5">
+              <LogOut className="h-3 w-3" />
+              {fmtTime(reso.left_time)}
+            </span>
+          )}
+          {reso.min_price != null && reso.min_price > 0 && (
+            <span className="text-amber-500">
+              min ${reso.min_price.toLocaleString()}
+            </span>
+          )}
+          {hasCheck && (
+            <span className="text-muted-foreground/60">
+              {reso.matched_checks!.length > 1
+                ? `${reso.matched_checks!.length} checks`
+                : reso.matched_checks![0].employee_name}
+            </span>
+          )}
+        </div>
+        {(reso.notes || reso.client_requests) && (
+          <div className="text-[10px] text-muted-foreground/70 truncate mt-0.5">
+            {reso.notes || reso.client_requests}
+          </div>
+        )}
+      </div>
+
+      <div className="text-right shrink-0">
+        {hasSpend ? (
+          <div className="text-sm font-semibold tabular-nums">
+            {fmt(reso.matched_revenue)}
+          </div>
+        ) : (
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${STATUS_COLORS[reso.status] || ''}`}>
+            {reso.status}
+          </Badge>
+        )}
+        {hasSpend && (
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 mt-0.5 ${STATUS_COLORS[reso.status] || ''}`}>
+            {reso.status}
+          </Badge>
+        )}
+        {reso.venue_seating_area_name && !reso.table_number && !hasSpend && (
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            {reso.venue_seating_area_name}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CheckRow({
+  check,
+  onSelectCheck,
+}: {
+  check: UnmatchedCheck;
+  onSelectCheck?: (id: string) => void;
+}) {
+  return (
+    <button
+      onClick={() => onSelectCheck?.(check.id)}
+      className="w-full text-left px-3 py-2.5 rounded-md hover:bg-muted/50 active:bg-muted transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+    >
+      <div className="min-w-[60px]">
+        <div className="text-xs font-medium">{fmtTime(check.open_time)}</div>
+        <div className="text-[11px] text-muted-foreground">{check.table_name || '\u2014'}</div>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{check.employee_name}</div>
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-0.5">
+            <Users className="h-3 w-3" />
+            {check.guest_count}
+          </span>
+          {check.comp_total > 0 && (
+            <span className="flex items-center gap-0.5 text-red-400">
+              <AlertTriangle className="h-3 w-3" />
+              comp {fmt(check.comp_total)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="text-right shrink-0">
+        <div className="text-sm font-semibold tabular-nums">{fmt(check.revenue_total)}</div>
+        {check.is_open ? (
+          <Badge variant="outline" className="text-[10px] border-emerald-500 text-emerald-500 px-1.5 py-0">
+            Open
+          </Badge>
+        ) : check.tip_total > 0 ? (
+          <div className="text-[10px] text-muted-foreground">tip {fmt(check.tip_total)}</div>
+        ) : null}
+      </div>
+    </button>
   );
 }

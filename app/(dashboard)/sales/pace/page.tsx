@@ -29,13 +29,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Receipt,
-  CalendarCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CheckListSheet } from '@/components/pulse/CheckListSheet';
 import { ReservationListSheet } from '@/components/pulse/ReservationListSheet';
 import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
 import { LaborCard } from '@/components/pulse/LaborCard';
@@ -45,9 +43,8 @@ import { PeriodDayChart } from '@/components/pulse/PeriodDayChart';
 import { PeriodDayTable } from '@/components/pulse/PeriodDayTable';
 import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
 import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
-import type { PtdWeekRow } from '@/components/reports/PeriodWeekBreakdown';
+import type { PtdWeekRow, YtdPeriodRow } from '@/lib/types/pulse';
 import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
-import type { YtdPeriodRow } from '@/components/reports/YtdPeriodBreakdown';
 import { Briefcase, ShieldAlert } from 'lucide-react';
 import {
   LineChart,
@@ -1350,8 +1347,7 @@ export default function LivePulsePage() {
   const [error, setError] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [checksSheetOpen, setChecksSheetOpen] = useState(false);
-  const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
+  const [serviceSheetOpen, setServiceSheetOpen] = useState(false);
   const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
   const [checkDetailOpen, setCheckDetailOpen] = useState(false);
   const [enrichment, setEnrichment] = useState<EnrichmentData | null>(null);
@@ -1584,26 +1580,14 @@ export default function LivePulsePage() {
           />
         </div>
         {selectedVenue && !isAllVenues && viewMode === 'today' && (
-          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-0">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 sm:flex-none"
-              onClick={() => setReservationsSheetOpen(true)}
-            >
-              <CalendarCheck className="h-4 w-4 mr-1.5" />
-              Reservations
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 sm:flex-none"
-              onClick={() => setChecksSheetOpen(true)}
-            >
-              <Receipt className="h-4 w-4 mr-1.5" />
-              Checks
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setServiceSheetOpen(true)}
+          >
+            <Receipt className="h-4 w-4 mr-1.5" />
+            Checks
+          </Button>
         )}
       </div>
 
@@ -1891,15 +1875,8 @@ export default function LivePulsePage() {
       {selectedVenue && !isAllVenues && (
         <>
           <ReservationListSheet
-            isOpen={reservationsSheetOpen}
-            onClose={() => setReservationsSheetOpen(false)}
-            venueId={selectedVenue.id}
-            venueName={selectedVenue.name}
-            date={selectedDate || new Date().toISOString().slice(0, 10)}
-          />
-          <CheckListSheet
-            isOpen={checksSheetOpen}
-            onClose={() => setChecksSheetOpen(false)}
+            isOpen={serviceSheetOpen}
+            onClose={() => setServiceSheetOpen(false)}
             venueId={selectedVenue.id}
             venueName={selectedVenue.name}
             date={selectedDate || new Date().toISOString().slice(0, 10)}

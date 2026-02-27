@@ -2190,3 +2190,40 @@ export async function fetchReservationsForDate(
 
   return { reservations, total: reservations.length };
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+// TABLE SPEND (SevenRooms reservation → spend linkage via TipSee)
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface TableSpendEntry {
+  reservation_id: string;
+  table_name: string; // guest name, not table number
+  spend: number;
+  booked_by: string | null;
+  payout: number;
+}
+
+export async function fetchTableSpendForDate(
+  locationName: string,
+  date: string
+): Promise<TableSpendEntry[]> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT reservation_id, table_name, spend, booked_by, payout
+      FROM public.table_spend
+      WHERE location ILIKE $1 AND day = $2`,
+    [`%${locationName}%`, date]
+  );
+
+  return result.rows.map(row => {
+    const r = cleanRow(row);
+    return {
+      reservation_id: r.reservation_id,
+      table_name: r.table_name || '',
+      spend: r.spend || 0,
+      booked_by: r.booked_by || null,
+      payout: r.payout || 0,
+    } as TableSpendEntry;
+  });
+}
