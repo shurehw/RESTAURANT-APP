@@ -39,10 +39,20 @@ export default async function DashboardLayout({
     .eq("id", user.id)
     .maybeSingle();
 
-  // Priority: user_profiles granular role → org role mapping → default manager
-  let userRole: UserRole = (profile?.role as UserRole)
-    || ORG_TO_NAV_ROLE[orgRole]
-    || 'manager';
+  // Check if user is a platform admin
+  const { data: platformAdmin } = await supabase
+    .from("platform_admins")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  // Priority: platform admin → user_profiles granular role → org role mapping → default manager
+  let userRole: UserRole = platformAdmin
+    ? 'platform_admin'
+    : (profile?.role as UserRole)
+      || ORG_TO_NAV_ROLE[orgRole]
+      || 'manager';
 
   // PWA-only users cannot access the dashboard — redirect to Pulse
   if (userRole === 'pwa') {

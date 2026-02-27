@@ -3,7 +3,7 @@
  * Defines which nav items are visible for each role
  */
 
-export type UserRole = 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner' | 'readonly' | 'pwa';
+export type UserRole = 'platform_admin' | 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner' | 'readonly' | 'pwa';
 
 export interface NavPermissions {
   // COGS Section
@@ -49,6 +49,7 @@ export interface NavPermissions {
  */
 export function getNavPermissions(role: UserRole): NavPermissions {
   switch (role) {
+    case 'platform_admin':
     case 'owner':
     case 'director':
       // Full access - strategic oversight
@@ -292,6 +293,7 @@ export function hasNavPermission(role: UserRole, navItem: keyof NavPermissions):
  * Role display labels
  */
 export const ROLE_LABELS: Record<UserRole, string> = {
+  platform_admin: 'Platform Admin',
   owner: 'Owner',
   director: 'Director',
   gm: 'General Manager',
@@ -307,6 +309,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
  * Role descriptions
  */
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  platform_admin: 'Full platform access — cross-organization oversight',
   owner: 'Full access - strategic oversight and control',
   director: 'Full access - strategic oversight across operations',
   gm: 'Full operational access, limited admin settings',
