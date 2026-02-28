@@ -27,6 +27,7 @@ import {
 import { ShiftEditDialog } from './ShiftEditDialog';
 import { AddShiftDialog } from './AddShiftDialog';
 import { ScheduleChangeLog } from './ScheduleChangeLog';
+import { ShiftTimelineChart } from './ShiftTimelineChart';
 
 interface Shift {
   id: string;
@@ -555,6 +556,13 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
 
       {/* Covers Projection */}
       <CoversProjection shifts={activeShifts} weekDays={weekDays} schedule={schedule} forecastCovers={forecastCovers} />
+
+      {/* Shift Timeline */}
+      <ShiftTimelineChart
+        shifts={activeShifts}
+        weekDays={weekDays}
+        onShiftClick={handleShiftClick}
+      />
 
       {/* Calendar Grid */}
       <div className="bg-white border rounded-lg overflow-hidden">
