@@ -2,14 +2,13 @@
 
 /**
  * Shift Timeline Chart
- * Gantt-style visual timeline showing shift bars per position with overlap stacking,
- * headcount summary, and day selection.
+ * Polished Gantt-style visual timeline showing shift bars grouped by position
+ * category, with SVG headcount overlay, day selection, and interactive tooltips.
  */
 
 import { useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Clock, Users } from 'lucide-react';
+import { Clock, Users, CalendarDays } from 'lucide-react';
 
 interface Shift {
   id: string;
@@ -38,15 +37,15 @@ interface ShiftTimelineChartProps {
   onShiftClick?: (shift: Shift) => void;
 }
 
-// ── Constants ──
+// ── Layout ──
 
-const ROW_HEIGHT = 30;
-const ROW_PADDING = 3;
-const BAR_HEIGHT = 24;
-const LABEL_WIDTH = 120;
-const HEADCOUNT_HEIGHT = 56;
+const ROW_HEIGHT = 34;
+const ROW_GAP = 3;
+const BAR_HEIGHT = 28;
+const LABEL_WIDTH = 144;
+const HEADCOUNT_HEIGHT = 76;
 
-// ── Position ordering (BOH first, then FOH, then management) ──
+// ── Position ordering ──
 
 const POSITION_ORDER: Record<string, number> = {
   'Prep Cook': 1, 'Line Cook': 2, 'Sous Chef': 3, 'Executive Chef': 4, 'Dishwasher': 5,
@@ -55,55 +54,59 @@ const POSITION_ORDER: Record<string, number> = {
   'General Manager': 90, 'Assistant Manager': 91, 'Shift Manager': 92, 'Manager': 93,
 };
 
-// ── Colors by category ──
+// ── Category styling ──
 
-const CATEGORY_STYLES: Record<string, { bg: string; border: string; text: string; hoverBg: string }> = {
+const CATEGORY_META: Record<string, {
+  order: number; label: string; gradient: string; dot: string; headerCls: string;
+}> = {
   back_of_house: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-300',
-    text: 'text-amber-900',
-    hoverBg: 'hover:bg-amber-100',
+    order: 0,
+    label: 'Back of House',
+    gradient: 'from-amber-500 to-orange-500',
+    dot: 'bg-amber-500',
+    headerCls: 'text-amber-800 bg-amber-50/80 border-amber-200/60',
   },
   front_of_house: {
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-300',
-    text: 'text-emerald-900',
-    hoverBg: 'hover:bg-emerald-100',
+    order: 1,
+    label: 'Front of House',
+    gradient: 'from-emerald-500 to-teal-500',
+    dot: 'bg-emerald-500',
+    headerCls: 'text-emerald-800 bg-emerald-50/80 border-emerald-200/60',
+  },
+  management: {
+    order: 2,
+    label: 'Management',
+    gradient: 'from-indigo-400 to-violet-500',
+    dot: 'bg-violet-500',
+    headerCls: 'text-violet-800 bg-violet-50/80 border-violet-200/60',
   },
 };
 
-const DEFAULT_STYLE = {
-  bg: 'bg-slate-50',
-  border: 'border-slate-300',
-  text: 'text-slate-800',
-  hoverBg: 'hover:bg-slate-100',
+const DEFAULT_CATEGORY_META = {
+  order: 5,
+  label: 'Other',
+  gradient: 'from-slate-400 to-slate-500',
+  dot: 'bg-slate-400',
+  headerCls: 'text-slate-700 bg-slate-50/80 border-slate-200/60',
 };
 
-const MODIFIED_STYLE = {
-  bg: 'bg-amber-100',
-  border: 'border-amber-500',
-  text: 'text-amber-900',
-  hoverBg: 'hover:bg-amber-200',
-};
+const MODIFIED_GRADIENT = 'from-rose-500 to-pink-500';
 
 // ── Helpers ──
 
-/** Extract decimal hour from ISO timestamp using UTC (venue stores local as UTC) */
 function getDecimalHour(isoStr: string): number {
   const d = new Date(isoStr);
   return d.getUTCHours() + d.getUTCMinutes() / 60;
 }
 
-/** Format decimal hour to display label */
 function formatHourLabel(h: number): string {
   const actual = ((h % 24) + 24) % 24;
-  if (actual === 0) return '12AM';
-  if (actual === 12) return '12PM';
-  if (actual < 12) return `${actual}AM`;
-  return `${actual - 12}PM`;
+  if (actual === 0) return '12a';
+  if (actual === 12) return '12p';
+  if (actual < 12) return `${actual}a`;
+  return `${actual - 12}p`;
 }
 
-/** Format ISO timestamp to readable time */
 function formatTime(timeStr: string): string {
   if (!timeStr) return '';
   if (timeStr.includes('T')) {
@@ -127,15 +130,12 @@ function formatTime(timeStr: string): string {
   return timeStr;
 }
 
-/** Assign shifts to non-overlapping lanes within a position row */
 function assignLanes(shifts: Shift[]): { shift: Shift; lane: number }[] {
   const sorted = [...shifts].sort(
-    (a, b) => getDecimalHour(a.scheduled_start) - getDecimalHour(b.scheduled_start)
+    (a, b) => getDecimalHour(a.scheduled_start) - getDecimalHour(b.scheduled_start),
   );
-
   const laneEnds: number[] = [];
   const result: { shift: Shift; lane: number }[] = [];
-
   for (const shift of sorted) {
     const startH = getDecimalHour(shift.scheduled_start);
     let assignedLane = laneEnds.findIndex((endH) => endH <= startH);
@@ -148,7 +148,6 @@ function assignLanes(shifts: Shift[]): { shift: Shift; lane: number }[] {
     laneEnds[assignedLane] = endH;
     result.push({ shift, lane: assignedLane });
   }
-
   return result;
 }
 
@@ -156,51 +155,49 @@ function assignLanes(shifts: Shift[]): { shift: Shift; lane: number }[] {
 
 export function ShiftTimelineChart({ shifts, weekDays, onShiftClick }: ShiftTimelineChartProps) {
   const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
-    const firstWithShifts = weekDays.findIndex((day) =>
-      shifts.some((s) => s.business_date === day.date)
-    );
-    return firstWithShifts >= 0 ? firstWithShifts : 0;
+    const idx = weekDays.findIndex((day) => shifts.some((s) => s.business_date === day.date));
+    return idx >= 0 ? idx : 0;
   });
 
   const selectedDay = weekDays[selectedDayIndex];
   const dayShifts = useMemo(
     () => shifts.filter((s) => s.business_date === selectedDay?.date),
-    [shifts, selectedDay?.date]
+    [shifts, selectedDay?.date],
   );
 
-  // ── Compute time range from shifts ──
+  // ── Time range ──
   const { timelineStart, timelineEnd, totalHours } = useMemo(() => {
     if (dayShifts.length === 0) return { timelineStart: 14, timelineEnd: 26, totalHours: 12 };
-
     const starts = dayShifts.map((s) => getDecimalHour(s.scheduled_start));
     const ends = dayShifts.map((s) => {
-      const endH = getDecimalHour(s.scheduled_end);
-      const startH = getDecimalHour(s.scheduled_start);
-      return endH < startH ? endH + 24 : endH;
+      const e = getDecimalHour(s.scheduled_end);
+      const st = getDecimalHour(s.scheduled_start);
+      return e < st ? e + 24 : e;
     });
-
-    const minStart = Math.floor(Math.min(...starts));
-    const maxEnd = Math.ceil(Math.max(...ends));
-
-    const tStart = Math.max(0, minStart - 1);
-    const tEnd = Math.min(maxEnd + 1, 30);
-
+    const tStart = Math.max(0, Math.floor(Math.min(...starts)) - 1);
+    const tEnd = Math.min(Math.ceil(Math.max(...ends)) + 1, 30);
     return { timelineStart: tStart, timelineEnd: tEnd, totalHours: tEnd - tStart };
   }, [dayShifts]);
 
-  // ── Group shifts by position ──
-  const positionGroups = useMemo(() => {
-    const groups: Record<string, Shift[]> = {};
+  // ── Category groups ──
+  const categoryGroups = useMemo(() => {
+    const catMap: Record<string, Record<string, Shift[]>> = {};
     for (const shift of dayShifts) {
-      const posName = shift.position?.name || 'Unknown';
-      if (!groups[posName]) groups[posName] = [];
-      groups[posName].push(shift);
+      const cat = shift.position?.category || 'other';
+      const pos = shift.position?.name || 'Unknown';
+      if (!catMap[cat]) catMap[cat] = {};
+      if (!catMap[cat][pos]) catMap[cat][pos] = [];
+      catMap[cat][pos].push(shift);
     }
-    return Object.entries(groups).sort(([a], [b]) => {
-      const oa = POSITION_ORDER[a] ?? 50;
-      const ob = POSITION_ORDER[b] ?? 50;
-      return oa - ob;
-    });
+    return Object.entries(catMap)
+      .sort(([a], [b]) => (CATEGORY_META[a]?.order ?? 5) - (CATEGORY_META[b]?.order ?? 5))
+      .map(([cat, positions]) => ({
+        category: cat,
+        meta: CATEGORY_META[cat] || DEFAULT_CATEGORY_META,
+        positions: Object.entries(positions).sort(
+          ([a], [b]) => (POSITION_ORDER[a] ?? 50) - (POSITION_ORDER[b] ?? 50),
+        ),
+      }));
   }, [dayShifts]);
 
   // ── Headcount at 15-min intervals ──
@@ -220,276 +217,387 @@ export function ShiftTimelineChart({ shifts, weekDays, onShiftClick }: ShiftTime
   }, [dayShifts, timelineStart, timelineEnd]);
 
   const maxHeadcount = Math.max(...headcountData.map((p) => p.count), 1);
-  const peakPoint = headcountData.reduce((max, p) => (p.count > max.count ? p : max), headcountData[0]);
 
-  // ── Bar style calculator ──
-  function getBarPosition(shift: Shift) {
+  // ── Summary stats ──
+  const stats = useMemo(
+    () => ({
+      shifts: dayShifts.length,
+      hours: dayShifts.reduce((sum, s) => sum + (s.scheduled_hours || 0), 0),
+      peak: maxHeadcount,
+    }),
+    [dayShifts, maxHeadcount],
+  );
+
+  // ── SVG headcount area ──
+  const { areaPath, linePath } = useMemo(() => {
+    if (headcountData.length === 0 || maxHeadcount === 0) return { areaPath: '', linePath: '' };
+    const W = 1000;
+    const H = 64;
+    const padTop = 8;
+    const usable = H - padTop;
+    const pts = headcountData.map((p) => ({
+      x: ((p.hour - timelineStart) / totalHours) * W,
+      y: H - (p.count / maxHeadcount) * usable,
+    }));
+    return {
+      areaPath:
+        `M ${pts[0].x},${H} ` +
+        pts.map((p) => `L ${p.x},${p.y}`).join(' ') +
+        ` L ${pts[pts.length - 1].x},${H} Z`,
+      linePath: pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' '),
+    };
+  }, [headcountData, timelineStart, totalHours, maxHeadcount]);
+
+  // ── Now indicator ──
+  const nowPct = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    if (selectedDay?.date !== today) return null;
+    const h = new Date().getHours() + new Date().getMinutes() / 60;
+    if (h < timelineStart || h > timelineEnd) return null;
+    return ((h - timelineStart) / totalHours) * 100;
+  }, [selectedDay?.date, timelineStart, timelineEnd, totalHours]);
+
+  // ── Bar helpers ──
+  function barPos(shift: Shift) {
     const startH = getDecimalHour(shift.scheduled_start);
     let endH = getDecimalHour(shift.scheduled_end);
     if (endH < startH) endH += 24;
-
     const leftPct = ((startH - timelineStart) / totalHours) * 100;
     const widthPct = ((endH - startH) / totalHours) * 100;
-
     return {
       left: `${Math.max(0, leftPct)}%`,
       width: `${Math.min(widthPct, 100 - Math.max(0, leftPct))}%`,
     };
   }
 
-  function getBarColors(shift: Shift) {
-    if (shift.is_modified) return MODIFIED_STYLE;
-    return CATEGORY_STYLES[shift.position?.category || ''] || DEFAULT_STYLE;
+  function barGradient(shift: Shift) {
+    if (shift.is_modified) return MODIFIED_GRADIENT;
+    return (CATEGORY_META[shift.position?.category || ''] || DEFAULT_CATEGORY_META).gradient;
   }
 
-  // ── Hour gridlines ──
   const hourMarkers = Array.from({ length: totalHours + 1 }, (_, i) => timelineStart + i);
 
   if (!selectedDay) return null;
 
+  // ── Render ──
   return (
-    <Card className="p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-500" />
-          <h3 className="text-sm font-semibold text-gray-900">Shift Timeline</h3>
-          {dayShifts.length > 0 && (
-            <Badge variant="outline" className="text-xs">
-              {dayShifts.length} shift{dayShifts.length !== 1 ? 's' : ''}
-            </Badge>
+    <Card className="overflow-hidden border-border">
+      {/* ── Header ── */}
+      <div className="px-5 pt-5">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-brass/10 flex items-center justify-center">
+              <Clock className="w-[18px] h-[18px] text-brass" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-foreground leading-tight">
+                Shift Timeline
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {selectedDay.dayName} {selectedDay.dateStr}
+              </p>
+            </div>
+          </div>
+
+          {/* Summary stats */}
+          {stats.shifts > 0 && (
+            <div className="flex items-center gap-2">
+              {[
+                { icon: CalendarDays, val: stats.shifts, unit: 'shifts' },
+                { icon: Clock, val: stats.hours.toFixed(1), unit: 'hrs' },
+                { icon: Users, val: stats.peak, unit: 'peak' },
+              ].map(({ icon: Icon, val, unit }) => (
+                <div
+                  key={unit}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted/50 border border-border text-xs"
+                >
+                  <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="font-semibold text-foreground tabular-nums">{val}</span>
+                  <span className="text-muted-foreground">{unit}</span>
+                </div>
+              ))}
+            </div>
           )}
         </div>
+      </div>
 
-        {/* Day selector */}
-        <div className="flex items-center gap-1">
+      {/* ── Accent stripe ── */}
+      <div className="h-[2px] bg-brass mx-5 mt-4 rounded-full opacity-70" />
+
+      {/* ── Day selector ── */}
+      <div className="px-5 pt-4 pb-3">
+        <div className="inline-flex items-center gap-0.5 p-1 bg-muted/60 rounded-lg border border-border/50">
           {weekDays.map((day, idx) => {
             const count = shifts.filter((s) => s.business_date === day.date).length;
+            const active = idx === selectedDayIndex;
             return (
               <button
                 key={day.date}
                 onClick={() => setSelectedDayIndex(idx)}
-                className={`px-2.5 py-1 text-xs rounded-md border transition-all ${
-                  idx === selectedDayIndex
-                    ? 'bg-gray-900 text-white border-gray-900 shadow-sm'
+                className={`relative px-3 py-1.5 text-xs rounded-md transition-all duration-150 min-w-[44px] ${
+                  active
+                    ? 'bg-card text-foreground shadow-sm font-semibold'
                     : count > 0
-                    ? 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    : 'bg-gray-50 text-gray-400 border-gray-200'
+                      ? 'text-muted-foreground hover:text-foreground hover:bg-card/50 font-medium'
+                      : 'text-muted-foreground/40 font-medium'
                 }`}
               >
-                <div className="font-medium leading-tight">{day.dayName}</div>
-                <div className="text-[10px] leading-tight opacity-70">{day.dateStr}</div>
+                {day.dayName}
+                {count > 0 && active && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 text-[10px] font-bold rounded-full bg-brass text-white flex items-center justify-center px-1">
+                    {count}
+                  </span>
+                )}
+                {count > 0 && !active && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-brass/60" />
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
+      {/* ── Legend ── */}
+      <div className="px-5 pb-3 flex items-center gap-4 text-[11px] text-muted-foreground flex-wrap">
+        {Object.values(CATEGORY_META).map((meta) => (
+          <div key={meta.label} className="flex items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-[3px] ${meta.dot}`} />
+            <span>{meta.label}</span>
+          </div>
+        ))}
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-2.5 rounded-sm bg-emerald-50 border border-emerald-300" />
-          <span>FOH</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-2.5 rounded-sm bg-amber-50 border border-amber-300" />
-          <span>BOH</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-2.5 rounded-sm bg-amber-100 border border-amber-500" />
+          <div className="w-2.5 h-2.5 rounded-[3px] bg-gradient-to-br from-rose-500 to-pink-500" />
           <span>Modified</span>
         </div>
+        {nowPct !== null && (
+          <div className="flex items-center gap-1.5 ml-auto">
+            <div className="w-px h-3 bg-rose-500" />
+            <span className="text-rose-500 font-medium">Now</span>
+          </div>
+        )}
       </div>
 
-      {/* Chart area */}
+      {/* ── Chart body ── */}
       {dayShifts.length === 0 ? (
-        <div className="text-center py-10 text-sm text-gray-400">
-          No shifts scheduled for {selectedDay.dayName} {selectedDay.dateStr}
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-3">
+            <CalendarDays className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">No shifts scheduled</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            {selectedDay.dayName} {selectedDay.dateStr}
+          </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <div style={{ minWidth: 700 }}>
-            {/* Time axis header */}
-            <div className="flex border-b border-gray-200 pb-1">
-              <div style={{ width: LABEL_WIDTH }} className="shrink-0" />
-              <div className="flex-1 relative">
-                {hourMarkers.map((h) => {
-                  const leftPct = ((h - timelineStart) / totalHours) * 100;
-                  return (
-                    <span
-                      key={h}
-                      className="absolute text-[10px] text-gray-400 font-medium -translate-x-1/2"
-                      style={{ left: `${leftPct}%` }}
-                    >
-                      {formatHourLabel(h)}
-                    </span>
-                  );
-                })}
+        <div key={selectedDay.date} className="px-5 pb-5 overflow-x-auto animate-fade-in">
+          <div style={{ minWidth: 720 }} className="rounded-lg border border-border overflow-hidden">
+            {/* ── Time axis ── */}
+            <div className="flex bg-muted/40 border-b border-border">
+              <div style={{ width: LABEL_WIDTH }} className="shrink-0 border-r border-border" />
+              <div className="flex-1 relative h-7">
+                {hourMarkers.map((h) => (
+                  <span
+                    key={h}
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 text-[10px] font-medium text-muted-foreground tabular-nums"
+                    style={{ left: `${((h - timelineStart) / totalHours) * 100}%` }}
+                  >
+                    {formatHourLabel(h)}
+                  </span>
+                ))}
+                {/* Now dot on axis */}
+                {nowPct !== null && (
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-rose-200 z-10"
+                    style={{ left: `${nowPct}%` }}
+                  />
+                )}
               </div>
             </div>
 
-            {/* Position rows */}
-            {positionGroups.map(([posName, posShifts]) => {
-              const lanes = assignLanes(posShifts);
-              const laneCount = Math.max(...lanes.map((l) => l.lane), 0) + 1;
-              const rowH = laneCount * ROW_HEIGHT + ROW_PADDING * 2;
-
-              return (
+            {/* ── Category groups ── */}
+            {categoryGroups.map(({ category, meta, positions }) => (
+              <div key={category}>
+                {/* Category header */}
                 <div
-                  key={posName}
-                  className="flex border-b border-gray-100"
-                  style={{ height: rowH }}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider border-b ${meta.headerCls}`}
                 >
-                  {/* Position label */}
-                  <div
-                    style={{ width: LABEL_WIDTH }}
-                    className="shrink-0 flex items-center px-3 bg-gray-50/60 border-r border-gray-100"
-                  >
-                    <span className="text-xs font-medium text-gray-700 truncate">
-                      {posName}
-                    </span>
-                    <span className="ml-auto text-[10px] text-gray-400">
-                      {posShifts.length}
-                    </span>
-                  </div>
+                  <div className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
+                  {meta.label}
+                  <span className="font-normal normal-case tracking-normal text-[10px] opacity-50 ml-1">
+                    {positions.reduce((n, [, s]) => n + s.length, 0)} shifts
+                  </span>
+                </div>
 
-                  {/* Timeline area */}
-                  <div className="flex-1 relative">
-                    {/* Gridlines */}
-                    {hourMarkers.map((h) => {
-                      const leftPct = ((h - timelineStart) / totalHours) * 100;
-                      return (
-                        <div
-                          key={h}
-                          className="absolute top-0 bottom-0 border-l border-gray-100"
-                          style={{ left: `${leftPct}%` }}
-                        />
-                      );
-                    })}
+                {/* Position rows */}
+                {positions.map(([posName, posShifts], posIdx) => {
+                  const lanes = assignLanes(posShifts);
+                  const laneCount = Math.max(...lanes.map((l) => l.lane), 0) + 1;
+                  const rowH = laneCount * ROW_HEIGHT + ROW_GAP * 2;
 
-                    {/* Shift bars */}
-                    {lanes.map(({ shift, lane }) => {
-                      const pos = getBarPosition(shift);
-                      const colors = getBarColors(shift);
-                      const empName = shift.employee
-                        ? `${shift.employee.first_name} ${shift.employee.last_name[0]}.`
-                        : 'TBD';
+                  return (
+                    <div
+                      key={posName}
+                      className={`flex border-b border-border/50 ${
+                        posIdx % 2 === 1 ? 'bg-muted/20' : ''
+                      }`}
+                      style={{ height: rowH }}
+                    >
+                      {/* Position label */}
+                      <div
+                        style={{ width: LABEL_WIDTH }}
+                        className="shrink-0 flex items-center justify-between px-3 border-r border-border/50"
+                      >
+                        <span className="text-xs font-medium text-foreground truncate">
+                          {posName}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums ml-1.5 shrink-0">
+                          {posShifts.length}
+                        </span>
+                      </div>
 
-                      return (
-                        <div
-                          key={shift.id}
-                          className={`absolute rounded border cursor-pointer group transition-shadow
-                            ${colors.bg} ${colors.border} ${colors.text} ${colors.hoverBg}
-                            hover:shadow-md hover:z-10`}
-                          style={{
-                            left: pos.left,
-                            width: pos.width,
-                            top: ROW_PADDING + lane * ROW_HEIGHT,
-                            height: BAR_HEIGHT,
-                          }}
-                          onClick={() => onShiftClick?.(shift)}
-                        >
-                          {/* Bar content */}
-                          <div className="px-1.5 h-full flex items-center overflow-hidden">
-                            <span className="text-[10px] font-medium truncate">
-                              {empName}
-                            </span>
-                            <span className="text-[9px] opacity-60 ml-auto shrink-0 hidden sm:inline">
-                              {shift.scheduled_hours}h
-                            </span>
-                          </div>
+                      {/* Timeline area */}
+                      <div className="flex-1 relative">
+                        {/* Gridlines */}
+                        {hourMarkers.map((h) => (
+                          <div
+                            key={h}
+                            className="absolute top-0 bottom-0 border-l border-border/25"
+                            style={{ left: `${((h - timelineStart) / totalHours) * 100}%` }}
+                          />
+                        ))}
 
-                          {/* Hover tooltip */}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-                            <div className="bg-gray-900 text-white text-[11px] rounded-md px-2.5 py-2 whitespace-nowrap shadow-xl">
-                              <div className="font-semibold">
-                                {shift.employee
-                                  ? `${shift.employee.first_name} ${shift.employee.last_name}`
-                                  : 'Unassigned'}
-                              </div>
-                              <div className="text-gray-300">{shift.position?.name}</div>
-                              <div className="mt-1">
-                                {formatTime(shift.scheduled_start)} &ndash;{' '}
-                                {formatTime(shift.scheduled_end)}
-                                <span className="text-gray-400 ml-1">
-                                  ({shift.scheduled_hours}h)
+                        {/* Now line */}
+                        {nowPct !== null && (
+                          <div
+                            className="absolute top-0 bottom-0 w-px bg-rose-500/70 z-20"
+                            style={{ left: `${nowPct}%` }}
+                          />
+                        )}
+
+                        {/* Shift bars */}
+                        {lanes.map(({ shift, lane }) => {
+                          const pos = barPos(shift);
+                          const grad = barGradient(shift);
+                          const emp = shift.employee
+                            ? `${shift.employee.first_name} ${shift.employee.last_name[0]}.`
+                            : 'TBD';
+
+                          return (
+                            <div
+                              key={shift.id}
+                              className={`absolute rounded-md bg-gradient-to-r ${grad} text-white cursor-pointer group
+                                shadow-sm hover:shadow-lg hover:-translate-y-px transition-all duration-150`}
+                              style={{
+                                left: pos.left,
+                                width: pos.width,
+                                top: ROW_GAP + lane * ROW_HEIGHT + (ROW_HEIGHT - BAR_HEIGHT) / 2,
+                                height: BAR_HEIGHT,
+                              }}
+                              onClick={() => onShiftClick?.(shift)}
+                            >
+                              {/* Bar content */}
+                              <div className="px-2 h-full flex items-center gap-1 overflow-hidden">
+                                <span className="text-[11px] font-semibold truncate">{emp}</span>
+                                <span className="text-[10px] opacity-80 ml-auto shrink-0 tabular-nums hidden sm:inline">
+                                  {shift.scheduled_hours}h
                                 </span>
                               </div>
-                              {shift.is_modified && (
-                                <div className="text-amber-400 mt-0.5 text-[10px]">
-                                  Manager modified
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
 
-            {/* Headcount summary row */}
+                              {/* Hover tooltip */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-40">
+                                <div className="bg-gray-900 text-white text-[11px] rounded-lg px-3 py-2.5 shadow-xl min-w-[168px]">
+                                  <div className="font-semibold text-xs">
+                                    {shift.employee
+                                      ? `${shift.employee.first_name} ${shift.employee.last_name}`
+                                      : 'Unassigned'}
+                                  </div>
+                                  <div className="text-gray-400 text-[10px] mt-0.5">
+                                    {shift.position?.name}
+                                  </div>
+                                  <div className="border-t border-gray-700 my-1.5" />
+                                  <div>
+                                    {formatTime(shift.scheduled_start)} –{' '}
+                                    {formatTime(shift.scheduled_end)}
+                                  </div>
+                                  <div className="text-gray-400">
+                                    {shift.scheduled_hours} hours
+                                  </div>
+                                  {shift.is_modified && (
+                                    <div className="text-rose-400 mt-1.5 text-[10px] font-medium">
+                                      ● Manager modified
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Tooltip caret */}
+                                <div className="flex justify-center">
+                                  <div className="w-2 h-2 bg-gray-900 rotate-45 -mt-1" />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* ── Headcount area chart ── */}
             <div className="flex" style={{ height: HEADCOUNT_HEIGHT }}>
               <div
                 style={{ width: LABEL_WIDTH }}
-                className="shrink-0 flex items-center px-3 bg-gray-50/60 border-r border-gray-100"
+                className="shrink-0 flex items-center gap-1.5 px-3 border-r border-border/50 bg-muted/30"
               >
-                <span className="text-xs font-medium text-gray-600 flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  On Floor
-                </span>
+                <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">Headcount</span>
               </div>
-              <div className="flex-1 relative bg-gray-50/30">
+              <div className="flex-1 relative bg-muted/10">
                 {/* Gridlines */}
-                {hourMarkers.map((h) => {
-                  const leftPct = ((h - timelineStart) / totalHours) * 100;
-                  return (
-                    <div
-                      key={h}
-                      className="absolute top-0 bottom-0 border-l border-gray-100"
-                      style={{ left: `${leftPct}%` }}
-                    />
-                  );
-                })}
-
-                {/* Headcount bars */}
-                {headcountData.map((point, i) => {
-                  const leftPct = ((point.hour - timelineStart) / totalHours) * 100;
-                  const widthPct = (0.25 / totalHours) * 100;
-                  const heightPct = (point.count / maxHeadcount) * 100;
-                  const isPeak = point.count === maxHeadcount && point.count > 0;
-                  return (
-                    <div
-                      key={i}
-                      className={`absolute bottom-0 transition-colors ${
-                        isPeak
-                          ? 'bg-blue-200 border-t border-blue-400'
-                          : 'bg-blue-100/70 border-t border-blue-300/60'
-                      }`}
-                      style={{
-                        left: `${leftPct}%`,
-                        width: `${widthPct + 0.1}%`,
-                        height: `${heightPct}%`,
-                      }}
-                      title={`${formatHourLabel(point.hour)}: ${point.count} staff`}
-                    />
-                  );
-                })}
-
-                {/* Peak annotation */}
-                {peakPoint && peakPoint.count > 0 && (
+                {hourMarkers.map((h) => (
                   <div
-                    className="absolute text-[10px] font-semibold text-blue-600"
-                    style={{
-                      left: `${((peakPoint.hour - timelineStart) / totalHours) * 100}%`,
-                      top: 2,
-                    }}
-                  >
-                    {maxHeadcount}
-                  </div>
+                    key={h}
+                    className="absolute top-0 bottom-0 border-l border-border/25"
+                    style={{ left: `${((h - timelineStart) / totalHours) * 100}%` }}
+                  />
+                ))}
+
+                {/* Now line */}
+                {nowPct !== null && (
+                  <div
+                    className="absolute top-0 bottom-0 w-px bg-rose-500/70 z-20"
+                    style={{ left: `${nowPct}%` }}
+                  />
                 )}
+
+                {/* SVG area chart */}
+                <svg
+                  viewBox="0 0 1000 64"
+                  preserveAspectRatio="none"
+                  className="absolute inset-0 w-full h-full"
+                >
+                  <defs>
+                    <linearGradient id="hcGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--opsos-brass)" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="var(--opsos-brass)" stopOpacity="0.03" />
+                    </linearGradient>
+                  </defs>
+                  {areaPath && <path d={areaPath} fill="url(#hcGrad)" />}
+                  {linePath && (
+                    <path
+                      d={linePath}
+                      fill="none"
+                      stroke="var(--opsos-brass)"
+                      strokeWidth="2"
+                      strokeLinejoin="round"
+                    />
+                  )}
+                </svg>
+
+                {/* Peak label */}
+                <div className="absolute top-1.5 right-2.5 text-[10px] font-semibold text-brass tabular-nums">
+                  Peak: {maxHeadcount}
+                </div>
               </div>
             </div>
           </div>
