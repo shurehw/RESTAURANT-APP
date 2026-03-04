@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings, Calendar, Bell, Save, ShieldCheck, ShoppingCart } from 'lucide-react';
+import { Settings, Calendar, Bell, Save, ShieldCheck, ShoppingCart, Users } from 'lucide-react';
 import { CompSettingsManager } from '@/components/admin/CompSettingsManager';
 import { ProcurementSettingsManager } from '@/app/(dashboard)/admin/procurement-settings/ProcurementSettingsManager';
+import NightlySubscribers from '@/components/settings/NightlySubscribers';
+import TeamManager from '@/components/settings/TeamManager';
 
 interface AdminSettingsTabsProps {
   organizations: Array<{ id: string; name: string; logo_url?: string | null }>;
@@ -28,6 +30,10 @@ export function AdminSettingsTabs({ organizations }: AdminSettingsTabsProps) {
           <ShoppingCart className="w-4 h-4" />
           Procurement
         </TabsTrigger>
+        <TabsTrigger value="team" className="gap-2">
+          <Users className="w-4 h-4" />
+          Team
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="general">
@@ -40,6 +46,10 @@ export function AdminSettingsTabs({ organizations }: AdminSettingsTabsProps) {
 
       <TabsContent value="procurement">
         <ProcurementSettingsManager organizations={organizations} />
+      </TabsContent>
+
+      <TabsContent value="team">
+        <TeamManager />
       </TabsContent>
     </Tabs>
   );
@@ -197,6 +207,9 @@ function GeneralSettingsTab() {
           )}
         </div>
       </Card>
+
+      {/* Nightly Report Subscribers */}
+      <NightlySubscribers briefingEnabled={settings.daily_briefing_enabled} />
     </div>
   );
 }
