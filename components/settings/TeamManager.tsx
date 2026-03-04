@@ -473,7 +473,10 @@ function InviteMemberDialog({
         setAllVenues(true);
         setSelectedVenueIds([]);
       } else {
-        setError(data.message || 'Failed to send invitation');
+        const detail = data.details?.fieldErrors
+          ? Object.entries(data.details.fieldErrors).map(([k, v]) => `${k}: ${v}`).join(', ')
+          : '';
+        setError(detail || data.message || 'Failed to send invitation');
       }
     } catch {
       setError('Error sending invitation');

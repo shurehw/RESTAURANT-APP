@@ -35,7 +35,7 @@ const createInviteSchema = z.object({
 
 export async function GET(request: NextRequest) {
   return guard(async () => {
-    rateLimit(request, ':team-invites');
+    await rateLimit(request, ':team-invites');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   return guard(async () => {
-    rateLimit(request, ':team-invites');
+    await rateLimit(request, ':team-invites');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
 
