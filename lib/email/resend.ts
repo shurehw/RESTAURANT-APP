@@ -16,4 +16,4 @@ export function getResendClient(): Resend {
   return resendClient;
 }
 
-export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'reports@opsos.app';
+export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'reports@prime-cost.com';
