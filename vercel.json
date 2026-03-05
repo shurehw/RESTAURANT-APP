@@ -121,6 +121,18 @@
     {
       "path": "/api/etl/sync?action=reviews",
       "schedule": "15 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-tripleseat",
+      "schedule": "30 */6 * * *"
+    },
+    {
+      "path": "/api/cron/nightly-report",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-reservations",
+      "schedule": "0 */6 * * *"
     }
   ]
 }
