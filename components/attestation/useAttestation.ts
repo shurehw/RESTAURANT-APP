@@ -28,8 +28,6 @@ export interface CompletionState {
   incidents: 'complete' | 'incomplete';
   coaching: 'complete' | 'incomplete';
   guest: 'complete' | 'incomplete';
-  entertainment: 'complete' | 'incomplete';
-  culinary: 'complete' | 'incomplete';
 }
 
 /** Extract error message from API JSON response { error: '...' } */
@@ -323,8 +321,10 @@ export function useAttestation(
       && (!triggers?.comp_resolution_required || (triggers.flagged_comps?.length || 0) <= compResolutions.length)
       ? 'complete' : 'incomplete',
     foh: (fohPromptsComplete || !!attestation?.foh_acknowledged)
+      && (!options?.entertainmentRequired || !!options?.entertainmentComplete)
       ? 'complete' : 'incomplete',
     boh: (bohPromptsComplete || !!attestation?.boh_acknowledged)
+      && (!options?.culinaryRequired || !!options?.culinaryComplete)
       ? 'complete' : 'incomplete',
     incidents: (attestation?.incident_notes?.length ?? 0) >= 10 || !!attestation?.incidents_acknowledged
       ? 'complete' : 'incomplete',
@@ -332,8 +332,6 @@ export function useAttestation(
       ? 'complete' : 'incomplete',
     guest: (guestPromptsComplete || !!attestation?.guest_acknowledged)
       ? 'complete' : 'incomplete',
-    entertainment: options?.entertainmentComplete ? 'complete' : 'incomplete',
-    culinary: options?.culinaryComplete ? 'complete' : 'incomplete',
   };
 
   const canSubmit =

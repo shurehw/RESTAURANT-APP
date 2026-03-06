@@ -14,7 +14,6 @@ import {
   AlertOctagon,
   Users,
   Crown,
-  Music,
   ChefHat,
   ClipboardCheck,
 } from 'lucide-react';
@@ -26,9 +25,7 @@ import { FOHStep } from './steps/FOHStep';
 import { BOHStep } from './steps/BOHStep';
 import { IncidentsStep } from './steps/IncidentsStep';
 import { CoachingStep } from './steps/CoachingStep';
-import { EntertainmentStep } from './steps/EntertainmentStep';
 import { GuestStep } from './steps/GuestStep';
-import { CulinaryStep } from './steps/CulinaryStep';
 import { ReviewStep } from './steps/ReviewStep';
 import type {
   NightlyAttestation,
@@ -311,7 +308,8 @@ export function AttestationStepper({
       label: 'FOH',
       icon: UserCheck,
       status: 'required' as const,
-      completion: completionState.foh,
+      completion: completionState.foh === 'complete' && (!hasEntertainment || entertainmentComplete)
+        ? 'complete' as const : 'incomplete' as const,
       flagged: !!triggers?.labor_attestation_required,
     },
     {
@@ -319,7 +317,8 @@ export function AttestationStepper({
       label: 'BOH',
       icon: ChefHat,
       status: 'required' as const,
-      completion: completionState.boh,
+      completion: completionState.boh === 'complete' && (!hasCulinary || culinaryComplete)
+        ? 'complete' as const : 'incomplete' as const,
       flagged: !!triggers?.labor_attestation_required,
     },
     {
@@ -344,40 +343,15 @@ export function AttestationStepper({
       status: 'required' as const,
       completion: completionState.guest,
     },
-    ...(hasEntertainment ? [{
-      id: 'entertainment',
-      label: 'Entertainment',
-      icon: Music,
-      status: 'required' as const,
-      completion: entertainmentComplete ? 'complete' as const : 'incomplete' as const,
-    }] : []),
-    ...(hasCulinary ? [{
-      id: 'culinary',
-      label: 'Culinary',
-      icon: ChefHat,
-      status: 'required' as const,
-      completion: culinaryComplete ? 'complete' as const : 'incomplete' as const,
-    }] : []),
     {
       id: 'review',
       label: 'Review',
       icon: ClipboardCheck,
       status: 'required' as const,
       completion: (canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete)) || isLocked
-        ? 'complete' as const
-        : 'incomplete' as const,
+        ? 'complete' as const : 'incomplete' as const,
     },
   ], [triggers, completionState, canSubmit, isLocked, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
-
-  // Derived completion state including entertainment + culinary
-  const fullCompletionState: CompletionState = useMemo(() => ({
-    ...completionState,
-    entertainment: entertainmentComplete ? 'complete' : 'incomplete',
-    culinary: culinaryComplete ? 'complete' : 'incomplete',
-  }), [completionState, entertainmentComplete, culinaryComplete]);
-
-  // Derived canSubmit including entertainment + culinary
-  const fullCanSubmit = canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete);
 
   // Smart start: explicit step ID, or first incomplete step
   const initialStep = useMemo(() => {
@@ -417,6 +391,19 @@ export function AttestationStepper({
     }
     return result;
   };
+
+  // Adjusted completion state: FOH includes entertainment, BOH includes culinary
+  const adjustedCompletionState: CompletionState = useMemo(() => ({
+    ...completionState,
+    foh: completionState.foh === 'complete' && (!hasEntertainment || entertainmentComplete)
+      ? 'complete' : 'incomplete',
+    boh: completionState.boh === 'complete' && (!hasCulinary || culinaryComplete)
+      ? 'complete' : 'incomplete',
+  }), [completionState, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
+
+  const adjustedCanSubmit = canSubmit
+    && (!hasEntertainment || entertainmentComplete)
+    && (!hasCulinary || culinaryComplete);
 
   const isLastStep = currentStep === steps.length - 1;
   const activeStep = steps[currentStep];
@@ -501,6 +488,11 @@ export function AttestationStepper({
                   netSales={reportSummary?.net_sales ?? 0}
                   covers={reportSummary?.total_covers ?? 0}
                   laborExceptions={laborExceptions}
+                  hasEntertainment={hasEntertainment}
+                  venueId={venueId}
+                  businessDate={date}
+                  shiftLog={shiftLog}
+                  onShiftLogUpdate={setShiftLog}
                 />
               )}
               {activeStep.id === 'boh' && (
@@ -513,6 +505,11 @@ export function AttestationStepper({
                   netSales={reportSummary?.net_sales ?? 0}
                   covers={reportSummary?.total_covers ?? 0}
                   laborExceptions={laborExceptions}
+                  hasCulinary={hasCulinary}
+                  venueId={venueId}
+                  businessDate={date}
+                  culinaryLog={culinaryLog}
+                  onCulinaryLogUpdate={setCulinaryLog}
                 />
               )}
               {activeStep.id === 'incidents' && (
@@ -543,28 +540,6 @@ export function AttestationStepper({
                   disabled={isLocked}
                 />
               )}
-              {activeStep.id === 'entertainment' && venueId && (
-                <EntertainmentStep
-                  venueId={venueId}
-                  businessDate={date}
-                  shiftLog={shiftLog}
-                  onShiftLogUpdate={setShiftLog}
-                  disabled={isLocked}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                />
-              )}
-              {activeStep.id === 'culinary' && venueId && (
-                <CulinaryStep
-                  venueId={venueId}
-                  businessDate={date}
-                  culinaryLog={culinaryLog}
-                  onCulinaryLogUpdate={setCulinaryLog}
-                  disabled={isLocked}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                />
-              )}
               {activeStep.id === 'review' && (
                 <ReviewStep
                   attestation={attestation}
@@ -572,8 +547,8 @@ export function AttestationStepper({
                   compResolutions={compResolutions}
                   incidents={incidents}
                   coachingActions={coachingActions}
-                  completionState={fullCompletionState}
-                  canSubmit={fullCanSubmit}
+                  completionState={adjustedCompletionState}
+                  canSubmit={adjustedCanSubmit}
                   isLocked={isLocked}
                   submitting={submitting}
                   error={error}

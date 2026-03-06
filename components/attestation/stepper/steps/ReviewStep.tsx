@@ -121,8 +121,6 @@ const MODULE_LABELS: Record<keyof CompletionState, string> = {
   incidents: 'Incidents',
   coaching: 'Coaching',
   guest: 'Guest',
-  entertainment: 'Entertainment',
-  culinary: 'Culinary',
 };
 
 function StatusIcon({ status }: { status: 'complete' | 'incomplete' }) {
@@ -151,6 +149,8 @@ export function ReviewStep({
   venueId,
   venueName,
   date,
+  shiftLog,
+  culinaryLog,
   notableGuests = [],
   peopleWeKnow = [],
   topItems = [],
@@ -376,16 +376,20 @@ export function ReviewStep({
         return parts.join(', ');
       }
       case 'foh': {
+        const parts: string[] = [];
         const filled = promptsFilledCount(['labor_foh_coverage', 'foh_staffing_decision']);
-        if (filled > 0) return `${filled}/2 prompts`;
-        if (attestation?.foh_acknowledged) return 'Acknowledged';
-        return '';
+        if (filled > 0) parts.push(`${filled}/2 prompts`);
+        else if (attestation?.foh_acknowledged) parts.push('Acknowledged');
+        if (completionState.foh === 'complete' && shiftLog?.overall_rating) parts.push('Entertainment rated');
+        return parts.join(', ');
       }
       case 'boh': {
+        const parts: string[] = [];
         const filled = promptsFilledCount(['labor_boh_performance', 'boh_staffing_decision']);
-        if (filled > 0) return `${filled}/2 prompts`;
-        if (attestation?.boh_acknowledged) return 'Acknowledged';
-        return '';
+        if (filled > 0) parts.push(`${filled}/2 prompts`);
+        else if (attestation?.boh_acknowledged) parts.push('Acknowledged');
+        if (completionState.boh === 'complete' && culinaryLog?.overall_rating) parts.push('Culinary rated');
+        return parts.join(', ');
       }
       case 'incidents': {
         const parts: string[] = [];
@@ -410,10 +414,6 @@ export function ReviewStep({
         if (attestation?.guest_acknowledged && filled === 0) parts.push('Acknowledged');
         return parts.join(', ');
       }
-      case 'entertainment':
-        return completionState.entertainment === 'complete' ? 'Rated' : '';
-      case 'culinary':
-        return completionState.culinary === 'complete' ? 'Rated' : '';
       default:
         return '';
     }

@@ -31,8 +31,6 @@ const MODULE_LABELS: Record<keyof CompletionState, string> = {
   incidents: 'Incidents',
   coaching: 'Coaching',
   guest: 'Guest',
-  entertainment: 'Entertainment',
-  culinary: 'Culinary',
 };
 
 function StatusIcon({ status }: { status: string }) {
