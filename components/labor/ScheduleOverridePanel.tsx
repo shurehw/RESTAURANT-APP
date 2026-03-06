@@ -122,6 +122,8 @@ export function ScheduleOverridePanel({ venueId }: Props) {
   }, [venueId]);
 
   const updateField = (idx: number, field: keyof PositionOverride, value: string | number) => {
+    // Auto-enable overrides when user starts editing
+    if (!useOverrides) setUseOverrides(true);
     setOverrides(prev => {
       const next = [...prev];
       next[idx] = { ...next[idx], [field]: value, is_dirty: true };
@@ -276,7 +278,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
           </div>
 
           {/* Table */}
-          <div className={`overflow-x-auto transition-opacity ${useOverrides ? '' : 'opacity-40 pointer-events-none'}`}>
+          <div className={`overflow-x-auto transition-opacity ${useOverrides ? '' : 'opacity-60'}`}>
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-slate-400 border-b border-slate-700">
@@ -404,7 +406,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
               <Button
                 size="sm"
                 onClick={handleSave}
-                disabled={saving || !hasDirty || !useOverrides}
+                disabled={saving || !hasDirty}
                 className="bg-[#FF5A1F] hover:bg-[#FF5A1F]/80 text-white text-xs"
               >
                 <Save className="h-3 w-3 mr-1" />

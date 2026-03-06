@@ -605,12 +605,17 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
           ))}
         </div>
 
-        {/* Rows - Positions */}
-        {positions.map((position, pidx) => (
+        {/* Rows - Positions (including unfilled ones) */}
+        {[...positions, ...missingPositions].map((position, pidx) => (
           <div key={pidx} className="grid grid-cols-8 border-b hover:bg-gray-50">
             {/* Position Name */}
-            <div className="p-3 border-r bg-gray-50">
-              <div className="text-sm font-medium text-gray-900">{position}</div>
+            <div className={`p-3 border-r ${missingPositions.includes(position) ? 'bg-orange-50' : 'bg-gray-50'}`}>
+              <div className={`text-sm font-medium ${missingPositions.includes(position) ? 'text-orange-700' : 'text-gray-900'}`}>
+                {position}
+              </div>
+              {missingPositions.includes(position) && (
+                <div className="text-[10px] text-orange-500 mt-0.5">No staff</div>
+              )}
             </div>
 
             {/* Cells - Days */}
