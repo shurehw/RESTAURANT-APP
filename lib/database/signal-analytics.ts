@@ -557,3 +557,83 @@ export async function getManagerComparison(
   results.sort((a, b) => b.total_signals - a.total_signals);
   return results;
 }
+
+// ---------------------------------------------------------------------------
+// Org-level recent signals — for the home page signal feed
+// ---------------------------------------------------------------------------
+
+export interface OrgSignalItem {
+  id: string;
+  business_date: string;
+  signal_type: string;
+  extracted_text: string;
+  entity_name: string | null;
+  venue_name: string;
+  manager_name: string | null;
+  confidence: number;
+  mention_sentiment: string | null;
+  commitment_status: string | null;
+}
+
+export async function getOrgRecentSignals(
+  orgId: string,
+  options?: { days?: number; limit?: number },
+): Promise<OrgSignalItem[]> {
+  const supabase = getServiceClient();
+  const days = options?.days ?? 7;
+  const limit = options?.limit ?? 50;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // Get all venue IDs + names for this org
+  const { data: venues } = await (supabase as any)
+    .from('venues')
+    .select('id, name')
+    .eq('organization_id', orgId)
+    .eq('is_active', true);
+
+  if (!venues || venues.length === 0) return [];
+
+  const venueIds = venues.map((v: any) => v.id);
+  const venueNameMap = new Map(venues.map((v: any) => [v.id, v.name]));
+
+  // Query recent signals across all org venues
+  const { data, error } = await (supabase as any)
+    .from('attestation_signals')
+    .select('id, business_date, signal_type, extracted_text, entity_name, venue_id, submitted_by, confidence, mention_sentiment, commitment_status')
+    .in('venue_id', venueIds)
+    .gte('business_date', cutoff)
+    .order('business_date', { ascending: false })
+    .order('extracted_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[signal-analytics] getOrgRecentSignals error:', error);
+    return [];
+  }
+
+  // Batch-fetch manager names
+  const managerIds = [...new Set((data || []).map((r: any) => r.submitted_by).filter(Boolean))];
+  const managerNameMap = new Map<string, string | null>();
+  if (managerIds.length > 0) {
+    const { data: profiles } = await (supabase as any)
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', managerIds);
+    for (const p of profiles || []) {
+      managerNameMap.set(p.id, p.full_name);
+    }
+  }
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    business_date: row.business_date,
+    signal_type: row.signal_type,
+    extracted_text: row.extracted_text,
+    entity_name: row.entity_name,
+    venue_name: venueNameMap.get(row.venue_id) || 'Unknown',
+    manager_name: managerNameMap.get(row.submitted_by) || null,
+    confidence: row.confidence,
+    mention_sentiment: row.mention_sentiment,
+    commitment_status: row.commitment_status,
+  }));
+}

@@ -7,10 +7,13 @@
 import { requireUser } from '@/lib/auth/require-user';
 import { getActiveViolations } from '@/lib/database/enforcement';
 import { getActiveIntelligence } from '@/lib/database/operator-intelligence';
+import { getOrgOpenCommitments } from '@/lib/database/signal-outcomes';
+import { getOrgRecentSignals } from '@/lib/database/signal-analytics';
 import { ViolationFeed } from '@/components/action-center/violation-feed';
 import { IntelligenceFeed } from '@/components/operator/IntelligenceFeed';
 import { DisciplineScores } from '@/components/home/DisciplineScores';
-import { ShieldAlert } from 'lucide-react';
+import { SignalIntelligence } from '@/components/home/SignalIntelligence';
+import { ShieldAlert, Activity } from 'lucide-react';
 import { getServiceClient } from '@/lib/supabase/service';
 
 export default async function DashboardPage() {
@@ -81,6 +84,18 @@ export default async function DashboardPage() {
     }
   }
 
+  // Signals & Follow-Ups — visible to all roles
+  let orgCommitments: Awaited<ReturnType<typeof getOrgOpenCommitments>> = [];
+  let orgSignals: Awaited<ReturnType<typeof getOrgRecentSignals>> = [];
+  try {
+    [orgCommitments, orgSignals] = await Promise.all([
+      getOrgOpenCommitments(profile.org_id!, { limit: 15 }),
+      getOrgRecentSignals(profile.org_id!, { days: 7, limit: 50 }),
+    ]);
+  } catch {
+    // Table may not exist yet — render empty state
+  }
+
   // Group violations by severity
   const critical = violations.filter((v) => v.severity === 'critical');
   const warnings = violations.filter((v) => v.severity === 'warning');
@@ -130,6 +145,39 @@ export default async function DashboardPage() {
           venueScores={venueScores}
           managerScores={managerScores}
         />
+      )}
+
+      {/* Signals & Follow-Ups — visible to all roles */}
+      {(orgCommitments.length > 0 || orgSignals.length > 0) && (
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <Activity className="h-5 w-5 text-brass" />
+            <div>
+              <h2 className="text-lg font-semibold">Signals & Follow-Ups</h2>
+              <p className="text-xs text-muted-foreground">
+                Attestation signals and open commitments across venues
+              </p>
+            </div>
+            {orgCommitments.length > 0 && (
+              <div className="ml-auto flex gap-3 text-sm">
+                {orgCommitments.filter(c => c.commitment_status === 'due').length > 0 && (
+                  <span className="text-red-600 font-semibold">
+                    {orgCommitments.filter(c => c.commitment_status === 'due').length} due
+                  </span>
+                )}
+                {orgCommitments.filter(c => c.commitment_status === 'open').length > 0 && (
+                  <span className="text-amber-600 font-semibold">
+                    {orgCommitments.filter(c => c.commitment_status === 'open').length} open
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <SignalIntelligence
+            commitments={orgCommitments}
+            signals={orgSignals}
+          />
+        </div>
       )}
 
       {/* Action Center — visible to all roles */}

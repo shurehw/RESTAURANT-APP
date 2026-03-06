@@ -324,3 +324,76 @@ export async function resolveCommitment(
   }
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// Org-level open commitments — aggregated across all venues for the home page
+// ---------------------------------------------------------------------------
+
+export interface OrgOpenCommitment extends OpenCommitment {
+  venue_name: string;
+  manager_name: string | null;
+}
+
+export async function getOrgOpenCommitments(
+  orgId: string,
+  options?: { limit?: number },
+): Promise<OrgOpenCommitment[]> {
+  const supabase = getServiceClient();
+  const limit = options?.limit ?? 15;
+
+  // Get all venue IDs + names for this org
+  const { data: venues } = await (supabase as any)
+    .from('venues')
+    .select('id, name')
+    .eq('organization_id', orgId)
+    .eq('is_active', true);
+
+  if (!venues || venues.length === 0) return [];
+
+  const venueIds = venues.map((v: any) => v.id);
+  const venueNameMap = new Map(venues.map((v: any) => [v.id, v.name]));
+
+  // Query open/due commitments across all org venues
+  const { data, error } = await (supabase as any)
+    .from('attestation_signals')
+    .select('id, business_date, commitment_text, entity_name, commitment_target_date, commitment_status, source_field, venue_id, submitted_by')
+    .in('venue_id', venueIds)
+    .eq('signal_type', 'action_commitment')
+    .in('commitment_status', ['open', 'due'])
+    .order('business_date', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('[signal-outcomes] getOrgOpenCommitments error:', error);
+    return [];
+  }
+
+  // Batch-fetch manager names
+  const managerIds = [...new Set((data || []).map((r: any) => r.submitted_by).filter(Boolean))];
+  const managerNameMap = new Map<string, string | null>();
+  if (managerIds.length > 0) {
+    const { data: profiles } = await (supabase as any)
+      .from('user_profiles')
+      .select('id, full_name')
+      .in('id', managerIds);
+    for (const p of profiles || []) {
+      managerNameMap.set(p.id, p.full_name);
+    }
+  }
+
+  const today = new Date();
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    business_date: row.business_date,
+    commitment_text: row.commitment_text,
+    entity_name: row.entity_name,
+    commitment_target_date: row.commitment_target_date,
+    commitment_status: row.commitment_status,
+    source_field: row.source_field,
+    days_open: Math.floor(
+      (today.getTime() - new Date(row.business_date).getTime()) / (1000 * 60 * 60 * 24),
+    ),
+    venue_name: venueNameMap.get(row.venue_id) || 'Unknown',
+    manager_name: managerNameMap.get(row.submitted_by) || null,
+  }));
+}
