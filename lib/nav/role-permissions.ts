@@ -305,7 +305,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         laborBriefing: false,
         laborRequirements: false,
         laborSchedule: false,
-        aiAssistant: false,
+        aiAssistant: true,
         budget: false,
         orgSettings: false,
         compSettings: false,

@@ -104,6 +104,45 @@ export function renderInviteEmail(params: InviteEmailParams): string {
                 This invitation expires in ${expiresInDays} day${expiresInDays !== 1 ? 's' : ''}.
               </p>
 
+              <!-- PWA Install Guide -->
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin-top:32px;border-top:1px solid ${COLORS.border};padding-top:24px;">
+                <tr>
+                  <td>
+                    <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;color:${COLORS.text};">
+                      Install on Your Phone
+                    </h2>
+                    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${COLORS.textMuted};">
+                      Add OpSOS to your home screen for instant access — no app store needed.
+                    </p>
+
+                    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                      <!-- iPhone -->
+                      <tr>
+                        <td style="padding-bottom:16px;">
+                          <div style="font-size:14px;font-weight:600;color:${COLORS.text};margin-bottom:6px;">iPhone (Safari only)</div>
+                          <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:${COLORS.textMuted};">
+                            <li>Open <strong style="color:${COLORS.text};">Safari</strong> and log in</li>
+                            <li>Tap the <strong style="color:${COLORS.text};">Share</strong> button (square with arrow)</li>
+                            <li>Tap <strong style="color:${COLORS.text};">"Add to Home Screen"</strong></li>
+                          </ol>
+                        </td>
+                      </tr>
+                      <!-- Android -->
+                      <tr>
+                        <td>
+                          <div style="font-size:14px;font-weight:600;color:${COLORS.text};margin-bottom:6px;">Android (Chrome)</div>
+                          <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.8;color:${COLORS.textMuted};">
+                            <li>Open <strong style="color:${COLORS.text};">Chrome</strong> and log in</li>
+                            <li>Tap the <strong style="color:${COLORS.text};">three-dot menu</strong> (top right)</li>
+                            <li>Tap <strong style="color:${COLORS.text};">"Install app"</strong> or <strong style="color:${COLORS.text};">"Add to Home screen"</strong></li>
+                          </ol>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
             </td>
           </tr>
 
