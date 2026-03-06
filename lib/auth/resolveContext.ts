@@ -14,7 +14,7 @@ export type TenantContext = {
   customUserId: string | null;
   email: string;
   orgId: string | null;
-  role: 'owner' | 'admin' | 'manager' | 'viewer' | null;
+  role: 'owner' | 'director' | 'gm' | 'agm' | 'manager' | 'exec_chef' | 'sous_chef' | 'readonly' | 'pwa' | 'onboarding' | 'admin' | 'viewer' | null;
   isAuthenticated: boolean;
   isPlatformAdmin: boolean;
 };

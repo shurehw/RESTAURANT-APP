@@ -11,7 +11,7 @@ import { MobileSidebar } from "@/components/layout/MobileSidebar";
 import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
 import { VenueProvider } from "@/components/providers/VenueProvider";
-import type { UserRole } from "@/lib/nav/role-permissions";
+import { getNavPermissions, type UserRole } from "@/lib/nav/role-permissions";
 
 export default async function DashboardLayout({
   children,
@@ -19,7 +19,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const { orgId, role: orgRole } = await getUserOrgAndVenues(user.id);
+  const { orgId, role: orgRole, venueIds: allowedVenueIds } = await getUserOrgAndVenues(user.id);
 
   // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
   const supabase = createAdminClient();
@@ -76,11 +76,17 @@ export default async function DashboardLayout({
     displayName = dbUser?.full_name || dbUser?.email?.split('@')[0];
   }
 
-  // Fetch venues for topbar selector
-  const { data: venues } = await supabase
+  // Fetch venues for topbar selector — scoped by user's venue access
+  let venueQuery = supabase
     .from("venues")
     .select("id, name, location, city, state")
     .eq("is_active", true);
+
+  if (allowedVenueIds.length > 0) {
+    venueQuery = venueQuery.in("id", allowedVenueIds);
+  }
+
+  const { data: venues } = await venueQuery;
 
   // Fetch active violations for badge (non-critical — fails silently if RPC missing)
   let criticalViolationCount = 0;
@@ -129,8 +135,8 @@ export default async function DashboardLayout({
           <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
 
-        {/* Command Panel */}
-        <FloatingChatWidget />
+        {/* Command Panel — gated by aiAssistant permission */}
+        {getNavPermissions(userRole).aiAssistant && <FloatingChatWidget />}
       </div>
     </VenueProvider>
   );

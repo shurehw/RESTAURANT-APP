@@ -12,6 +12,7 @@ import {
   ClipboardList,
   DollarSign,
   BarChart3,
+  CalendarCheck,
   Calendar,
   Bot,
   CheckSquare,
@@ -22,6 +23,7 @@ import {
   ShieldAlert,
   Settings,
   LogOut,
+  Zap,
 } from 'lucide-react';
 import { NavLink } from '@/components/layout/NavLink';
 import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
@@ -123,6 +125,11 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
               Nightly Report
             </NavLink>
           )}
+          {permissions.pulse && (
+            <NavLink href="/sales/pace" icon={<Zap className="w-5 h-5" />}>
+              Live Pulse
+            </NavLink>
+          )}
           {permissions.laborBriefing && (
             <NavLink href="/labor/briefing" icon={<Calendar className="w-5 h-5" />}>
               Daily Briefing
@@ -149,11 +156,16 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
             </NavLink>
           )}
 
-          {(permissions.forecasts || permissions.entertainment) && (
+          {(permissions.forecasts || permissions.reservations || permissions.entertainment) && (
             <NavSection title="Sales">
               {permissions.forecasts && (
                 <NavLink href="/sales/forecasts" icon={<BarChart3 className="w-5 h-5" />}>
                   Forecasts
+                </NavLink>
+              )}
+              {permissions.reservations && (
+                <NavLink href="/sales/reservations" icon={<CalendarCheck className="w-5 h-5" />}>
+                  Reservations
                 </NavLink>
               )}
               {permissions.entertainment && organizationSlug?.includes('hwood') && (
@@ -190,12 +202,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
                 Invoices
               </NavLink>
             )}
-            {permissions.reconciliation && (
-              <NavLink href="/reconciliation" icon={<CheckSquare className="w-5 h-5" />}>
-                Reconciliation
-              </NavLink>
-            )}
-            {permissions.vendors && (
+{permissions.vendors && (
               <NavLink href="/vendors" icon={<Users className="w-5 h-5" />}>
                 Vendors
               </NavLink>

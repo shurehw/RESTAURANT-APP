@@ -25,6 +25,7 @@ import { z } from 'zod';
 const VALID_ROLES = [
   'owner', 'director', 'gm', 'agm', 'manager',
   'exec_chef', 'sous_chef', 'readonly', 'pwa',
+  'onboarding',
 ] as const;
 
 const createInviteSchema = z.object({

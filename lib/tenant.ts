@@ -1,9 +1,14 @@
 import { createClient, createAdminClient } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+export type OrgRole =
+  | 'owner' | 'director' | 'gm' | 'agm' | 'manager'
+  | 'exec_chef' | 'sous_chef' | 'readonly' | 'pwa'
+  | 'admin' | 'viewer' | 'onboarding';
+
 export type UserTenantContext = {
   orgId: string;
-  role: 'owner' | 'admin' | 'manager' | 'viewer';
+  role: OrgRole;
   venueIds: string[];
 };
 
@@ -22,7 +27,7 @@ export async function getUserOrgAndVenues(
   const admin = createAdminClient();
   const { data: orgs, error } = await admin
     .from('organization_users')
-    .select('organization_id, role')
+    .select('organization_id, role, venue_ids')
     .eq('user_id', userId)
     .eq('is_active', true);
 
@@ -37,14 +42,20 @@ export async function getUserOrgAndVenues(
   }
 
   const orgId = orgs[0].organization_id;
-  const role = orgs[0].role as 'owner' | 'admin' | 'manager' | 'viewer';
+  const role = orgs[0].role as OrgRole;
+  const scopedVenueIds: string[] | null = orgs[0].venue_ids;
 
-  // Get all venues for this organization (RLS-protected)
-  const { data: venues } = await client
+  // Get venues — filtered by user's venue_ids scope when set
+  let venueQuery = client
     .from('venues')
     .select('id')
     .eq('organization_id', orgId);
 
+  if (scopedVenueIds && scopedVenueIds.length > 0) {
+    venueQuery = venueQuery.in('id', scopedVenueIds);
+  }
+
+  const { data: venues } = await venueQuery;
   const venueIds = (venues || []).map((v) => v.id);
 
   return { orgId, role, venueIds };
@@ -63,7 +74,7 @@ export async function getUserOrganizations(
   // Get all organization memberships (RLS-protected)
   const { data: orgs, error } = await client
     .from('organization_users')
-    .select('organization_id, role')
+    .select('organization_id, role, venue_ids')
     .eq('user_id', userId);
 
   if (error || !orgs || orgs.length === 0) {
@@ -74,13 +85,21 @@ export async function getUserOrganizations(
     };
   }
 
-  // For each org, get venues
+  // For each org, get venues (filtered by user's venue_ids scope when set)
   const results = await Promise.all(
     orgs.map(async (org) => {
-      const { data: venues } = await client
+      const scopedVenueIds: string[] | null = (org as any).venue_ids;
+
+      let venueQuery = client
         .from('venues')
         .select('id')
         .eq('organization_id', org.organization_id);
+
+      if (scopedVenueIds && scopedVenueIds.length > 0) {
+        venueQuery = venueQuery.in('id', scopedVenueIds);
+      }
+
+      const { data: venues } = await venueQuery;
 
       return {
         orgId: org.organization_id,

@@ -68,6 +68,7 @@ const ROLES = [
   { value: 'manager', label: 'Manager', description: 'Day-to-day operations, no deep admin access' },
   { value: 'exec_chef', label: 'Executive Chef', description: 'Kitchen + procurement, plus operational visibility' },
   { value: 'sous_chef', label: 'Sous Chef', description: 'Kitchen operations, limited visibility' },
+  { value: 'onboarding', label: 'Onboarding', description: 'Nightly report, Pulse, and attestation history — temporary onboarding access' },
   { value: 'readonly', label: 'Read Only', description: 'Read-only access to all operational data' },
   { value: 'pwa', label: 'PWA Only', description: 'Pulse PWA access only — live sales monitoring' },
 ] as const;

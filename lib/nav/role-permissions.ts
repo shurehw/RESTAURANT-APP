@@ -3,13 +3,12 @@
  * Defines which nav items are visible for each role
  */
 
-export type UserRole = 'platform_admin' | 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner' | 'readonly' | 'pwa';
+export type UserRole = 'platform_admin' | 'gm' | 'exec_chef' | 'sous_chef' | 'manager' | 'agm' | 'director' | 'owner' | 'readonly' | 'pwa' | 'onboarding';
 
 export interface NavPermissions {
   // COGS Section
   orders: boolean;
   invoices: boolean;
-  reconciliation: boolean;
   vendors: boolean;
   products: boolean;
   recipes: boolean;
@@ -17,6 +16,8 @@ export interface NavPermissions {
 
   // Sales Section
   forecasts: boolean;
+  reservations: boolean;
+  pulse: boolean;
   nightlyReport: boolean;
   venueHealth: boolean;
   preshift: boolean;
@@ -56,12 +57,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: true,
-        reconciliation: true,
         vendors: true,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: true,
+        reservations: true,
+        pulse: true,
         nightlyReport: true,
         venueHealth: true,
         preshift: true,
@@ -84,12 +86,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: true,
-        reconciliation: true,
         vendors: true,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: true,
+        reservations: true,
+        pulse: true,
         nightlyReport: true,
         venueHealth: true,
         preshift: true,
@@ -112,12 +115,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: true,
-        reconciliation: false,
         vendors: true,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: true,
+        reservations: true,
+        pulse: true,
         nightlyReport: true,
         venueHealth: true,
         preshift: true,
@@ -140,12 +144,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: true,
-        reconciliation: false,
         vendors: false,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: true,
+        reservations: true,
+        pulse: true,
         nightlyReport: true,
         venueHealth: true,
         preshift: true,
@@ -168,12 +173,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: true,
-        reconciliation: false,
         vendors: true,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: true,
+        reservations: false,
+        pulse: true,
         nightlyReport: true,
         venueHealth: false,
         preshift: true,
@@ -196,12 +202,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: false,
-        reconciliation: false,
         vendors: false,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: false,
+        reservations: false,
+        pulse: false,
         nightlyReport: false,
         venueHealth: false,
         preshift: true,
@@ -224,12 +231,13 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: true,
         invoices: true,
-        reconciliation: true,
         vendors: true,
         products: true,
         recipes: true,
         inventory: true,
         forecasts: true,
+        reservations: true,
+        pulse: true,
         nightlyReport: true,
         venueHealth: true,
         preshift: true,
@@ -252,17 +260,48 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       return {
         orders: false,
         invoices: false,
-        reconciliation: false,
         vendors: false,
         products: false,
         recipes: false,
         inventory: false,
         forecasts: false,
+        reservations: false,
+        pulse: true,
         nightlyReport: false,
         venueHealth: false,
         preshift: false,
         actionCenter: false,
         attestations: false,
+        laborBriefing: false,
+        laborRequirements: false,
+        laborSchedule: false,
+        aiAssistant: false,
+        budget: false,
+        orgSettings: false,
+        compSettings: false,
+        procurementSettings: false,
+        entertainment: false,
+        managerIntelligence: false,
+      };
+
+    case 'onboarding':
+      // Onboarding: Nightly report + Pulse + view attestations only
+      // Temporary role for new venue managers until submission history builds up
+      return {
+        orders: false,
+        invoices: false,
+        vendors: false,
+        products: false,
+        recipes: false,
+        inventory: false,
+        forecasts: false,
+        reservations: false,
+        pulse: true,
+        nightlyReport: true,
+        venueHealth: false,
+        preshift: false,
+        actionCenter: false,
+        attestations: true,
         laborBriefing: false,
         laborRequirements: false,
         laborSchedule: false,
@@ -303,6 +342,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   sous_chef: 'Sous Chef',
   readonly: 'Read Only',
   pwa: 'PWA Only',
+  onboarding: 'Onboarding',
 };
 
 /**
@@ -319,4 +359,5 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   sous_chef: 'Kitchen operations, limited visibility',
   readonly: 'Read-only access to all operational data',
   pwa: 'Pulse PWA access only — live sales monitoring',
+  onboarding: 'Nightly report, Pulse, and attestation history — temporary onboarding access',
 };
