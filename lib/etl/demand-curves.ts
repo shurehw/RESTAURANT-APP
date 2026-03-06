@@ -85,7 +85,16 @@ export async function computeDistributionCurves(
   const pool = getTipseePool();
   const supabase = getServiceClient();
 
-  // 1. Query TipSee for check-level data bucketed into 30-min intervals
+  // 1. Fetch venue opening hour to filter pre-opening noise
+  const { data: lcRow } = await (supabase as any)
+    .from('location_config')
+    .select('open_hour')
+    .eq('venue_id', venueId)
+    .single();
+  const openHour: number = lcRow?.open_hour ?? 15; // default 3 PM
+
+  // 2. Query TipSee for check-level data bucketed into 30-min intervals
+  //    Exclude checks opened before venue opening hour (staff meals, test checks)
   const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - lookbackDays * 86400000).toISOString().split('T')[0];
 
@@ -103,9 +112,10 @@ export async function computeDistributionCurves(
       AND trading_day >= $3::date
       AND trading_day <= $4::date
       AND guest_count > 0
+      AND EXTRACT(HOUR FROM open_time AT TIME ZONE $2) >= $5
     GROUP BY trading_day, interval_start
     ORDER BY trading_day, interval_start`,
-    [tipseeLocationUuid, timezone, startDate, endDate]
+    [tipseeLocationUuid, timezone, startDate, endDate, openHour]
   );
 
   if (result.rows.length === 0) {
