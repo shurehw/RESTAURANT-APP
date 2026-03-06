@@ -7,7 +7,6 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
 import {
   DollarSign,
   ShieldAlert,
@@ -17,8 +16,6 @@ import {
   Crown,
   ChefHat,
   ClipboardCheck,
-  CheckCircle2,
-  X,
 } from 'lucide-react';
 import { StepIndicator, type StepConfig } from './StepIndicator';
 import { StepNavigation } from './StepNavigation';
@@ -356,16 +353,39 @@ export function AttestationStepper({
     },
   ], [triggers, completionState, canSubmit, isLocked, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
 
-  // Smart start: explicit step ID, or first incomplete step
+  // ---------------------------------------------------------------------------
+  // Filter steps by mode: FOH flow, BOH flow, or full stepper
+  // ---------------------------------------------------------------------------
+  const isFOHMode = initialStepId === 'foh';
+  const isBOHMode = initialStepId === 'boh';
+  const isDepartmentMode = isFOHMode || isBOHMode;
+
+  const activeSteps: StepConfig[] = useMemo(() => {
+    if (isFOHMode) {
+      // FOH manager: Revenue → Comps → FOH → Incidents → Coaching → Guest → Review+Submit
+      return steps.filter(s => ['revenue', 'comps', 'foh', 'incidents', 'coaching', 'guest', 'review'].includes(s.id));
+    }
+    if (isBOHMode) {
+      // BOH manager: BOH → Incidents → Coaching → Guest → Done
+      return steps.filter(s => ['boh', 'incidents', 'coaching', 'guest'].includes(s.id));
+    }
+    return steps;
+  }, [steps, isFOHMode, isBOHMode]);
+
+  // Smart start: first incomplete step in the active flow
   const initialStep = useMemo(() => {
+    if (isDepartmentMode) {
+      const firstIncomplete = activeSteps.findIndex(s => s.completion === 'incomplete');
+      return firstIncomplete >= 0 ? firstIncomplete : 0;
+    }
     if (initialStepId) {
-      const idx = steps.findIndex(s => s.id === initialStepId);
+      const idx = activeSteps.findIndex(s => s.id === initialStepId);
       if (idx >= 0) return idx;
     }
-    if (isLocked) return steps.length - 1;
-    const firstIncomplete = steps.findIndex(s => s.completion === 'incomplete');
+    if (isLocked) return activeSteps.length - 1;
+    const firstIncomplete = activeSteps.findIndex(s => s.completion === 'incomplete');
     return firstIncomplete >= 0 ? firstIncomplete : 0;
-  }, [steps, isLocked, initialStepId]);
+  }, [activeSteps, isLocked, initialStepId, isDepartmentMode]);
 
   const [currentStep, setCurrentStep] = useState(initialStep);
 
@@ -376,7 +396,7 @@ export function AttestationStepper({
   }, [open, initialStep]);
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < activeSteps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -408,22 +428,8 @@ export function AttestationStepper({
     && (!hasEntertainment || entertainmentComplete)
     && (!hasCulinary || culinaryComplete);
 
-  // ---------------------------------------------------------------------------
-  // Department mode: FOH/BOH buttons open a focused single-department sheet
-  // ---------------------------------------------------------------------------
-  const isDepartmentMode = initialStepId === 'foh' || initialStepId === 'boh';
-  const deptLabel = initialStepId === 'foh' ? 'FOH — Front of House' : 'BOH — Back of House';
-  const DeptIcon = initialStepId === 'foh' ? UserCheck : ChefHat;
-
-  const isLastStep = currentStep === steps.length - 1;
-  const activeStep = steps[currentStep];
-
-  // Department mode complete state
-  const deptComplete = initialStepId === 'foh'
-    ? adjustedCompletionState.foh === 'complete'
-    : initialStepId === 'boh'
-      ? adjustedCompletionState.boh === 'complete'
-      : false;
+  const isLastStep = currentStep === activeSteps.length - 1;
+  const activeStep = activeSteps[currentStep];
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -440,90 +446,19 @@ export function AttestationStepper({
             : `Step-by-step attestation for ${venueName} on ${date}`}
         </SheetDescription>
 
-        {isDepartmentMode ? (
           <>
-            {/* Department mode: simple header */}
-            <div className="shrink-0 px-6 pt-4 pb-3 border-b flex items-center gap-3">
-              <DeptIcon className="h-5 w-5 text-brass" />
-              <div className="flex-1">
-                <div className="text-sm font-semibold">{deptLabel}</div>
-                <div className="text-xs text-muted-foreground">
-                  {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric',
-                  })}
-                </div>
-              </div>
-              {deptComplete && (
-                <div className="flex items-center gap-1 text-sage text-xs font-medium">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Complete
-                </div>
-              )}
-              <button onClick={onClose} className="p-1 rounded-md hover:bg-muted">
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
-
-            {/* Department mode: single step content */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  Loading attestation...
-                </div>
-              ) : !attestation ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  No attestation data available
-                </div>
-              ) : initialStepId === 'foh' ? (
-                <FOHStep
-                  triggers={triggers}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                  disabled={isLocked}
-                  labor={factsSummary?.labor ?? null}
-                  netSales={reportSummary?.net_sales ?? 0}
-                  covers={reportSummary?.total_covers ?? 0}
-                  laborExceptions={laborExceptions}
-                  hasEntertainment={hasEntertainment}
-                  venueId={venueId}
-                  businessDate={date}
-                  shiftLog={shiftLog}
-                  onShiftLogUpdate={setShiftLog}
-                />
-              ) : (
-                <BOHStep
-                  triggers={triggers}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                  disabled={isLocked}
-                  labor={factsSummary?.labor ?? null}
-                  netSales={reportSummary?.net_sales ?? 0}
-                  covers={reportSummary?.total_covers ?? 0}
-                  laborExceptions={laborExceptions}
-                  hasCulinary={hasCulinary}
-                  venueId={venueId}
-                  businessDate={date}
-                  culinaryLog={culinaryLog}
-                  onCulinaryLogUpdate={setCulinaryLog}
-                />
-              )}
-            </div>
-
-            {/* Department mode: simple footer */}
-            <div className="shrink-0 border-t px-6 py-3 flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {saving ? 'Saving...' : 'Auto-saved'}
-              </div>
-              <Button variant="outline" size="sm" onClick={onClose}>
-                Done
-              </Button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Full stepper mode */}
             <div className="shrink-0">
               <div className="px-6 pt-4 pb-2">
+                {isDepartmentMode && (
+                  <div className="flex items-center gap-2 mb-1">
+                    {isFOHMode
+                      ? <UserCheck className="h-4 w-4 text-brass" />
+                      : <ChefHat className="h-4 w-4 text-brass" />}
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brass">
+                      {isFOHMode ? 'FOH — Front of House' : 'BOH — Back of House'}
+                    </span>
+                  </div>
+                )}
                 <div className="text-xs text-muted-foreground">
                   {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
                     weekday: 'short', month: 'short', day: 'numeric',
@@ -531,7 +466,7 @@ export function AttestationStepper({
                 </div>
               </div>
               <StepIndicator
-                steps={steps}
+                steps={activeSteps}
                 currentStep={currentStep}
                 onStepClick={setCurrentStep}
               />
@@ -654,7 +589,7 @@ export function AttestationStepper({
                       submitting={submitting}
                       error={error}
                       onSubmit={handleSubmitAndClose}
-                      steps={steps}
+                      steps={activeSteps}
                       onStepClick={setCurrentStep}
                       reportSummary={reportSummary}
                       factsSummary={factsSummary}
@@ -680,15 +615,15 @@ export function AttestationStepper({
             <div className="shrink-0">
               <StepNavigation
                 currentStep={currentStep}
-                totalSteps={steps.length}
+                totalSteps={activeSteps.length}
                 onBack={handleBack}
                 onNext={handleNext}
                 saving={saving}
                 isLastStep={isLastStep}
+                onDone={isBOHMode ? onClose : undefined}
               />
             </div>
           </>
-        )}
       </SheetContent>
     </Sheet>
   );
