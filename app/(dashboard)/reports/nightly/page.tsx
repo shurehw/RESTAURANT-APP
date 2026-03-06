@@ -42,6 +42,8 @@ import {
   Minus,
   Receipt,
   CalendarCheck,
+  UserCheck,
+  ChefHat,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
 import { AttestationStepper } from '@/components/attestation/stepper/AttestationStepper';
@@ -522,6 +524,7 @@ export default function NightlyReportPage() {
     pace: any;
   } | null>(null);
   const [attestStepperOpen, setAttestStepperOpen] = useState(false);
+  const [attestInitialStep, setAttestInitialStep] = useState<string | undefined>(undefined);
   const [checksSheetOpen, setChecksSheetOpen] = useState(false);
   const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
   const [checkDetailOpen, setCheckDetailOpen] = useState(false);
@@ -1192,14 +1195,24 @@ export default function NightlyReportPage() {
             )}
             {selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
               att.attestation ? (
-                <Button
-                  variant={att.isLocked ? 'outline' : 'brass'}
-                  size="sm"
-                  onClick={() => setAttestStepperOpen(true)}
-                >
-                  <ClipboardCheck className="h-4 w-4 mr-1.5" />
-                  {att.isLocked ? 'View Attestation' : 'Attest'}
-                </Button>
+                <div className="flex gap-1.5">
+                  <Button
+                    variant={att.isLocked ? 'outline' : 'brass'}
+                    size="sm"
+                    onClick={() => { setAttestInitialStep('foh'); setAttestStepperOpen(true); }}
+                  >
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    {att.isLocked ? 'FOH' : 'Attest FOH'}
+                  </Button>
+                  <Button
+                    variant={att.isLocked ? 'outline' : 'brass'}
+                    size="sm"
+                    onClick={() => { setAttestInitialStep('boh'); setAttestStepperOpen(true); }}
+                  >
+                    <ChefHat className="h-4 w-4 mr-1" />
+                    {att.isLocked ? 'BOH' : 'Attest BOH'}
+                  </Button>
+                </div>
               ) : att.loading ? (
                 <Button variant="outline" size="sm" disabled>
                   <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -2557,7 +2570,7 @@ export default function NightlyReportPage() {
                   ? 'border-sage/40 bg-sage/5 hover:bg-sage/10'
                   : 'border-brass/30 bg-brass/[0.02] hover:bg-brass/5'
               }`}
-              onClick={() => setAttestStepperOpen(true)}
+              onClick={() => { setAttestInitialStep(undefined); setAttestStepperOpen(true); }}
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -2607,16 +2620,32 @@ export default function NightlyReportPage() {
                       );
                     })}
                   </div>
-                  <Button
-                    variant={att.isLocked ? 'outline' : 'brass'}
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setAttestStepperOpen(true);
-                    }}
-                  >
-                    {att.isLocked ? 'View' : 'Begin'}
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button
+                      variant={att.isLocked ? 'outline' : 'brass'}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAttestInitialStep('foh');
+                        setAttestStepperOpen(true);
+                      }}
+                    >
+                      <UserCheck className="h-3.5 w-3.5 mr-1" />
+                      {att.isLocked ? 'FOH' : 'Attest FOH'}
+                    </Button>
+                    <Button
+                      variant={att.isLocked ? 'outline' : 'brass'}
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAttestInitialStep('boh');
+                        setAttestStepperOpen(true);
+                      }}
+                    >
+                      <ChefHat className="h-3.5 w-3.5 mr-1" />
+                      {att.isLocked ? 'BOH' : 'Attest BOH'}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -2643,7 +2672,8 @@ export default function NightlyReportPage() {
           {/* Attestation Stepper Modal — single venue only */}
           {!isAllVenues && <AttestationStepper
             open={attestStepperOpen}
-            onClose={() => setAttestStepperOpen(false)}
+            onClose={() => { setAttestStepperOpen(false); setAttestInitialStep(undefined); }}
+            initialStepId={attestInitialStep}
             venueId={selectedVenue?.id}
             reportSummary={report ? report.summary : null}
             factsSummary={stepperFacts}

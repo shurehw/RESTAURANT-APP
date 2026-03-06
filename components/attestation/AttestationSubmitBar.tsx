@@ -26,7 +26,8 @@ interface Props {
 const MODULE_LABELS: Record<keyof CompletionState, string> = {
   revenue: 'Revenue',
   comps: 'Comps',
-  labor: 'Labor',
+  foh: 'FOH',
+  boh: 'BOH',
   incidents: 'Incidents',
   coaching: 'Coaching',
   guest: 'Guest',

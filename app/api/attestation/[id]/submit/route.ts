@@ -70,14 +70,26 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       );
     }
 
-    // Labor: all 3 structured prompts OR acknowledged
-    const laborPromptKeys = ['labor_foh_coverage', 'labor_boh_performance', 'labor_decision'] as const;
-    const incompleteLabor = laborPromptKeys.filter(
+    // FOH: both prompts OR acknowledged (fallback to legacy labor_acknowledged)
+    const fohPromptKeys = ['labor_foh_coverage', 'foh_staffing_decision'] as const;
+    const incompleteFoh = fohPromptKeys.filter(
       (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
     );
-    if (incompleteLabor.length > 0 && !attestation.labor_acknowledged) {
+    if (incompleteFoh.length > 0 && !attestation.foh_acknowledged && !attestation.labor_acknowledged) {
       return NextResponse.json(
-        { error: `Labor module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: `FOH module incomplete — answer both prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { status: 400 },
+      );
+    }
+
+    // BOH: both prompts OR acknowledged (fallback to legacy labor_acknowledged)
+    const bohPromptKeys = ['labor_boh_performance', 'boh_staffing_decision'] as const;
+    const incompleteBoh = bohPromptKeys.filter(
+      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+    );
+    if (incompleteBoh.length > 0 && !attestation.boh_acknowledged && !attestation.labor_acknowledged) {
+      return NextResponse.json(
+        { error: `BOH module incomplete — answer both prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
         { status: 400 },
       );
     }
@@ -245,6 +257,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         'revenue_demand_signal', 'revenue_quality', 'revenue_action', 'revenue_notes',
         'comp_driver', 'comp_pattern', 'comp_compliance', 'comp_notes',
         'labor_foh_coverage', 'labor_boh_performance', 'labor_decision',
+        'foh_staffing_decision', 'boh_staffing_decision',
         'labor_change', 'labor_notes', 'labor_foh_notes', 'labor_boh_notes',
         'incident_notes',
         'coaching_foh_standout', 'coaching_foh_development',

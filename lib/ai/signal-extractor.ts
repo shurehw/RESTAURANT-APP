@@ -107,6 +107,7 @@ const TEXT_FIELDS: Record<string, string[]> = {
   comps: ['comp_driver', 'comp_pattern', 'comp_compliance', 'comp_notes'],
   labor: [
     'labor_foh_coverage', 'labor_boh_performance', 'labor_decision',
+    'foh_staffing_decision', 'boh_staffing_decision',
     'labor_change', 'labor_notes', 'labor_foh_notes', 'labor_boh_notes',
   ],
   incidents: ['incident_notes'],

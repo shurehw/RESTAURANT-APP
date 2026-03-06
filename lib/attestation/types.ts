@@ -103,9 +103,10 @@ export const COMP_PROMPT_PLACEHOLDERS: Record<CompPromptKey, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Labor Prompts — 3 structured prompts for labor attestation
+// Labor Prompts — legacy combined (kept for backward compat + signal extractor)
 // ---------------------------------------------------------------------------
 
+/** @deprecated Use FOH_PROMPT_KEYS and BOH_PROMPT_KEYS */
 export const LABOR_PROMPT_KEYS = [
   'labor_foh_coverage', 'labor_boh_performance', 'labor_decision',
 ] as const;
@@ -121,6 +122,44 @@ export const LABOR_PROMPT_PLACEHOLDERS: Record<LaborPromptKey, string> = {
   labor_foh_coverage: 'Section coverage, host stand flow, server workload, bar congestion...',
   labor_boh_performance: 'Line strength, ticket times, prep readiness, station coverage...',
   labor_decision: 'Cut timing, OT management, other labor allocation, headcount changes, scheduling feedback...',
+};
+
+// ---------------------------------------------------------------------------
+// FOH Prompts — 2 structured prompts for FOH attestation step
+// ---------------------------------------------------------------------------
+
+export const FOH_PROMPT_KEYS = [
+  'labor_foh_coverage', 'foh_staffing_decision',
+] as const;
+export type FOHPromptKey = typeof FOH_PROMPT_KEYS[number];
+
+export const FOH_PROMPT_QUESTIONS: Record<FOHPromptKey, string> = {
+  labor_foh_coverage: 'How was floor coverage and service pacing tonight?',
+  foh_staffing_decision: 'Any FOH staffing adjustments you\'d make in hindsight?',
+};
+
+export const FOH_PROMPT_PLACEHOLDERS: Record<FOHPromptKey, string> = {
+  labor_foh_coverage: 'Section coverage, host stand flow, server workload, bar congestion...',
+  foh_staffing_decision: 'Cut timing, extra server, host stand coverage, OT calls...',
+};
+
+// ---------------------------------------------------------------------------
+// BOH Prompts — 2 structured prompts for BOH attestation step
+// ---------------------------------------------------------------------------
+
+export const BOH_PROMPT_KEYS = [
+  'labor_boh_performance', 'boh_staffing_decision',
+] as const;
+export type BOHPromptKey = typeof BOH_PROMPT_KEYS[number];
+
+export const BOH_PROMPT_QUESTIONS: Record<BOHPromptKey, string> = {
+  labor_boh_performance: 'How was kitchen staffing and line performance?',
+  boh_staffing_decision: 'Any BOH staffing adjustments you\'d make in hindsight?',
+};
+
+export const BOH_PROMPT_PLACEHOLDERS: Record<BOHPromptKey, string> = {
+  labor_boh_performance: 'Line strength, ticket times, prep readiness, station coverage...',
+  boh_staffing_decision: 'Extra line cook, prep help, dishwasher coverage, OT calls...',
 };
 
 // ---------------------------------------------------------------------------
@@ -526,6 +565,11 @@ export interface NightlyAttestation {
   labor_boh_notes?: string;
   labor_acknowledged?: boolean;
   labor_tags?: LaborTag[];
+  // FOH/BOH split (replaces combined labor step)
+  foh_staffing_decision?: string;
+  boh_staffing_decision?: string;
+  foh_acknowledged?: boolean;
+  boh_acknowledged?: boolean;
 
   // Incidents
   incident_tags?: IncidentTag[];
@@ -733,6 +777,11 @@ export const updateAttestationSchema = z.object({
   labor_boh_notes: z.string().max(1000).optional().nullable(),
   labor_acknowledged: z.boolean().optional(),
   labor_tags: z.array(z.enum(LABOR_TAGS)).optional().nullable(),
+  // FOH/BOH split
+  foh_staffing_decision: z.string().max(500).optional().nullable(),
+  boh_staffing_decision: z.string().max(500).optional().nullable(),
+  foh_acknowledged: z.boolean().optional(),
+  boh_acknowledged: z.boolean().optional(),
   // Comps — 3 structured prompts
   comp_driver: z.string().max(500).optional().nullable(),
   comp_pattern: z.string().max(500).optional().nullable(),

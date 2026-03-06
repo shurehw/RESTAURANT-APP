@@ -10,7 +10,7 @@ import {
 import {
   DollarSign,
   ShieldAlert,
-  Clock,
+  UserCheck,
   AlertOctagon,
   Users,
   Crown,
@@ -22,7 +22,8 @@ import { StepIndicator, type StepConfig } from './StepIndicator';
 import { StepNavigation } from './StepNavigation';
 import { RevenueStep } from './steps/RevenueStep';
 import { CompsStep } from './steps/CompsStep';
-import { LaborStep } from './steps/LaborStep';
+import { FOHStep } from './steps/FOHStep';
+import { BOHStep } from './steps/BOHStep';
 import { IncidentsStep } from './steps/IncidentsStep';
 import { CoachingStep } from './steps/CoachingStep';
 import { EntertainmentStep } from './steps/EntertainmentStep';
@@ -147,6 +148,9 @@ export interface AttestationStepperProps {
   addCoaching: (coaching: any) => Promise<void>;
   submitAttestation: (amendmentReason?: string) => Promise<any>;
 
+  // Navigation
+  initialStepId?: string;
+
   // Metadata
   date: string;
   venueName: string;
@@ -230,6 +234,7 @@ export function AttestationStepper({
   discountsTotal = 0,
   hasEntertainment = true,
   hasCulinary = true,
+  initialStepId,
 }: AttestationStepperProps) {
   // ---------------------------------------------------------------------------
   // Entertainment shift log — fetch when stepper opens
@@ -302,11 +307,19 @@ export function AttestationStepper({
       flagged: !!triggers?.comp_resolution_required,
     },
     {
-      id: 'labor',
-      label: 'Labor',
-      icon: Clock,
+      id: 'foh',
+      label: 'FOH',
+      icon: UserCheck,
       status: 'required' as const,
-      completion: completionState.labor,
+      completion: completionState.foh,
+      flagged: !!triggers?.labor_attestation_required,
+    },
+    {
+      id: 'boh',
+      label: 'BOH',
+      icon: ChefHat,
+      status: 'required' as const,
+      completion: completionState.boh,
       flagged: !!triggers?.labor_attestation_required,
     },
     {
@@ -366,12 +379,16 @@ export function AttestationStepper({
   // Derived canSubmit including entertainment + culinary
   const fullCanSubmit = canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete);
 
-  // Smart start: first incomplete step
+  // Smart start: explicit step ID, or first incomplete step
   const initialStep = useMemo(() => {
+    if (initialStepId) {
+      const idx = steps.findIndex(s => s.id === initialStepId);
+      if (idx >= 0) return idx;
+    }
     if (isLocked) return steps.length - 1;
     const firstIncomplete = steps.findIndex(s => s.completion === 'incomplete');
     return firstIncomplete >= 0 ? firstIncomplete : 0;
-  }, [steps, isLocked]);
+  }, [steps, isLocked, initialStepId]);
 
   const [currentStep, setCurrentStep] = useState(initialStep);
 
@@ -474,8 +491,20 @@ export function AttestationStepper({
                   onUpdate={updateField}
                 />
               )}
-              {activeStep.id === 'labor' && (
-                <LaborStep
+              {activeStep.id === 'foh' && (
+                <FOHStep
+                  triggers={triggers}
+                  attestation={attestation}
+                  onUpdate={updateField}
+                  disabled={isLocked}
+                  labor={factsSummary?.labor ?? null}
+                  netSales={reportSummary?.net_sales ?? 0}
+                  covers={reportSummary?.total_covers ?? 0}
+                  laborExceptions={laborExceptions}
+                />
+              )}
+              {activeStep.id === 'boh' && (
+                <BOHStep
                   triggers={triggers}
                   attestation={attestation}
                   onUpdate={updateField}

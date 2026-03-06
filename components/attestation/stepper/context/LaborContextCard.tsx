@@ -106,16 +106,24 @@ export function LaborContextCard({ labor, netSales, covers, laborExceptions }: P
 
         {/* Dept breakdown */}
         {(labor.foh || labor.boh) && (
-          <div className="flex gap-3 text-xs">
+          <div className="flex gap-4 text-xs">
             {labor.foh && (
-              <span className="text-muted-foreground">
-                FOH: {labor.foh.hours.toFixed(0)}h / {fmt(labor.foh.cost)}
-              </span>
+              <div className="text-muted-foreground">
+                <span className="font-medium text-foreground">FOH</span>{' '}
+                {labor.foh.hours.toFixed(1)}h / {fmt(labor.foh.cost)}
+                {netSales > 0 && (
+                  <span className="ml-1">({((labor.foh.cost / netSales) * 100).toFixed(1)}%)</span>
+                )}
+              </div>
             )}
             {labor.boh && (
-              <span className="text-muted-foreground">
-                BOH: {labor.boh.hours.toFixed(0)}h / {fmt(labor.boh.cost)}
-              </span>
+              <div className="text-muted-foreground">
+                <span className="font-medium text-foreground">BOH</span>{' '}
+                {labor.boh.hours.toFixed(1)}h / {fmt(labor.boh.cost)}
+                {netSales > 0 && (
+                  <span className="ml-1">({((labor.boh.cost / netSales) * 100).toFixed(1)}%)</span>
+                )}
+              </div>
             )}
           </div>
         )}

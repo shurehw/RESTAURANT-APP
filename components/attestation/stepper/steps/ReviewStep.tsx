@@ -116,7 +116,8 @@ interface Props {
 const MODULE_LABELS: Record<keyof CompletionState, string> = {
   revenue: 'Revenue',
   comps: 'Comps',
-  labor: 'Labor',
+  foh: 'FOH',
+  boh: 'BOH',
   incidents: 'Incidents',
   coaching: 'Coaching',
   guest: 'Guest',
@@ -374,10 +375,16 @@ export function ReviewStep({
         if (attestation?.comp_acknowledged && filled === 0) parts.push('Acknowledged');
         return parts.join(', ');
       }
-      case 'labor': {
-        const filled = promptsFilledCount(['labor_foh_coverage', 'labor_boh_performance', 'labor_decision', 'labor_change']);
-        if (filled > 0) return `${filled}/4 prompts`;
-        if (attestation?.labor_acknowledged) return 'Acknowledged';
+      case 'foh': {
+        const filled = promptsFilledCount(['labor_foh_coverage', 'foh_staffing_decision']);
+        if (filled > 0) return `${filled}/2 prompts`;
+        if (attestation?.foh_acknowledged) return 'Acknowledged';
+        return '';
+      }
+      case 'boh': {
+        const filled = promptsFilledCount(['labor_boh_performance', 'boh_staffing_decision']);
+        if (filled > 0) return `${filled}/2 prompts`;
+        if (attestation?.boh_acknowledged) return 'Acknowledged';
         return '';
       }
       case 'incidents': {

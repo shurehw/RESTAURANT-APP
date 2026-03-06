@@ -13,7 +13,8 @@ import type {
 import {
   REVENUE_PROMPT_KEYS,
   COMP_PROMPT_KEYS,
-  LABOR_PROMPT_KEYS,
+  FOH_PROMPT_KEYS,
+  BOH_PROMPT_KEYS,
   COACHING_PROMPT_KEYS,
   GUEST_PROMPT_KEYS,
   STRUCTURED_PROMPT_MIN_LENGTH,
@@ -22,7 +23,8 @@ import {
 export interface CompletionState {
   revenue: 'complete' | 'incomplete';
   comps: 'complete' | 'incomplete';
-  labor: 'complete' | 'incomplete';
+  foh: 'complete' | 'incomplete';
+  boh: 'complete' | 'incomplete';
   incidents: 'complete' | 'incomplete';
   coaching: 'complete' | 'incomplete';
   guest: 'complete' | 'incomplete';
@@ -303,7 +305,10 @@ export function useAttestation(
   const compsPromptsComplete = COMP_PROMPT_KEYS.every(
     (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
   );
-  const laborPromptsComplete = LABOR_PROMPT_KEYS.every(
+  const fohPromptsComplete = FOH_PROMPT_KEYS.every(
+    (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
+  );
+  const bohPromptsComplete = BOH_PROMPT_KEYS.every(
     (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
   );
   const coachingPromptsComplete = COACHING_PROMPT_KEYS.every(
@@ -317,7 +322,9 @@ export function useAttestation(
     comps: (compsPromptsComplete || !!attestation?.comp_acknowledged)
       && (!triggers?.comp_resolution_required || (triggers.flagged_comps?.length || 0) <= compResolutions.length)
       ? 'complete' : 'incomplete',
-    labor: (laborPromptsComplete || !!attestation?.labor_acknowledged)
+    foh: (fohPromptsComplete || !!attestation?.foh_acknowledged)
+      ? 'complete' : 'incomplete',
+    boh: (bohPromptsComplete || !!attestation?.boh_acknowledged)
       ? 'complete' : 'incomplete',
     incidents: (attestation?.incident_notes?.length ?? 0) >= 10 || !!attestation?.incidents_acknowledged
       ? 'complete' : 'incomplete',

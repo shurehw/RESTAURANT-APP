@@ -89,16 +89,20 @@ export interface ClosingNarrativeInput {
   comp_notes: string | null;
   comp_acknowledged: boolean;
 
-  // Manager inputs — labor (4 structured prompts)
+  // Manager inputs — labor (structured prompts, FOH/BOH split)
   labor_foh_coverage: string | null;
   labor_boh_performance: string | null;
   labor_decision: string | null;
   labor_change: string | null;
+  foh_staffing_decision: string | null;
+  boh_staffing_decision: string | null;
   labor_tags: string[];
   labor_notes: string | null;
   labor_foh_notes: string | null;
   labor_boh_notes: string | null;
   labor_acknowledged: boolean;
+  foh_acknowledged: boolean;
+  boh_acknowledged: boolean;
   comp_resolutions: Array<{
     check_id?: string;
     comp_amount?: number;
@@ -269,15 +273,23 @@ function buildNarrativePrompt(input: ClosingNarrativeInput): string {
     context.push(`Comp resolutions: ${input.comp_resolutions.length} resolved${followUps > 0 ? ` (${followUps} require follow-up)` : ''}`);
   }
 
-  // Labor context
-  if (input.labor_foh_coverage) context.push(`Labor FOH coverage: "${input.labor_foh_coverage}"`);
-  if (input.labor_boh_performance) context.push(`Labor BOH performance: "${input.labor_boh_performance}"`);
+  // Labor context — FOH
+  if (input.labor_foh_coverage) context.push(`FOH coverage: "${input.labor_foh_coverage}"`);
+  if (input.foh_staffing_decision) context.push(`FOH staffing adjustment: "${input.foh_staffing_decision}"`);
+  if (input.labor_foh_notes && !input.labor_foh_coverage) context.push(`FOH notes: "${input.labor_foh_notes}"`);
+  if (!input.labor_foh_coverage && !input.labor_foh_notes && input.foh_acknowledged) context.push('FOH: Nothing to report — standard staffing');
+
+  // Labor context — BOH
+  if (input.labor_boh_performance) context.push(`BOH performance: "${input.labor_boh_performance}"`);
+  if (input.boh_staffing_decision) context.push(`BOH staffing adjustment: "${input.boh_staffing_decision}"`);
+  if (input.labor_boh_notes && !input.labor_boh_performance) context.push(`BOH notes: "${input.labor_boh_notes}"`);
+  if (!input.labor_boh_performance && !input.labor_boh_notes && input.boh_acknowledged) context.push('BOH: Nothing to report — standard staffing');
+
+  // Legacy labor fields
   if (input.labor_decision) context.push(`Staffing decisions: "${input.labor_decision}"`);
   if (input.labor_change) context.push(`Labor plan change: "${input.labor_change}"`);
-  if (input.labor_foh_notes && !input.labor_foh_coverage) context.push(`Labor FOH: "${input.labor_foh_notes}"`);
-  if (input.labor_boh_notes && !input.labor_boh_performance) context.push(`Labor BOH: "${input.labor_boh_notes}"`);
   if (input.labor_notes && !input.labor_foh_coverage) context.push(`Labor notes: "${input.labor_notes}"`);
-  if (!input.labor_foh_coverage && !input.labor_foh_notes && input.labor_acknowledged) context.push('Labor: Nothing to report — standard staffing');
+  if (!input.labor_foh_coverage && !input.labor_foh_notes && input.labor_acknowledged && !input.foh_acknowledged) context.push('Labor: Nothing to report — standard staffing');
   if (input.labor_tags.length > 0) context.push(`Labor tags: ${input.labor_tags.join(', ')}`);
 
   // Incidents
