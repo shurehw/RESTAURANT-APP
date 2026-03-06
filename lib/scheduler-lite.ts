@@ -2,11 +2,15 @@
  * Lightweight TypeScript scheduler for Vercel (no Python dependency).
  *
  * Demand-driven staggered wave scheduling:
- * - Headcount sized from peak-hour demand (covers × peakPct / cplh)
- * - Staff spread across early / main / late shift waves
- * - Shorter, targeted shifts replace one long block per person
- * - Uses covers exclusively from demand_forecasts table (ML model per-venue, per-date).
- * - Days with no forecast data are skipped (no hardcoded fallback).
+ * - Shift times derived from actual guest arrival curves (demand_distribution_curves)
+ *   or venue open/close hours from location_config — never hardcoded.
+ * - Admin overrides (schedule_position_overrides table) take priority when set.
+ * - Headcount sized from peak-hour demand (covers x peakPct / cplh).
+ * - Staff spread across early / main / late shift waves.
+ * - FOH minimum shift = 6 hours, BOH minimum shift = 5 hours.
+ * - Bartender model accounts for bar-only guests (bar_guest_pct).
+ * - CPLH priority: admin override > venue-derived (40% venue + 60% industry) > default.
+ * - Uses covers exclusively from forecasts_with_bias table.
  */
 
 import { createAdminClient } from '@/lib/supabase/server';
@@ -24,171 +28,249 @@ interface ShiftTemplate {
 }
 
 interface PosConfig {
-  cplh?: number;          // covers per labor hour (variable-demand positions)
-  ratio?: number;         // daily covers per 1 employee (host, dishwasher)
-  fixed?: boolean;        // always schedule 1 person regardless of covers
-  peakPct: number;        // fraction of daily covers in the single busiest hour
-  templates: ShiftTemplate[]; // [early, main, late] wave definitions
-  useBarModel?: boolean;  // true = use composite bev-driven model (Bartender)
+  cplh?: number;
+  ratio?: number;
+  fixed?: boolean;
+  peakPct: number;
+  category: 'front_of_house' | 'back_of_house' | 'management';
+  templates?: ShiftTemplate[]; // Fallback only — normally built dynamically
+  useBarModel?: boolean;
+}
+
+interface AdminOverride {
+  position_name: string;
+  shift_start: string | null;
+  shift_end: string | null;
+  min_shift_hours: number;
+  cplh_override: number | null;
+  min_staff: number;
+  max_staff: number | null;
+  bar_guest_pct: number;
+}
+
+interface VenueHours {
+  open: number;  // 0-23 (hour guests start arriving)
+  close: number; // 0-23 (may be < open for after-midnight venues)
+}
+
+interface DemandInterval {
+  interval_start: string; // HH:MM:SS
+  pct_of_daily_covers: number;
 }
 
 // ── Bartender Composite Model ────────────────────────────────────────────────
-// The bar is a production center for the entire restaurant. Every cover
-// generates drink orders regardless of where they sit. Bartender headcount
-// should scale with drink volume, not raw covers.
-//
-// Formula: peakBartenders = ceil(covers × drinksPerCover × peakPct / DPLH)
-//   drinksPerCover = venue_bev_pct / INDUSTRY_AVG_BEV_PCT × BASELINE_DRINKS_PER_COVER
-//   DPLH = drinks per labor hour (throughput ceiling per bartender)
 
-/** Industry average beverage percentage across full-service restaurants */
 const INDUSTRY_AVG_BEV_PCT = 0.30;
-
-/** Baseline drinks ordered per cover at an average full-service venue (at 30% bev) */
 const BASELINE_DRINKS_PER_COVER = 2.0;
 
-/**
- * Drinks per labor hour at PEAK — how many drinks one bartender can produce
- * in their busiest hour (with barback support where applicable).
- * This is peak throughput, not all-shift average.
- * Tuned by venue class: craft cocktail bars are slower, beer/wine pours are faster.
- */
 const VENUE_CLASS_DPLH: Record<string, number> = {
-  supper_club:     40,  // Craft cocktails + wine service, slower per drink
-  high_end_social: 38,  // Heavy cocktail program
-  nightclub:       55,  // High-volume pours, simpler drinks, bottle service
+  supper_club:     40,
+  high_end_social: 38,
+  nightclub:       55,
   late_night:      55,
-  member_club:     42,  // Mixed — cocktails + wine
+  member_club:     42,
 };
 const DEFAULT_DPLH = 45;
 
-/** Bev intensity by DOW for a venue — maps dow (0=Sun..6=Sat) to beverage_pct */
 type BevIntensityMap = Map<number, number>;
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-/** 22% of daily covers typically land in the single busiest dinner hour */
 const PEAK_PCT = 0.22;
+const FOH_MIN_SHIFT_HOURS = 6.0;
+const BOH_MIN_SHIFT_HOURS = 5.0;
 
 /**
- * Position wave configs for Hwood Group venues.
- * CPLH values derived from actual labor_day_facts data (60% venue data + 40% industry).
- * Each position lists 1–3 shift templates (early / main / late waves).
- * Staff headcount at peak drives how many of each wave to schedule.
+ * Position configs with CPLH defaults and category.
+ * Templates are NO LONGER hardcoded — they are built dynamically
+ * from venue hours + demand curves at schedule generation time.
  */
 const POS_CONFIG: Record<string, PosConfig> = {
   // ── Front of House ──────────────────────────────────────────────────────
-  'Server': {
-    cplh: 13,       // Derived: LA=12.9 Miami=13.0 (industry 18, actual ~10)
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
-      { label: 'main',  type: 'dinner',     start: '17:30', end: '22:00', hours: 4.5 },
-      { label: 'late',  type: 'late_night', start: '19:00', end: '23:30', hours: 4.5 },
-    ],
-  },
-  'Bartender': {
-    cplh: 22,           // Fallback CPLH (only used if bar model data unavailable)
-    peakPct: PEAK_PCT,
-    useBarModel: true,  // Use composite bev-driven model instead of flat CPLH
-    templates: [
-      { label: 'day',   type: 'lunch',      start: '14:00', end: '20:00', hours: 6.0 },
-      { label: 'night', type: 'late_night', start: '18:00', end: '00:00', hours: 6.0 },
-    ],
-  },
-  'Busser': {
-    cplh: 28,       // Derived: LA=36.9 Miami=19.8 (industry 35, blended 28)
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
-      { label: 'late',  type: 'late_night', start: '18:30', end: '23:00', hours: 4.5 },
-    ],
-  },
-  'Food Runner': {
-    cplh: 25,       // Derived: LA=25.7 Miami=25.0 (industry 30, actual ~22)
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'early', type: 'dinner',     start: '17:00', end: '21:00', hours: 4.0 },
-      { label: 'late',  type: 'late_night', start: '18:30', end: '23:00', hours: 4.5 },
-    ],
-  },
-  'Host': {
-    cplh: 28,       // Derived: LA=38.1 Miami=17.3 (was ratio 1:250, now CPLH-based)
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'early', type: 'dinner',     start: '16:30', end: '21:00', hours: 4.5 },
-      { label: 'late',  type: 'late_night', start: '18:00', end: '23:00', hours: 5.0 },
-    ],
-  },
-
+  'Server':      { cplh: 13, peakPct: PEAK_PCT, category: 'front_of_house' },
+  'Bartender':   { cplh: 22, peakPct: PEAK_PCT, category: 'front_of_house', useBarModel: true },
+  'Busser':      { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house' },
+  'Food Runner': { cplh: 25, peakPct: PEAK_PCT, category: 'front_of_house' },
+  'Host':        { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house' },
   // ── Back of House ───────────────────────────────────────────────────────
-  'Line Cook': {
-    cplh: 21,       // Derived: LA=24.6 Miami=17.4 (industry 22, very close)
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'prep',  type: 'lunch',      start: '13:00', end: '19:00', hours: 6.0 },
-      { label: 'early', type: 'dinner',     start: '15:00', end: '21:00', hours: 6.0 },
-      { label: 'late',  type: 'late_night', start: '17:00', end: '23:00', hours: 6.0 },
-    ],
-  },
-  'Prep Cook': {
-    cplh: 40,       // Derived: LA=50.9 Miami=28.6 (industry 50, actual ~40)
-    peakPct: 0.15,  // prep demand peaks before service
-    templates: [
-      { label: 'am', type: 'breakfast', start: '09:00', end: '15:00', hours: 6.0 },
-      { label: 'pm', type: 'lunch',     start: '12:00', end: '18:00', hours: 6.0 },
-    ],
-  },
-  'Dishwasher': {
-    cplh: 28,       // Derived: LA=26.4 Miami=29.3 (was ratio 1:200, now CPLH-based)
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'early', type: 'dinner',     start: '15:00', end: '21:00', hours: 6.0 },
-      { label: 'late',  type: 'late_night', start: '18:00', end: '00:00', hours: 6.0 },
-    ],
-  },
-
+  'Line Cook':   { cplh: 21, peakPct: PEAK_PCT, category: 'back_of_house' },
+  'Prep Cook':   { cplh: 40, peakPct: 0.15,     category: 'back_of_house' },
+  'Dishwasher':  { cplh: 28, peakPct: PEAK_PCT, category: 'back_of_house' },
   // ── Management (fixed: 1 per schedule day) ──────────────────────────────
-  'Sous Chef': {
-    fixed: true,
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'main', type: 'dinner', start: '12:00', end: '22:00', hours: 10.0 },
-    ],
-  },
-  'Executive Chef': {
-    fixed: true,
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'main', type: 'dinner', start: '11:00', end: '21:00', hours: 10.0 },
-    ],
-  },
-  'General Manager': {
-    fixed: true,
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'main', type: 'dinner', start: '13:00', end: '23:00', hours: 10.0 },
-    ],
-  },
-  'Assistant Manager': {
-    fixed: true,
-    peakPct: PEAK_PCT,
-    // Two waves for full coverage: one for opening, one for close
-    templates: [
-      { label: 'early', type: 'dinner',     start: '14:00', end: '22:00', hours: 8.0 },
-      { label: 'late',  type: 'late_night', start: '17:00', end: '01:00', hours: 8.0 },
-    ],
-  },
-  'Shift Manager': {
-    cplh: 100,      // No venue data for mgmt; industry benchmark
-    peakPct: PEAK_PCT,
-    templates: [
-      { label: 'main', type: 'dinner', start: '16:00', end: '00:00', hours: 8.0 },
-    ],
-  },
+  'Sous Chef':         { fixed: true, peakPct: PEAK_PCT, category: 'management' },
+  'Executive Chef':    { fixed: true, peakPct: PEAK_PCT, category: 'management' },
+  'General Manager':   { fixed: true, peakPct: PEAK_PCT, category: 'management' },
+  'Assistant Manager': { fixed: true, peakPct: PEAK_PCT, category: 'management' },
+  'Shift Manager':     { cplh: 100,  peakPct: PEAK_PCT, category: 'management' },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Convert decimal hour (e.g. 18.5) to HH:MM string */
+function hourToHHMM(h: number): string {
+  const normalized = ((h % 24) + 24) % 24;
+  const hh = Math.floor(normalized);
+  const mm = Math.round((normalized % 1) * 60);
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
+/** Calculate shift hours between two HH:MM times, handling midnight crossing */
+function calcShiftHours(start: string, end: string): number {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  let startMin = sh * 60 + sm;
+  let endMin = eh * 60 + em;
+  if (endMin <= startMin) endMin += 24 * 60; // crosses midnight
+  return (endMin - startMin) / 60;
+}
+
+/** Classify shift time into ShiftType */
+function classifyShiftType(startHour: number): ShiftType {
+  const h = ((startHour % 24) + 24) % 24;
+  if (h < 11) return 'breakfast';
+  if (h < 16) return 'lunch';
+  if (h < 21) return 'dinner';
+  return 'late_night';
+}
+
+/**
+ * Build shift templates dynamically from venue hours and demand curves.
+ *
+ * For FOH: finds when guests actually arrive (first interval with >2% of covers)
+ * and when they leave (last interval with >2%), then creates staggered waves.
+ * For BOH: starts 2h before FOH (prep time), ends 1h after last guest.
+ * For Management: full coverage from prep through close.
+ *
+ * If demand curves are available, uses those for precise timing.
+ * Otherwise falls back to venue open/close hours from location_config.
+ */
+function buildTemplatesFromVenueHours(
+  venueHours: VenueHours,
+  category: 'front_of_house' | 'back_of_house' | 'management',
+  posName: string,
+  demandIntervals?: DemandInterval[],
+  minShiftHours?: number,
+): ShiftTemplate[] {
+  let guestStart = venueHours.open;
+  let guestEnd = venueHours.close;
+
+  // Use demand curves to find actual guest arrival/departure times
+  if (demandIntervals && demandIntervals.length > 0) {
+    const significant = demandIntervals.filter(d => d.pct_of_daily_covers > 2.0);
+    if (significant.length > 0) {
+      const firstInterval = significant[0].interval_start;
+      const lastInterval = significant[significant.length - 1].interval_start;
+      guestStart = parseInt(firstInterval.split(':')[0], 10);
+      guestEnd = parseInt(lastInterval.split(':')[0], 10) + 1;
+    }
+  }
+
+  // Handle after-midnight venues (e.g. close=2 means 2AM)
+  const effectiveClose = guestEnd <= guestStart ? guestEnd + 24 : guestEnd;
+  const serviceSpan = effectiveClose - guestStart;
+
+  if (category === 'management') {
+    const mgrStart = guestStart - 2;
+    const mgrEnd = effectiveClose + 1;
+    const isDouble = serviceSpan > 8;
+
+    if (posName === 'Assistant Manager' && isDouble) {
+      const midpoint = mgrStart + Math.floor((mgrEnd - mgrStart) / 2);
+      return [
+        { label: 'early', type: classifyShiftType(mgrStart), start: hourToHHMM(mgrStart), end: hourToHHMM(midpoint), hours: midpoint - mgrStart },
+        { label: 'late',  type: 'late_night', start: hourToHHMM(midpoint - 1), end: hourToHHMM(mgrEnd), hours: mgrEnd - midpoint + 1 },
+      ];
+    }
+    const hours = Math.min(mgrEnd - mgrStart, 10);
+    return [
+      { label: 'main', type: classifyShiftType(mgrStart), start: hourToHHMM(mgrStart), end: hourToHHMM(mgrStart + hours), hours },
+    ];
+  }
+
+  const minHours = minShiftHours ?? (category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
+
+  if (category === 'back_of_house') {
+    const bohStart = guestStart - 2;
+    const bohEnd = effectiveClose + 1;
+    const bohSpan = bohEnd - bohStart;
+
+    if (posName === 'Prep Cook') {
+      const prepStart = Math.max(bohStart - 2, 7);
+      return [
+        { label: 'am', type: 'breakfast', start: hourToHHMM(prepStart), end: hourToHHMM(prepStart + 6), hours: 6.0 },
+        { label: 'pm', type: 'lunch',     start: hourToHHMM(guestStart - 1), end: hourToHHMM(guestStart + 5), hours: 6.0 },
+      ];
+    }
+
+    if (bohSpan <= minHours + 2) {
+      return [
+        { label: 'main', type: classifyShiftType(bohStart), start: hourToHHMM(bohStart), end: hourToHHMM(bohEnd), hours: Math.max(minHours, bohSpan) },
+      ];
+    }
+    const wave1Start = bohStart;
+    const wave2Start = bohStart + Math.floor(bohSpan * 0.25);
+    const wave3Start = bohStart + Math.floor(bohSpan * 0.5);
+    return [
+      { label: 'prep',  type: classifyShiftType(wave1Start), start: hourToHHMM(wave1Start), end: hourToHHMM(wave1Start + minHours), hours: minHours },
+      { label: 'early', type: classifyShiftType(wave2Start), start: hourToHHMM(wave2Start), end: hourToHHMM(wave2Start + minHours), hours: minHours },
+      { label: 'late',  type: 'late_night', start: hourToHHMM(wave3Start), end: hourToHHMM(bohEnd), hours: Math.max(minHours, bohEnd - wave3Start) },
+    ];
+  }
+
+  // FOH positions
+  if (posName === 'Bartender') {
+    const barStart = guestStart - 0.5;
+    const barEnd = effectiveClose;
+    const barSpan = barEnd - barStart;
+    if (barSpan <= minHours + 1) {
+      return [
+        { label: 'main', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barSpan) },
+      ];
+    }
+    const midpoint = barStart + Math.floor(barSpan / 2);
+    return [
+      { label: 'day',   type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barStart + minHours), hours: minHours },
+      { label: 'night', type: 'late_night', start: hourToHHMM(midpoint), end: hourToHHMM(barEnd), hours: Math.max(minHours, barEnd - midpoint) },
+    ];
+  }
+
+  // Generic FOH (Server, Busser, Food Runner, Host)
+  const fohStart = guestStart - 0.5;
+  const fohEnd = effectiveClose;
+  const fohSpan = fohEnd - fohStart;
+
+  if (fohSpan <= minHours + 1) {
+    return [
+      { label: 'main', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohSpan) },
+    ];
+  }
+
+  if (fohSpan <= minHours * 2) {
+    const wave2Start = fohEnd - minHours;
+    return [
+      { label: 'early', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohStart + minHours), hours: minHours },
+      { label: 'late',  type: 'late_night', start: hourToHHMM(wave2Start), end: hourToHHMM(fohEnd), hours: minHours },
+    ];
+  }
+
+  const wave2Start = fohStart + Math.floor(fohSpan * 0.3);
+  const wave3Start = fohEnd - minHours;
+  return [
+    { label: 'early', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohStart + minHours), hours: minHours },
+    { label: 'main',  type: classifyShiftType(wave2Start), start: hourToHHMM(wave2Start), end: hourToHHMM(wave2Start + minHours), hours: minHours },
+    { label: 'late',  type: 'late_night', start: hourToHHMM(wave3Start), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohEnd - wave3Start) },
+  ];
+}
+
+/** Build templates from admin override (shift_start/shift_end directly). */
+function buildTemplatesFromOverride(override: AdminOverride): ShiftTemplate[] {
+  if (!override.shift_start || !override.shift_end) return [];
+  const hours = calcShiftHours(override.shift_start, override.shift_end);
+  const startHour = parseInt(override.shift_start.split(':')[0], 10);
+  return [
+    { label: 'main', type: classifyShiftType(startHour), start: override.shift_start, end: override.shift_end, hours },
+  ];
+}
 
 /** How many staff are needed to cover the peak hour for this position */
 function calcPeakStaff(covers: number, config: PosConfig, cplhOverride?: number): number {
@@ -203,11 +285,6 @@ function calcPeakStaff(covers: number, config: PosConfig, cplhOverride?: number)
 /** Minimum busy days needed to trust venue-derived CPLH */
 const MIN_BUSY_DAYS = 10;
 
-/**
- * Derive venue beverage intensity by day-of-week from venue_day_facts.
- * Returns a map of DOW (0=Sun..6=Sat) → avg beverage_pct (0-1).
- * Falls back to venue-class default if insufficient data.
- */
 async function deriveVenueBevIntensity(
   admin: ReturnType<typeof createAdminClient>,
   venueId: string,
@@ -227,7 +304,6 @@ async function deriveVenueBevIntensity(
     data = res.data;
   } catch { /* RPC may not exist yet */ }
 
-  // If RPC doesn't exist yet, fall back to direct query
   if (!data) {
     const { data: facts } = await admin
       .from('venue_day_facts')
@@ -237,12 +313,11 @@ async function deriveVenueBevIntensity(
       .gt('beverage_pct', 0);
 
     if (facts && facts.length >= MIN_BUSY_DAYS) {
-      // Group by DOW
       const dowBuckets: Record<number, number[]> = {};
       for (const f of facts) {
         const dow = new Date(f.business_date + 'T12:00:00').getUTCDay();
         if (!dowBuckets[dow]) dowBuckets[dow] = [];
-        dowBuckets[dow].push(Number(f.beverage_pct) / 100); // stored as 0-100, convert to 0-1
+        dowBuckets[dow].push(Number(f.beverage_pct) / 100);
       }
       for (const [dow, pcts] of Object.entries(dowBuckets)) {
         if (pcts.length >= 3) {
@@ -256,7 +331,6 @@ async function deriveVenueBevIntensity(
     }
   }
 
-  // Fall back to class default for missing DOWs
   const classDefault = getClassDefaultBevPct(venueClass);
   for (let dow = 0; dow <= 6; dow++) {
     if (!result.has(dow)) result.set(dow, classDefault);
@@ -265,7 +339,6 @@ async function deriveVenueBevIntensity(
   return result;
 }
 
-/** Default bev% by venue class when no data available */
 function getClassDefaultBevPct(venueClass: string | null): number {
   switch (venueClass) {
     case 'nightclub':
@@ -278,39 +351,35 @@ function getClassDefaultBevPct(venueClass: string | null): number {
 }
 
 /**
- * Composite bartender staffing model.
- * Uses venue bev intensity + DPLH throughput ceiling instead of flat CPLH.
- *
- * peakBartenders = ceil(covers × drinksPerCover × peakPct / DPLH)
- *   where drinksPerCover = (venue_bev_pct / industry_avg) × baseline_drinks
+ * Composite bartender staffing model with bar-only guest support.
+ * barGuestPct adds additional bar-only guests (e.g. 0.15 = 15% extra covers as bar guests).
+ * Bar guests drink ~3 drinks/person vs dining guests' ~2.
  */
 function calcBarStaff(
   covers: number,
   bevPct: number,
   venueClass: string | null,
   peakPct: number,
+  barGuestPct: number = 0,
 ): number {
   if (covers === 0) return 0;
 
-  // Scale drinks per cover by venue bev intensity relative to industry average
   const bevMultiplier = bevPct / INDUSTRY_AVG_BEV_PCT;
-  const drinksPerCover = bevMultiplier * BASELINE_DRINKS_PER_COVER;
+  const drinksPerDiningCover = bevMultiplier * BASELINE_DRINKS_PER_COVER;
 
-  // Peak-hour drink demand
-  const peakDrinks = covers * peakPct * drinksPerCover;
+  // Bar-only guests drink heavier (~3 drinks/person)
+  const barGuests = Math.round(covers * barGuestPct);
+  const diningDrinks = covers * peakPct * drinksPerDiningCover;
+  const barDrinks = barGuests * peakPct * 3.0;
+  const peakDrinks = diningDrinks + barDrinks;
 
-  // Throughput ceiling per bartender
   const dplh = VENUE_CLASS_DPLH[venueClass || ''] || DEFAULT_DPLH;
-
   return Math.max(1, Math.ceil(peakDrinks / dplh));
 }
 
 /**
  * Derive per-position peak-hour CPLH from this venue's actual labor data.
- * Uses labor_day_facts (FOH/BOH hours & employee counts) × employee pool
- * proportions to estimate per-position hours, then converts to peak-hour CPLH.
- * Blends 60% venue data + 40% POS_CONFIG defaults.
- * Returns empty map if insufficient data (< MIN_BUSY_DAYS).
+ * Blends 40% venue data + 60% POS_CONFIG defaults.
  */
 async function deriveVenueCPLH(
   admin: ReturnType<typeof createAdminClient>,
@@ -320,7 +389,6 @@ async function deriveVenueCPLH(
 ): Promise<Map<string, number>> {
   const result = new Map<string, number>();
 
-  // Build position category and pool counts
   const posMap = new Map(positions.map(p => [p.id, p]));
   const posCounts: Record<string, number> = {};
   const posCategory: Record<string, string> = {};
@@ -338,7 +406,6 @@ async function deriveVenueCPLH(
 
   if (fohPool === 0 && bohPool === 0) return result;
 
-  // Fetch busy-day labor data for this venue (covers > 100, last 90 days)
   const cutoff = new Date();
   cutoff.setUTCDate(cutoff.getUTCDate() - 90);
   const cutoffStr = cutoff.toISOString().split('T')[0];
@@ -354,14 +421,12 @@ async function deriveVenueCPLH(
 
   if (!laborDays || laborDays.length < MIN_BUSY_DAYS) return result;
 
-  // Filter days with valid FOH/BOH data
   const validDays = laborDays.filter(
     d => d.foh_hours && d.foh_hours > 10 && d.boh_hours && d.boh_hours > 5
       && d.foh_employee_count && d.boh_employee_count,
   );
   if (validDays.length < MIN_BUSY_DAYS) return result;
 
-  // Per-position: accumulate weighted stats across busy days
   const posStats: Record<string, { totalCoversWeighted: number; cplhSum: number }> = {};
 
   for (const day of validDays) {
@@ -383,23 +448,19 @@ async function deriveVenueCPLH(
       const catEmp = isFoh ? fohEmp : bohEmp;
       const avgShift = isFoh ? fohAvgShift : bohAvgShift;
 
-      // Estimate staff count for this position on this day
       const estStaff = Math.max(1, Math.round(poolSize / catPool * catEmp));
       const estHours = estStaff * avgShift;
       if (estHours <= 0) continue;
 
-      // All-day CPLH for this position
       const allDayCplh = covers / estHours;
-      // Convert to peak-hour CPLH: peak = allDay × avgShift × PEAK_PCT
       const peakCplh = allDayCplh * avgShift * PEAK_PCT;
 
       if (!posStats[posName]) posStats[posName] = { totalCoversWeighted: 0, cplhSum: 0 };
       posStats[posName].totalCoversWeighted += covers;
-      posStats[posName].cplhSum += peakCplh * covers; // cover-weighted sum
+      posStats[posName].cplhSum += peakCplh * covers;
     }
   }
 
-  // Blend: 40% venue-derived + 60% industry default (industry-weighted)
   for (const [posName, stats] of Object.entries(posStats)) {
     if (stats.totalCoversWeighted === 0) continue;
     const derivedPeak = stats.cplhSum / stats.totalCoversWeighted;
@@ -423,23 +484,19 @@ async function deriveVenueCPLH(
  */
 function distributeWaves(
   peakStaff: number,
-  config: PosConfig,
+  templates: ShiftTemplate[],
+  fixed?: boolean,
 ): { template: ShiftTemplate; count: number }[] {
-  const { templates, fixed } = config;
+  if (peakStaff === 0 || !templates || templates.length === 0) return [];
 
-  if (peakStaff === 0) return [];
-
-  // Fixed positions: 1 person per template (e.g., AM + PM manager)
   if (fixed) {
     return templates.map(t => ({ template: t, count: 1 }));
   }
 
-  // Single template — all staff go here
   if (templates.length === 1) {
     return [{ template: templates[0], count: peakStaff }];
   }
 
-  // Two templates: 40% early / 60% late
   if (templates.length === 2) {
     const earlyCount = Math.max(1, Math.floor(peakStaff * 0.4));
     const lateCount  = peakStaff - earlyCount;
@@ -449,13 +506,10 @@ function distributeWaves(
     return result;
   }
 
-  // Three templates: 25% early / 50% main / 25% late
   if (peakStaff === 1) {
-    // Single staff member → use middle (main) wave
     return [{ template: templates[1], count: 1 }];
   }
   if (peakStaff === 2) {
-    // 1 early + 1 late (skip main — gives spread coverage)
     return [
       { template: templates[0], count: 1 },
       { template: templates[2], count: 1 },
@@ -476,6 +530,23 @@ function nextDay(date: string): string {
   const d = new Date(date + 'T00:00:00Z');
   d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().split('T')[0];
+}
+
+/**
+ * Compute service quality score from actual covers-per-server ratio.
+ * 1.0 = ideal ratio, degrades as servers are over- or under-allocated.
+ */
+function computeServiceQuality(
+  totalCovers: number,
+  serverShifts: number,
+): number {
+  if (serverShifts === 0 || totalCovers === 0) return 0;
+  const idealCPS = 15; // ideal covers per server per shift
+  const actualCPS = totalCovers / serverShifts;
+  const ratio = actualCPS / idealCPS;
+  if (ratio >= 0.8 && ratio <= 1.2) return 1.0;
+  if (ratio < 0.8) return Math.max(0.3, ratio / 0.8);
+  return Math.max(0.3, 1.0 - (ratio - 1.2) * 0.5);
 }
 
 // ── Main Scheduler ────────────────────────────────────────────────────────────
@@ -505,11 +576,51 @@ export async function generateScheduleTS(
 
   if (!employees || employees.length === 0) throw new Error('No active employees found');
 
+  // ── Fetch admin overrides (gracefully handle table not existing) ──────────
+  let adminOverrides: AdminOverride[] = [];
+  try {
+    const { data: overrides } = await admin
+      .from('schedule_position_overrides')
+      .select('position_name, shift_start, shift_end, min_shift_hours, cplh_override, min_staff, max_staff, bar_guest_pct')
+      .eq('venue_id', venueId)
+      .eq('is_active', true);
+    if (overrides) adminOverrides = overrides as AdminOverride[];
+  } catch { /* table may not exist yet */ }
+  const overrideMap = new Map(adminOverrides.map(o => [o.position_name, o]));
+
+  // ── Fetch venue hours from location_config ────────────────────────────────
+  let venueHours: VenueHours = { open: 18, close: 2 }; // sensible default for nightlife
+  try {
+    const { data: locConfig } = await admin
+      .from('location_config')
+      .select('open_hour, close_hour')
+      .eq('venue_id', venueId)
+      .single();
+    if (locConfig) {
+      venueHours = {
+        open: locConfig.open_hour ?? 18,
+        close: locConfig.close_hour ?? 2,
+      };
+    }
+  } catch { /* location_config may not exist or have data */ }
+
+  // ── Fetch demand distribution curves for precise guest timing ─────────────
+  let demandIntervals: DemandInterval[] = [];
+  try {
+    const { data: curves } = await admin
+      .from('demand_distribution_curves')
+      .select('interval_start, pct_of_daily_covers')
+      .eq('venue_id', venueId)
+      .order('interval_start');
+    if (curves && curves.length > 0) {
+      demandIntervals = curves as DemandInterval[];
+    }
+  } catch { /* table may not exist */ }
+
   // Build lookup maps
   const posMap     = new Map(positions.map(p => [p.id, p]));
   const posNameMap = new Map(positions.map(p => [p.name, p]));
 
-  // Group employees by their position name
   const empByPos = new Map<string, typeof employees>();
   for (const emp of employees) {
     const pos = posMap.get(emp.primary_position_id);
@@ -583,11 +694,11 @@ export async function generateScheduleTS(
   let totalCost  = 0;
   let totalCovers  = 0;
   let totalRevenue = 0;
+  let serverShiftCount = 0;
 
-  // ── Per-day scheduling (uses demand_forecasts covers only) ────────────
+  // ── Per-day scheduling ────────────────────────────────────────────────────
   for (const day of weekDays) {
     const forecast = dateCoversMap[day.date] ?? null;
-
     if (!forecast || forecast.covers === 0) continue;
 
     totalCovers  += forecast.covers;
@@ -595,16 +706,34 @@ export async function generateScheduleTS(
 
     // ── Per-position wave assignment ──────────────────────────────────────
     for (const [posName, config] of Object.entries(POS_CONFIG)) {
-      let peakStaff: number;
+      const override = overrideMap.get(posName);
 
-      if (config.useBarModel) {
-        // Composite bartender model: covers × bev intensity × peak_pct / DPLH
-        const bevPct = bevIntensity.get(day.dow) ?? INDUSTRY_AVG_BEV_PCT;
-        peakStaff = calcBarStaff(forecast.covers, bevPct, venueClass, config.peakPct);
+      // CPLH priority: admin override > venue-derived > default
+      let effectiveCplh: number | undefined;
+      if (override?.cplh_override) {
+        effectiveCplh = override.cplh_override;
       } else {
-        const cplhOverride = venueCPLH.get(posName);
-        peakStaff = calcPeakStaff(forecast.covers, config, cplhOverride);
+        effectiveCplh = venueCPLH.get(posName) || config.cplh;
       }
+
+      // Calculate peak staff needed
+      let peakStaff: number;
+      if (config.useBarModel && !override?.cplh_override) {
+        const bevPct = bevIntensity.get(day.dow) ?? INDUSTRY_AVG_BEV_PCT;
+        const barGuestPct = override?.bar_guest_pct ?? 0;
+        peakStaff = calcBarStaff(forecast.covers, bevPct, venueClass, config.peakPct, barGuestPct);
+      } else {
+        peakStaff = calcPeakStaff(forecast.covers, config, effectiveCplh);
+      }
+
+      // Apply admin min/max staff constraints
+      if (override) {
+        if (override.min_staff > 0) peakStaff = Math.max(peakStaff, override.min_staff);
+        if (override.max_staff !== null && override.max_staff > 0) {
+          peakStaff = Math.min(peakStaff, override.max_staff);
+        }
+      }
+
       if (peakStaff === 0) continue;
 
       const posInfo = posNameMap.get(posName);
@@ -613,7 +742,21 @@ export async function generateScheduleTS(
       const pool = empByPos.get(posName) || [];
       if (pool.length === 0) continue;
 
-      const waves = distributeWaves(peakStaff, config);
+      // Build shift templates: admin override > demand curves > venue hours
+      let templates: ShiftTemplate[];
+      if (override?.shift_start && override?.shift_end) {
+        templates = buildTemplatesFromOverride(override);
+      } else {
+        const minShift = override?.min_shift_hours ??
+          (config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
+        templates = buildTemplatesFromVenueHours(
+          venueHours, config.category, posName, demandIntervals, minShift,
+        );
+      }
+
+      if (templates.length === 0) continue;
+
+      const waves = distributeWaves(peakStaff, templates, config.fixed);
 
       // ── Per-wave assignment ─────────────────────────────────────────────
       for (const wave of waves) {
@@ -660,10 +803,15 @@ export async function generateScheduleTS(
           totalHours += wave.template.hours;
           totalCost  += shiftCost;
           waveAssigned++;
+
+          if (posName === 'Server') serverShiftCount++;
         }
       }
     }
   }
+
+  // Compute service quality from actual staffing ratio (not hardcoded)
+  const serviceQuality = computeServiceQuality(totalCovers, serverShiftCount);
 
   // ── Save to DB ────────────────────────────────────────────────────────────
   let scheduleId: string | null = null;
@@ -685,7 +833,7 @@ export async function generateScheduleTS(
                                ? Math.round((totalCovers / totalHours) * 100) / 100
                                : 0,
         projected_revenue:   totalRevenue,
-        service_quality_score: 0.4,
+        service_quality_score: Math.round(serviceQuality * 100) / 100,
         optimization_mode:   'balanced',
         auto_generated:      true,
       })

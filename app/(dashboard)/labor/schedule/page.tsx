@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { createClient } from '@/lib/supabase/server';
 import { ScheduleCalendar } from '@/components/labor/ScheduleCalendar';
+import { ScheduleOverridePanel } from '@/components/labor/ScheduleOverridePanel';
 import { redirect } from 'next/navigation';
 
 export default async function SchedulePage({
@@ -90,6 +91,8 @@ export default async function SchedulePage({
           Failed to load schedule: {scheduleError.message}
         </div>
       )}
+
+      <ScheduleOverridePanel venueId={venueId} />
 
       <ScheduleCalendar
         schedule={scheduleError ? null : (schedule as any)}
