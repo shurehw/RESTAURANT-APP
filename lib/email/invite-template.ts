@@ -16,14 +16,14 @@ export interface InviteEmailParams {
   expiresInDays: number;
 }
 
-// ── Colors (matches nightly report template) ─────────────────────
+// ── Colors (matches site brand: opsos-slate + brass) ─────────────
 
 const COLORS = {
   bg: '#f8f9fa',
-  headerBg: '#1a1a2e',
+  headerBg: '#0A0A0A',
   headerText: '#ffffff',
-  sage: '#5b7a5e',
-  sageDark: '#4a6a4d',
+  brass: '#FF5A1F',
+  brassDark: '#EA4C0C',
   text: '#333333',
   textMuted: '#666666',
   border: '#e5e7eb',
@@ -82,7 +82,7 @@ export function renderInviteEmail(params: InviteEmailParams): string {
               <!-- Role Badge -->
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
                 <tr>
-                  <td style="background-color:${COLORS.sage};color:#ffffff;font-size:13px;font-weight:600;padding:6px 16px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px;">
+                  <td style="background-color:${COLORS.brass};color:#ffffff;font-size:13px;font-weight:600;padding:6px 16px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px;">
                     ${escapeHtml(roleName)}
                   </td>
                 </tr>
@@ -93,7 +93,7 @@ export function renderInviteEmail(params: InviteEmailParams): string {
                 <tr>
                   <td align="center">
                     <a href="${escapeHtml(inviteUrl)}"
-                       style="display:inline-block;background-color:${COLORS.sage};color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:8px;letter-spacing:0.3px;">
+                       style="display:inline-block;background-color:${COLORS.brass};color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:8px;letter-spacing:0.3px;">
                       Accept Invitation
                     </a>
                   </td>
