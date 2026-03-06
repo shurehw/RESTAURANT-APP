@@ -57,6 +57,7 @@ export function FOHStep({
     <div className="space-y-4">
       <FOHContextCard
         foh={labor?.foh ?? null}
+        boh={labor?.boh ?? null}
         netSales={netSales}
         totalLaborCost={labor?.labor_cost ?? 0}
         totalLaborPct={labor?.labor_pct ?? 0}

@@ -11,6 +11,7 @@ interface DeptData {
 
 interface Props {
   boh: DeptData | null;
+  foh: DeptData | null;
   netSales: number;
   totalLaborCost: number;
   totalLaborPct: number;
@@ -26,7 +27,7 @@ function fmt(v: number) {
   }).format(v);
 }
 
-export function BOHContextCard({ boh, netSales, totalLaborCost, totalLaborPct, laborExceptions }: Props) {
+export function BOHContextCard({ boh, foh, netSales, totalLaborCost, totalLaborPct, laborExceptions }: Props) {
   if (!boh) {
     return (
       <Card className="bg-muted/30 border-brass/20">
@@ -45,6 +46,7 @@ export function BOHContextCard({ boh, netSales, totalLaborCost, totalLaborPct, l
 
   const bohPct = netSales > 0 ? (boh.cost / netSales) * 100 : 0;
   const bohSplh = boh.hours > 0 ? netSales / boh.hours : 0;
+  const fohPct = foh && netSales > 0 ? (foh.cost / netSales) * 100 : 0;
 
   return (
     <Card className="bg-muted/30 border-brass/20">
@@ -59,7 +61,7 @@ export function BOHContextCard({ boh, netSales, totalLaborCost, totalLaborPct, l
           </span>
         </div>
 
-        {/* KPIs */}
+        {/* BOH KPIs — primary */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <div className="text-xl font-bold tabular-nums">{fmt(boh.cost)}</div>
@@ -83,9 +85,12 @@ export function BOHContextCard({ boh, netSales, totalLaborCost, totalLaborPct, l
           </div>
         </div>
 
-        {/* Total labor reference */}
-        <div className="text-xs text-muted-foreground">
-          Total labor: {fmt(totalLaborCost)} ({totalLaborPct.toFixed(1)}%)
+        {/* Labor summary — total + other dept reference */}
+        <div className="text-xs text-muted-foreground space-y-0.5">
+          <div>Total labor: {fmt(totalLaborCost)} ({totalLaborPct.toFixed(1)}%)</div>
+          {foh && (
+            <div>FOH: {fmt(foh.cost)} ({fohPct.toFixed(1)}%) · {foh.hours.toFixed(1)}h · {foh.employee_count} staff</div>
+          )}
         </div>
 
         {/* Labor exceptions alert */}
