@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useVenue } from '@/components/providers/VenueProvider';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { ContextBand, ContextBadge } from '@/components/ui/ContextBand';
 import {
   ChevronLeft,
@@ -173,7 +173,6 @@ export default function VenueHealthPage() {
               {venueId ? 'Detailed health breakdown' : 'Portfolio overview across all venues'}
             </p>
           </div>
-          <VenueQuickSwitcher />
         </div>
 
         {/* View Tabs + Date Nav */}

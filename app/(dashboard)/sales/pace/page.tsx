@@ -12,7 +12,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { useVenue } from '@/components/providers/VenueProvider';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -1563,7 +1563,6 @@ export default function LivePulsePage() {
 
       {/* Row 2 — Toolbar: venue, tabs, date controls */}
       <div className="flex flex-wrap items-center gap-2 border-b pb-3">
-        <VenueQuickSwitcher />
         <Tabs value={viewMode} onValueChange={handleViewChange}>
           <TabsList>
             <TabsTrigger value="today">Day</TabsTrigger>

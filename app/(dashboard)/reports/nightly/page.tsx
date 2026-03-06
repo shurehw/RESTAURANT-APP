@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { useVenue } from '@/components/providers/VenueProvider';
 import {
   Calendar,
@@ -1233,9 +1233,6 @@ export default function NightlyReportPage() {
           </div>
         </div>
       </div>
-
-      {/* Quick Venue Switcher */}
-      <VenueQuickSwitcher />
 
       {/* Period Date Range Banner */}
       {viewMode !== 'nightly' && factsSummary && (

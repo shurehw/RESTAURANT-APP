@@ -9,7 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { useVenue } from '@/components/providers/VenueProvider';
 import { AddPerformerModal } from '@/components/entertainment/AddPerformerModal';
 import { ScheduleBookingModal } from '@/components/entertainment/ScheduleBookingModal';
@@ -199,9 +199,6 @@ export default function EntertainmentPage() {
           </Button>
         </div>
       </div>
-
-      {/* Quick Venue Switcher - Only shows for multi-venue users */}
-      <VenueQuickSwitcher />
 
       {/* Loading State */}
       {loading && (

@@ -15,7 +15,7 @@ import {
 import { BulkInvoiceUploadButton } from "@/components/invoices/BulkInvoiceUploadButton";
 import { Download, Check, AlertCircle, CheckCircle, Zap, List, X, Search, Filter, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { VenueQuickSwitcher } from "@/components/ui/VenueQuickSwitcher";
+
 import { useVenue } from "@/components/providers/VenueProvider";
 import { Input } from "@/components/ui/input";
 import {
@@ -240,9 +240,6 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
           </Button>
         </div>
       </div>
-
-      {/* Quick Venue Switcher */}
-      <VenueQuickSwitcher />
 
       {/* Search and Filters */}
       <div className="mb-6 space-y-4">

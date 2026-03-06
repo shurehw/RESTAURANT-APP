@@ -15,7 +15,7 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { useVenue } from '@/components/providers/VenueProvider';
 import {
   ShieldAlert,
@@ -331,7 +331,6 @@ export default function PreshiftPage() {
                 />
                 Refresh
               </Button>
-              <VenueQuickSwitcher />
             </div>
           </div>
         </div>

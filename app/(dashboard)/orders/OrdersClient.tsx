@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { VenueQuickSwitcher } from "@/components/ui/VenueQuickSwitcher";
+
 import { useVenue } from "@/components/providers/VenueProvider";
 import {
   Table,
@@ -555,9 +555,6 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
           </SheetContent>
         </Sheet>
       </div>
-
-      {/* Quick Venue Switcher */}
-      <VenueQuickSwitcher />
 
       {/* Orders Table */}
       <div className="border border-border rounded-md overflow-hidden">

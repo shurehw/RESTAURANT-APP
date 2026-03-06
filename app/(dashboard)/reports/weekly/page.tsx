@@ -11,7 +11,7 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { useVenue } from '@/components/providers/VenueProvider';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -453,7 +453,6 @@ export default function WeeklyAgendaPage() {
               )}
             </>
           )}
-          <VenueQuickSwitcher />
         </div>
       </div>
 

@@ -9,7 +9,7 @@ import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { VenueQuickSwitcher } from '@/components/ui/VenueQuickSwitcher';
+
 import { useVenue } from '@/components/providers/VenueProvider';
 import {
   CheckCircle2,
@@ -180,7 +180,6 @@ export default function ControlPlanePage() {
                 AI-powered enforcement hub for manager accountability
               </p>
             </div>
-            <VenueQuickSwitcher />
           </div>
         </div>
       </div>

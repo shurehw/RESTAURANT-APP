@@ -35,8 +35,8 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
 
   return (
     <div className="flex items-center gap-3">
-      {/* Venue Selector (only if multiple venues) */}
-      {showVenueSelector && (
+      {/* Venue Selector (multi-venue) or Venue Label (single-venue) */}
+      {showVenueSelector ? (
         <div className="flex items-center gap-2 px-3 py-1.5 border border-opsos-sage-300 rounded-md bg-white hover:bg-opsos-sage-50 transition-colors">
           <Building2 className="w-4 h-4 text-opsos-sage-600" />
           <select
@@ -47,7 +47,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
               if (e.target.value === 'all') {
                 setSelectedVenue({
                   id: 'all',
-                  name: 'The h.wood Group',
+                  name: organizationName || 'All Venues',
                   location: null,
                   city: null,
                   state: null,
@@ -60,7 +60,7 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
               }
             }}
           >
-            <option value="all">The h.wood Group (All Venues)</option>
+            <option value="all">{organizationName || 'All Venues'}</option>
             <option disabled>──────────</option>
             {venues.map((venue) => (
               <option key={venue.id} value={venue.id}>
@@ -69,7 +69,12 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
             ))}
           </select>
         </div>
-      )}
+      ) : venues.length === 1 ? (
+        <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-opsos-sage-700 font-medium">
+          <Building2 className="w-4 h-4 text-opsos-sage-500" />
+          {venues[0].name}
+        </div>
+      ) : null}
 
       {/* Command Panel Trigger */}
       <CommandTrigger />
