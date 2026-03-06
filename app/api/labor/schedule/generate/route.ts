@@ -66,7 +66,12 @@ export async function POST(request: NextRequest) {
       }, { status: 422 });
     }
 
-    return NextResponse.json({ success: true, schedule_id: scheduleId, schedule });
+    return NextResponse.json({
+      success: true,
+      schedule_id: scheduleId,
+      schedule,
+      unfilled_positions: result.unfilledPositions || {},
+    });
   });
 }
 

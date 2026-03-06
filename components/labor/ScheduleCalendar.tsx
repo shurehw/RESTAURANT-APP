@@ -204,7 +204,14 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
       const data = await response.json();
 
       if (data.success) {
-        toast.success('Schedule generated');
+        // Show unfilled positions warning if any
+        const unfilled = data.unfilled_positions;
+        if (unfilled && Object.keys(unfilled).length > 0) {
+          const parts = Object.entries(unfilled).map(([pos, count]) => `${pos}: ${count} shifts`);
+          toast.warning(`Unfilled positions: ${parts.join(', ')}. Add employees or use "Add Shift".`, { duration: 8000 });
+        } else {
+          toast.success('Schedule generated');
+        }
         window.location.href = `/labor/schedule?week=${weekStart}&venue=${venueId}`;
       } else {
         toast.error(data.message || data.error || 'Schedule generation failed');
@@ -390,6 +397,14 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
     new Set(activeShifts.map((s) => s.position?.name || 'Unknown'))
   ).sort();
 
+  // --- Detect unfilled positions (in POS_CONFIG but missing from schedule) ---
+  const ALL_EXPECTED_POSITIONS = [
+    'Server', 'Bartender', 'Busser', 'Food Runner', 'Host', 'Barback',
+    'Line Cook', 'Prep Cook', 'Dishwasher',
+    'Sous Chef', 'Executive Chef', 'General Manager', 'Assistant Manager', 'Shift Manager',
+  ];
+  const missingPositions = ALL_EXPECTED_POSITIONS.filter(p => !positions.includes(p));
+
   return (
     <div className="space-y-4">
       {/* Header Controls */}
@@ -550,6 +565,17 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
           <Lock className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
             This schedule is <strong>published</strong>. To make changes, click <strong>Reopen for Edits</strong> — it will return to Draft so you can modify shifts and re-approve.
+          </span>
+        </div>
+      )}
+
+      {/* Unfilled positions banner */}
+      {missingPositions.length > 0 && (
+        <div className="flex items-start gap-2 px-4 py-3 bg-orange-50 border border-orange-200 rounded-lg text-sm text-orange-800">
+          <Users className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>
+            <strong>Unfilled positions:</strong> {missingPositions.join(', ')}
+            {' '}— No employees assigned. Use <strong>Add Shift (+)</strong> to manually add shifts for these roles.
           </span>
         </div>
       )}

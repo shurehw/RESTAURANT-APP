@@ -601,7 +601,7 @@ export async function generateScheduleTS(
   venueId: string,
   weekStart: string,
   save: boolean,
-): Promise<{ scheduleId: string | null; shiftCount: number; totalHours: number; totalCost: number }> {
+): Promise<{ scheduleId: string | null; shiftCount: number; totalHours: number; totalCost: number; unfilledPositions: Record<string, number> }> {
   const admin = createAdminClient();
 
   // Fetch positions for this venue
@@ -744,6 +744,7 @@ export async function generateScheduleTS(
   let totalCovers  = 0;
   let totalRevenue = 0;
   let serverShiftCount = 0;
+  const unfilledPositions = new Map<string, number>(); // positions needing staff
 
   // ── Per-day scheduling ────────────────────────────────────────────────────
   for (const day of weekDays) {
@@ -789,7 +790,7 @@ export async function generateScheduleTS(
       if (!posInfo) continue;
 
       const pool = empByPos.get(posName) || [];
-      if (pool.length === 0) continue;
+      const hasEmployees = pool.length > 0;
 
       // Build shift templates: admin override > demand curves > venue hours
       let templates: ShiftTemplate[];
@@ -809,6 +810,14 @@ export async function generateScheduleTS(
 
       // ── Per-wave assignment ─────────────────────────────────────────────
       for (const wave of waves) {
+        if (!hasEmployees) {
+          // No employees for this position — track as unfilled need
+          // Managers can add shifts via "Add Shift" dialog
+          if (!unfilledPositions.has(posName)) unfilledPositions.set(posName, 0);
+          unfilledPositions.set(posName, (unfilledPositions.get(posName) || 0) + wave.count);
+          continue;
+        }
+
         // Sort by fewest hours worked first (load balancing)
         pool.sort((a, b) => (empHours.get(a.id) || 0) - (empHours.get(b.id) || 0));
 
@@ -903,5 +912,11 @@ export async function generateScheduleTS(
     }
   }
 
-  return { scheduleId, shiftCount: shifts.length, totalHours, totalCost };
+  // Convert unfilledPositions map to plain object for JSON serialization
+  const unfilled: Record<string, number> = {};
+  for (const [pos, count] of unfilledPositions) {
+    unfilled[pos] = count;
+  }
+
+  return { scheduleId, shiftCount: shifts.length, totalHours, totalCost, unfilledPositions: unfilled };
 }

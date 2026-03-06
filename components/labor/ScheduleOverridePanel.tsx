@@ -25,21 +25,23 @@ interface PositionOverride {
   is_dirty: boolean;
 }
 
+// Default assumptions from POS_CONFIG in scheduler-lite.ts
+// These are shown as placeholders so admins can see what the scheduler uses
 const DEFAULT_POSITIONS = [
-  { name: 'Server',           category: 'FOH' },
-  { name: 'Bartender',        category: 'FOH' },
-  { name: 'Busser',           category: 'FOH' },
-  { name: 'Food Runner',      category: 'FOH' },
-  { name: 'Host',             category: 'FOH' },
-  { name: 'Barback',          category: 'FOH' },
-  { name: 'Line Cook',        category: 'BOH' },
-  { name: 'Prep Cook',        category: 'BOH' },
-  { name: 'Dishwasher',       category: 'BOH' },
-  { name: 'Sous Chef',        category: 'MGT' },
-  { name: 'Executive Chef',   category: 'MGT' },
-  { name: 'General Manager',  category: 'MGT' },
-  { name: 'Assistant Manager', category: 'MGT' },
-  { name: 'Shift Manager',    category: 'MGT' },
+  { name: 'Server',           category: 'FOH', defaultCplh: 13,  minStaff: 2, maxStaff: 12 },
+  { name: 'Bartender',        category: 'FOH', defaultCplh: 22,  minStaff: 1, maxStaff: 6 },
+  { name: 'Busser',           category: 'FOH', defaultCplh: 28,  minStaff: 1, maxStaff: 6 },
+  { name: 'Food Runner',      category: 'FOH', defaultCplh: 25,  minStaff: 1, maxStaff: 6 },
+  { name: 'Host',             category: 'FOH', defaultCplh: 28,  minStaff: 1, maxStaff: 4 },
+  { name: 'Barback',          category: 'FOH', defaultCplh: 35,  minStaff: 1, maxStaff: 4 },
+  { name: 'Line Cook',        category: 'BOH', defaultCplh: 21,  minStaff: 2, maxStaff: 8 },
+  { name: 'Prep Cook',        category: 'BOH', defaultCplh: 40,  minStaff: 1, maxStaff: 4 },
+  { name: 'Dishwasher',       category: 'BOH', defaultCplh: 28,  minStaff: 1, maxStaff: 4 },
+  { name: 'Sous Chef',        category: 'MGT', defaultCplh: null, minStaff: 1, maxStaff: 1, fixed: true },
+  { name: 'Executive Chef',   category: 'MGT', defaultCplh: null, minStaff: 1, maxStaff: 1, fixed: true },
+  { name: 'General Manager',  category: 'MGT', defaultCplh: null, minStaff: 1, maxStaff: 1, fixed: true },
+  { name: 'Assistant Manager', category: 'MGT', defaultCplh: null, minStaff: 1, maxStaff: 1, fixed: true },
+  { name: 'Shift Manager',    category: 'MGT', defaultCplh: 100, minStaff: 1, maxStaff: 2 },
 ];
 
 function emptyOverride(posName: string): PositionOverride {
@@ -253,7 +255,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
           {/* Toggle: Use Overrides vs Auto */}
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-400">
-              Override shift times, CPLH, and staffing limits per position. Leave blank to use auto-calculated values.
+              Gray placeholder values show current defaults. Override any field — leave blank to keep auto-calculated.
             </p>
             <button
               onClick={handleToggleOverrides}
@@ -281,10 +283,10 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                   <th className="text-left py-2 px-1 w-32">Position</th>
                   <th className="text-center py-2 px-1 w-20">Start</th>
                   <th className="text-center py-2 px-1 w-20">End</th>
-                  <th className="text-center py-2 px-1 w-16">CPLH</th>
-                  <th className="text-center py-2 px-1 w-14">Min</th>
-                  <th className="text-center py-2 px-1 w-14">Max</th>
-                  <th className="text-center py-2 px-1 w-16">Bar %</th>
+                  <th className="text-center py-2 px-1 w-16" title="Covers Per Labor Hour — lower = more staff per guest">CPLH</th>
+                  <th className="text-center py-2 px-1 w-14" title="Minimum staff scheduled regardless of covers">Min</th>
+                  <th className="text-center py-2 px-1 w-14" title="Maximum staff cap regardless of covers">Max</th>
+                  <th className="text-center py-2 px-1 w-16" title="Fraction of dining covers who are bar-only guests">Bar %</th>
                   <th className="text-center py-2 px-1 w-10"></th>
                 </tr>
               </thead>
@@ -303,6 +305,9 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                     >
                       <td className="py-1.5 px-1">
                         <span className={`font-medium ${catColor}`}>{override.position_name}</span>
+                        {'fixed' in pos && (pos as any).fixed && (
+                          <span className="ml-1 text-[9px] text-slate-500">(1/day)</span>
+                        )}
                       </td>
                       <td className="py-1.5 px-1">
                         <input
@@ -325,30 +330,30 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           type="number"
                           step="0.5"
                           min="1"
-                          placeholder="—"
+                          placeholder={pos.defaultCplh ? String(pos.defaultCplh) : 'fixed'}
                           value={override.cplh_override}
                           onChange={e => updateField(idx, 'cplh_override', e.target.value)}
-                          className="w-full bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5 text-white text-center text-xs focus:border-[#FF5A1F] focus:outline-none"
+                          className="w-full bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5 text-white text-center text-xs focus:border-[#FF5A1F] focus:outline-none placeholder:text-slate-500"
                         />
                       </td>
                       <td className="py-1.5 px-1">
                         <input
                           type="number"
                           min="0"
-                          placeholder="—"
+                          placeholder={String(pos.minStaff)}
                           value={override.min_staff}
                           onChange={e => updateField(idx, 'min_staff', e.target.value)}
-                          className="w-full bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5 text-white text-center text-xs focus:border-[#FF5A1F] focus:outline-none"
+                          className="w-full bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5 text-white text-center text-xs focus:border-[#FF5A1F] focus:outline-none placeholder:text-slate-500"
                         />
                       </td>
                       <td className="py-1.5 px-1">
                         <input
                           type="number"
                           min="0"
-                          placeholder="—"
+                          placeholder={String(pos.maxStaff)}
                           value={override.max_staff}
                           onChange={e => updateField(idx, 'max_staff', e.target.value)}
-                          className="w-full bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5 text-white text-center text-xs focus:border-[#FF5A1F] focus:outline-none"
+                          className="w-full bg-slate-700/50 border border-slate-600 rounded px-1 py-0.5 text-white text-center text-xs focus:border-[#FF5A1F] focus:outline-none placeholder:text-slate-500"
                         />
                       </td>
                       <td className="py-1.5 px-1">
@@ -384,7 +389,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
           {/* Actions */}
           <div className="flex items-center justify-between pt-2">
             <p className="text-[10px] text-slate-500">
-              Bar % = fraction of dining covers who are bar-only guests (e.g. 0.15 = 15%)
+              CPLH = Covers Per Labor Hour (lower = more staff). Min/Max = staff floor/cap per day. Bar % = bar-only guest fraction (0.15 = 15%).
             </p>
             <div className="flex gap-2">
               <Button
