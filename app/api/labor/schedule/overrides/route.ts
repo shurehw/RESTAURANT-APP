@@ -13,11 +13,12 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = await createClient();
+  // Return ALL overrides (active and inactive) so the UI can show saved values
+  // and display the correct toggle state
   const { data, error } = await supabase
     .from('schedule_position_overrides')
     .select('*')
     .eq('venue_id', venueId)
-    .eq('is_active', true)
     .order('position_name');
 
   if (error) {
@@ -33,10 +34,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { venue_id, overrides } = body;
+  const overrides = body.overrides;
 
-  if (!venue_id || !Array.isArray(overrides)) {
-    return NextResponse.json({ error: 'venue_id and overrides[] required' }, { status: 400 });
+  if (!Array.isArray(overrides) || overrides.length === 0) {
+    return NextResponse.json({ error: 'overrides[] required' }, { status: 400 });
+  }
+
+  // Get venue_id from the first override item
+  const venueId = overrides[0]?.venue_id;
+  if (!venueId) {
+    return NextResponse.json({ error: 'venue_id required in override items' }, { status: 400 });
   }
 
   const supabase = await createClient();
@@ -48,7 +55,7 @@ export async function POST(req: NextRequest) {
       .from('schedule_position_overrides')
       .upsert(
         {
-          venue_id,
+          venue_id: ov.venue_id || venueId,
           position_name: ov.position_name,
           shift_start: ov.shift_start || null,
           shift_end: ov.shift_end || null,
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
           min_staff: ov.min_staff ?? 0,
           max_staff: ov.max_staff || null,
           bar_guest_pct: ov.bar_guest_pct ?? 0,
-          is_active: true,
+          is_active: ov.is_active !== undefined ? ov.is_active : true,
           notes: ov.notes || null,
           updated_at: new Date().toISOString(),
         },
