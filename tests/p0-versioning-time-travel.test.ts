@@ -29,7 +29,7 @@ describe('P0: Settings Versioning & Time Travel', () => {
 
     expect(data1.version).toBe(1);
     expect(data1.market_tier_low_multiplier).toBe(0.95);
-    expect(new Date(data1.effective_from)).toBeLessThanOrEqual(new Date(queryDate1));
+    expect(new Date(data1.effective_from).getTime()).toBeLessThanOrEqual(new Date(queryDate1).getTime());
     expect(data1.effective_to).toBeNull(); // Or > queryDate1
 
     // Query at date 2 (July 2024) - should get version 2
@@ -65,7 +65,7 @@ describe('P0: Settings Versioning & Time Travel', () => {
     // P0 ASSERTION: Should get the version effective on that date
     expect(benchmarks.version).toBeDefined();
     expect(benchmarks.effective_date).toBeDefined();
-    expect(new Date(benchmarks.effective_date)).toBeLessThanOrEqual(new Date(asOfDate));
+    expect(new Date(benchmarks.effective_date).getTime()).toBeLessThanOrEqual(new Date(asOfDate).getTime());
   });
 
   it('should show version history for audit trail', async () => {
