@@ -7,6 +7,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import {
   DollarSign,
   ShieldAlert,
@@ -16,6 +17,8 @@ import {
   Crown,
   ChefHat,
   ClipboardCheck,
+  CheckCircle2,
+  X,
 } from 'lucide-react';
 import { StepIndicator, type StepConfig } from './StepIndicator';
 import { StepNavigation } from './StepNavigation';
@@ -405,8 +408,22 @@ export function AttestationStepper({
     && (!hasEntertainment || entertainmentComplete)
     && (!hasCulinary || culinaryComplete);
 
+  // ---------------------------------------------------------------------------
+  // Department mode: FOH/BOH buttons open a focused single-department sheet
+  // ---------------------------------------------------------------------------
+  const isDepartmentMode = initialStepId === 'foh' || initialStepId === 'boh';
+  const deptLabel = initialStepId === 'foh' ? 'FOH — Front of House' : 'BOH — Back of House';
+  const DeptIcon = initialStepId === 'foh' ? UserCheck : ChefHat;
+
   const isLastStep = currentStep === steps.length - 1;
   const activeStep = steps[currentStep];
+
+  // Department mode complete state
+  const deptComplete = initialStepId === 'foh'
+    ? adjustedCompletionState.foh === 'complete'
+    : initialStepId === 'boh'
+      ? adjustedCompletionState.boh === 'complete'
+      : false;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -414,71 +431,50 @@ export function AttestationStepper({
         side="right"
         className="w-full sm:max-w-2xl p-0 flex flex-col"
       >
-        <SheetTitle className="sr-only">Nightly Attestation</SheetTitle>
+        <SheetTitle className="sr-only">
+          {isDepartmentMode ? `${initialStepId === 'foh' ? 'FOH' : 'BOH'} Attestation` : 'Nightly Attestation'}
+        </SheetTitle>
         <SheetDescription className="sr-only">
-          Step-by-step attestation for {venueName} on {date}
+          {isDepartmentMode
+            ? `${initialStepId === 'foh' ? 'FOH' : 'BOH'} attestation for ${venueName} on ${date}`
+            : `Step-by-step attestation for ${venueName} on ${date}`}
         </SheetDescription>
 
-        {/* Header: Step indicator */}
-        <div className="shrink-0">
-          <div className="px-6 pt-4 pb-2">
-            <div className="text-xs text-muted-foreground">
-              {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-                weekday: 'short', month: 'short', day: 'numeric',
-              })}
+        {isDepartmentMode ? (
+          <>
+            {/* Department mode: simple header */}
+            <div className="shrink-0 px-6 pt-4 pb-3 border-b flex items-center gap-3">
+              <DeptIcon className="h-5 w-5 text-brass" />
+              <div className="flex-1">
+                <div className="text-sm font-semibold">{deptLabel}</div>
+                <div className="text-xs text-muted-foreground">
+                  {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric',
+                  })}
+                </div>
+              </div>
+              {deptComplete && (
+                <div className="flex items-center gap-1 text-sage text-xs font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Complete
+                </div>
+              )}
+              <button onClick={onClose} className="p-1 rounded-md hover:bg-muted">
+                <X className="h-4 w-4 text-muted-foreground" />
+              </button>
             </div>
-          </div>
-          <StepIndicator
-            steps={steps}
-            currentStep={currentStep}
-            onStepClick={setCurrentStep}
-          />
-        </div>
 
-        {/* Body: Active step */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              Loading attestation...
-            </div>
-          ) : !attestation ? (
-            <div className="flex items-center justify-center py-12 text-muted-foreground">
-              No attestation data available
-            </div>
-          ) : (
-            <>
-              {activeStep.id === 'revenue' && (
-                <RevenueStep
-                  triggers={triggers}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                  disabled={isLocked}
-                  netSales={reportSummary?.net_sales ?? 0}
-                  totalCovers={reportSummary?.total_covers ?? 0}
-                  totalComps={reportSummary?.total_comps ?? 0}
-                  forecast={factsSummary?.forecast}
-                  variance={factsSummary?.variance}
-                  foodSales={factsSummary?.food_sales || undefined}
-                  beverageSales={factsSummary?.beverage_sales || undefined}
-                  beveragePct={factsSummary?.beverage_pct}
-                />
-              )}
-              {activeStep.id === 'comps' && (
-                <CompsStep
-                  triggers={triggers}
-                  resolutions={compResolutions}
-                  onAdd={addCompResolution}
-                  disabled={isLocked}
-                  totalComps={reportSummary?.total_comps ?? 0}
-                  netSales={reportSummary?.net_sales ?? 0}
-                  exceptionSummary={compExceptions?.summary ?? null}
-                  reviewSummary={compReview?.summary ?? null}
-                  compsByReason={compsByReason}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                />
-              )}
-              {activeStep.id === 'foh' && (
+            {/* Department mode: single step content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  Loading attestation...
+                </div>
+              ) : !attestation ? (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  No attestation data available
+                </div>
+              ) : initialStepId === 'foh' ? (
                 <FOHStep
                   triggers={triggers}
                   attestation={attestation}
@@ -494,8 +490,7 @@ export function AttestationStepper({
                   shiftLog={shiftLog}
                   onShiftLogUpdate={setShiftLog}
                 />
-              )}
-              {activeStep.id === 'boh' && (
+              ) : (
                 <BOHStep
                   triggers={triggers}
                   attestation={attestation}
@@ -512,81 +507,188 @@ export function AttestationStepper({
                   onCulinaryLogUpdate={setCulinaryLog}
                 />
               )}
-              {activeStep.id === 'incidents' && (
-                <IncidentsStep
-                  triggers={triggers}
-                  incidents={incidents}
-                  onAdd={addIncident}
-                  disabled={isLocked}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                />
-              )}
-              {activeStep.id === 'coaching' && (
-                <CoachingStep
-                  actions={coachingActions}
-                  onAdd={addCoaching}
-                  disabled={isLocked}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                />
-              )}
-              {activeStep.id === 'guest' && (
-                <GuestStep
-                  notableGuests={notableGuests}
-                  peopleWeKnow={peopleWeKnow}
-                  attestation={attestation}
-                  onUpdate={updateField}
-                  disabled={isLocked}
-                />
-              )}
-              {activeStep.id === 'review' && (
-                <ReviewStep
-                  attestation={attestation}
-                  triggers={triggers}
-                  compResolutions={compResolutions}
-                  incidents={incidents}
-                  coachingActions={coachingActions}
-                  completionState={adjustedCompletionState}
-                  canSubmit={adjustedCanSubmit}
-                  isLocked={isLocked}
-                  submitting={submitting}
-                  error={error}
-                  onSubmit={handleSubmitAndClose}
-                  steps={steps}
-                  onStepClick={setCurrentStep}
-                  reportSummary={reportSummary}
-                  factsSummary={factsSummary}
-                  compExceptions={compExceptions}
-                  healthData={healthData}
-                  venueId={venueId}
-                  venueName={venueName}
-                  date={date}
-                  shiftLog={shiftLog}
-                  culinaryLog={culinaryLog}
-                  notableGuests={notableGuests}
-                  peopleWeKnow={peopleWeKnow}
-                  topItems={topItems}
-                  serverPerformance={serverPerformance}
-                  discountsTotal={discountsTotal}
-                  updateField={updateField}
-                />
-              )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Footer: Navigation */}
-        <div className="shrink-0">
-          <StepNavigation
-            currentStep={currentStep}
-            totalSteps={steps.length}
-            onBack={handleBack}
-            onNext={handleNext}
-            saving={saving}
-            isLastStep={isLastStep}
-          />
-        </div>
+            {/* Department mode: simple footer */}
+            <div className="shrink-0 border-t px-6 py-3 flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                {saving ? 'Saving...' : 'Auto-saved'}
+              </div>
+              <Button variant="outline" size="sm" onClick={onClose}>
+                Done
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Full stepper mode */}
+            <div className="shrink-0">
+              <div className="px-6 pt-4 pb-2">
+                <div className="text-xs text-muted-foreground">
+                  {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'short', month: 'short', day: 'numeric',
+                  })}
+                </div>
+              </div>
+              <StepIndicator
+                steps={steps}
+                currentStep={currentStep}
+                onStepClick={setCurrentStep}
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {loading ? (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  Loading attestation...
+                </div>
+              ) : !attestation ? (
+                <div className="flex items-center justify-center py-12 text-muted-foreground">
+                  No attestation data available
+                </div>
+              ) : (
+                <>
+                  {activeStep.id === 'revenue' && (
+                    <RevenueStep
+                      triggers={triggers}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                      disabled={isLocked}
+                      netSales={reportSummary?.net_sales ?? 0}
+                      totalCovers={reportSummary?.total_covers ?? 0}
+                      totalComps={reportSummary?.total_comps ?? 0}
+                      forecast={factsSummary?.forecast}
+                      variance={factsSummary?.variance}
+                      foodSales={factsSummary?.food_sales || undefined}
+                      beverageSales={factsSummary?.beverage_sales || undefined}
+                      beveragePct={factsSummary?.beverage_pct}
+                    />
+                  )}
+                  {activeStep.id === 'comps' && (
+                    <CompsStep
+                      triggers={triggers}
+                      resolutions={compResolutions}
+                      onAdd={addCompResolution}
+                      disabled={isLocked}
+                      totalComps={reportSummary?.total_comps ?? 0}
+                      netSales={reportSummary?.net_sales ?? 0}
+                      exceptionSummary={compExceptions?.summary ?? null}
+                      reviewSummary={compReview?.summary ?? null}
+                      compsByReason={compsByReason}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                    />
+                  )}
+                  {activeStep.id === 'foh' && (
+                    <FOHStep
+                      triggers={triggers}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                      disabled={isLocked}
+                      labor={factsSummary?.labor ?? null}
+                      netSales={reportSummary?.net_sales ?? 0}
+                      covers={reportSummary?.total_covers ?? 0}
+                      laborExceptions={laborExceptions}
+                      hasEntertainment={hasEntertainment}
+                      venueId={venueId}
+                      businessDate={date}
+                      shiftLog={shiftLog}
+                      onShiftLogUpdate={setShiftLog}
+                    />
+                  )}
+                  {activeStep.id === 'boh' && (
+                    <BOHStep
+                      triggers={triggers}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                      disabled={isLocked}
+                      labor={factsSummary?.labor ?? null}
+                      netSales={reportSummary?.net_sales ?? 0}
+                      covers={reportSummary?.total_covers ?? 0}
+                      laborExceptions={laborExceptions}
+                      hasCulinary={hasCulinary}
+                      venueId={venueId}
+                      businessDate={date}
+                      culinaryLog={culinaryLog}
+                      onCulinaryLogUpdate={setCulinaryLog}
+                    />
+                  )}
+                  {activeStep.id === 'incidents' && (
+                    <IncidentsStep
+                      triggers={triggers}
+                      incidents={incidents}
+                      onAdd={addIncident}
+                      disabled={isLocked}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                    />
+                  )}
+                  {activeStep.id === 'coaching' && (
+                    <CoachingStep
+                      actions={coachingActions}
+                      onAdd={addCoaching}
+                      disabled={isLocked}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                    />
+                  )}
+                  {activeStep.id === 'guest' && (
+                    <GuestStep
+                      notableGuests={notableGuests}
+                      peopleWeKnow={peopleWeKnow}
+                      attestation={attestation}
+                      onUpdate={updateField}
+                      disabled={isLocked}
+                    />
+                  )}
+                  {activeStep.id === 'review' && (
+                    <ReviewStep
+                      attestation={attestation}
+                      triggers={triggers}
+                      compResolutions={compResolutions}
+                      incidents={incidents}
+                      coachingActions={coachingActions}
+                      completionState={adjustedCompletionState}
+                      canSubmit={adjustedCanSubmit}
+                      isLocked={isLocked}
+                      submitting={submitting}
+                      error={error}
+                      onSubmit={handleSubmitAndClose}
+                      steps={steps}
+                      onStepClick={setCurrentStep}
+                      reportSummary={reportSummary}
+                      factsSummary={factsSummary}
+                      compExceptions={compExceptions}
+                      healthData={healthData}
+                      venueId={venueId}
+                      venueName={venueName}
+                      date={date}
+                      shiftLog={shiftLog}
+                      culinaryLog={culinaryLog}
+                      notableGuests={notableGuests}
+                      peopleWeKnow={peopleWeKnow}
+                      topItems={topItems}
+                      serverPerformance={serverPerformance}
+                      discountsTotal={discountsTotal}
+                      updateField={updateField}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="shrink-0">
+              <StepNavigation
+                currentStep={currentStep}
+                totalSteps={steps.length}
+                onBack={handleBack}
+                onNext={handleNext}
+                saving={saving}
+                isLastStep={isLastStep}
+              />
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
