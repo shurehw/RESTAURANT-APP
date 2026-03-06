@@ -92,6 +92,7 @@ const POS_CONFIG: Record<string, PosConfig> = {
   'Busser':      { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house' },
   'Food Runner': { cplh: 25, peakPct: PEAK_PCT, category: 'front_of_house' },
   'Host':        { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house' },
+  'Barback':     { cplh: 35, peakPct: PEAK_PCT, category: 'front_of_house' },
   // ── Back of House ───────────────────────────────────────────────────────
   'Line Cook':   { cplh: 21, peakPct: PEAK_PCT, category: 'back_of_house' },
   'Prep Cook':   { cplh: 40, peakPct: 0.15,     category: 'back_of_house' },
@@ -239,7 +240,7 @@ function buildTemplatesFromVenueHours(
   }
 
   // FOH positions
-  if (posName === 'Bartender') {
+  if (posName === 'Bartender' || posName === 'Barback') {
     const barStart = guestStart - 0.5;
     const barEnd = effectiveClose;
     const barSpan = barEnd - barStart;
@@ -293,13 +294,35 @@ function buildTemplatesFromOverride(override: AdminOverride): ShiftTemplate[] {
   ];
 }
 
-/** How many staff are needed to cover the peak hour for this position */
-function calcPeakStaff(covers: number, config: PosConfig, cplhOverride?: number): number {
+/**
+ * Dwell-time multiplier: accounts for guests still seated from previous intervals.
+ * With 90-min average dwell and 22% peak arrival rate, the peak hour has
+ * new arrivals PLUS guests who arrived in the prior 1-2 half-hour slots
+ * and are still occupying tables/seats.
+ *
+ * activePeakCovers = dailyCovers × peakPct × dwellMultiplier
+ *
+ * For a 90-min dwell: guests arriving at peak hour + ~60% of previous hour's arrivals
+ * are still seated → multiplier ≈ 1.5.
+ */
+function getDwellMultiplier(dwellMinutes: number): number {
+  if (dwellMinutes <= 30) return 1.0;
+  if (dwellMinutes <= 60) return 1.2;
+  if (dwellMinutes <= 90) return 1.5;
+  if (dwellMinutes <= 120) return 1.7;
+  return 1.8; // 2+ hour seatings
+}
+
+/**
+ * How many staff are needed to cover the peak hour for this position.
+ * dwellMultiplier adjusts for overlapping seated guests from previous intervals.
+ */
+function calcPeakStaff(covers: number, config: PosConfig, cplhOverride?: number, dwellMultiplier: number = 1.0): number {
   if (covers === 0) return 0;
   if (config.fixed) return 1;
   const cplh = cplhOverride || config.cplh;
-  if (config.ratio && !cplhOverride) return Math.max(1, Math.ceil(covers / config.ratio));
-  if (cplh) return Math.max(1, Math.ceil(covers * config.peakPct / cplh));
+  if (config.ratio && !cplhOverride) return Math.max(1, Math.ceil(covers * dwellMultiplier / config.ratio));
+  if (cplh) return Math.max(1, Math.ceil(covers * config.peakPct * dwellMultiplier / cplh));
   return 0;
 }
 
@@ -382,6 +405,7 @@ function calcBarStaff(
   venueClass: string | null,
   peakPct: number,
   barGuestPct: number = 0,
+  dwellMultiplier: number = 1.0,
 ): number {
   if (covers === 0) return 0;
 
@@ -390,8 +414,9 @@ function calcBarStaff(
 
   // Bar-only guests drink heavier (~3 drinks/person)
   const barGuests = Math.round(covers * barGuestPct);
-  const diningDrinks = covers * peakPct * drinksPerDiningCover;
-  const barDrinks = barGuests * peakPct * 3.0;
+  // Dwell multiplier: seated guests from previous intervals still drinking
+  const diningDrinks = covers * peakPct * dwellMultiplier * drinksPerDiningCover;
+  const barDrinks = barGuests * peakPct * dwellMultiplier * 3.0;
   const peakDrinks = diningDrinks + barDrinks;
 
   const dplh = VENUE_CLASS_DPLH[venueClass || ''] || DEFAULT_DPLH;
@@ -609,12 +634,13 @@ export async function generateScheduleTS(
   } catch { /* table may not exist yet */ }
   const overrideMap = new Map(adminOverrides.map(o => [o.position_name, o]));
 
-  // ── Fetch venue hours from location_config ────────────────────────────────
+  // ── Fetch venue hours + dwell time from location_config ────────────────────
   let venueHours: VenueHours = { open: 18, close: 2 }; // sensible default for nightlife
+  let dwellMinutes = 90; // default 90-min table turn
   try {
     const { data: locConfig } = await admin
       .from('location_config')
-      .select('open_hour, close_hour')
+      .select('open_hour, close_hour, default_dwell_minutes')
       .eq('venue_id', venueId)
       .single();
     if (locConfig) {
@@ -622,8 +648,10 @@ export async function generateScheduleTS(
         open: locConfig.open_hour ?? 18,
         close: locConfig.close_hour ?? 2,
       };
+      dwellMinutes = locConfig.default_dwell_minutes ?? 90;
     }
   } catch { /* location_config may not exist or have data */ }
+  const dwellMultiplier = getDwellMultiplier(dwellMinutes);
 
   // ── Fetch demand distribution curves for precise guest timing ─────────────
   let demandIntervals: DemandInterval[] = [];
@@ -742,9 +770,9 @@ export async function generateScheduleTS(
       if (config.useBarModel && !override?.cplh_override) {
         const bevPct = bevIntensity.get(day.dow) ?? INDUSTRY_AVG_BEV_PCT;
         const barGuestPct = override?.bar_guest_pct ?? 0;
-        peakStaff = calcBarStaff(forecast.covers, bevPct, venueClass, config.peakPct, barGuestPct);
+        peakStaff = calcBarStaff(forecast.covers, bevPct, venueClass, config.peakPct, barGuestPct, dwellMultiplier);
       } else {
-        peakStaff = calcPeakStaff(forecast.covers, config, effectiveCplh);
+        peakStaff = calcPeakStaff(forecast.covers, config, effectiveCplh, dwellMultiplier);
       }
 
       // Apply admin min/max staff constraints

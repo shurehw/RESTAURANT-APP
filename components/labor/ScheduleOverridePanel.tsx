@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Settings, Save, Trash2, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Settings, Save, Trash2, RotateCcw, ChevronDown, ChevronUp, ToggleLeft, ToggleRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface PositionOverride {
@@ -31,6 +31,7 @@ const DEFAULT_POSITIONS = [
   { name: 'Busser',           category: 'FOH' },
   { name: 'Food Runner',      category: 'FOH' },
   { name: 'Host',             category: 'FOH' },
+  { name: 'Barback',          category: 'FOH' },
   { name: 'Line Cook',        category: 'BOH' },
   { name: 'Prep Cook',        category: 'BOH' },
   { name: 'Dishwasher',       category: 'BOH' },
@@ -64,6 +65,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
   const [overrides, setOverrides] = useState<PositionOverride[]>([]);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [useOverrides, setUseOverrides] = useState(false); // toggle: override vs auto
 
   const loadOverrides = useCallback(async () => {
     try {
@@ -96,6 +98,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
       });
 
       setOverrides(merged);
+      setUseOverrides(Object.keys(saved).length > 0);
       setLoaded(true);
     } catch {
       // Table may not exist yet — just show empty form
@@ -139,7 +142,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
           min_staff: o.min_staff ? parseInt(o.min_staff, 10) : 0,
           max_staff: o.max_staff ? parseInt(o.max_staff, 10) : null,
           bar_guest_pct: o.bar_guest_pct ? parseFloat(o.bar_guest_pct) : 0,
-          is_active: true,
+          is_active: useOverrides,
         }));
 
       if (dirtyOverrides.length === 0) {
@@ -190,6 +193,43 @@ export function ScheduleOverridePanel({ venueId }: Props) {
   );
   const hasDirty = overrides.some(o => o.is_dirty);
 
+  const handleToggleOverrides = async () => {
+    const newState = !useOverrides;
+    setUseOverrides(newState);
+
+    // If turning off, deactivate all overrides in DB
+    if (!newState && hasAnyOverride) {
+      try {
+        const allOverrides = overrides
+          .filter(o => o.shift_start || o.shift_end || o.cplh_override || o.min_staff || o.max_staff || o.bar_guest_pct)
+          .map(o => ({
+            venue_id: venueId,
+            position_name: o.position_name,
+            shift_start: o.shift_start || null,
+            shift_end: o.shift_end || null,
+            min_shift_hours: o.min_shift_hours || 6,
+            cplh_override: o.cplh_override ? parseFloat(o.cplh_override) : null,
+            min_staff: o.min_staff ? parseInt(o.min_staff, 10) : 0,
+            max_staff: o.max_staff ? parseInt(o.max_staff, 10) : null,
+            bar_guest_pct: o.bar_guest_pct ? parseFloat(o.bar_guest_pct) : 0,
+            is_active: false,
+          }));
+        if (allOverrides.length > 0) {
+          await fetch('/api/labor/schedule/overrides', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ overrides: allOverrides }),
+          });
+        }
+        toast.success('Overrides disabled — scheduler will use auto-calculated values');
+      } catch {
+        toast.error('Failed to disable overrides');
+      }
+    } else if (newState) {
+      toast.info('Overrides enabled — fill in values and save');
+    }
+  };
+
   return (
     <Card className="border-slate-700 bg-slate-800/50">
       <button
@@ -210,12 +250,31 @@ export function ScheduleOverridePanel({ venueId }: Props) {
 
       {expanded && (
         <div className="px-4 pb-4 space-y-4">
-          <p className="text-xs text-slate-400">
-            Override shift times, CPLH, and staffing limits per position. Leave blank to use auto-calculated values.
-          </p>
+          {/* Toggle: Use Overrides vs Auto */}
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-slate-400">
+              Override shift times, CPLH, and staffing limits per position. Leave blank to use auto-calculated values.
+            </p>
+            <button
+              onClick={handleToggleOverrides}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-md transition-colors text-xs font-medium"
+            >
+              {useOverrides ? (
+                <>
+                  <ToggleRight className="h-5 w-5 text-[#FF5A1F]" />
+                  <span className="text-[#FF5A1F]">Overrides ON</span>
+                </>
+              ) : (
+                <>
+                  <ToggleLeft className="h-5 w-5 text-slate-500" />
+                  <span className="text-slate-500">Overrides OFF (Auto)</span>
+                </>
+              )}
+            </button>
+          </div>
 
-          {/* Table header */}
-          <div className="overflow-x-auto">
+          {/* Table */}
+          <div className={`overflow-x-auto transition-opacity ${useOverrides ? '' : 'opacity-40 pointer-events-none'}`}>
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-slate-400 border-b border-slate-700">
@@ -340,7 +399,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
               <Button
                 size="sm"
                 onClick={handleSave}
-                disabled={saving || !hasDirty}
+                disabled={saving || !hasDirty || !useOverrides}
                 className="bg-[#FF5A1F] hover:bg-[#FF5A1F]/80 text-white text-xs"
               >
                 <Save className="h-3 w-3 mr-1" />
