@@ -156,12 +156,33 @@ function buildTemplatesFromVenueHours(
 
   // Use demand curves to find actual guest arrival/departure times
   if (demandIntervals && demandIntervals.length > 0) {
-    const significant = demandIntervals.filter(d => d.pct_of_daily_covers > 2.0);
+    // Curves are stored as 0-1 fractions (e.g. 0.087 = 8.7% of daily covers)
+    const significant = demandIntervals.filter(d => d.pct_of_daily_covers > 0.02);
     if (significant.length > 0) {
-      const firstInterval = significant[0].interval_start;
-      const lastInterval = significant[significant.length - 1].interval_start;
-      guestStart = parseInt(firstInterval.split(':')[0], 10);
-      guestEnd = parseInt(lastInterval.split(':')[0], 10) + 1;
+      // Intervals are sorted by clock time (00:00 before 18:00), but nightlife venues
+      // have guests from e.g. 18:00 through 01:30. We need to separate "evening" intervals
+      // (>= venue open hour) from "after-midnight" intervals (< venue open hour, typically < 6AM).
+      const eveningIntervals = significant.filter(d => {
+        const h = parseInt(d.interval_start.split(':')[0], 10);
+        return h >= 12; // PM intervals
+      });
+      const afterMidnight = significant.filter(d => {
+        const h = parseInt(d.interval_start.split(':')[0], 10);
+        return h < 6; // after-midnight intervals (00:00 - 05:30)
+      });
+
+      if (eveningIntervals.length > 0) {
+        guestStart = parseInt(eveningIntervals[0].interval_start.split(':')[0], 10);
+      }
+      if (afterMidnight.length > 0) {
+        // Last after-midnight interval determines closing time
+        const lastAM = afterMidnight[afterMidnight.length - 1];
+        guestEnd = parseInt(lastAM.interval_start.split(':')[0], 10) + 1;
+      } else if (eveningIntervals.length > 0) {
+        // No after-midnight guests — close based on last evening interval
+        const lastEve = eveningIntervals[eveningIntervals.length - 1];
+        guestEnd = parseInt(lastEve.interval_start.split(':')[0], 10) + 1;
+      }
     }
   }
 
