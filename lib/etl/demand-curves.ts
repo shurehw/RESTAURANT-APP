@@ -94,7 +94,8 @@ export async function computeDistributionCurves(
   const openHour: number = lcRow?.open_hour ?? 15; // default 3 PM
 
   // 2. Query TipSee for check-level data bucketed into 30-min intervals
-  //    Exclude checks opened before venue opening hour (staff meals, test checks)
+  //    Exclude checks in the dead zone (5 AM → open_hour). This keeps both
+  //    evening service (open_hour → midnight) and late-night (midnight → 5 AM).
   const endDate = new Date().toISOString().split('T')[0];
   const startDate = new Date(Date.now() - lookbackDays * 86400000).toISOString().split('T')[0];
 
@@ -112,7 +113,8 @@ export async function computeDistributionCurves(
       AND trading_day >= $3::date
       AND trading_day <= $4::date
       AND guest_count > 0
-      AND EXTRACT(HOUR FROM open_time AT TIME ZONE $2) >= $5
+      AND NOT (EXTRACT(HOUR FROM open_time AT TIME ZONE $2) >= 5
+               AND EXTRACT(HOUR FROM open_time AT TIME ZONE $2) < $5)
     GROUP BY trading_day, interval_start
     ORDER BY trading_day, interval_start`,
     [tipseeLocationUuid, timezone, startDate, endDate, openHour]
