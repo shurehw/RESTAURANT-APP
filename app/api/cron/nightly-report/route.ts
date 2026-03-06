@@ -40,9 +40,9 @@ function verifyCronSecret(request: NextRequest): boolean {
 // ── Business Date ────────────────────────────────────────────────
 
 function getYesterday(): string {
-  const now = new Date();
-  // Before 5 AM UTC? Use day-before-yesterday (business date logic)
-  const d = new Date(now);
+  // Get today in Pacific time first, then subtract 1 day
+  const todayPT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+  const d = new Date(todayPT + 'T12:00:00');
   d.setDate(d.getDate() - 1);
   return d.toISOString().split('T')[0];
 }

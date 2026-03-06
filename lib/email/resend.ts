@@ -17,3 +17,4 @@ export function getResendClient(): Resend {
 }
 
 export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'reports@prime-cost.com';
+

@@ -30,6 +30,7 @@ export interface NightlyEmailParams {
   venues: VenueReport[];
   appUrl: string;
   logoUrl?: string | null;
+  aiSummaries?: Map<string, string>;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -375,6 +376,16 @@ function renderVenueSection(venue: VenueReport, isMultiVenue: boolean): string {
       </h2>`
     : '';
 
+  // Multi-venue: compact view (KPIs + categories only)
+  // Single-venue: full detail
+  if (isMultiVenue) {
+    return `
+      ${header}
+      ${renderSummaryKPIs(venue.report, venue.laborData)}
+      ${renderCategoryBreakdown(venue.report.salesByCategory)}
+    `;
+  }
+
   return `
     ${header}
     ${renderSummaryKPIs(venue.report, venue.laborData)}
@@ -389,8 +400,10 @@ function renderVenueSection(venue: VenueReport, isMultiVenue: boolean): string {
 
 // ── Consolidated Summary ─────────────────────────────────────────
 
-function renderConsolidatedSummary(venues: VenueReport[]): string {
+function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<string, string>): string {
   if (venues.length <= 1) return '';
+
+  const COL_COUNT = 8;
 
   const totals = venues.reduce(
     (acc, v) => {
@@ -406,58 +419,74 @@ function renderConsolidatedSummary(venues: VenueReport[]): string {
     { net_sales: 0, checks: 0, covers: 0, comps: 0, labor_cost: 0 }
   );
 
-  const avgCheck = totals.checks > 0 ? totals.net_sales / totals.checks : 0;
-  const laborPct = totals.net_sales > 0 ? (totals.labor_cost / totals.net_sales) * 100 : 0;
+  const totalAvgCheck = totals.checks > 0 ? totals.net_sales / totals.checks : 0;
+  const totalCompPct = totals.net_sales > 0 ? (totals.comps / (totals.net_sales + totals.comps)) * 100 : 0;
+  const totalLaborPct = totals.net_sales > 0 ? (totals.labor_cost / totals.net_sales) * 100 : 0;
 
-  const rows = venues
-    .map(
-      (v) => `
+  // Sort venues by net sales descending
+  const sorted = [...venues].sort(
+    (a, b) => b.report.summary.net_sales - a.report.summary.net_sales
+  );
+
+  const rows = sorted
+    .map((v) => {
+      const s = v.report.summary;
+      const avgCheck = s.total_checks > 0 ? s.net_sales / s.total_checks : 0;
+      const compPct = s.net_sales > 0 ? (s.total_comps / (s.net_sales + s.total_comps)) * 100 : 0;
+      const summary = aiSummaries?.get(v.venueId);
+      const summaryRow = summary
+        ? `<tr>
+            <td colspan="${COL_COUNT}" style="padding: 4px 12px 12px; font-size: 12px; color: ${COLORS.textMuted}; font-style: italic; border-bottom: 1px solid ${COLORS.border};">
+              ${summary}
+            </td>
+          </tr>`
+        : '';
+      return `
       <tr>
         <td style="${TD_STYLE} font-weight: 600;">${v.venueName}</td>
-        <td style="${TD_RIGHT}">${fmt(v.report.summary.net_sales)}</td>
-        <td style="${TD_RIGHT}">${num(v.report.summary.total_checks)}</td>
-        <td style="${TD_RIGHT}">${num(v.report.summary.total_covers)}</td>
-        <td style="${TD_RIGHT}">${fmt(v.report.summary.total_comps)}</td>
+        <td style="${TD_RIGHT}">${fmt(s.net_sales)}</td>
+        <td style="${TD_RIGHT}">${num(s.total_checks)}</td>
+        <td style="${TD_RIGHT}">${num(s.total_covers)}</td>
+        <td style="${TD_RIGHT}">${fmtDecimal(avgCheck)}</td>
+        <td style="${TD_RIGHT}">${fmt(s.total_comps)}</td>
+        <td style="${TD_RIGHT}">${pct(compPct)}</td>
         <td style="${TD_RIGHT}">${v.laborData ? pct(v.laborData.labor_pct) : '—'}</td>
-      </tr>`
-    )
+      </tr>${summaryRow}`;
+    })
     .join('');
 
+  const totalsRow = `
+    <tr style="background-color: ${COLORS.accentLight}; font-weight: 700;">
+      <td style="${TD_STYLE} font-weight: 700; border-top: 2px solid ${COLORS.accent};">TOTAL</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${fmt(totals.net_sales)}</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${num(totals.checks)}</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${num(totals.covers)}</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${fmtDecimal(totalAvgCheck)}</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${fmt(totals.comps)}</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${pct(totalCompPct)}</td>
+      <td style="${TD_RIGHT} font-weight: 700; border-top: 2px solid ${COLORS.accent};">${pct(totalLaborPct)}</td>
+    </tr>`;
+
   return `
-    <div style="background: ${COLORS.accentLight}; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-      <h2 style="font-size: 16px; font-weight: 700; color: ${COLORS.dark}; margin: 0 0 16px;">Portfolio Summary</h2>
-      <table style="width: 100%; margin-bottom: 12px;">
-        <tr>
-          <td style="padding: 4px 12px; text-align: center;">
-            <div style="font-size: 11px; color: ${COLORS.textMuted}; text-transform: uppercase;">Total Net Sales</div>
-            <div style="font-size: 22px; font-weight: 700; color: ${COLORS.dark};">${fmt(totals.net_sales)}</div>
-          </td>
-          <td style="padding: 4px 12px; text-align: center;">
-            <div style="font-size: 11px; color: ${COLORS.textMuted}; text-transform: uppercase;">Total Checks</div>
-            <div style="font-size: 22px; font-weight: 700; color: ${COLORS.dark};">${num(totals.checks)}</div>
-          </td>
-          <td style="padding: 4px 12px; text-align: center;">
-            <div style="font-size: 11px; color: ${COLORS.textMuted}; text-transform: uppercase;">Avg Check</div>
-            <div style="font-size: 22px; font-weight: 700; color: ${COLORS.dark};">${fmtDecimal(avgCheck)}</div>
-          </td>
-          <td style="padding: 4px 12px; text-align: center;">
-            <div style="font-size: 11px; color: ${COLORS.textMuted}; text-transform: uppercase;">Total Labor</div>
-            <div style="font-size: 22px; font-weight: 700; color: ${COLORS.dark};">${pct(laborPct)}</div>
-          </td>
-        </tr>
-      </table>
-      <table style="${TABLE_STYLE}">
+    <div style="margin-bottom: 32px;">
+      <h2 style="font-size: 18px; font-weight: 700; color: ${COLORS.dark}; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.accent};">Portfolio Summary</h2>
+      <table style="${TABLE_STYLE} margin-bottom: 0;">
         <thead>
           <tr>
             <th style="${TH_STYLE}">Venue</th>
             <th style="${TH_RIGHT}">Net Sales</th>
             <th style="${TH_RIGHT}">Checks</th>
             <th style="${TH_RIGHT}">Covers</th>
+            <th style="${TH_RIGHT}">Avg Check</th>
             <th style="${TH_RIGHT}">Comps</th>
+            <th style="${TH_RIGHT}">Comp %</th>
             <th style="${TH_RIGHT}">Labor %</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>
+          ${rows}
+          ${totalsRow}
+        </tbody>
       </table>
     </div>`;
 }
@@ -465,7 +494,7 @@ function renderConsolidatedSummary(venues: VenueReport[]): string {
 // ── Main Renderer ────────────────────────────────────────────────
 
 export function renderNightlyReportEmail(params: NightlyEmailParams): string {
-  const { orgName, businessDate, venues, appUrl, logoUrl } = params;
+  const { orgName, businessDate, venues, appUrl, logoUrl, aiSummaries } = params;
   const isMultiVenue = venues.length > 1;
   const dateDisplay = formatDate(businessDate);
 
@@ -516,8 +545,7 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
           <!-- Body -->
           <tr>
             <td style="background-color: ${COLORS.white}; padding: 24px 32px;">
-              ${isMultiVenue ? renderConsolidatedSummary(venues) : ''}
-              ${venuesSections}
+              ${isMultiVenue ? renderConsolidatedSummary(venues, aiSummaries) : venuesSections}
             </td>
           </tr>
 
@@ -537,7 +565,7 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
               <p style="font-size: 12px; color: ${COLORS.textMuted}; margin: 0;">
                 This automated report was generated by OpSOS.
                 To manage your subscription, visit
-                <a href="${appUrl}/settings/organization" style="color: ${COLORS.accent};">Organization Settings</a>.
+                <a href="${appUrl}/admin/settings" style="color: ${COLORS.accent};">Organization Settings</a>.
               </p>
             </td>
           </tr>
