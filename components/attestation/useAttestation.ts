@@ -140,29 +140,45 @@ export function useAttestation(
   // -----------------------------------------------------------------------
   // Update attestation fields (auto-save)
   // -----------------------------------------------------------------------
+  // Debounce timer ref for auto-save
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFieldsRef = useRef<Partial<NightlyAttestation>>({});
+
   const updateField = useCallback(
-    async (fields: Partial<NightlyAttestation>) => {
+    (fields: Partial<NightlyAttestation>) => {
       if (!attestation?.id) return;
-      setSaving(true);
-      try {
-        const res = await fetch(`/api/attestation/${attestation.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(fields),
-        });
 
-        if (!res.ok) {
-          throw new Error(await extractError(res, 'Failed to save'));
+      // Optimistic local update — keeps inputs responsive
+      setAttestation((prev) => prev ? { ...prev, ...fields } : prev);
+
+      // Accumulate pending fields and debounce the API save
+      pendingFieldsRef.current = { ...pendingFieldsRef.current, ...fields };
+
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(async () => {
+        const toSave = { ...pendingFieldsRef.current };
+        pendingFieldsRef.current = {};
+        setSaving(true);
+        try {
+          const res = await fetch(`/api/attestation/${attestation.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(toSave),
+          });
+
+          if (!res.ok) {
+            throw new Error(await extractError(res, 'Failed to save'));
+          }
+
+          // Don't overwrite local state with server response —
+          // local optimistic state is already up to date
+        } catch (err: any) {
+          setError(err.message);
+        } finally {
+          setSaving(false);
         }
-
-        const { data } = await res.json();
-        setAttestation(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setSaving(false);
-      }
+      }, 600);
     },
     [attestation?.id],
   );
