@@ -107,6 +107,64 @@ const POS_CONFIG: Record<string, PosConfig> = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+/** Map JS day-of-week (0=Sun) to demand_distribution_curves.day_type */
+function dowToDayType(dow: number): string {
+  switch (dow) {
+    case 0: return 'sunday';
+    case 5: return 'friday';
+    case 6: return 'saturday';
+    default: return 'weekday'; // Mon-Thu
+  }
+}
+
+/**
+ * Walk 30-min demand intervals chronologically and find the decimal hour
+ * where cumulative pct_of_daily_covers crosses the given threshold.
+ *
+ * For midnight-crossing venues (e.g. open=18, close=2), evening intervals
+ * are sorted before after-midnight intervals.
+ *
+ * Returns null if curves are empty or threshold is never reached,
+ * which triggers geometric midpoint fallback in the caller.
+ */
+function findDemandVelocitySplit(
+  intervals: DemandInterval[],
+  threshold: number,
+  venueOpenHour: number,
+): number | null {
+  if (!intervals || intervals.length === 0) return null;
+
+  // Sort so evening (>=12) comes before after-midnight (<6).
+  // Within each group, sort by clock time ascending.
+  const sorted = [...intervals].sort((a, b) => {
+    const ha = parseInt(a.interval_start.split(':')[0], 10);
+    const hb = parseInt(b.interval_start.split(':')[0], 10);
+    const aIsEvening = ha >= 12;
+    const bIsEvening = hb >= 12;
+    if (aIsEvening && !bIsEvening) return -1;
+    if (!aIsEvening && bIsEvening) return 1;
+    const ma = parseInt(a.interval_start.split(':')[1] || '0', 10);
+    const mb = parseInt(b.interval_start.split(':')[1] || '0', 10);
+    return (ha * 60 + ma) - (hb * 60 + mb);
+  });
+
+  let cumulative = 0;
+  for (const interval of sorted) {
+    cumulative += interval.pct_of_daily_covers;
+    if (cumulative >= threshold) {
+      const h = parseInt(interval.interval_start.split(':')[0], 10);
+      const m = parseInt(interval.interval_start.split(':')[1] || '0', 10);
+      let decimalHour = h + m / 60;
+      // After-midnight intervals: add 24 to stay consistent with effectiveClose convention
+      if (decimalHour < 12 && venueOpenHour >= 12) {
+        decimalHour += 24;
+      }
+      return decimalHour;
+    }
+  }
+  return null;
+}
+
 /** Convert decimal hour (e.g. 18.5) to HH:MM string */
 function hourToHHMM(h: number): string {
   const normalized = ((h % 24) + 24) % 24;
@@ -249,10 +307,23 @@ function buildTemplatesFromVenueHours(
         { label: 'main', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barSpan) },
       ];
     }
-    const midpoint = barStart + Math.floor(barSpan / 2);
+
+    // Demand-velocity split: night shift starts 30 min before the
+    // interval where cumulative covers cross 35% of daily total.
+    const BAR_SPLIT_THRESHOLD = 0.35;
+    const velocitySplit = findDemandVelocitySplit(demandIntervals ?? [], BAR_SPLIT_THRESHOLD, venueHours.open);
+    let nightStart: number;
+    if (velocitySplit !== null) {
+      nightStart = velocitySplit - 0.5;
+      nightStart = Math.min(nightStart, barEnd - minHours);   // enough time before close
+      nightStart = Math.max(nightStart, barStart + minHours);  // after day shift minimum
+    } else {
+      nightStart = barStart + Math.floor(barSpan / 2);
+    }
+
     return [
       { label: 'day',   type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barStart + minHours), hours: minHours },
-      { label: 'night', type: 'late_night', start: hourToHHMM(midpoint), end: hourToHHMM(barEnd), hours: Math.max(minHours, barEnd - midpoint) },
+      { label: 'night', type: 'late_night', start: hourToHHMM(nightStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barEnd - nightStart) },
     ];
   }
 
@@ -268,15 +339,47 @@ function buildTemplatesFromVenueHours(
   }
 
   if (fohSpan <= minHours * 2) {
-    const wave2Start = fohEnd - minHours;
+    // 2-wave: demand-velocity at 40% cumulative covers
+    const FOH_2WAVE_THRESHOLD = 0.40;
+    const velocitySplit = findDemandVelocitySplit(demandIntervals ?? [], FOH_2WAVE_THRESHOLD, venueHours.open);
+    let wave2Start: number;
+    if (velocitySplit !== null) {
+      wave2Start = velocitySplit - 0.5;
+      wave2Start = Math.min(wave2Start, fohEnd - minHours);
+      wave2Start = Math.max(wave2Start, fohStart + minHours);
+    } else {
+      wave2Start = fohEnd - minHours;
+    }
     return [
       { label: 'early', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohStart + minHours), hours: minHours },
-      { label: 'late',  type: 'late_night', start: hourToHHMM(wave2Start), end: hourToHHMM(fohEnd), hours: minHours },
+      { label: 'late',  type: 'late_night', start: hourToHHMM(wave2Start), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohEnd - wave2Start) },
     ];
   }
 
-  const wave2Start = fohStart + Math.floor(fohSpan * 0.3);
-  const wave3Start = fohEnd - minHours;
+  // 3-wave: demand-velocity at 30% (wave 2) and 65% (wave 3)
+  const FOH_WAVE2_THRESHOLD = 0.30;
+  const FOH_WAVE3_THRESHOLD = 0.65;
+  const velocity2 = findDemandVelocitySplit(demandIntervals ?? [], FOH_WAVE2_THRESHOLD, venueHours.open);
+  const velocity3 = findDemandVelocitySplit(demandIntervals ?? [], FOH_WAVE3_THRESHOLD, venueHours.open);
+
+  let wave2Start: number;
+  if (velocity2 !== null) {
+    wave2Start = velocity2 - 0.5;
+    wave2Start = Math.max(wave2Start, fohStart + 1);
+    wave2Start = Math.min(wave2Start, fohEnd - minHours * 2);
+  } else {
+    wave2Start = fohStart + Math.floor(fohSpan * 0.3);
+  }
+
+  let wave3Start: number;
+  if (velocity3 !== null) {
+    wave3Start = velocity3 - 0.5;
+    wave3Start = Math.max(wave3Start, wave2Start + minHours);
+    wave3Start = Math.min(wave3Start, fohEnd - minHours);
+  } else {
+    wave3Start = fohEnd - minHours;
+  }
+
   return [
     { label: 'early', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohStart + minHours), hours: minHours },
     { label: 'main',  type: classifyShiftType(wave2Start), start: hourToHHMM(wave2Start), end: hourToHHMM(wave2Start + minHours), hours: minHours },
@@ -677,16 +780,32 @@ export async function generateScheduleTS(
   } catch { /* location_config may not exist or have data */ }
   const dwellMultiplier = getDwellMultiplier(dwellMinutes);
 
-  // ── Fetch demand distribution curves for precise guest timing ─────────────
-  let demandIntervals: DemandInterval[] = [];
+  // ── Fetch demand distribution curves grouped by day_type ──────────────────
+  const demandCurvesByDayType = new Map<string, DemandInterval[]>();
+  let demandIntervalsFallback: DemandInterval[] = [];
   try {
     const { data: curves } = await admin
       .from('demand_distribution_curves')
-      .select('interval_start, pct_of_daily_covers')
+      .select('day_type, interval_start, pct_of_daily_covers')
       .eq('venue_id', venueId)
       .order('interval_start');
     if (curves && curves.length > 0) {
-      demandIntervals = curves as DemandInterval[];
+      for (const c of curves as any[]) {
+        const dt = c.day_type as string;
+        if (!demandCurvesByDayType.has(dt)) demandCurvesByDayType.set(dt, []);
+        demandCurvesByDayType.get(dt)!.push({
+          interval_start: c.interval_start,
+          pct_of_daily_covers: c.pct_of_daily_covers,
+        });
+      }
+      // Fallback: use the day_type with the most intervals
+      let maxLen = 0;
+      for (const [, intervals] of demandCurvesByDayType) {
+        if (intervals.length > maxLen) {
+          maxLen = intervals.length;
+          demandIntervalsFallback = intervals;
+        }
+      }
     }
   } catch { /* table may not exist */ }
 
@@ -824,8 +943,12 @@ export async function generateScheduleTS(
       } else {
         const minShift = override?.min_shift_hours ??
           (config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
+        // Select demand intervals for this day's day_type (weekday/friday/saturday/sunday)
+        const dayType = dowToDayType(day.dow);
+        const dayDemandIntervals = demandCurvesByDayType.get(dayType)
+          ?? (demandIntervalsFallback.length > 0 ? demandIntervalsFallback : undefined);
         templates = buildTemplatesFromVenueHours(
-          venueHours, config.category, posName, demandIntervals, minShift,
+          venueHours, config.category, posName, dayDemandIntervals, minShift,
         );
       }
 
