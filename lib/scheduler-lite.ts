@@ -319,9 +319,9 @@ function buildTemplatesFromVenueHours(
     // Opener arrives for setup, volume bartender arrives when demand builds.
     // Both work through close. distributeWaves 40/60 → fewer openers, more volume.
     if (barSpan <= 10) {
-      // Volume start: use demand velocity (20% cumulative) or 1h after doors open
-      const BAR_VOLUME_THRESHOLD = 0.20;
-      const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], BAR_VOLUME_THRESHOLD, venueHours.open);
+      // Volume start: when demand ramps (20% cumulative) or 1h after doors
+      const BAR_VOLUME_START_THRESHOLD = 0.20;
+      const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], BAR_VOLUME_START_THRESHOLD, venueHours.open);
       let volumeStart: number;
       if (velocityStart !== null) {
         volumeStart = velocityStart;
@@ -331,9 +331,22 @@ function buildTemplatesFromVenueHours(
         volumeStart = guestStart + 1;  // 1h after doors open
       }
 
+      // Volume end: when demand tails off (85% cumulative + 30 min) or close
+      // Opener stays through close for breakdown; volume cuts when it slows down.
+      const BAR_VOLUME_END_THRESHOLD = 0.85;
+      const velocityEnd = findDemandVelocitySplit(demandIntervals ?? [], BAR_VOLUME_END_THRESHOLD, venueHours.open);
+      let volumeEnd: number;
+      if (velocityEnd !== null) {
+        volumeEnd = velocityEnd + 0.5;  // 30 min after 85% to cover last drinks
+        volumeEnd = Math.max(volumeEnd, volumeStart + minHours);   // minimum shift length
+        volumeEnd = Math.min(volumeEnd, barEnd);                    // never past close
+      } else {
+        volumeEnd = barEnd;  // no curves → stay through close
+      }
+
       return [
         { label: 'opener', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barSpan) },
-        { label: 'volume', type: classifyShiftType(volumeStart), start: hourToHHMM(volumeStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barEnd - volumeStart) },
+        { label: 'volume', type: classifyShiftType(volumeStart), start: hourToHHMM(volumeStart), end: hourToHHMM(volumeEnd), hours: Math.max(minHours, volumeEnd - volumeStart) },
       ];
     }
 
