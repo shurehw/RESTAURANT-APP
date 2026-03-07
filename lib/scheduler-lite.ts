@@ -77,8 +77,8 @@ type BevIntensityMap = Map<number, number>;
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const PEAK_PCT = 0.22;
-const FOH_MIN_SHIFT_HOURS = 6.0;
-const BOH_MIN_SHIFT_HOURS = 5.0;
+const FOH_MIN_SHIFT_HOURS = 4.0;
+const BOH_MIN_SHIFT_HOURS = 4.0;
 
 /**
  * Position configs with CPLH defaults and category.
