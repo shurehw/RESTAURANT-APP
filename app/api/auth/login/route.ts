@@ -58,7 +58,10 @@ export async function POST(request: NextRequest) {
     
     try {
       // Check if auth.users entry exists
-      const { data: authUsers } = await adminClient.auth.admin.listUsers();
+      const { data: authUsers } = await adminClient.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
       const existingAuthUser = authUsers?.users?.find(
         u => u.email?.toLowerCase() === email.toLowerCase()
       );

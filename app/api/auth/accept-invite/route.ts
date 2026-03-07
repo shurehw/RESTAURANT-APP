@@ -83,36 +83,53 @@ export async function POST(request: NextRequest) {
     const supabase = getServiceClient();
     let authUserId: string;
 
-    // 2. Check if auth.users already exists for this email
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-    const existingAuth = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === invite.email.toLowerCase()
-    );
+    // 2. Create or update auth.users entry
+    //    Try to create first. If email already registered, find and update.
+    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+      email: invite.email.toLowerCase(),
+      password,
+      email_confirm: true,
+      user_metadata: { full_name },
+    });
 
-    if (existingAuth) {
-      // User exists — update their password and name
-      await adminClient.auth.admin.updateUserById(existingAuth.id, {
-        password,
-        user_metadata: { full_name },
-      });
-      authUserId = existingAuth.id;
-    } else {
-      // Create new auth.users entry
-      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-        email: invite.email.toLowerCase(),
-        password,
-        email_confirm: true,
-        user_metadata: { full_name },
-      });
+    if (createError) {
+      if (createError.message?.includes('already been registered')) {
+        // User exists — find by email and update
+        const { data: existingUsers } = await adminClient.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        });
+        const existingAuth = existingUsers?.users?.find(
+          (u) => u.email?.toLowerCase() === invite.email.toLowerCase()
+        );
 
-      if (createError || !newUser?.user) {
+        if (existingAuth) {
+          await adminClient.auth.admin.updateUserById(existingAuth.id, {
+            password,
+            user_metadata: { full_name },
+          });
+          authUserId = existingAuth.id;
+        } else {
+          console.error('[accept-invite] User registered but not found in listUsers');
+          return NextResponse.json(
+            { error: 'Failed to create account. Please try again.' },
+            { status: 500 }
+          );
+        }
+      } else {
         console.error('[accept-invite] Failed to create auth user:', createError);
         return NextResponse.json(
           { error: 'Failed to create account. Please try again.' },
           { status: 500 }
         );
       }
+    } else if (newUser?.user) {
       authUserId = newUser.user.id;
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to create account. Please try again.' },
+        { status: 500 }
+      );
     }
 
     // 3. Create legacy users table entry (maintain parity)
