@@ -328,7 +328,6 @@ export function ShiftTimelineChart({ shifts, weekDays, onShiftClick }: ShiftTime
       <div className="px-5 pt-4 pb-3">
         <div className="inline-flex items-center gap-0.5 p-1 bg-muted/60 rounded-lg border border-border/50">
           {weekDays.map((day, idx) => {
-            const count = shifts.filter((s) => s.business_date === day.date).length;
             const active = idx === selectedDayIndex;
             return (
               <button
@@ -337,20 +336,10 @@ export function ShiftTimelineChart({ shifts, weekDays, onShiftClick }: ShiftTime
                 className={`relative px-3 py-1.5 text-xs rounded-md transition-all duration-150 min-w-[44px] ${
                   active
                     ? 'bg-card text-foreground shadow-sm font-semibold'
-                    : count > 0
-                      ? 'text-muted-foreground hover:text-foreground hover:bg-card/50 font-medium'
-                      : 'text-muted-foreground/40 font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50 font-medium'
                 }`}
               >
                 {day.dayName}
-                {count > 0 && active && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 text-[10px] font-bold rounded-full bg-brass text-white flex items-center justify-center px-1">
-                    {count}
-                  </span>
-                )}
-                {count > 0 && !active && (
-                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-brass/60" />
-                )}
               </button>
             );
           })}

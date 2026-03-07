@@ -316,7 +316,7 @@ function buildTemplatesFromVenueHours(
     if (velocitySplit !== null) {
       nightStart = velocitySplit - 0.5;
       nightStart = Math.min(nightStart, barEnd - minHours);   // enough time before close
-      nightStart = Math.max(nightStart, barStart + minHours);  // after day shift minimum
+      nightStart = Math.max(nightStart, barStart + 2);         // at least 2h after open (overlap is intentional)
     } else {
       nightStart = barStart + Math.floor(barSpan / 2);
     }
@@ -346,7 +346,7 @@ function buildTemplatesFromVenueHours(
     if (velocitySplit !== null) {
       wave2Start = velocitySplit - 0.5;
       wave2Start = Math.min(wave2Start, fohEnd - minHours);
-      wave2Start = Math.max(wave2Start, fohStart + minHours);
+      wave2Start = Math.max(wave2Start, fohStart + 2);  // overlap is intentional
     } else {
       wave2Start = fohEnd - minHours;
     }
@@ -374,7 +374,7 @@ function buildTemplatesFromVenueHours(
   let wave3Start: number;
   if (velocity3 !== null) {
     wave3Start = velocity3 - 0.5;
-    wave3Start = Math.max(wave3Start, wave2Start + minHours);
+    wave3Start = Math.max(wave3Start, wave2Start + 2);  // overlap is intentional
     wave3Start = Math.min(wave3Start, fohEnd - minHours);
   } else {
     wave3Start = fohEnd - minHours;
