@@ -778,12 +778,15 @@ function CoversProjection({
       bohCount: bohShifts.length,
       totalStaff: dayShifts.length,
       totalHours: dayShifts.reduce((sum, s) => sum + s.scheduled_hours, 0),
+      totalCost: dayShifts.reduce((sum, s) => sum + (s.scheduled_hours * (s.position?.base_hourly_rate ?? 0)), 0),
     };
   });
 
   const totalCovers = dailyStats.reduce((sum, d) => sum + d.forecastedCovers, 0);
   const totalRevenue = dailyStats.reduce((sum, d) => sum + d.forecastedRevenue, 0);
   const totalStaff = dailyStats.reduce((sum, d) => sum + d.totalStaff, 0);
+  const totalHours = dailyStats.reduce((sum, d) => sum + d.totalHours, 0);
+  const totalCost = dailyStats.reduce((sum, d) => sum + d.totalCost, 0);
   const peakDay = dailyStats.reduce(
     (max, d) => (d.forecastedCovers > max.forecastedCovers ? d : max),
     dailyStats[0]
@@ -907,6 +910,88 @@ function CoversProjection({
               ))}
               <td className="text-center p-2 font-bold text-gray-900">{totalStaff}</td>
             </tr>
+
+            {/* Labor Hours */}
+            <tr className="border-t-2 border-gray-200">
+              <td className="p-2 text-gray-700 font-medium">Labor Hours</td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 text-xs ${d.totalHours === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.totalHours === 0 ? '—' : `${d.totalHours.toFixed(1)}h`}
+                </td>
+              ))}
+              <td className="text-center p-2 text-xs font-semibold text-gray-700 bg-gray-50">
+                {totalHours > 0 ? `${totalHours.toFixed(1)}h` : '—'}
+              </td>
+            </tr>
+
+            {/* Labor Cost */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700">Labor Cost</td>
+              {dailyStats.map((d, i) => (
+                <td key={i} className={`text-center p-2 text-xs ${d.totalCost === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {d.totalCost === 0 ? '—' : `$${Math.round(d.totalCost).toLocaleString()}`}
+                </td>
+              ))}
+              <td className="text-center p-2 text-xs font-semibold text-gray-700 bg-gray-50">
+                {totalCost > 0 ? `$${Math.round(totalCost).toLocaleString()}` : '—'}
+              </td>
+            </tr>
+
+            {/* CPLH */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700" title="Covers Per Labor Hour">CPLH</td>
+              {dailyStats.map((d, i) => {
+                const cplh = d.totalHours > 0 ? d.forecastedCovers / d.totalHours : 0;
+                return (
+                  <td key={i} className={`text-center p-2 text-xs font-medium ${
+                    cplh === 0 ? 'text-gray-300' :
+                    cplh < 10 ? 'text-red-600' :
+                    cplh <= 15 ? 'text-amber-600' : 'text-emerald-600'
+                  }`}>
+                    {cplh === 0 ? '—' : cplh.toFixed(1)}
+                  </td>
+                );
+              })}
+              <td className="text-center p-2 text-xs font-semibold text-gray-700 bg-gray-50">
+                {totalHours > 0 ? (totalCovers / totalHours).toFixed(1) : '—'}
+              </td>
+            </tr>
+
+            {/* SPLH */}
+            <tr className="border-b">
+              <td className="p-2 text-gray-700" title="Sales Per Labor Hour">SPLH</td>
+              {dailyStats.map((d, i) => {
+                const splh = d.totalHours > 0 ? d.forecastedRevenue / d.totalHours : 0;
+                return (
+                  <td key={i} className={`text-center p-2 text-xs ${splh === 0 ? 'text-gray-300' : 'text-gray-700'}`}>
+                    {splh === 0 ? '—' : `$${Math.round(splh).toLocaleString()}`}
+                  </td>
+                );
+              })}
+              <td className="text-center p-2 text-xs font-semibold text-gray-700 bg-gray-50">
+                {totalHours > 0 ? `$${Math.round(totalRevenue / totalHours).toLocaleString()}` : '—'}
+              </td>
+            </tr>
+
+            {/* Labor % */}
+            <tr className="bg-gray-50">
+              <td className="p-2 font-medium text-gray-900">Labor %</td>
+              {dailyStats.map((d, i) => {
+                const laborPct = d.forecastedRevenue > 0 ? (d.totalCost / d.forecastedRevenue) * 100 : 0;
+                return (
+                  <td key={i} className={`text-center p-2 text-xs font-medium ${
+                    laborPct === 0 ? 'text-gray-300' :
+                    laborPct > 35 ? 'text-red-600' :
+                    laborPct >= 25 ? 'text-amber-600' : 'text-emerald-600'
+                  }`}>
+                    {laborPct === 0 ? '—' : `${laborPct.toFixed(1)}%`}
+                  </td>
+                );
+              })}
+              <td className="text-center p-2 text-xs font-bold text-gray-900">
+                {totalRevenue > 0 ? `${((totalCost / totalRevenue) * 100).toFixed(1)}%` : '—'}
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -917,8 +1002,10 @@ function CoversProjection({
           <span>Peak: <strong className="text-gray-700">{peakDay.dayName} {peakDay.dateStr}</strong> ({peakDay.forecastedCovers.toLocaleString()} covers, {peakDay.totalStaff} staff)</span>
         )}
         <span>Forecast Revenue: <strong className="text-gray-700">${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</strong></span>
-        <span>Labor Cost: <strong className="text-gray-700">${(schedule.total_labor_cost || 0).toLocaleString()}</strong> ({schedule.total_labor_hours || 0}h)</span>
-        <span>Labor%: <strong className="text-gray-700">{totalRevenue > 0 ? ((schedule.total_labor_cost / totalRevenue) * 100).toFixed(1) : '—'}%</strong></span>
+        <span>Labor Cost: <strong className="text-gray-700">${Math.round(totalCost).toLocaleString()}</strong> ({totalHours.toFixed(1)}h)</span>
+        <span>Labor%: <strong className="text-gray-700">{totalRevenue > 0 ? ((totalCost / totalRevenue) * 100).toFixed(1) : '—'}%</strong></span>
+        <span>SPLH: <strong className="text-gray-700">{totalHours > 0 ? `$${Math.round(totalRevenue / totalHours).toLocaleString()}` : '—'}</strong></span>
+        <span>CPLH: <strong className="text-gray-700">{totalHours > 0 ? (totalCovers / totalHours).toFixed(1) : '—'}</strong></span>
       </div>
     </Card>
   );
