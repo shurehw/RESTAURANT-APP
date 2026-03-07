@@ -166,6 +166,29 @@ function findDemandVelocitySplit(
 }
 
 /**
+ * Compute cumulative pct_of_daily_covers up to (but not including) the given decimal hour.
+ * Used to determine demand-driven staffing ratios between waves.
+ */
+function cumulativeDemandAt(
+  intervals: DemandInterval[],
+  targetHour: number,
+  venueOpenHour: number,
+): number {
+  if (!intervals || intervals.length === 0) return 0;
+  let cumulative = 0;
+  for (const interval of intervals) {
+    const h = parseInt(interval.interval_start.split(':')[0], 10);
+    const m = parseInt(interval.interval_start.split(':')[1] || '0', 10);
+    let decHour = h + m / 60;
+    if (decHour < 12 && venueOpenHour >= 12) decHour += 24;
+    if (decHour < targetHour) {
+      cumulative += interval.pct_of_daily_covers;
+    }
+  }
+  return cumulative;
+}
+
+/**
  * Find the lowest-demand 30-min window for a meal break.
  *
  * CA law: first break must START before end of 5th hour from shift start.
@@ -366,7 +389,7 @@ function buildTemplatesFromVenueHours(
     // ≤10h service window (supper clubs, evening-only venues):
     // Opener arrives first for setup, cuts first (FIFO). Closer arrives
     // when demand builds, stays through close for breakdown.
-    // distributeWaves 40/60 → fewer openers, more closers.
+    // Staff split is demand-driven: opener fraction = cumulative covers before closer starts.
     if (barSpan <= 10) {
       // Closer start: when demand ramps (20% cumulative) or 1h after doors
       const BAR_CLOSER_START_THRESHOLD = 0.20;
@@ -423,35 +446,59 @@ function buildTemplatesFromVenueHours(
   }
 
   // Generic FOH (Server, Busser, Food Runner, Host)
-  const fohStart = guestStart - 0.5;
+  const fohStart = guestStart - 0.5;   // 30min setup (side work, pre-shift)
   const fohEnd = effectiveClose;
   const fohSpan = fohEnd - fohStart;
 
+  // Very short window: single shift
   if (fohSpan <= minHours + 1) {
     return [
       { label: 'main', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohSpan) },
     ];
   }
 
-  if (fohSpan <= minHours * 2) {
-    // 2-wave: demand-velocity at 40% cumulative covers
-    const FOH_2WAVE_THRESHOLD = 0.40;
-    const velocitySplit = findDemandVelocitySplit(demandIntervals ?? [], FOH_2WAVE_THRESHOLD, venueHours.open);
-    let wave2Start: number;
-    if (velocitySplit !== null) {
-      wave2Start = velocitySplit - 0.5;
-      wave2Start = Math.min(wave2Start, fohEnd - minHours);
-      wave2Start = Math.max(wave2Start, fohStart + 2);  // overlap is intentional
+  // ≤10h service window: FIFO opener/closer model
+  // Opener arrives first for setup, cuts first when demand slows.
+  // Closer arrives when demand builds, stays through close for breakdown.
+  // Staff split is demand-driven: opener fraction = cumulative covers before closer starts.
+  if (fohSpan <= 10) {
+    // Closer start: when demand ramps (20% cumulative) or 1h after doors
+    const FOH_CLOSER_START_THRESHOLD = 0.20;
+    const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], FOH_CLOSER_START_THRESHOLD, venueHours.open);
+    let closerStart: number;
+    if (velocityStart !== null) {
+      closerStart = velocityStart;
+      closerStart = Math.max(closerStart, fohStart + 2);         // at least 2h after opener
+      closerStart = Math.min(closerStart, fohEnd - minHours);    // enough time before close
     } else {
-      wave2Start = fohEnd - minHours;
+      closerStart = guestStart + 1;  // 1h after doors open
     }
+
+    // Closer stays through close for breakdown (side work, reset)
+    const closerEnd = fohEnd;
+
+    // Opener end: demand-driven — cuts when 85% of covers have arrived.
+    // At least 30 min overlap with closer for handoff. First in, first out.
+    const FOH_OPENER_END_THRESHOLD = 0.85;
+    const openerTail = findDemandVelocitySplit(demandIntervals ?? [], FOH_OPENER_END_THRESHOLD, venueHours.open);
+    let openerEnd: number;
+    if (openerTail !== null) {
+      openerEnd = openerTail;
+      openerEnd = Math.max(openerEnd, closerStart + 0.5);       // at least 30 min overlap with closer
+      openerEnd = Math.max(openerEnd, fohStart + minHours);      // minimum shift length
+      openerEnd = Math.min(openerEnd, closerEnd);                 // never past closer
+    } else {
+      openerEnd = closerEnd;  // no curves → stay through close
+    }
+
     return [
-      { label: 'early', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohStart + minHours), hours: minHours },
-      { label: 'late',  type: 'late_night', start: hourToHHMM(wave2Start), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohEnd - wave2Start) },
+      { label: 'opener', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(openerEnd), hours: Math.max(minHours, openerEnd - fohStart) },
+      { label: 'closer', type: classifyShiftType(closerStart), start: hourToHHMM(closerStart), end: hourToHHMM(closerEnd), hours: Math.max(minHours, closerEnd - closerStart) },
     ];
   }
 
-  // 3-wave: demand-velocity at 30% (wave 2) and 65% (wave 3)
+  // >10h service window (all-day venues): 3-wave with FIFO ordering.
+  // Opener cuts first, mid cuts second, closer stays through close.
   const FOH_WAVE2_THRESHOLD = 0.30;
   const FOH_WAVE3_THRESHOLD = 0.65;
   const velocity2 = findDemandVelocitySplit(demandIntervals ?? [], FOH_WAVE2_THRESHOLD, venueHours.open);
@@ -469,16 +516,42 @@ function buildTemplatesFromVenueHours(
   let wave3Start: number;
   if (velocity3 !== null) {
     wave3Start = velocity3 - 0.5;
-    wave3Start = Math.max(wave3Start, wave2Start + 2);  // overlap is intentional
+    wave3Start = Math.max(wave3Start, wave2Start + 2);
     wave3Start = Math.min(wave3Start, fohEnd - minHours);
   } else {
     wave3Start = fohEnd - minHours;
   }
 
+  // FIFO end times: opener cuts at 60% covers, mid cuts at 85%, closer stays through close
+  const FOH_OPENER_END_3W = 0.60;
+  const FOH_MID_END_3W = 0.85;
+  const earlyTail = findDemandVelocitySplit(demandIntervals ?? [], FOH_OPENER_END_3W, venueHours.open);
+  const midTail = findDemandVelocitySplit(demandIntervals ?? [], FOH_MID_END_3W, venueHours.open);
+
+  let earlyEnd: number;
+  if (earlyTail !== null) {
+    earlyEnd = earlyTail;
+    earlyEnd = Math.max(earlyEnd, fohStart + minHours);      // min shift
+    earlyEnd = Math.max(earlyEnd, wave2Start + 0.5);          // overlap with wave2
+    earlyEnd = Math.min(earlyEnd, fohEnd);
+  } else {
+    earlyEnd = fohStart + minHours;
+  }
+
+  let midEnd: number;
+  if (midTail !== null) {
+    midEnd = midTail;
+    midEnd = Math.max(midEnd, wave2Start + minHours);         // min shift
+    midEnd = Math.max(midEnd, wave3Start + 0.5);              // overlap with wave3
+    midEnd = Math.min(midEnd, fohEnd);
+  } else {
+    midEnd = wave2Start + minHours;
+  }
+
   return [
-    { label: 'early', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(fohStart + minHours), hours: minHours },
-    { label: 'main',  type: classifyShiftType(wave2Start), start: hourToHHMM(wave2Start), end: hourToHHMM(wave2Start + minHours), hours: minHours },
-    { label: 'late',  type: 'late_night', start: hourToHHMM(wave3Start), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohEnd - wave3Start) },
+    { label: 'opener', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(earlyEnd), hours: Math.max(minHours, earlyEnd - fohStart) },
+    { label: 'mid',    type: classifyShiftType(wave2Start), start: hourToHHMM(wave2Start), end: hourToHHMM(midEnd), hours: Math.max(minHours, midEnd - wave2Start) },
+    { label: 'closer', type: 'late_night', start: hourToHHMM(wave3Start), end: hourToHHMM(fohEnd), hours: Math.max(minHours, fohEnd - wave3Start) },
   ];
 }
 
@@ -747,6 +820,7 @@ function distributeWaves(
   peakStaff: number,
   templates: ShiftTemplate[],
   fixed?: boolean,
+  openerFraction?: number,  // demand-driven fraction for first wave (0-1)
 ): { template: ShiftTemplate; count: number }[] {
   if (peakStaff === 0 || !templates || templates.length === 0) return [];
 
@@ -759,16 +833,39 @@ function distributeWaves(
   }
 
   if (templates.length === 2) {
-    const earlyCount = Math.max(1, Math.floor(peakStaff * 0.4));
-    const lateCount  = peakStaff - earlyCount;
+    // Single person → full coverage from setup to close (merge both templates)
+    if (peakStaff === 1) {
+      const merged: ShiftTemplate = {
+        label: 'main',
+        type: templates[0].type,
+        start: templates[0].start,
+        end: templates[1].end,
+        hours: calcShiftHours(templates[0].start, templates[1].end),
+      };
+      return [{ template: merged, count: 1 }];
+    }
+    // Demand-driven: openerFraction = cumulative demand before closer starts.
+    // Ensures at least 1 for setup, at least 1 for close.
+    const fraction = openerFraction ?? 0.4;
+    const earlyCount = Math.max(1, Math.round(peakStaff * fraction));
+    const lateCount  = Math.max(1, peakStaff - earlyCount);
     const result: { template: ShiftTemplate; count: number }[] = [];
     if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
     if (lateCount  > 0) result.push({ template: templates[1], count: lateCount });
     return result;
   }
 
+  // 3-template FIFO: opener / mid / closer
   if (peakStaff === 1) {
-    return [{ template: templates[1], count: 1 }];
+    // Single person → full coverage
+    const merged: ShiftTemplate = {
+      label: 'main',
+      type: templates[0].type,
+      start: templates[0].start,
+      end: templates[2].end,
+      hours: calcShiftHours(templates[0].start, templates[2].end),
+    };
+    return [{ template: merged, count: 1 }];
   }
   if (peakStaff === 2) {
     return [
@@ -776,9 +873,11 @@ function distributeWaves(
       { template: templates[2], count: 1 },
     ];
   }
-  const earlyCount = Math.max(1, Math.floor(peakStaff * 0.25));
-  const lateCount  = Math.max(1, Math.floor(peakStaff * 0.25));
-  const mainCount  = peakStaff - earlyCount - lateCount;
+  // Demand-driven opener fraction, mid gets the bulk, closer gets remainder
+  const firstFrac = openerFraction ?? 0.25;
+  const earlyCount = Math.max(1, Math.round(peakStaff * firstFrac));
+  const lateCount  = Math.max(1, Math.round(peakStaff * 0.25));
+  const mainCount  = Math.max(1, peakStaff - earlyCount - lateCount);
   const result: { template: ShiftTemplate; count: number }[] = [];
   if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
   if (mainCount  > 0) result.push({ template: templates[1], count: mainCount });
@@ -1050,7 +1149,23 @@ export async function generateScheduleTS(
 
       if (templates.length === 0) continue;
 
-      const waves = distributeWaves(peakStaff, templates, config.fixed);
+      // Compute demand-driven opener fraction: what share of covers arrives
+      // before the closer/wave2 starts? That determines opener staffing.
+      let openerFraction: number | undefined;
+      if (dayDemandIntervals && templates.length >= 2 && !config.fixed) {
+        const wave2Start = templates[1].start;
+        const w2H = parseInt(wave2Start.split(':')[0], 10);
+        const w2M = parseInt(wave2Start.split(':')[1] || '0', 10);
+        let wave2Dec = w2H + w2M / 60;
+        if (wave2Dec < 12 && venueHours.open >= 12) wave2Dec += 24;
+        const demandBefore = cumulativeDemandAt(dayDemandIntervals, wave2Dec, venueHours.open);
+        if (demandBefore > 0) {
+          // Clamp: at least 15% (always need an opener), at most 50%
+          openerFraction = Math.max(0.15, Math.min(0.50, demandBefore));
+        }
+      }
+
+      const waves = distributeWaves(peakStaff, templates, config.fixed, openerFraction);
 
       // ── Per-wave assignment ─────────────────────────────────────────────
       for (const wave of waves) {
