@@ -3,8 +3,24 @@
  * Connects to TipSee POS data for nightly reports
  */
 
-import { Pool } from 'pg';
+import { Pool, types as pgTypes } from 'pg';
 import { getServiceClient } from '@/lib/supabase/service';
+
+// Force `timestamp without time zone` (OID 1114) to be parsed as UTC.
+// The pg driver defaults to using the system timezone, which silently
+// shifts values. SevenRooms stores reservation times (seated_time,
+// left_time) as `timestamp without time zone` in UTC, while POS check
+// times use `timestamp with time zone`. Without this fix, comparing
+// rez timestamps to check timestamps produces an 8-hour (or whatever
+// the local offset is) drift.
+pgTypes.setTypeParser(1114, (str: string) => {
+  // pg returns "YYYY-MM-DD HH:MM:SS.ffffff" — need "T" separator and
+  // truncate to 3-digit ms for valid ISO 8601.
+  const iso = str.replace(' ', 'T');
+  // Trim microseconds beyond ms precision: ".123456" → ".123"
+  const trimmed = iso.replace(/\.(\d{3})\d+$/, '.$1');
+  return new Date(trimmed + 'Z');
+});
 
 // TipSee database configuration — credentials MUST be in environment variables
 const TIPSEE_CONFIG = {
@@ -1640,6 +1656,7 @@ async function fetchSimphonyCompExceptions(
 export interface CheckSummary {
   id: string;
   table_name: string;
+  name: string;
   employee_name: string;
   guest_count: number;
   sub_total: number;
@@ -1691,7 +1708,8 @@ async function fetchOpenCheckSummariesFromItems(
     const r = cleanRow(row);
     return {
       id: r.id,
-      table_name: r.table_name || 'Unknown',
+      table_name: r.table_name || 'Open Tab',
+      name: '',
       employee_name: r.employee_name || 'Unknown',
       guest_count: r.guest_count || 0,
       sub_total: r.sub_total || 0,
@@ -1724,6 +1742,7 @@ export async function fetchChecksForDate(
   const baseSql = `SELECT
         c.id,
         c.table_name,
+        c.name,
         c.employee_name,
         c.guest_count,
         c.sub_total,
@@ -1757,7 +1776,8 @@ export async function fetchChecksForDate(
     const r = cleanRow(row);
     return {
       id: r.id,
-      table_name: r.table_name || 'N/A',
+      table_name: r.table_name || '',
+      name: String(r.name || ''),
       employee_name: r.employee_name || 'Unknown',
       guest_count: r.guest_count || 0,
       sub_total: r.sub_total || 0,
@@ -2160,7 +2180,7 @@ export async function fetchReservationsForDate(
         array_to_string(table_numbers, ', ') as table_number
       FROM public.full_reservations
       WHERE location_uuid = ANY($1::uuid[]) AND date = $2
-        AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'CONFIRMED', 'PENDING', 'PAID', 'CANCELLED')
+        AND status NOT IN ('NO_SHOW', 'LEFT_MESSAGE')
       ORDER BY arrival_time ASC NULLS LAST, is_vip DESC`,
     [locationUuids, date]
   );
@@ -2226,4 +2246,220 @@ export async function fetchTableSpendForDate(
       payout: r.payout || 0,
     } as TableSpendEntry;
   });
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// RESERVATION ANALYTICS (all statuses + capacity lookback)
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface ReservationSlim {
+  id: string;
+  party_size: number;
+  arrival_time: string | null;
+  seated_time: string | null;
+  left_time: string | null;
+  status: string;
+  table_number: string | null;
+}
+
+/**
+ * Fetch reservations for a date INCLUDING all statuses (CANCELED, NO_SHOW).
+ * Slim projection for analytics — no names, notes, etc.
+ */
+export async function fetchReservationsAllStatuses(
+  locationUuids: string[],
+  date: string
+): Promise<{ reservations: ReservationSlim[] }> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+        id,
+        max_guests as party_size,
+        arrival_time,
+        seated_time,
+        left_time,
+        status,
+        array_to_string(table_numbers, ', ') as table_number
+      FROM public.full_reservations
+      WHERE location_uuid = ANY($1::uuid[]) AND date = $2
+      ORDER BY seated_time ASC NULLS LAST`,
+    [locationUuids, date]
+  );
+
+  const reservations = result.rows.map(row => {
+    const r = cleanRow(row);
+    return {
+      id: r.id,
+      party_size: r.party_size || 0,
+      arrival_time: r.arrival_time || null,
+      seated_time: r.seated_time || null,
+      left_time: r.left_time || null,
+      status: r.status || 'PENDING',
+      table_number: r.table_number || null,
+    } as ReservationSlim;
+  });
+
+  return { reservations };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// SEVENROOMS VENUE ID DISCOVERY
+// TipSee stores the SR venue_id on every reservation row. Use this to
+// auto-discover SR venue IDs for venues not in SEVENROOMS_VENUE_MAP.
+// ══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Look up the SevenRooms venue_id stored in TipSee's full_reservations table.
+ * TipSee syncs directly from SevenRooms and persists the SR venue_id on each row.
+ *
+ * Returns '' if no SR venue_id found (venue has no TipSee data yet).
+ */
+export async function fetchSrVenueIdFromTipsee(
+  locationUuids: string[],
+): Promise<string> {
+  if (locationUuids.length === 0) return '';
+  const pool = getTipseePool();
+  const result = await pool.query(
+    `SELECT venue_id FROM public.full_reservations
+     WHERE location_uuid = ANY($1::uuid[]) AND venue_id IS NOT NULL
+     LIMIT 1`,
+    [locationUuids],
+  );
+  return (result.rows[0]?.venue_id as string) ?? '';
+}
+
+/**
+ * Infer table capacities from historical reservation data.
+ *
+ * Uses 75th-percentile (P75) party_size per table instead of MAX to avoid
+ * event/buyout inflation (e.g., a 120-person event booked to table "01"
+ * doesn't make it a 120-seat table). Caps at 20 seats — anything above
+ * is almost certainly a large-format event, not a regular table.
+ */
+export async function fetchTableCapacityLookback(
+  locationUuids: string[],
+  dow: number,
+  lookbackDays = 90
+): Promise<Map<string, number>> {
+  const pool = getTipseePool();
+
+  // Use blacklist to capture all real seatings (SevenRooms uses many
+  // course-tracking statuses beyond COMPLETE/ARRIVED).
+  // Require sample_count >= 3 to exclude one-off event tables.
+  const result = await pool.query(
+    `SELECT
+        table_num,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY max_guests) as p75_capacity,
+        COUNT(*) as sample_count
+      FROM (
+        SELECT
+          TRIM(unnest(table_numbers)) as table_num,
+          max_guests
+        FROM public.full_reservations
+        WHERE location_uuid = ANY($1::uuid[])
+          AND date >= CURRENT_DATE - ($3 || ' days')::interval
+          AND EXTRACT(DOW FROM date) = $2
+          AND status NOT IN ('NO_SHOW', 'LEFT_MESSAGE', 'CANCELED', 'CANCELLED', 'CONFIRMED', 'PENDING')
+          AND table_numbers IS NOT NULL
+          AND max_guests > 0
+      ) sub
+      GROUP BY table_num
+      HAVING COUNT(*) >= 3`,
+    [locationUuids, dow, lookbackDays]
+  );
+
+  // Cap at 10: anything with a P75 > 10 is an event space or section,
+  // not a standard dining table.  Buyout reservations (120-200 guests)
+  // inflate historical P75 for tables that double as event spaces.
+  const MAX_TABLE_CAPACITY = 10;
+  const capacityMap = new Map<string, number>();
+  for (const row of result.rows) {
+    const r = cleanRow(row);
+    const tn = String(r.table_num || '').trim().replace(/^0+/, '').toLowerCase();
+    if (tn) {
+      const cap = Math.min(MAX_TABLE_CAPACITY, Math.max(2, Math.round(r.p75_capacity || 2)));
+      capacityMap.set(tn, cap);
+    }
+  }
+  return capacityMap;
+}
+
+/**
+ * Historical no-show rate for a day-of-week over lookback window.
+ */
+export async function fetchHistoricalNoShowRate(
+  locationUuids: string[],
+  dow: number,
+  lookbackDays = 90
+): Promise<{ noShowCount: number; totalCount: number; rate: number }> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+        COUNT(*) FILTER (WHERE status = 'NO_SHOW') as no_show_count,
+        COUNT(*) as total_count
+      FROM public.full_reservations
+      WHERE location_uuid = ANY($1::uuid[])
+        AND date >= CURRENT_DATE - ($3 || ' days')::interval
+        AND date < CURRENT_DATE
+        AND EXTRACT(DOW FROM date) = $2
+        AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'PAID', 'CONFIRMED', 'NO_SHOW')`,
+    [locationUuids, dow, lookbackDays]
+  );
+
+  const r = cleanRow(result.rows[0] || {});
+  const noShowCount = r.no_show_count || 0;
+  const totalCount = r.total_count || 0;
+  const rate = totalCount > 0 ? noShowCount / totalCount : 0;
+  return { noShowCount, totalCount, rate };
+}
+
+/**
+ * Historical average turn times by table capacity bucket.
+ * Returns Map<bucketLabel, avgMinutes> (e.g., "2-top" → 92).
+ */
+export async function fetchHistoricalTurnTimes(
+  locationUuids: string[],
+  dow: number,
+  lookbackDays = 90
+): Promise<Map<string, number>> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+        max_guests as party_size,
+        EXTRACT(EPOCH FROM (left_time - seated_time)) / 60 as turn_minutes,
+        TRIM(unnest(table_numbers)) as table_num
+      FROM public.full_reservations
+      WHERE location_uuid = ANY($1::uuid[])
+        AND date >= CURRENT_DATE - ($3 || ' days')::interval
+        AND date < CURRENT_DATE
+        AND EXTRACT(DOW FROM date) = $2
+        AND status IN ('COMPLETE', 'ARRIVED', 'SEATED', 'PAID')
+        AND seated_time IS NOT NULL
+        AND left_time IS NOT NULL
+        AND left_time > seated_time
+        AND table_numbers IS NOT NULL`,
+    [locationUuids, dow, lookbackDays]
+  );
+
+  // Bucket by capacity label, collect turn times
+  const buckets = new Map<string, number[]>();
+  for (const row of result.rows) {
+    const r = cleanRow(row);
+    const turnMin = r.turn_minutes || 0;
+    if (turnMin < 15 || turnMin > 480) continue; // filter outliers
+    const capacity = r.party_size || 2;
+    const label = capacity <= 2 ? '2-top' : capacity <= 4 ? '4-top' : capacity <= 6 ? '6-top' : '8+';
+    if (!buckets.has(label)) buckets.set(label, []);
+    buckets.get(label)!.push(turnMin);
+  }
+
+  const result2 = new Map<string, number>();
+  for (const [label, times] of buckets) {
+    const avg = Math.round(times.reduce((s, t) => s + t, 0) / times.length);
+    result2.set(label, avg);
+  }
+  return result2;
 }
