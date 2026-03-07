@@ -285,12 +285,19 @@ function buildTemplatesFromVenueHours(
 }
 
 /** Build templates from admin override (shift_start/shift_end directly). */
+function normalizeTime(t: string): string {
+  // DB TIME columns return HH:MM:SS — normalize to HH:MM for shift templates
+  return t.slice(0, 5); // "18:30:00" → "18:30", "18:30" → "18:30"
+}
+
 function buildTemplatesFromOverride(override: AdminOverride): ShiftTemplate[] {
   if (!override.shift_start || !override.shift_end) return [];
-  const hours = calcShiftHours(override.shift_start, override.shift_end);
-  const startHour = parseInt(override.shift_start.split(':')[0], 10);
+  const start = normalizeTime(override.shift_start);
+  const end = normalizeTime(override.shift_end);
+  const hours = calcShiftHours(start, end);
+  const startHour = parseInt(start.split(':')[0], 10);
   return [
-    { label: 'main', type: classifyShiftType(startHour), start: override.shift_start, end: override.shift_end, hours },
+    { label: 'main', type: classifyShiftType(startHour), start, end, hours },
   ];
 }
 
@@ -633,6 +640,13 @@ export async function generateScheduleTS(
     if (overrides) adminOverrides = overrides as AdminOverride[];
   } catch { /* table may not exist yet */ }
   const overrideMap = new Map(adminOverrides.map(o => [o.position_name, o]));
+  if (adminOverrides.length > 0) {
+    console.log('[scheduler] Active overrides:', adminOverrides.map(o =>
+      `${o.position_name}: start=${o.shift_start} end=${o.shift_end} cplh=${o.cplh_override}`
+    ));
+  } else {
+    console.log('[scheduler] No active overrides found for venue', venueId);
+  }
 
   // ── Fetch venue hours + dwell time from location_config ────────────────────
   let venueHours: VenueHours = { open: 18, close: 2 }; // sensible default for nightlife
@@ -796,6 +810,7 @@ export async function generateScheduleTS(
       let templates: ShiftTemplate[];
       if (override?.shift_start && override?.shift_end) {
         templates = buildTemplatesFromOverride(override);
+        console.log(`[scheduler] ${posName} using OVERRIDE templates:`, templates.map(t => `${t.start}-${t.end}`));
       } else {
         const minShift = override?.min_shift_hours ??
           (config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
@@ -847,8 +862,8 @@ export async function generateScheduleTS(
             position_id:      posInfo.id,
             business_date:    day.date,
             shift_type:       wave.template.type,
-            scheduled_start:  `${day.date}T${wave.template.start}:00`,
-            scheduled_end:    `${endDate}T${wave.template.end}:00`,
+            scheduled_start:  `${day.date}T${normalizeTime(wave.template.start)}:00`,
+            scheduled_end:    `${endDate}T${normalizeTime(wave.template.end)}:00`,
             scheduled_hours:  wave.template.hours,
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
