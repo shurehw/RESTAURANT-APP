@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
 
     // 3. Create legacy users table entry (maintain parity)
     const passwordHash = await bcrypt.hash(password, 10);
-    await (supabase as any)
+    const { error: usersError } = await (supabase as any)
       .from('users')
       .upsert(
         {
@@ -130,6 +130,10 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: 'email' }
       );
+
+    if (usersError) {
+      console.error('[accept-invite] Failed to upsert legacy users row:', usersError);
+    }
 
     // 4. Upsert organization_users
     const { error: memberError } = await (supabase as any)
