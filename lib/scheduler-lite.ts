@@ -383,7 +383,7 @@ function buildTemplatesFromVenueHours(
   // FOH positions — Bartender / Barback
   if (posName === 'Bartender' || posName === 'Barback') {
     const barStart = guestStart - 1.0;  // 1h setup (stock, prep, ice)
-    const barEnd = effectiveClose;
+    const barEnd = effectiveClose + 0.5;  // 30min past close for breakdown (cash out, clean, restock)
     const barSpan = barEnd - barStart;
 
     // ≤10h service window (supper clubs, evening-only venues):
@@ -447,7 +447,7 @@ function buildTemplatesFromVenueHours(
 
   // Generic FOH (Server, Busser, Food Runner, Host)
   const fohStart = guestStart - 0.5;   // 30min setup (side work, pre-shift)
-  const fohEnd = effectiveClose;
+  const fohEnd = effectiveClose + 0.5;  // 30min past close for side work, reset, cash out
   const fohSpan = fohEnd - fohStart;
 
   // Very short window: single shift
@@ -1190,15 +1190,16 @@ export async function generateScheduleTS(
           const days = empDays.get(emp.id) || new Set<string>();
           if (days.has(day.date)) continue;
 
-          // ── Stagger closer arrivals by demand curve ─────────────────────
-          // First closer arrives at template start (~20% cumulative covers).
-          // Each subsequent closer arrives when the next demand threshold is
-          // crossed — so they show up when covers actually need them.
-          // Thresholds evenly spaced between closer start (20%) and 80%.
-          // Falls back to 30-min fixed stagger if no demand data.
+          // ── Demand-driven closer start AND end times ─────────────────────
+          // FIFO within closers: first closer in → first closer out.
+          // Start: each closer arrives when cumulative covers cross a threshold.
+          // End:   first closer cuts when demand drops (high cumulative), last
+          //        closer stays through close for breakdown.
+          // Falls back to 30-min stagger if no demand data.
           let shiftStart = wave.template.start;
+          let shiftEnd = wave.template.end;
           let shiftHours = wave.template.hours;
-          if (wave.template.label === 'closer' && wave.count > 1 && waveAssigned > 0) {
+          if (wave.template.label === 'closer' && wave.count > 1) {
             const sH = parseInt(wave.template.start.split(':')[0], 10);
             const sM = parseInt(wave.template.start.split(':')[1] || '0', 10);
             const eH = parseInt(wave.template.end.split(':')[0], 10);
@@ -1209,24 +1210,43 @@ export async function generateScheduleTS(
             if (eDec < 12 && venueHours.open >= 12) eDec += 24;
             if (eDec <= sDec) eDec += 24;
 
-            let staggered: number | null = null;
+            let startDec = sDec;
+            let endDec = eDec;
+
             if (dayDemandIntervals && dayDemandIntervals.length > 0) {
-              // Spread thresholds between 20% (closer start) and 80% (near peak)
-              const thresholdStep = 0.60 / wave.count; // e.g. 5 closers → 12% steps
-              const threshold = 0.20 + (waveAssigned * thresholdStep);
-              const arrivalHour = findDemandVelocitySplit(dayDemandIntervals, threshold, venueHours.open);
-              if (arrivalHour !== null && arrivalHour > sDec && eDec - arrivalHour >= minShift) {
-                staggered = arrivalHour;
+              // ── Stagger start: thresholds between 20% and 80% cumulative
+              if (waveAssigned > 0) {
+                const startStep = 0.60 / wave.count;
+                const startThreshold = 0.20 + (waveAssigned * startStep);
+                const arrivalHour = findDemandVelocitySplit(dayDemandIntervals, startThreshold, venueHours.open);
+                if (arrivalHour !== null && arrivalHour > sDec) {
+                  startDec = arrivalHour;
+                }
               }
+
+              // ── Stagger end (FIFO): last closer stays to close, others cut earlier
+              // End thresholds between 85% and 98%, first closer cuts earliest
+              const reverseIdx = wave.count - 1 - waveAssigned; // 0 = last closer (stays)
+              if (reverseIdx > 0) {
+                const endStep = 0.13 / wave.count; // spread between 85%-98%
+                const endThreshold = 0.85 + ((wave.count - 1 - reverseIdx) * endStep);
+                const departHour = findDemandVelocitySplit(dayDemandIntervals, endThreshold, venueHours.open);
+                if (departHour !== null && departHour > startDec + minShift && departHour < eDec) {
+                  endDec = departHour;
+                }
+              }
+            } else if (waveAssigned > 0) {
+              // Fallback: fixed 30-min start stagger, 30-min end stagger
+              startDec = sDec + (waveAssigned * 0.5);
+              const reverseIdx = wave.count - 1 - waveAssigned;
+              if (reverseIdx > 0) endDec = eDec - (reverseIdx * 0.5);
             }
-            // Fallback: fixed 30-min stagger if no curves
-            if (staggered === null) {
-              const fallback = sDec + (waveAssigned * 0.5);
-              if (eDec - fallback >= minShift) staggered = fallback;
-            }
-            if (staggered !== null) {
-              shiftStart = hourToHHMM(staggered);
-              shiftHours = eDec - staggered;
+
+            // Apply if shift meets minimum hours
+            if (endDec - startDec >= minShift) {
+              shiftStart = hourToHHMM(startDec);
+              shiftEnd = hourToHHMM(endDec);
+              shiftHours = endDec - startDec;
             }
           }
 
@@ -1235,7 +1255,7 @@ export async function generateScheduleTS(
           if (!config.fixed && currentHours + shiftHours > (emp.max_hours_per_week || 40)) continue;
 
           // Determine end date (handles shifts that cross midnight)
-          const endDate = wave.template.end <= shiftStart
+          const endDate = shiftEnd <= shiftStart
             ? nextDay(day.date)
             : day.date;
 
@@ -1248,8 +1268,8 @@ export async function generateScheduleTS(
           // Suggest break during lowest-demand 30-min window within shift
           const startH = parseInt(shiftStart.split(':')[0], 10);
           const startM = parseInt(shiftStart.split(':')[1] || '0', 10);
-          const endH = parseInt(wave.template.end.split(':')[0], 10);
-          const endM = parseInt(wave.template.end.split(':')[1] || '0', 10);
+          const endH = parseInt(shiftEnd.split(':')[0], 10);
+          const endM = parseInt(shiftEnd.split(':')[1] || '0', 10);
           let shiftStartDec = startH + startM / 60;
           let shiftEndDec = endH + endM / 60;
           if (shiftEndDec <= shiftStartDec) shiftEndDec += 24;
@@ -1272,7 +1292,7 @@ export async function generateScheduleTS(
             business_date:    day.date,
             shift_type:       wave.template.type,
             scheduled_start:  toTimestamp(day.date, shiftStart),
-            scheduled_end:    toTimestamp(endDate, wave.template.end),
+            scheduled_end:    toTimestamp(endDate, shiftEnd),
             scheduled_hours:  netHours,
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
