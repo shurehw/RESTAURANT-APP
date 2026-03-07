@@ -285,14 +285,19 @@ function buildTemplatesFromVenueHours(
 }
 
 /** Build templates from admin override (shift_start/shift_end directly). */
-/** Normalize any time string to HH:MM:SS for valid timestamp construction */
+/** Normalize any time string to HH:MM:SS for valid timestamp construction.
+ *  Handles: "18:30", "18:30:00", "03:05:00:00" (malformed), "3:5" etc. */
 function normalizeTime(t: string): string {
-  // Handle HH:MM:SS, HH:MM, or other formats → always return HH:MM:SS
-  const parts = t.split(':');
-  const hh = (parts[0] || '00').padStart(2, '0');
-  const mm = (parts[1] || '00').padStart(2, '0');
-  const ss = (parts[2] || '00').padStart(2, '0').slice(0, 2); // take only first 2 chars
+  const parts = t.split(':').map(p => parseInt(p, 10) || 0);
+  const hh = String(parts[0] ?? 0).padStart(2, '0');
+  const mm = String(parts[1] ?? 0).padStart(2, '0');
+  const ss = String(parts[2] ?? 0).padStart(2, '0');
   return `${hh}:${mm}:${ss}`;
+}
+
+/** Format a date + time string into a valid ISO timestamp */
+function toTimestamp(date: string, time: string): string {
+  return `${date}T${normalizeTime(time)}`;
 }
 
 function buildTemplatesFromOverride(override: AdminOverride): ShiftTemplate[] {
@@ -867,8 +872,8 @@ export async function generateScheduleTS(
             position_id:      posInfo.id,
             business_date:    day.date,
             shift_type:       wave.template.type,
-            scheduled_start:  `${day.date}T${normalizeTime(wave.template.start)}`,
-            scheduled_end:    `${endDate}T${normalizeTime(wave.template.end)}`,
+            scheduled_start:  toTimestamp(day.date, wave.template.start),
+            scheduled_end:    toTimestamp(endDate, wave.template.end),
             scheduled_hours:  wave.template.hours,
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
