@@ -302,14 +302,18 @@ function buildTemplatesFromVenueHours(
     const barStart = guestStart - 0.5;
     const barEnd = effectiveClose;
     const barSpan = barEnd - barStart;
-    if (barSpan <= minHours + 1) {
+
+    // Single template when service window fits one shift (≤10h).
+    // Supper clubs (8-9h span) run all bartenders on the same shift.
+    // Only split for long-window venues (brunch-to-close, 12h+).
+    if (barSpan <= 10) {
       return [
         { label: 'main', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barSpan) },
       ];
     }
 
-    // Demand-velocity split: night shift starts 30 min before the
-    // interval where cumulative covers cross 35% of daily total.
+    // Long service window: demand-velocity split for day/night shifts.
+    // Night shift starts 30 min before cumulative covers cross 35%.
     const BAR_SPLIT_THRESHOLD = 0.35;
     const velocitySplit = findDemandVelocitySplit(demandIntervals ?? [], BAR_SPLIT_THRESHOLD, venueHours.open);
     let nightStart: number;
