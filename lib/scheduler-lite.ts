@@ -285,9 +285,14 @@ function buildTemplatesFromVenueHours(
 }
 
 /** Build templates from admin override (shift_start/shift_end directly). */
+/** Normalize any time string to HH:MM:SS for valid timestamp construction */
 function normalizeTime(t: string): string {
-  // DB TIME columns return HH:MM:SS — normalize to HH:MM for shift templates
-  return t.slice(0, 5); // "18:30:00" → "18:30", "18:30" → "18:30"
+  // Handle HH:MM:SS, HH:MM, or other formats → always return HH:MM:SS
+  const parts = t.split(':');
+  const hh = (parts[0] || '00').padStart(2, '0');
+  const mm = (parts[1] || '00').padStart(2, '0');
+  const ss = (parts[2] || '00').padStart(2, '0').slice(0, 2); // take only first 2 chars
+  return `${hh}:${mm}:${ss}`;
 }
 
 function buildTemplatesFromOverride(override: AdminOverride): ShiftTemplate[] {
@@ -862,8 +867,8 @@ export async function generateScheduleTS(
             position_id:      posInfo.id,
             business_date:    day.date,
             shift_type:       wave.template.type,
-            scheduled_start:  `${day.date}T${normalizeTime(wave.template.start)}:00`,
-            scheduled_end:    `${endDate}T${normalizeTime(wave.template.end)}:00`,
+            scheduled_start:  `${day.date}T${normalizeTime(wave.template.start)}`,
+            scheduled_end:    `${endDate}T${normalizeTime(wave.template.end)}`,
             scheduled_hours:  wave.template.hours,
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
