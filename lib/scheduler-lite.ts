@@ -1272,14 +1272,14 @@ export async function generateScheduleTS(
               : [];
 
             if (curve.length > 0) {
-              // ── Start: closer N arrives when staffNeeded > N (0-indexed)
+              // ── Start: closer N arrives 30min BEFORE covers need them
               // Closer 0 = first closer, arrives at template start
-              // Closer 1 = arrives when curve says 2+ closers needed, etc.
+              // Closer 1 = arrives 30min before curve says 2+ closers needed, etc.
               if (waveAssigned > 0) {
-                const neededThreshold = waveAssigned + 1; // closer 1 needs staffNeeded >= 2
+                const neededThreshold = waveAssigned + 1;
                 for (const point of curve) {
                   if (point.staffNeeded >= neededThreshold && point.time > sDec) {
-                    startDec = point.time;
+                    startDec = Math.max(sDec, point.time - 0.5); // 30min early buffer
                     break;
                   }
                 }
