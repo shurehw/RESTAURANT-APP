@@ -648,9 +648,9 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
                           {shift.scheduled_hours}h
                           {shift.break_minutes ? ` (${shift.break_minutes}m break)` : ''}
                         </div>
-                        {shift.notes && shift.notes.startsWith('Suggested break:') && (
+                        {shift.notes && shift.notes.startsWith('Suggested break') && (
                           <div className="text-[10px] text-amber-600 mt-0.5">
-                            {shift.notes.replace('Suggested break: ', 'Break ')}
+                            {shift.notes.replace('Suggested break: ', 'Break ').replace('Suggested breaks: ', 'Breaks ')}
                           </div>
                         )}
                       </div>

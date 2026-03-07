@@ -166,22 +166,31 @@ function findDemandVelocitySplit(
 }
 
 /**
- * Find the lowest-demand 30-min window within a shift for scheduling
- * a meal break. Returns HH:MM of the suggested break start, or null
- * if no curves are available.
+ * Find the lowest-demand 30-min window for a meal break.
  *
- * Skips the first and last hour of the shift (you don't break right
- * after arriving or right before leaving).
+ * CA law: first break must START before end of 5th hour from shift start.
+ * Second break (>10h shifts) must start before end of 10th hour.
+ *
+ * Within that legal window, picks the 30-min interval with the lowest
+ * pct_of_daily_covers. Skips the first hour (just arrived).
+ * Returns HH:MM of the suggested break start, or null if no curves.
  */
 function findLowestDemandWindow(
   intervals: DemandInterval[],
   shiftStartDecimal: number,
   shiftEndDecimal: number,
   venueOpenHour: number,
+  breakNumber: number = 1,  // 1 = first break, 2 = second break
 ): string | null {
   if (!intervals || intervals.length === 0) return null;
 
-  // Convert intervals to decimal hours with demand values
+  // CA legal deadline: break must START before end of 5th hour (break 1) or 10th hour (break 2)
+  const deadlineHour = breakNumber === 1
+    ? shiftStartDecimal + 5   // before end of 5th hour
+    : shiftStartDecimal + 10; // before end of 10th hour
+  // Earliest: at least 1h into shift (don't break right after arriving)
+  const earliest = shiftStartDecimal + 1;
+
   const candidates: { decimalHour: number; demand: number }[] = [];
   for (const interval of intervals) {
     const h = parseInt(interval.interval_start.split(':')[0], 10);
@@ -189,15 +198,17 @@ function findLowestDemandWindow(
     let decHour = h + m / 60;
     if (decHour < 12 && venueOpenHour >= 12) decHour += 24;
 
-    // Must be within shift window, excluding first and last hour
-    if (decHour >= shiftStartDecimal + 1 && decHour <= shiftEndDecimal - 1) {
+    if (decHour >= earliest && decHour < deadlineHour) {
       candidates.push({ decimalHour: decHour, demand: interval.pct_of_daily_covers });
     }
   }
 
-  if (candidates.length === 0) return null;
+  if (candidates.length === 0) {
+    // No demand data in window — suggest midpoint of legal window as fallback
+    const midpoint = (earliest + Math.min(deadlineHour, shiftEndDecimal)) / 2;
+    return hourToHHMM(midpoint);
+  }
 
-  // Find the slot with the lowest demand
   candidates.sort((a, b) => a.demand - b.demand);
   return hourToHHMM(candidates[0].decimalHour);
 }
@@ -1086,9 +1097,17 @@ export async function generateScheduleTS(
           let shiftStartDec = startH + startM / 60;
           let shiftEndDec = endH + endM / 60;
           if (shiftEndDec <= shiftStartDec) shiftEndDec += 24;
-          const suggestedBreak = breakMins > 0
-            ? findLowestDemandWindow(dayDemandIntervals ?? [], shiftStartDec, shiftEndDec, venueHours.open)
-            : null;
+          // Suggest break(s) during lowest-demand windows within CA legal deadlines
+          let breakNote: string | null = null;
+          if (breakMins >= 30) {
+            const break1 = findLowestDemandWindow(dayDemandIntervals ?? [], shiftStartDec, shiftEndDec, venueHours.open, 1);
+            if (breakMins >= 60) {
+              const break2 = findLowestDemandWindow(dayDemandIntervals ?? [], shiftStartDec, shiftEndDec, venueHours.open, 2);
+              breakNote = break1 && break2 ? `Suggested breaks: ${break1}, ${break2}` : null;
+            } else {
+              breakNote = break1 ? `Suggested break: ${break1}` : null;
+            }
+          }
 
           shifts.push({
             venue_id:         venueId,
@@ -1102,7 +1121,7 @@ export async function generateScheduleTS(
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
             break_minutes:    breakMins,
-            notes:            suggestedBreak ? `Suggested break: ${suggestedBreak}` : null,
+            notes:            breakNote,
             status:           'scheduled',
           });
 
