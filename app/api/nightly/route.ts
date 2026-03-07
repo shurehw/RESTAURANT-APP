@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchNightlyReport, fetchNightlyReportFromFacts, fetchTipseeLocations, getPosTypeForLocations, fetchCompsByReason } from '@/lib/database/tipsee';
+import { fetchNightlyReport, fetchNightlyReportFromFacts, fetchSimphonyNightlyReport, fetchTipseeLocations, getPosTypeForLocations, fetchCompsByReason } from '@/lib/database/tipsee';
 import { getServiceClient } from '@/lib/supabase/service';
 
 // Default location (The Nice Guy)
@@ -86,7 +86,21 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fallback to live TipSee query (Upserve / Simphony)
+    // Simphony venues (e.g. Dallas) — query Simphony-specific tables
+    if (posType === 'simphony') {
+      const [report, compsByReason] = await Promise.all([
+        fetchSimphonyNightlyReport(date, location),
+        fetchCompsByReason([location], date),
+      ]);
+      return NextResponse.json({
+        ...report,
+        discounts: compsByReason.map(r => ({ reason: r.reason, qty: r.count, amount: r.total })),
+        _cached: false,
+        _source: 'simphony',
+      });
+    }
+
+    // Fallback to live TipSee query (Upserve)
     const report = await fetchNightlyReport(date, location);
     return NextResponse.json({
       ...report,

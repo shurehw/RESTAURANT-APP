@@ -999,6 +999,124 @@ export async function fetchSimphonyItemSummary(
 }
 
 // ============================================================================
+// SIMPHONY NIGHTLY REPORT — Full NightlyReportData from Simphony tables
+// ============================================================================
+
+/**
+ * Build a full NightlyReportData for Simphony venues (e.g. Dallas).
+ * Uses tipsee_simphony_sales for summary + tipsee_simphony_sales_items for
+ * menu item breakdown. Servers/notableGuests/detailedComps are not available
+ * in Simphony data — returned as empty arrays.
+ */
+export async function fetchSimphonyNightlyReport(
+  date: string,
+  locationUuid: string
+): Promise<NightlyReportData> {
+  const pool = getTipseePool();
+
+  const results = await Promise.allSettled([
+    // 0: Summary from tipsee_simphony_sales
+    pool.query(
+      `SELECT
+        $2 as trading_day,
+        COALESCE(SUM(check_count), 0) as total_checks,
+        COALESCE(SUM(guest_count), 0) as total_covers,
+        COALESCE(SUM(net_sales), 0) as net_sales,
+        COALESCE(SUM(gross_sales), 0) as sub_total,
+        COALESCE(SUM(tax_total), 0) as total_tax,
+        ABS(COALESCE(SUM(discount_total), 0)) as total_comps,
+        ABS(COALESCE(SUM(void_total), 0)) as total_voids
+      FROM public.tipsee_simphony_sales
+      WHERE location_uuid = $1 AND trading_day = $2`,
+      [locationUuid, date]
+    ),
+    // 1: Food/Beverage split by revenue center
+    pool.query(
+      `SELECT
+        COALESCE(SUM(CASE
+          WHEN LOWER(COALESCE(revenue_center_name, '')) LIKE '%bar%'
+            OR (revenue_center_name IS NULL AND revenue_center_number = 2)
+          THEN net_sales ELSE 0 END), 0) as beverage_sales,
+        COALESCE(SUM(CASE
+          WHEN LOWER(COALESCE(revenue_center_name, '')) NOT LIKE '%bar%'
+            AND NOT (revenue_center_name IS NULL AND revenue_center_number = 2)
+          THEN net_sales ELSE 0 END), 0) as food_sales
+      FROM public.tipsee_simphony_sales
+      WHERE location_uuid = $1 AND trading_day = $2`,
+      [locationUuid, date]
+    ),
+    // 2: Menu items from tipsee_simphony_sales_items + menu dimensions
+    pool.query(
+      `SELECT
+        COALESCE(m.menu_item_name, 'Item #' || i.menu_item_number) as name,
+        SUM(i.quantity) as qty,
+        SUM(i.sales_total) as net_total,
+        COALESCE(m.major_group_name, 'Other') as parent_category
+      FROM public.tipsee_simphony_sales_items i
+      LEFT JOIN public.tipsee_simphony_menu_dimensions m
+        ON m.location_uuid = i.location_uuid AND m.menu_item_number = i.menu_item_number
+      WHERE i.location_uuid = $1 AND i.trading_day = $2
+      GROUP BY m.menu_item_name, i.menu_item_number, m.major_group_name
+      ORDER BY SUM(i.sales_total) DESC`,
+      [locationUuid, date]
+    ),
+  ]);
+
+  // Extract results with fallbacks
+  const summaryRow = results[0].status === 'fulfilled' && results[0].value.rows[0]
+    ? cleanRow(results[0].value.rows[0]) : null;
+  const splitRow = results[1].status === 'fulfilled' && results[1].value.rows[0]
+    ? cleanRow(results[1].value.rows[0]) : null;
+  const itemRows = results[2].status === 'fulfilled'
+    ? results[2].value.rows.map(cleanRow) : [];
+
+  const summary = summaryRow
+    ? {
+        trading_day: date,
+        total_checks: summaryRow.total_checks,
+        total_covers: summaryRow.total_covers,
+        net_sales: summaryRow.net_sales,
+        sub_total: summaryRow.sub_total,
+        total_tax: summaryRow.total_tax,
+        total_comps: summaryRow.total_comps,
+        total_voids: summaryRow.total_voids,
+      }
+    : {
+        trading_day: date,
+        total_checks: 0, total_covers: 0, net_sales: 0,
+        sub_total: 0, total_tax: 0, total_comps: 0, total_voids: 0,
+      };
+
+  // Build category breakdown
+  const salesByCategory: NightlyReportData['salesByCategory'] = [];
+  if (splitRow) {
+    const food = splitRow.food_sales || 0;
+    const bev = splitRow.beverage_sales || 0;
+    if (food > 0) salesByCategory.push({ category: 'Food', gross_sales: food, comps: 0, voids: 0, net_sales: food });
+    if (bev > 0) salesByCategory.push({ category: 'Beverage', gross_sales: bev, comps: 0, voids: 0, net_sales: bev });
+  }
+
+  return {
+    date,
+    summary: summary as NightlyReportData['summary'],
+    salesByCategory,
+    salesBySubcategory: [],
+    servers: [],
+    menuItems: itemRows.map(r => ({
+      name: r.name,
+      qty: r.qty,
+      net_total: r.net_total,
+      parent_category: r.parent_category,
+    })),
+    discounts: [],
+    detailedComps: [],
+    logbook: null,
+    notableGuests: [],
+    peopleWeKnow: [],
+  };
+}
+
+// ============================================================================
 // SIMPHONY BI API — Direct Oracle Simphony polling (bypasses TipSee batch)
 // ============================================================================
 
