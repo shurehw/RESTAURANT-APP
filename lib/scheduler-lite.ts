@@ -292,6 +292,9 @@ function buildTemplatesFromVenueHours(
   posName: string,
   demandIntervals?: DemandInterval[],
   minShiftHours?: number,
+  dailyCovers?: number,
+  cplh?: number,
+  dwellMinutes?: number,
 ): ShiftTemplate[] {
   let guestStart = venueHours.open;
   let guestEnd = venueHours.close;
@@ -391,34 +394,36 @@ function buildTemplatesFromVenueHours(
     // when demand builds, stays through close for breakdown.
     // Staff split is demand-driven: opener fraction = cumulative covers before closer starts.
     if (barSpan <= 10) {
-      // Closer start: when demand ramps (20% cumulative) or 1h after doors
-      const BAR_CLOSER_START_THRESHOLD = 0.20;
-      const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], BAR_CLOSER_START_THRESHOLD, venueHours.open);
-      let closerStart: number;
-      if (velocityStart !== null) {
-        closerStart = velocityStart;
-        closerStart = Math.max(closerStart, barStart + 2);         // at least 2h after opener
-        closerStart = Math.min(closerStart, barEnd - minHours);    // enough time before close
-      } else {
-        closerStart = guestStart + 1;  // 1h after doors open
-      }
+      // Build staffing curve: when does the floor actually need >1 bartender?
+      const curve = (cplh && dailyCovers && dwellMinutes)
+        ? buildStaffingCurve(demandIntervals ?? [], dailyCovers, cplh, dwellMinutes, venueHours.open)
+        : [];
 
-      // Closer stays through close for breakdown (cash out, clean, restock)
+      // Closer start: when covers need >1 staff (minus 30min buffer), or 1h after doors
+      let closerStart: number;
+      const needTwo = curve.find(p => p.staffNeeded >= 2 && p.time > barStart);
+      if (needTwo) {
+        closerStart = Math.max(barStart + 2, needTwo.time - 0.5);
+        closerStart = Math.min(closerStart, barEnd - minHours);
+      } else {
+        closerStart = guestStart + 1;
+      }
       const closerEnd = barEnd;
 
-      // Opener end: demand-driven — cuts 30 min after closer arrives (handoff overlap),
-      // or when 85% of covers have arrived, whichever is later. First in, first out.
-      const BAR_OPENER_END_THRESHOLD = 0.85;
-      const openerTail = findDemandVelocitySplit(demandIntervals ?? [], BAR_OPENER_END_THRESHOLD, venueHours.open);
+      // Opener end (FIFO): when demand drops back to 1 staff from the tail
       let openerEnd: number;
-      if (openerTail !== null) {
-        openerEnd = openerTail;
-        openerEnd = Math.max(openerEnd, closerStart + 0.5);       // at least 30 min overlap with closer
-        openerEnd = Math.max(openerEnd, barStart + minHours);      // minimum shift length
-        openerEnd = Math.min(openerEnd, closerEnd);                 // never past closer
-      } else {
-        openerEnd = closerEnd;  // no curves → stay through close
+      let foundDrop = false;
+      for (let i = curve.length - 1; i >= 0; i--) {
+        if (curve[i].staffNeeded >= 2 && curve[i].time > closerStart) {
+          openerEnd = curve[i].time + 0.5; // 30min handoff after last need
+          foundDrop = true;
+          break;
+        }
       }
+      if (!foundDrop) openerEnd = closerEnd; // no curve → stay through close
+      openerEnd = Math.max(openerEnd!, closerStart + 0.5);  // at least 30 min overlap
+      openerEnd = Math.max(openerEnd, barStart + minHours);  // minimum shift length
+      openerEnd = Math.min(openerEnd, closerEnd);             // never past closer
 
       return [
         { label: 'opener', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(openerEnd), hours: Math.max(minHours, openerEnd - barStart) },
@@ -458,38 +463,37 @@ function buildTemplatesFromVenueHours(
   }
 
   // ≤10h service window: FIFO opener/closer model
-  // Opener arrives first for setup, cuts first when demand slows.
-  // Closer arrives when demand builds, stays through close for breakdown.
-  // Staff split is demand-driven: opener fraction = cumulative covers before closer starts.
+  // Covers-driven: staffing curve determines when more staff are needed.
   if (fohSpan <= 10) {
-    // Closer start: when demand ramps (20% cumulative) or 1h after doors
-    const FOH_CLOSER_START_THRESHOLD = 0.20;
-    const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], FOH_CLOSER_START_THRESHOLD, venueHours.open);
-    let closerStart: number;
-    if (velocityStart !== null) {
-      closerStart = velocityStart;
-      closerStart = Math.max(closerStart, fohStart + 2);         // at least 2h after opener
-      closerStart = Math.min(closerStart, fohEnd - minHours);    // enough time before close
-    } else {
-      closerStart = guestStart + 1;  // 1h after doors open
-    }
+    const curve = (cplh && dailyCovers && dwellMinutes)
+      ? buildStaffingCurve(demandIntervals ?? [], dailyCovers, cplh, dwellMinutes, venueHours.open)
+      : [];
 
-    // Closer stays through close for breakdown (side work, reset)
+    // Closer start: when covers need >1 staff (minus 30min buffer), or 1h after doors
+    let closerStart: number;
+    const needTwo = curve.find(p => p.staffNeeded >= 2 && p.time > fohStart);
+    if (needTwo) {
+      closerStart = Math.max(fohStart + 2, needTwo.time - 0.5);
+      closerStart = Math.min(closerStart, fohEnd - minHours);
+    } else {
+      closerStart = guestStart + 1;
+    }
     const closerEnd = fohEnd;
 
-    // Opener end: demand-driven — cuts when 85% of covers have arrived.
-    // At least 30 min overlap with closer for handoff. First in, first out.
-    const FOH_OPENER_END_THRESHOLD = 0.85;
-    const openerTail = findDemandVelocitySplit(demandIntervals ?? [], FOH_OPENER_END_THRESHOLD, venueHours.open);
+    // Opener end (FIFO): when demand drops back to 1 from the tail
     let openerEnd: number;
-    if (openerTail !== null) {
-      openerEnd = openerTail;
-      openerEnd = Math.max(openerEnd, closerStart + 0.5);       // at least 30 min overlap with closer
-      openerEnd = Math.max(openerEnd, fohStart + minHours);      // minimum shift length
-      openerEnd = Math.min(openerEnd, closerEnd);                 // never past closer
-    } else {
-      openerEnd = closerEnd;  // no curves → stay through close
+    let foundDrop = false;
+    for (let i = curve.length - 1; i >= 0; i--) {
+      if (curve[i].staffNeeded >= 2 && curve[i].time > closerStart) {
+        openerEnd = curve[i].time + 0.5;
+        foundDrop = true;
+        break;
+      }
     }
+    if (!foundDrop) openerEnd = closerEnd;
+    openerEnd = Math.max(openerEnd!, closerStart + 0.5);
+    openerEnd = Math.max(openerEnd, fohStart + minHours);
+    openerEnd = Math.min(openerEnd, closerEnd);
 
     return [
       { label: 'opener', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(openerEnd), hours: Math.max(minHours, openerEnd - fohStart) },
@@ -498,55 +502,55 @@ function buildTemplatesFromVenueHours(
   }
 
   // >10h service window (all-day venues): 3-wave with FIFO ordering.
-  // Opener cuts first, mid cuts second, closer stays through close.
-  const FOH_WAVE2_THRESHOLD = 0.30;
-  const FOH_WAVE3_THRESHOLD = 0.65;
-  const velocity2 = findDemandVelocitySplit(demandIntervals ?? [], FOH_WAVE2_THRESHOLD, venueHours.open);
-  const velocity3 = findDemandVelocitySplit(demandIntervals ?? [], FOH_WAVE3_THRESHOLD, venueHours.open);
+  // Covers-driven: staffing curve determines wave starts and ends.
+  const curve = (cplh && dailyCovers && dwellMinutes)
+    ? buildStaffingCurve(demandIntervals ?? [], dailyCovers, cplh, dwellMinutes, venueHours.open)
+    : [];
 
+  // Wave 2 (mid) start: when covers need ≥2 staff (minus 30min buffer)
   let wave2Start: number;
-  if (velocity2 !== null) {
-    wave2Start = velocity2 - 0.5;
-    wave2Start = Math.max(wave2Start, fohStart + 1);
+  const needTwo3w = curve.find(p => p.staffNeeded >= 2 && p.time > fohStart);
+  if (needTwo3w) {
+    wave2Start = Math.max(fohStart + 1, needTwo3w.time - 0.5);
     wave2Start = Math.min(wave2Start, fohEnd - minHours * 2);
   } else {
     wave2Start = fohStart + Math.floor(fohSpan * 0.3);
   }
 
+  // Wave 3 (closer) start: when covers need ≥3 staff (minus 30min buffer)
   let wave3Start: number;
-  if (velocity3 !== null) {
-    wave3Start = velocity3 - 0.5;
-    wave3Start = Math.max(wave3Start, wave2Start + 2);
+  const needThree = curve.find(p => p.staffNeeded >= 3 && p.time > wave2Start);
+  if (needThree) {
+    wave3Start = Math.max(wave2Start + 2, needThree.time - 0.5);
     wave3Start = Math.min(wave3Start, fohEnd - minHours);
   } else {
     wave3Start = fohEnd - minHours;
   }
 
-  // FIFO end times: opener cuts at 60% covers, mid cuts at 85%, closer stays through close
-  const FOH_OPENER_END_3W = 0.60;
-  const FOH_MID_END_3W = 0.85;
-  const earlyTail = findDemandVelocitySplit(demandIntervals ?? [], FOH_OPENER_END_3W, venueHours.open);
-  const midTail = findDemandVelocitySplit(demandIntervals ?? [], FOH_MID_END_3W, venueHours.open);
-
-  let earlyEnd: number;
-  if (earlyTail !== null) {
-    earlyEnd = earlyTail;
-    earlyEnd = Math.max(earlyEnd, fohStart + minHours);      // min shift
-    earlyEnd = Math.max(earlyEnd, wave2Start + 0.5);          // overlap with wave2
-    earlyEnd = Math.min(earlyEnd, fohEnd);
-  } else {
-    earlyEnd = fohStart + minHours;
+  // FIFO end times from staffing curve
+  // Opener leaves when demand drops to 2 staff (mid + closer can handle it)
+  let earlyEnd: number = fohStart + minHours;
+  for (let i = curve.length - 1; i >= 0; i--) {
+    if (curve[i].staffNeeded >= 3 && curve[i].time > wave2Start) {
+      earlyEnd = curve[i].time + 0.5;
+      break;
+    }
   }
+  earlyEnd = Math.max(earlyEnd, fohStart + minHours);
+  earlyEnd = Math.max(earlyEnd, wave2Start + 0.5);
+  earlyEnd = Math.min(earlyEnd, fohEnd);
 
-  let midEnd: number;
-  if (midTail !== null) {
-    midEnd = midTail;
-    midEnd = Math.max(midEnd, wave2Start + minHours);         // min shift
-    midEnd = Math.max(midEnd, wave3Start + 0.5);              // overlap with wave3
-    midEnd = Math.min(midEnd, fohEnd);
-  } else {
-    midEnd = wave2Start + minHours;
+  // Mid leaves when demand drops to 1 staff (closer can handle it)
+  let midEnd: number = wave2Start + minHours;
+  for (let i = curve.length - 1; i >= 0; i--) {
+    if (curve[i].staffNeeded >= 2 && curve[i].time > wave3Start) {
+      midEnd = curve[i].time + 0.5;
+      break;
+    }
   }
+  midEnd = Math.max(midEnd, wave2Start + minHours);
+  midEnd = Math.max(midEnd, wave3Start + 0.5);
+  midEnd = Math.min(midEnd, fohEnd);
 
   return [
     { label: 'opener', type: classifyShiftType(fohStart), start: hourToHHMM(fohStart), end: hourToHHMM(earlyEnd), hours: Math.max(minHours, earlyEnd - fohStart) },
@@ -1193,26 +1197,35 @@ export async function generateScheduleTS(
       } else {
         const minShift = override?.min_shift_hours ??
           (config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
+        const curveCplh = effectiveCplh || config.cplh || 0;
         templates = buildTemplatesFromVenueHours(
           venueHours, config.category, posName, dayDemandIntervals, minShift,
+          forecast.covers, curveCplh, dwellMinutes,
         );
       }
 
       if (templates.length === 0) continue;
 
-      // Compute demand-driven opener fraction: what share of covers arrives
-      // before the closer/wave2 starts? That determines opener staffing.
+      // Compute demand-driven opener fraction from staffing curve:
+      // peak staff needed during opener-only window / total peak staff.
       let openerFraction: number | undefined;
-      if (dayDemandIntervals && templates.length >= 2 && !config.fixed) {
-        const wave2Start = templates[1].start;
-        const w2H = parseInt(wave2Start.split(':')[0], 10);
-        const w2M = parseInt(wave2Start.split(':')[1] || '0', 10);
-        let wave2Dec = w2H + w2M / 60;
-        if (wave2Dec < 12 && venueHours.open >= 12) wave2Dec += 24;
-        const demandBefore = cumulativeDemandAt(dayDemandIntervals, wave2Dec, venueHours.open);
-        if (demandBefore > 0) {
-          // Clamp: at least 15% (always need an opener), at most 50%
-          openerFraction = Math.max(0.15, Math.min(0.50, demandBefore));
+      const curveCplh2 = effectiveCplh || config.cplh || 0;
+      if (dayDemandIntervals && templates.length >= 2 && !config.fixed && curveCplh2 > 0) {
+        const waveCurve = buildStaffingCurve(dayDemandIntervals, forecast.covers, curveCplh2, dwellMinutes, venueHours.open);
+        if (waveCurve.length > 0) {
+          // Parse closer start time
+          const w2H = parseInt(templates[1].start.split(':')[0], 10);
+          const w2M = parseInt(templates[1].start.split(':')[1] || '0', 10);
+          let wave2Dec = w2H + w2M / 60;
+          if (wave2Dec < 12 && venueHours.open >= 12) wave2Dec += 24;
+          // Peak staff needed during opener-only window (before closer arrives)
+          let openerPeak = 1;
+          for (const p of waveCurve) {
+            if (p.time < wave2Dec && p.staffNeeded > openerPeak) openerPeak = p.staffNeeded;
+          }
+          if (peakStaff > 0) {
+            openerFraction = Math.max(0.15, Math.min(0.50, openerPeak / peakStaff));
+          }
         }
       }
 
