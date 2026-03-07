@@ -1181,6 +1181,7 @@ export async function generateScheduleTS(
         pool.sort((a, b) => (empHours.get(a.id) || 0) - (empHours.get(b.id) || 0));
 
         let waveAssigned = 0;
+        const minShift = config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS;
 
         for (const emp of pool) {
           if (waveAssigned >= wave.count) break;
@@ -1189,24 +1190,46 @@ export async function generateScheduleTS(
           const days = empDays.get(emp.id) || new Set<string>();
           if (days.has(day.date)) continue;
 
+          // ── Stagger closer arrivals ──────────────────────────────────────
+          // First closer arrives at template start. Each subsequent closer
+          // arrives 30 min later (demand ramps up), capped by min shift hours.
+          let shiftStart = wave.template.start;
+          let shiftHours = wave.template.hours;
+          if (wave.template.label === 'closer' && wave.count > 1 && waveAssigned > 0) {
+            const sH = parseInt(wave.template.start.split(':')[0], 10);
+            const sM = parseInt(wave.template.start.split(':')[1] || '0', 10);
+            const eH = parseInt(wave.template.end.split(':')[0], 10);
+            const eM = parseInt(wave.template.end.split(':')[1] || '0', 10);
+            let sDec = sH + sM / 60;
+            let eDec = eH + eM / 60;
+            if (sDec < 12 && venueHours.open >= 12) sDec += 24;
+            if (eDec < 12 && venueHours.open >= 12) eDec += 24;
+            if (eDec <= sDec) eDec += 24;
+            const staggered = sDec + (waveAssigned * 0.5);
+            if (eDec - staggered >= minShift) {
+              shiftStart = hourToHHMM(staggered);
+              shiftHours = eDec - staggered;
+            }
+          }
+
           // Skip if shift would push over weekly hour cap (non-fixed positions)
           const currentHours = empHours.get(emp.id) || 0;
-          if (!config.fixed && currentHours + wave.template.hours > (emp.max_hours_per_week || 40)) continue;
+          if (!config.fixed && currentHours + shiftHours > (emp.max_hours_per_week || 40)) continue;
 
           // Determine end date (handles shifts that cross midnight)
-          const endDate = wave.template.end <= wave.template.start
+          const endDate = wave.template.end <= shiftStart
             ? nextDay(day.date)
             : day.date;
 
           // CA meal break deduction: paid hours exclude unpaid breaks
-          const grossHours = wave.template.hours;
+          const grossHours = shiftHours;
           const breakMins = grossHours > 10 ? 60 : grossHours > 6 ? 30 : 0;
           const netHours = paidHours(grossHours);
           const shiftCost = netHours * posInfo.base_hourly_rate;
 
           // Suggest break during lowest-demand 30-min window within shift
-          const startH = parseInt(wave.template.start.split(':')[0], 10);
-          const startM = parseInt(wave.template.start.split(':')[1] || '0', 10);
+          const startH = parseInt(shiftStart.split(':')[0], 10);
+          const startM = parseInt(shiftStart.split(':')[1] || '0', 10);
           const endH = parseInt(wave.template.end.split(':')[0], 10);
           const endM = parseInt(wave.template.end.split(':')[1] || '0', 10);
           let shiftStartDec = startH + startM / 60;
@@ -1230,7 +1253,7 @@ export async function generateScheduleTS(
             position_id:      posInfo.id,
             business_date:    day.date,
             shift_type:       wave.template.type,
-            scheduled_start:  toTimestamp(day.date, wave.template.start),
+            scheduled_start:  toTimestamp(day.date, shiftStart),
             scheduled_end:    toTimestamp(endDate, wave.template.end),
             scheduled_hours:  netHours,
             hourly_rate:      posInfo.base_hourly_rate,
