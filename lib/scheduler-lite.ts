@@ -316,40 +316,42 @@ function buildTemplatesFromVenueHours(
     const barSpan = barEnd - barStart;
 
     // ≤10h service window (supper clubs, evening-only venues):
-    // Opener arrives for setup, volume bartender arrives when demand builds.
-    // Both work through close. distributeWaves 40/60 → fewer openers, more volume.
+    // Opener arrives first for setup, cuts first (FIFO). Closer arrives
+    // when demand builds, stays through close for breakdown.
+    // distributeWaves 40/60 → fewer openers, more closers.
     if (barSpan <= 10) {
-      // Volume start: when demand ramps (20% cumulative) or 1h after doors
-      const BAR_VOLUME_START_THRESHOLD = 0.20;
-      const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], BAR_VOLUME_START_THRESHOLD, venueHours.open);
-      let volumeStart: number;
+      // Closer start: when demand ramps (20% cumulative) or 1h after doors
+      const BAR_CLOSER_START_THRESHOLD = 0.20;
+      const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], BAR_CLOSER_START_THRESHOLD, venueHours.open);
+      let closerStart: number;
       if (velocityStart !== null) {
-        volumeStart = velocityStart;
-        volumeStart = Math.max(volumeStart, barStart + 2);         // at least 2h after opener
-        volumeStart = Math.min(volumeStart, barEnd - minHours);    // enough time before close
+        closerStart = velocityStart;
+        closerStart = Math.max(closerStart, barStart + 2);         // at least 2h after opener
+        closerStart = Math.min(closerStart, barEnd - minHours);    // enough time before close
       } else {
-        volumeStart = guestStart + 1;  // 1h after doors open
+        closerStart = guestStart + 1;  // 1h after doors open
       }
 
-      // Opener end: demand-driven close-out (90% cumulative + 1h breakdown) or venue close
-      const BAR_OPENER_END_THRESHOLD = 0.90;
+      // Closer stays through close for breakdown (cash out, clean, restock)
+      const closerEnd = barEnd;
+
+      // Opener end: demand-driven — cuts 30 min after closer arrives (handoff overlap),
+      // or when 85% of covers have arrived, whichever is later. First in, first out.
+      const BAR_OPENER_END_THRESHOLD = 0.85;
       const openerTail = findDemandVelocitySplit(demandIntervals ?? [], BAR_OPENER_END_THRESHOLD, venueHours.open);
       let openerEnd: number;
       if (openerTail !== null) {
-        openerEnd = openerTail + 1.0;  // 1h past 90% for close-out (cash, clean, restock)
+        openerEnd = openerTail;
+        openerEnd = Math.max(openerEnd, closerStart + 0.5);       // at least 30 min overlap with closer
         openerEnd = Math.max(openerEnd, barStart + minHours);      // minimum shift length
-        openerEnd = Math.min(openerEnd, barEnd);                    // never past venue close
+        openerEnd = Math.min(openerEnd, closerEnd);                 // never past closer
       } else {
-        openerEnd = barEnd;  // no curves → stay through close
+        openerEnd = closerEnd;  // no curves → stay through close
       }
-
-      // Volume end: always 30 min before opener (opener does final close alone).
-      // Volume cuts when demand tails off, but never after opener.
-      const volumeEnd = Math.max(openerEnd - 0.5, volumeStart + minHours);
 
       return [
         { label: 'opener', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(openerEnd), hours: Math.max(minHours, openerEnd - barStart) },
-        { label: 'volume', type: classifyShiftType(volumeStart), start: hourToHHMM(volumeStart), end: hourToHHMM(volumeEnd), hours: Math.max(minHours, volumeEnd - volumeStart) },
+        { label: 'closer', type: classifyShiftType(closerStart), start: hourToHHMM(closerStart), end: hourToHHMM(closerEnd), hours: Math.max(minHours, closerEnd - closerStart) },
       ];
     }
 
