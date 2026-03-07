@@ -42,15 +42,12 @@ export async function requireUser(): Promise<AuthedUser> {
         .single();
 
       if (legacyUser?.email) {
-        // Paginate through auth users to find by email (may exceed 100)
-        let authUser: { id: string; email?: string } | undefined;
-        for (let page = 1; page <= 10 && !authUser; page++) {
-          const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ page, perPage: 100 });
-          if (!authUsers || authUsers.length === 0) break;
-          authUser = authUsers.find((u: { email?: string }) => u.email === legacyUser.email);
-        }
-        if (authUser) {
-          return { id: authUser.id, email: authUser.email ?? undefined };
+        // Direct DB lookup via RPC (migration 143) — single indexed query on auth.users
+        const { data: authUserId } = await admin.rpc('get_auth_user_id_by_email', {
+          user_email: legacyUser.email,
+        });
+        if (authUserId) {
+          return { id: authUserId, email: legacyUser.email };
         }
       }
     } catch (e) {

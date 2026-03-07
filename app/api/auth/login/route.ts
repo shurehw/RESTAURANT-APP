@@ -57,19 +57,15 @@ export async function POST(request: NextRequest) {
     let authUserId: string | null = null;
     
     try {
-      // Check if auth.users entry exists
-      const { data: authUsers } = await adminClient.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
+      // Check if auth.users entry exists (direct DB lookup via RPC — no pagination needed)
+      const { data: existingAuthId } = await adminClient.rpc('get_auth_user_id_by_email', {
+        user_email: email.toLowerCase(),
       });
-      const existingAuthUser = authUsers?.users?.find(
-        u => u.email?.toLowerCase() === email.toLowerCase()
-      );
 
-      if (existingAuthUser) {
-        authUserId = existingAuthUser.id;
+      if (existingAuthId) {
+        authUserId = existingAuthId;
         // Sync password to auth.users so Supabase session works
-        await adminClient.auth.admin.updateUserById(existingAuthUser.id, {
+        await adminClient.auth.admin.updateUserById(existingAuthId, {
           password: password,
         });
       } else {
@@ -80,31 +76,30 @@ export async function POST(request: NextRequest) {
           email_confirm: true,
           user_metadata: { full_name: user.full_name },
         });
-        
+
         if (!createError && newAuthUser?.user) {
           authUserId = newAuthUser.user.id;
           console.log(`[LOGIN] Created auth.users entry for ${email}: ${authUserId}`);
-          
-          // Auto-link to organization if @hwoodgroup.com
-          if (email.toLowerCase().endsWith('@hwoodgroup.com')) {
-            const { data: org } = await adminClient
-              .from('organizations')
-              .select('id')
-              .or('slug.eq.hwood-group,name.eq.The h.wood Group,name.eq.Hwood Group')
-              .single();
-            
-            if (org) {
-              await adminClient
-                .from('organization_users')
-                .upsert({
-                  user_id: authUserId,
-                  organization_id: org.id,
-                  role: 'viewer',
-                  is_active: true,
-                }, { onConflict: 'organization_id,user_id' });
-              console.log(`[LOGIN] Linked ${email} to h.wood group organization`);
-            }
-          }
+        }
+      }
+
+      // Ensure organization link exists for @hwoodgroup.com users (new AND existing)
+      if (authUserId && email.toLowerCase().endsWith('@hwoodgroup.com')) {
+        const { data: org } = await adminClient
+          .from('organizations')
+          .select('id')
+          .or('slug.eq.hwood-group,name.eq.The h.wood Group,name.eq.Hwood Group')
+          .single();
+
+        if (org) {
+          await adminClient
+            .from('organization_users')
+            .upsert({
+              user_id: authUserId,
+              organization_id: org.id,
+              role: 'viewer',
+              is_active: true,
+            }, { onConflict: 'organization_id,user_id' });
         }
       }
 
