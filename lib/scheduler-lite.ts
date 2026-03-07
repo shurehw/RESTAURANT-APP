@@ -165,6 +165,43 @@ function findDemandVelocitySplit(
   return null;
 }
 
+/**
+ * Find the lowest-demand 30-min window within a shift for scheduling
+ * a meal break. Returns HH:MM of the suggested break start, or null
+ * if no curves are available.
+ *
+ * Skips the first and last hour of the shift (you don't break right
+ * after arriving or right before leaving).
+ */
+function findLowestDemandWindow(
+  intervals: DemandInterval[],
+  shiftStartDecimal: number,
+  shiftEndDecimal: number,
+  venueOpenHour: number,
+): string | null {
+  if (!intervals || intervals.length === 0) return null;
+
+  // Convert intervals to decimal hours with demand values
+  const candidates: { decimalHour: number; demand: number }[] = [];
+  for (const interval of intervals) {
+    const h = parseInt(interval.interval_start.split(':')[0], 10);
+    const m = parseInt(interval.interval_start.split(':')[1] || '0', 10);
+    let decHour = h + m / 60;
+    if (decHour < 12 && venueOpenHour >= 12) decHour += 24;
+
+    // Must be within shift window, excluding first and last hour
+    if (decHour >= shiftStartDecimal + 1 && decHour <= shiftEndDecimal - 1) {
+      candidates.push({ decimalHour: decHour, demand: interval.pct_of_daily_covers });
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Find the slot with the lowest demand
+  candidates.sort((a, b) => a.demand - b.demand);
+  return hourToHHMM(candidates[0].decimalHour);
+}
+
 /** Convert decimal hour (e.g. 18.5) to HH:MM string */
 function hourToHHMM(h: number): string {
   const normalized = ((h % 24) + 24) % 24;
@@ -982,6 +1019,11 @@ export async function generateScheduleTS(
       const pool = empByPos.get(posName) || [];
       const hasEmployees = pool.length > 0;
 
+      // Select demand intervals for this day's day_type
+      const dayType = dowToDayType(day.dow);
+      const dayDemandIntervals = demandCurvesByDayType.get(dayType)
+        ?? (demandIntervalsFallback.length > 0 ? demandIntervalsFallback : undefined);
+
       // Build shift templates: admin override > demand curves > venue hours
       let templates: ShiftTemplate[];
       if (override?.shift_start && override?.shift_end) {
@@ -990,10 +1032,6 @@ export async function generateScheduleTS(
       } else {
         const minShift = override?.min_shift_hours ??
           (config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
-        // Select demand intervals for this day's day_type (weekday/friday/saturday/sunday)
-        const dayType = dowToDayType(day.dow);
-        const dayDemandIntervals = demandCurvesByDayType.get(dayType)
-          ?? (demandIntervalsFallback.length > 0 ? demandIntervalsFallback : undefined);
         templates = buildTemplatesFromVenueHours(
           venueHours, config.category, posName, dayDemandIntervals, minShift,
         );
@@ -1036,8 +1074,21 @@ export async function generateScheduleTS(
 
           // CA meal break deduction: paid hours exclude unpaid breaks
           const grossHours = wave.template.hours;
+          const breakMins = grossHours > 10 ? 60 : grossHours > 6 ? 30 : 0;
           const netHours = paidHours(grossHours);
           const shiftCost = netHours * posInfo.base_hourly_rate;
+
+          // Suggest break during lowest-demand 30-min window within shift
+          const startH = parseInt(wave.template.start.split(':')[0], 10);
+          const startM = parseInt(wave.template.start.split(':')[1] || '0', 10);
+          const endH = parseInt(wave.template.end.split(':')[0], 10);
+          const endM = parseInt(wave.template.end.split(':')[1] || '0', 10);
+          let shiftStartDec = startH + startM / 60;
+          let shiftEndDec = endH + endM / 60;
+          if (shiftEndDec <= shiftStartDec) shiftEndDec += 24;
+          const suggestedBreak = breakMins > 0
+            ? findLowestDemandWindow(dayDemandIntervals ?? [], shiftStartDec, shiftEndDec, venueHours.open)
+            : null;
 
           shifts.push({
             venue_id:         venueId,
@@ -1050,6 +1101,8 @@ export async function generateScheduleTS(
             scheduled_hours:  netHours,
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
+            break_minutes:    breakMins,
+            notes:            suggestedBreak ? `Suggested break: ${suggestedBreak}` : null,
             status:           'scheduled',
           });
 

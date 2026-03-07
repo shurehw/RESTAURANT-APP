@@ -41,6 +41,8 @@ interface Shift {
   status: string;
   is_modified?: boolean;
   modification_reason?: string;
+  break_minutes?: number;
+  notes?: string | null;
   employee: {
     id?: string;
     first_name: string;
@@ -644,7 +646,13 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
                         </div>
                         <div className="text-gray-500">
                           {shift.scheduled_hours}h
+                          {shift.break_minutes ? ` (${shift.break_minutes}m break)` : ''}
                         </div>
+                        {shift.notes && shift.notes.startsWith('Suggested break:') && (
+                          <div className="text-[10px] text-amber-600 mt-0.5">
+                            {shift.notes.replace('Suggested break: ', 'Break ')}
+                          </div>
+                        )}
                       </div>
                     ))}
 
