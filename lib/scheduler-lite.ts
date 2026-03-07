@@ -602,6 +602,57 @@ function getDwellMultiplier(dwellMinutes: number): number {
 }
 
 /**
+ * Build a staffing timeline: for each 30-min interval, compute how many
+ * staff are needed based on ACTIVE covers (arriving + still seated from
+ * prior intervals) divided by CPLH.
+ *
+ * Used to determine exactly when each additional closer is needed and
+ * when they can be released — based on actual covers, not percentages.
+ */
+function buildStaffingCurve(
+  intervals: DemandInterval[],
+  dailyCovers: number,
+  cplh: number,
+  dwellMinutes: number,
+  venueOpenHour: number,
+): { time: number; staffNeeded: number }[] {
+  if (!intervals || intervals.length === 0 || cplh <= 0) return [];
+
+  // Sort chronologically (evening first for midnight-crossing venues)
+  const sorted = [...intervals].sort((a, b) => {
+    const ha = parseInt(a.interval_start.split(':')[0], 10);
+    const hb = parseInt(b.interval_start.split(':')[0], 10);
+    const aIsEvening = ha >= 12;
+    const bIsEvening = hb >= 12;
+    if (aIsEvening && !bIsEvening) return -1;
+    if (!aIsEvening && bIsEvening) return 1;
+    const ma = parseInt(a.interval_start.split(':')[1] || '0', 10);
+    const mb = parseInt(b.interval_start.split(':')[1] || '0', 10);
+    return (ha * 60 + ma) - (hb * 60 + mb);
+  });
+
+  // How many prior 30-min slots are still seated (dwell window)
+  const dwellSlots = Math.ceil(dwellMinutes / 30);
+
+  const result: { time: number; staffNeeded: number }[] = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const h = parseInt(sorted[i].interval_start.split(':')[0], 10);
+    const m = parseInt(sorted[i].interval_start.split(':')[1] || '0', 10);
+    let decHour = h + m / 60;
+    if (decHour < 12 && venueOpenHour >= 12) decHour += 24;
+
+    // Active covers = arriving covers from this + prior dwell slots still seated
+    let activeCovers = 0;
+    for (let j = Math.max(0, i - dwellSlots + 1); j <= i; j++) {
+      activeCovers += dailyCovers * sorted[j].pct_of_daily_covers;
+    }
+
+    result.push({ time: decHour, staffNeeded: Math.ceil(activeCovers / cplh) });
+  }
+  return result;
+}
+
+/**
  * How many staff are needed to cover the peak hour for this position.
  * dwellMultiplier adjusts for overlapping seated guests from previous intervals.
  */
@@ -1191,11 +1242,12 @@ export async function generateScheduleTS(
           if (days.has(day.date)) continue;
 
           // ── Demand-driven closer start AND end times ─────────────────────
-          // FIFO within closers: first closer in → first closer out.
-          // Start: each closer arrives when cumulative covers cross a threshold.
-          // End:   first closer cuts when demand drops (high cumulative), last
-          //        closer stays through close for breakdown.
-          // Falls back to 30-min stagger if no demand data.
+          // Uses actual covers / CPLH staffing curve instead of percentages.
+          // Start: closer N arrives when active covers need N+1 closers.
+          // End:   FIFO — first closer in leaves first when demand drops
+          //        enough for the remaining closers to handle. Last closer
+          //        stays through close for breakdown.
+          // Falls back to 30-min stagger if no demand data or CPLH.
           let shiftStart = wave.template.start;
           let shiftEnd = wave.template.end;
           let shiftHours = wave.template.hours;
@@ -1213,27 +1265,41 @@ export async function generateScheduleTS(
             let startDec = sDec;
             let endDec = eDec;
 
-            if (dayDemandIntervals && dayDemandIntervals.length > 0) {
-              // ── Stagger start: thresholds between 20% and 80% cumulative
+            // Build covers-based staffing curve for this position
+            const curveCplh = effectiveCplh || config.cplh || 0;
+            const curve = curveCplh > 0 && dayDemandIntervals
+              ? buildStaffingCurve(dayDemandIntervals, forecast.covers, curveCplh, dwellMinutes, venueHours.open)
+              : [];
+
+            if (curve.length > 0) {
+              // ── Start: closer N arrives when staffNeeded > N (0-indexed)
+              // Closer 0 = first closer, arrives at template start
+              // Closer 1 = arrives when curve says 2+ closers needed, etc.
               if (waveAssigned > 0) {
-                const startStep = 0.60 / wave.count;
-                const startThreshold = 0.20 + (waveAssigned * startStep);
-                const arrivalHour = findDemandVelocitySplit(dayDemandIntervals, startThreshold, venueHours.open);
-                if (arrivalHour !== null && arrivalHour > sDec) {
-                  startDec = arrivalHour;
+                const neededThreshold = waveAssigned + 1; // closer 1 needs staffNeeded >= 2
+                for (const point of curve) {
+                  if (point.staffNeeded >= neededThreshold && point.time > sDec) {
+                    startDec = point.time;
+                    break;
+                  }
                 }
               }
 
-              // ── Stagger end (FIFO): last closer stays to close, others cut earlier
-              // End thresholds between 85% and 98%, first closer cuts earliest
-              const reverseIdx = wave.count - 1 - waveAssigned; // 0 = last closer (stays)
+              // ── End (FIFO): first closer leaves first when demand drops
+              // Last closer (highest waveAssigned) stays to close.
+              // Others leave when staffNeeded drops below their threshold.
+              const reverseIdx = wave.count - 1 - waveAssigned; // 0 = last closer
               if (reverseIdx > 0) {
-                const endStep = 0.13 / wave.count; // spread between 85%-98%
-                const endThreshold = 0.85 + ((wave.count - 1 - reverseIdx) * endStep);
-                const departHour = findDemandVelocitySplit(dayDemandIntervals, endThreshold, venueHours.open);
-                if (departHour !== null && departHour > startDec + minShift && departHour < eDec) {
-                  endDec = departHour;
+                // This closer can leave when remaining closers can handle demand
+                const releaseThreshold = wave.count - reverseIdx; // e.g. 5 closers, first one leaves when 4 can handle it
+                // Walk curve backwards from close to find when demand drops
+                for (let i = curve.length - 1; i >= 0; i--) {
+                  if (curve[i].staffNeeded >= releaseThreshold && curve[i].time > startDec + minShift) {
+                    endDec = curve[i].time + 0.5; // stay 30min past to hand off
+                    break;
+                  }
                 }
+                if (endDec > eDec) endDec = eDec; // never past venue close + buffer
               }
             } else if (waveAssigned > 0) {
               // Fallback: fixed 30-min start stagger, 30-min end stagger
