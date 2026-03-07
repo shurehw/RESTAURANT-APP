@@ -1190,9 +1190,12 @@ export async function generateScheduleTS(
           const days = empDays.get(emp.id) || new Set<string>();
           if (days.has(day.date)) continue;
 
-          // ── Stagger closer arrivals ──────────────────────────────────────
-          // First closer arrives at template start. Each subsequent closer
-          // arrives 30 min later (demand ramps up), capped by min shift hours.
+          // ── Stagger closer arrivals by demand curve ─────────────────────
+          // First closer arrives at template start (~20% cumulative covers).
+          // Each subsequent closer arrives when the next demand threshold is
+          // crossed — so they show up when covers actually need them.
+          // Thresholds evenly spaced between closer start (20%) and 80%.
+          // Falls back to 30-min fixed stagger if no demand data.
           let shiftStart = wave.template.start;
           let shiftHours = wave.template.hours;
           if (wave.template.label === 'closer' && wave.count > 1 && waveAssigned > 0) {
@@ -1205,8 +1208,23 @@ export async function generateScheduleTS(
             if (sDec < 12 && venueHours.open >= 12) sDec += 24;
             if (eDec < 12 && venueHours.open >= 12) eDec += 24;
             if (eDec <= sDec) eDec += 24;
-            const staggered = sDec + (waveAssigned * 0.5);
-            if (eDec - staggered >= minShift) {
+
+            let staggered: number | null = null;
+            if (dayDemandIntervals && dayDemandIntervals.length > 0) {
+              // Spread thresholds between 20% (closer start) and 80% (near peak)
+              const thresholdStep = 0.60 / wave.count; // e.g. 5 closers → 12% steps
+              const threshold = 0.20 + (waveAssigned * thresholdStep);
+              const arrivalHour = findDemandVelocitySplit(dayDemandIntervals, threshold, venueHours.open);
+              if (arrivalHour !== null && arrivalHour > sDec && eDec - arrivalHour >= minShift) {
+                staggered = arrivalHour;
+              }
+            }
+            // Fallback: fixed 30-min stagger if no curves
+            if (staggered === null) {
+              const fallback = sDec + (waveAssigned * 0.5);
+              if (eDec - fallback >= minShift) staggered = fallback;
+            }
+            if (staggered !== null) {
               shiftStart = hourToHHMM(staggered);
               shiftHours = eDec - staggered;
             }
