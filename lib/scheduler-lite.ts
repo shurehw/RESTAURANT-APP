@@ -343,17 +343,9 @@ function buildTemplatesFromVenueHours(
         openerEnd = barEnd;  // no curves → stay through close
       }
 
-      // Volume end: cuts when demand tails off (85% cumulative + 30 min cleanup)
-      const BAR_VOLUME_END_THRESHOLD = 0.85;
-      const velocityEnd = findDemandVelocitySplit(demandIntervals ?? [], BAR_VOLUME_END_THRESHOLD, venueHours.open);
-      let volumeEnd: number;
-      if (velocityEnd !== null) {
-        volumeEnd = velocityEnd + 0.5;  // 30 min past 85% to help clean
-        volumeEnd = Math.max(volumeEnd, volumeStart + minHours);   // minimum shift length
-        volumeEnd = Math.min(volumeEnd, openerEnd);                 // never past opener
-      } else {
-        volumeEnd = openerEnd;  // no curves → match opener
-      }
+      // Volume end: always 30 min before opener (opener does final close alone).
+      // Volume cuts when demand tails off, but never after opener.
+      const volumeEnd = Math.max(openerEnd - 0.5, volumeStart + minHours);
 
       return [
         { label: 'opener', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(openerEnd), hours: Math.max(minHours, openerEnd - barStart) },
