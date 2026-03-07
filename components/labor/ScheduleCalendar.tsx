@@ -363,10 +363,10 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
               value={weekStart}
               onChange={(e) => {
                 if (e.target.value) {
-                  const d = new Date(e.target.value);
-                  const day = d.getDay();
+                  const d = new Date(e.target.value + 'T12:00:00Z');
+                  const day = d.getUTCDay();
                   const diff = day === 0 ? -6 : 1 - day;
-                  d.setDate(d.getDate() + diff);
+                  d.setUTCDate(d.getUTCDate() + diff);
                   window.location.href = `/labor/schedule?week=${d.toISOString().split('T')[0]}&venue=${venueId}`;
                 }
               }}
@@ -434,10 +434,10 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
                 value={weekStart}
                 onChange={(e) => {
                   if (e.target.value) {
-                    const d = new Date(e.target.value);
-                    const day = d.getDay();
+                    const d = new Date(e.target.value + 'T12:00:00Z');
+                    const day = d.getUTCDay();
                     const diff = day === 0 ? -6 : 1 - day;
-                    d.setDate(d.getDate() + diff);
+                    d.setUTCDate(d.getUTCDate() + diff);
                     window.location.href = `/labor/schedule?week=${d.toISOString().split('T')[0]}&venue=${venueId}`;
                   }
                 }}
@@ -702,16 +702,16 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
 }
 
 function getWeekDays(weekStart: string) {
-  const start = new Date(weekStart);
+  const start = new Date(weekStart + 'T12:00:00Z'); // Noon UTC avoids TZ rollover
   const days = [];
 
   for (let i = 0; i < 7; i++) {
     const date = new Date(start);
-    date.setDate(date.getDate() + i);
+    date.setUTCDate(date.getUTCDate() + i);
     days.push({
       date: date.toISOString().split('T')[0],
-      dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
-      dateStr: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      dayName: date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }),
+      dateStr: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
     });
   }
 
@@ -719,22 +719,24 @@ function getWeekDays(weekStart: string) {
 }
 
 function formatWeekRange(weekStart: string): string {
-  const start = new Date(weekStart);
+  const start = new Date(weekStart + 'T12:00:00Z');
   const end = new Date(start);
-  end.setDate(end.getDate() + 6);
+  end.setUTCDate(end.getUTCDate() + 6);
 
   return `${start.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-  })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    timeZone: 'UTC',
+  })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}`;
 }
 
 function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = new Date(dateStr + 'T12:00:00Z');
   return date.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 }
 

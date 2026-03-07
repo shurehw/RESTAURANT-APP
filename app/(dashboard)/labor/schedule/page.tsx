@@ -107,10 +107,10 @@ export default async function SchedulePage({
 
 function getCurrentWeekStart(): string {
   const now = new Date();
-  const dayOfWeek = now.getDay();
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Get Monday
+  const dayOfWeek = now.getUTCDay(); // 0=Sunday in JS
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Snap to Monday
   const monday = new Date(now);
-  monday.setDate(monday.getDate() + diff);
+  monday.setUTCDate(monday.getUTCDate() + diff);
   return monday.toISOString().split('T')[0];
 }
 
