@@ -173,6 +173,18 @@ function hourToHHMM(h: number): string {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
+/**
+ * CA meal break deduction: unpaid breaks subtracted from paid hours.
+ *   >6h  → 1 × 30-min break (0.5h)
+ *   >10h → 2 × 30-min breaks (1.0h)
+ * Shift start/end times stay the same — only paid hours change.
+ */
+function paidHours(grossHours: number): number {
+  if (grossHours > 10) return grossHours - 1.0;
+  if (grossHours > 6) return grossHours - 0.5;
+  return grossHours;
+}
+
 /** Calculate shift hours between two HH:MM times, handling midnight crossing */
 function calcShiftHours(start: string, end: string): number {
   const [sh, sm] = start.split(':').map(Number);
@@ -1004,7 +1016,10 @@ export async function generateScheduleTS(
             ? nextDay(day.date)
             : day.date;
 
-          const shiftCost = wave.template.hours * posInfo.base_hourly_rate;
+          // CA meal break deduction: paid hours exclude unpaid breaks
+          const grossHours = wave.template.hours;
+          const netHours = paidHours(grossHours);
+          const shiftCost = netHours * posInfo.base_hourly_rate;
 
           shifts.push({
             venue_id:         venueId,
@@ -1014,16 +1029,16 @@ export async function generateScheduleTS(
             shift_type:       wave.template.type,
             scheduled_start:  toTimestamp(day.date, wave.template.start),
             scheduled_end:    toTimestamp(endDate, wave.template.end),
-            scheduled_hours:  wave.template.hours,
+            scheduled_hours:  netHours,
             hourly_rate:      posInfo.base_hourly_rate,
             scheduled_cost:   shiftCost,
             status:           'scheduled',
           });
 
-          empHours.set(emp.id, currentHours + wave.template.hours);
+          empHours.set(emp.id, currentHours + netHours);
           days.add(day.date);
           empDays.set(emp.id, days);
-          totalHours += wave.template.hours;
+          totalHours += netHours;
           totalCost  += shiftCost;
           waveAssigned++;
 
