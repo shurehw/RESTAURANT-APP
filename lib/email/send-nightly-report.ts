@@ -42,7 +42,7 @@ export async function sendNightlyReportForOrg(
   params: SendForOrgParams
 ): Promise<SendResult> {
   const { orgId, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries } = params;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.opsos.app';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prime-cost.com';
   const resend = getResendClient();
 
   const subscribers = await getActiveSubscribers(orgId);
@@ -58,7 +58,7 @@ export async function sendNightlyReportForOrg(
   const results = await Promise.allSettled(
     subscribers.map(async (sub) => {
       try {
-        await sendToSubscriber({
+        return await sendToSubscriber({
           subscriber: sub,
           orgName,
           logoUrl,
@@ -77,9 +77,9 @@ export async function sendNightlyReportForOrg(
   );
 
   for (const result of results) {
-    if (result.status === 'fulfilled') {
+    if (result.status === 'fulfilled' && result.value) {
       sent++;
-    } else {
+    } else if (result.status === 'rejected') {
       failed++;
       errors.push(result.reason?.message || 'Unknown error');
     }
@@ -101,13 +101,13 @@ async function sendToSubscriber(params: {
   aiSummaries?: Map<string, string>;
   appUrl: string;
   resend: ReturnType<typeof getResendClient>;
-}): Promise<void> {
+}): Promise<boolean> {
   const { subscriber, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries, appUrl, resend } = params;
 
   // Resolve which venues this subscriber should see
   const { venues, isConsolidated } = await resolveSubscriberVenues(subscriber, orgVenues);
 
-  if (venues.length === 0) return;
+  if (venues.length === 0) return false;
 
   // Build venue report data
   const venueReports: VenueReport[] = [];
@@ -123,7 +123,7 @@ async function sendToSubscriber(params: {
     });
   }
 
-  if (venueReports.length === 0) return;
+  if (venueReports.length === 0) return false;
 
   // Render email
   const html = renderNightlyReportEmail({
@@ -151,4 +151,6 @@ async function sendToSubscriber(params: {
   if (error) {
     throw new Error(error.message);
   }
+
+  return true;
 }
