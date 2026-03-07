@@ -297,30 +297,43 @@ function buildTemplatesFromVenueHours(
     ];
   }
 
-  // FOH positions
+  // FOH positions — Bartender / Barback
   if (posName === 'Bartender' || posName === 'Barback') {
-    const barStart = guestStart - 0.5;
+    const barStart = guestStart - 1.0;  // 1h setup (stock, prep, ice)
     const barEnd = effectiveClose;
     const barSpan = barEnd - barStart;
 
-    // Single template when service window fits one shift (≤10h).
-    // Supper clubs (8-9h span) run all bartenders on the same shift.
-    // Only split for long-window venues (brunch-to-close, 12h+).
+    // ≤10h service window (supper clubs, evening-only venues):
+    // Opener arrives for setup, volume bartender arrives when demand builds.
+    // Both work through close. distributeWaves 40/60 → fewer openers, more volume.
     if (barSpan <= 10) {
+      // Volume start: use demand velocity (20% cumulative) or 1h after doors open
+      const BAR_VOLUME_THRESHOLD = 0.20;
+      const velocityStart = findDemandVelocitySplit(demandIntervals ?? [], BAR_VOLUME_THRESHOLD, venueHours.open);
+      let volumeStart: number;
+      if (velocityStart !== null) {
+        volumeStart = velocityStart;
+        volumeStart = Math.max(volumeStart, barStart + 2);         // at least 2h after opener
+        volumeStart = Math.min(volumeStart, barEnd - minHours);    // enough time before close
+      } else {
+        volumeStart = guestStart + 1;  // 1h after doors open
+      }
+
       return [
-        { label: 'main', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barSpan) },
+        { label: 'opener', type: classifyShiftType(barStart), start: hourToHHMM(barStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barSpan) },
+        { label: 'volume', type: classifyShiftType(volumeStart), start: hourToHHMM(volumeStart), end: hourToHHMM(barEnd), hours: Math.max(minHours, barEnd - volumeStart) },
       ];
     }
 
-    // Long service window: demand-velocity split for day/night shifts.
-    // Night shift starts 30 min before cumulative covers cross 35%.
+    // >10h service window (brunch-to-close, all-day venues):
+    // True day/night split with demand-velocity-driven handoff.
     const BAR_SPLIT_THRESHOLD = 0.35;
     const velocitySplit = findDemandVelocitySplit(demandIntervals ?? [], BAR_SPLIT_THRESHOLD, venueHours.open);
     let nightStart: number;
     if (velocitySplit !== null) {
       nightStart = velocitySplit - 0.5;
-      nightStart = Math.min(nightStart, barEnd - minHours);   // enough time before close
-      nightStart = Math.max(nightStart, barStart + 2);         // at least 2h after open (overlap is intentional)
+      nightStart = Math.min(nightStart, barEnd - minHours);
+      nightStart = Math.max(nightStart, barStart + 2);
     } else {
       nightStart = barStart + Math.floor(barSpan / 2);
     }
