@@ -35,6 +35,9 @@ interface PosConfig {
   category: 'front_of_house' | 'back_of_house' | 'management';
   templates?: ShiftTemplate[]; // Fallback only — normally built dynamically
   useBarModel?: boolean;
+  setupMinutes?: number;      // pre-service sidework (default 30 FOH, 120 BOH)
+  breakdownMinutes?: number;  // post-close breakdown (default 30 FOH, 60 BOH)
+  supportRatio?: number;      // for support positions: ratio to lead (e.g. 0.5 = 1 per 2 servers)
 }
 
 interface AdminOverride {
@@ -46,6 +49,11 @@ interface AdminOverride {
   min_staff: number;
   max_staff: number | null;
   bar_guest_pct: number;
+  min_openers: number;
+  min_closers: number;
+  setup_minutes: number;
+  breakdown_minutes: number;
+  support_ratio: number | null;
 }
 
 interface VenueHours {
@@ -87,16 +95,16 @@ const BOH_MIN_SHIFT_HOURS = 4.0;
  */
 const POS_CONFIG: Record<string, PosConfig> = {
   // ── Front of House ──────────────────────────────────────────────────────
-  'Server':      { cplh: 13, peakPct: PEAK_PCT, category: 'front_of_house' },
-  'Bartender':   { cplh: 22, peakPct: PEAK_PCT, category: 'front_of_house', useBarModel: true },
-  'Busser':      { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house' },
-  'Food Runner': { cplh: 25, peakPct: PEAK_PCT, category: 'front_of_house' },
-  'Host':        { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house' },
-  'Barback':     { cplh: 35, peakPct: PEAK_PCT, category: 'front_of_house' },
+  'Server':      { cplh: 13, peakPct: PEAK_PCT, category: 'front_of_house', setupMinutes: 30, breakdownMinutes: 30 },
+  'Bartender':   { cplh: 22, peakPct: PEAK_PCT, category: 'front_of_house', useBarModel: true, setupMinutes: 60, breakdownMinutes: 30 },
+  'Busser':      { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house', supportRatio: 0.5, setupMinutes: 30, breakdownMinutes: 30 },
+  'Food Runner': { cplh: 25, peakPct: PEAK_PCT, category: 'front_of_house', supportRatio: 0.25, setupMinutes: 15, breakdownMinutes: 15 },
+  'Host':        { cplh: 28, peakPct: PEAK_PCT, category: 'front_of_house', setupMinutes: 15, breakdownMinutes: 15 },
+  'Barback':     { cplh: 35, peakPct: PEAK_PCT, category: 'front_of_house', supportRatio: 0.5, setupMinutes: 60, breakdownMinutes: 30 },
   // ── Back of House ───────────────────────────────────────────────────────
-  'Line Cook':   { cplh: 21, peakPct: PEAK_PCT, category: 'back_of_house' },
-  'Prep Cook':   { cplh: 40, peakPct: 0.15,     category: 'back_of_house' },
-  'Dishwasher':  { cplh: 28, peakPct: PEAK_PCT, category: 'back_of_house' },
+  'Line Cook':   { cplh: 21, peakPct: PEAK_PCT, category: 'back_of_house', setupMinutes: 120, breakdownMinutes: 60 },
+  'Prep Cook':   { cplh: 40, peakPct: 0.15,     category: 'back_of_house', setupMinutes: 120, breakdownMinutes: 30 },
+  'Dishwasher':  { cplh: 28, peakPct: PEAK_PCT, category: 'back_of_house', setupMinutes: 30, breakdownMinutes: 60 },
   // ── Management (fixed: 1 per schedule day) ──────────────────────────────
   'Sous Chef':         { fixed: true, peakPct: PEAK_PCT, category: 'management' },
   'Executive Chef':    { fixed: true, peakPct: PEAK_PCT, category: 'management' },
@@ -295,6 +303,8 @@ function buildTemplatesFromVenueHours(
   dailyCovers?: number,
   cplh?: number,
   dwellMinutes?: number,
+  setupMins?: number,       // pre-service sidework minutes
+  breakdownMins?: number,   // post-close breakdown minutes
 ): ShiftTemplate[] {
   let guestStart = venueHours.open;
   let guestEnd = venueHours.close;
@@ -385,8 +395,10 @@ function buildTemplatesFromVenueHours(
 
   // FOH positions — Bartender / Barback
   if (posName === 'Bartender' || posName === 'Barback') {
-    const barStart = guestStart - 1.0;  // 1h setup (stock, prep, ice)
-    const barEnd = effectiveClose + 0.5;  // 30min past close for breakdown (cash out, clean, restock)
+    const setupHrs = (setupMins ?? 60) / 60;      // default 60min for bartender
+    const breakdownHrs = (breakdownMins ?? 30) / 60; // default 30min for bartender
+    const barStart = guestStart - setupHrs;
+    const barEnd = effectiveClose + breakdownHrs;
     const barSpan = barEnd - barStart;
 
     // ≤10h service window (supper clubs, evening-only venues):
@@ -451,8 +463,10 @@ function buildTemplatesFromVenueHours(
   }
 
   // Generic FOH (Server, Busser, Food Runner, Host)
-  const fohStart = guestStart - 0.5;   // 30min setup (side work, pre-shift)
-  const fohEnd = effectiveClose + 0.5;  // 30min past close for side work, reset, cash out
+  const fohSetupHrs = (setupMins ?? 30) / 60;      // default 30min for FOH
+  const fohBreakdownHrs = (breakdownMins ?? 30) / 60; // default 30min for FOH
+  const fohStart = guestStart - fohSetupHrs;
+  const fohEnd = effectiveClose + fohBreakdownHrs;
   const fohSpan = fohEnd - fohStart;
 
   // Very short window: single shift
@@ -876,6 +890,8 @@ function distributeWaves(
   templates: ShiftTemplate[],
   fixed?: boolean,
   openerFraction?: number,  // demand-driven fraction for first wave (0-1)
+  minOpeners?: number,      // admin-set floor for setup crew
+  minClosers?: number,      // admin-set floor for breakdown crew
 ): { template: ShiftTemplate; count: number }[] {
   if (peakStaff === 0 || !templates || templates.length === 0) return [];
 
@@ -899,11 +915,12 @@ function distributeWaves(
       };
       return [{ template: merged, count: 1 }];
     }
-    // Demand-driven: openerFraction = cumulative demand before closer starts.
-    // Ensures at least 1 for setup, at least 1 for close.
+    // Demand-driven split with admin-set minimums for setup/breakdown crew.
     const fraction = openerFraction ?? 0.4;
-    const earlyCount = Math.max(1, Math.round(peakStaff * fraction));
-    const lateCount  = Math.max(1, peakStaff - earlyCount);
+    const minOpen = minOpeners ?? 1;
+    const minClose = minClosers ?? 1;
+    const earlyCount = Math.max(minOpen, Math.round(peakStaff * fraction));
+    const lateCount  = Math.max(minClose, peakStaff - earlyCount);
     const result: { template: ShiftTemplate; count: number }[] = [];
     if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
     if (lateCount  > 0) result.push({ template: templates[1], count: lateCount });
@@ -996,7 +1013,7 @@ export async function generateScheduleTS(
   try {
     const { data: overrides } = await admin
       .from('schedule_position_overrides')
-      .select('position_name, shift_start, shift_end, min_shift_hours, cplh_override, min_staff, max_staff, bar_guest_pct')
+      .select('position_name, shift_start, shift_end, min_shift_hours, cplh_override, min_staff, max_staff, bar_guest_pct, min_openers, min_closers, setup_minutes, breakdown_minutes, support_ratio')
       .eq('venue_id', venueId)
       .eq('is_active', true);
     if (overrides) adminOverrides = overrides as AdminOverride[];
@@ -1147,6 +1164,7 @@ export async function generateScheduleTS(
     totalRevenue += forecast.revenue;
 
     // ── Per-position wave assignment ──────────────────────────────────────
+    let serverPeakForDay = 0; // tracked so support positions can derive from server count
     for (const [posName, config] of Object.entries(POS_CONFIG)) {
       const override = overrideMap.get(posName);
 
@@ -1159,8 +1177,12 @@ export async function generateScheduleTS(
       }
 
       // Calculate peak staff needed
+      // Support positions (busser, food runner, barback): derive from server count
+      const supportRatio = override?.support_ratio ?? config.supportRatio;
       let peakStaff: number;
-      if (config.useBarModel && !override?.cplh_override) {
+      if (supportRatio && serverPeakForDay > 0) {
+        peakStaff = Math.max(1, Math.round(serverPeakForDay * supportRatio));
+      } else if (config.useBarModel && !override?.cplh_override) {
         const bevPct = bevIntensity.get(day.dow) ?? INDUSTRY_AVG_BEV_PCT;
         const barGuestPct = override?.bar_guest_pct ?? 0;
         peakStaff = calcBarStaff(forecast.covers, bevPct, venueClass, config.peakPct, barGuestPct, dwellMultiplier);
@@ -1177,6 +1199,9 @@ export async function generateScheduleTS(
       }
 
       if (peakStaff === 0) continue;
+
+      // Track server peak so support positions can derive staffing
+      if (posName === 'Server') serverPeakForDay = peakStaff;
 
       const posInfo = posNameMap.get(posName);
       if (!posInfo) continue;
@@ -1198,13 +1223,18 @@ export async function generateScheduleTS(
         const minShift = override?.min_shift_hours ??
           (config.category === 'front_of_house' ? FOH_MIN_SHIFT_HOURS : BOH_MIN_SHIFT_HOURS);
         const curveCplh = effectiveCplh || config.cplh || 0;
+        const posSetupMins = override?.setup_minutes ?? config.setupMinutes;
+        const posBreakdownMins = override?.breakdown_minutes ?? config.breakdownMinutes;
         templates = buildTemplatesFromVenueHours(
           venueHours, config.category, posName, dayDemandIntervals, minShift,
-          forecast.covers, curveCplh, dwellMinutes,
+          forecast.covers, curveCplh, dwellMinutes, posSetupMins, posBreakdownMins,
         );
       }
 
       if (templates.length === 0) continue;
+
+      // ── Logging: template timing ──────────────────────────────────────
+      console.log(`[scheduler] ${day.date} ${posName}: templates=[${templates.map(t => `${t.label}(${t.start}-${t.end} ${t.hours.toFixed(1)}h)`).join(', ')}] covers=${forecast.covers} cplh=${effectiveCplh || config.cplh || '-'}`);
 
       // Compute demand-driven opener fraction from staffing curve:
       // peak staff needed during opener-only window / total peak staff.
@@ -1229,7 +1259,26 @@ export async function generateScheduleTS(
         }
       }
 
-      const waves = distributeWaves(peakStaff, templates, config.fixed, openerFraction);
+      const waves = distributeWaves(
+        peakStaff, templates, config.fixed, openerFraction,
+        override?.min_openers, override?.min_closers,
+      );
+
+      // ── Logging: wave distribution ──────────────────────────────────────
+      console.log(`[scheduler] ${day.date} ${posName}: peakStaff=${peakStaff} openerFrac=${openerFraction?.toFixed(2) ?? 'n/a'} waves=[${waves.map(w => `${w.template.label}×${w.count}`).join(', ')}]`);
+
+      // ── Logging: staffing curve (if available) ──────────────────────────
+      const curveCplh3 = effectiveCplh || config.cplh || 0;
+      if (dayDemandIntervals && curveCplh3 > 0) {
+        const logCurve = buildStaffingCurve(dayDemandIntervals, forecast.covers, curveCplh3, dwellMinutes, venueHours.open);
+        if (logCurve.length > 0) {
+          const curveStr = logCurve
+            .filter(p => p.staffNeeded > 0)
+            .map(p => `${hourToHHMM(p.time)}→${p.staffNeeded}`)
+            .join(' ');
+          console.log(`[scheduler] ${day.date} ${posName}: curve=[${curveStr}]`);
+        }
+      }
 
       // ── Per-wave assignment ─────────────────────────────────────────────
       for (const wave of waves) {
