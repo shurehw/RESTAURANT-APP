@@ -42,8 +42,13 @@ export async function requireUser(): Promise<AuthedUser> {
         .single();
 
       if (legacyUser?.email) {
-        const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 100 });
-        const authUser = authUsers?.find((u: { email?: string }) => u.email === legacyUser.email);
+        // Paginate through auth users to find by email (may exceed 100)
+        let authUser: { id: string; email?: string } | undefined;
+        for (let page = 1; page <= 10 && !authUser; page++) {
+          const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ page, perPage: 100 });
+          if (!authUsers || authUsers.length === 0) break;
+          authUser = authUsers.find((u: { email?: string }) => u.email === legacyUser.email);
+        }
         if (authUser) {
           return { id: authUser.id, email: authUser.email ?? undefined };
         }
