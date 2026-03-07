@@ -32,6 +32,7 @@ export function Sidebar({ user }: SidebarProps) {
         <NavSection title="Labor">
           <NavLink href="/labor/requirements">Requirements</NavLink>
           <NavLink href="/labor/schedule">Schedule</NavLink>
+          <NavLink href="/floor-plan">Floor Plan</NavLink>
         </NavSection>
         <NavSection title="COGS">
           <NavLink href="/invoices">Invoices</NavLink>

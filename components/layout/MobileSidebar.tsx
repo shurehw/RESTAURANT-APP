@@ -24,6 +24,7 @@ import {
   Settings,
   LogOut,
   Zap,
+  LayoutGrid,
 } from 'lucide-react';
 import { NavLink } from '@/components/layout/NavLink';
 import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
@@ -186,6 +187,11 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
               {permissions.laborSchedule && (
                 <NavLink href="/labor/schedule" icon={<Calendar className="w-5 h-5" />}>
                   Schedule
+                </NavLink>
+              )}
+              {permissions.laborSchedule && (
+                <NavLink href="/floor-plan" icon={<LayoutGrid className="w-5 h-5" />}>
+                  Floor Plan
                 </NavLink>
               )}
             </NavSection>
