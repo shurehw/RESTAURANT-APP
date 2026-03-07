@@ -10,10 +10,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
+import { getServiceClient } from '@/lib/supabase/service';
 import { getSignalsForAttestation } from '@/lib/database/signal-outcomes';
 
 export async function GET(request: NextRequest) {
-  try {
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds } = await getUserOrgAndVenues(user.id);
     const { searchParams } = new URL(request.url);
 
     const attestationId = searchParams.get('attestation_id');
@@ -24,13 +30,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const supabase = getServiceClient();
+    const { data: attestation } = await (supabase as any)
+      .from('nightly_attestations')
+      .select('venue_id')
+      .eq('id', attestationId)
+      .single();
+
+    if (!attestation) {
+      return NextResponse.json({ error: 'Attestation not found' }, { status: 404 });
+    }
+    assertVenueAccess(attestation.venue_id, venueIds);
+
     const signals = await getSignalsForAttestation(attestationId);
     return NextResponse.json({ success: true, signals });
-  } catch (error: any) {
-    console.error('[attestation/signals] Error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 },
-    );
-  }
+  });
 }

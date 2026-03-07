@@ -2,6 +2,9 @@
 // PUT /api/attestation/thresholds               — upsert thresholds
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 import { attestationThresholdsSchema } from '@/lib/attestation/types';
 import { DEFAULT_THRESHOLDS } from '@/lib/attestation/triggers';
@@ -12,11 +15,14 @@ const upsertSchema = attestationThresholdsSchema.extend({
 });
 
 export async function GET(req: NextRequest) {
-  try {
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds } = await getUserOrgAndVenues(user.id);
     const venueId = req.nextUrl.searchParams.get('venue_id');
     if (!venueId) {
       return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
     }
+    assertVenueAccess(venueId, venueIds);
 
     const supabase = getServiceClient();
 
@@ -33,16 +39,17 @@ export async function GET(req: NextRequest) {
       data: data || { venue_id: venueId, ...DEFAULT_THRESHOLDS },
       is_default: !data,
     });
-  } catch (err: any) {
-    console.error('[Attestation thresholds GET]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }
 
 export async function PUT(req: NextRequest) {
-  try {
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds, role } = await getUserOrgAndVenues(user.id);
+    assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm']);
     const body = await req.json();
     const { venue_id, ...thresholds } = upsertSchema.parse(body);
+    assertVenueAccess(venue_id, venueIds);
 
     const supabase = getServiceClient();
 
@@ -58,8 +65,5 @@ export async function PUT(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data });
-  } catch (err: any) {
-    console.error('[Attestation thresholds PUT]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }

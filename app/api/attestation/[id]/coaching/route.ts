@@ -2,15 +2,29 @@
 // POST /api/attestation/[id]/coaching  — create coaching action
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 import { coachingSchema } from '@/lib/attestation/types';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(req: NextRequest, ctx: RouteContext) {
-  try {
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds } = await getUserOrgAndVenues(user.id);
     const { id } = await ctx.params;
     const supabase = getServiceClient();
+    const { data: attestation } = await (supabase as any)
+      .from('nightly_attestations')
+      .select('venue_id')
+      .eq('id', id)
+      .single();
+    if (!attestation) {
+      return NextResponse.json({ error: 'Attestation not found' }, { status: 404 });
+    }
+    assertVenueAccess(attestation.venue_id, venueIds);
 
     const { data, error } = await (supabase as any)
       .from('coaching_actions')
@@ -21,14 +35,14 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data: data || [] });
-  } catch (err: any) {
-    console.error('[Attestation coaching GET]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
-  try {
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds, role } = await getUserOrgAndVenues(user.id);
+    assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef']);
     const { id } = await ctx.params;
     const supabase = getServiceClient();
 
@@ -42,6 +56,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     if (fetchError || !attestation) {
       return NextResponse.json({ error: 'Attestation not found' }, { status: 404 });
     }
+    assertVenueAccess(attestation.venue_id, venueIds);
 
     if (attestation.status === 'submitted') {
       return NextResponse.json(
@@ -67,8 +82,5 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (err: any) {
-    console.error('[Attestation coaching POST]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }

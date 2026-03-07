@@ -2,8 +2,10 @@
 // POST /api/attestation                                 — create draft attestation
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
-import { resolveContext } from '@/lib/auth/resolveContext';
 import { z } from 'zod';
 
 const createSchema = z.object({
@@ -12,12 +14,9 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  try {
-    const ctx = await resolveContext();
-    if (!ctx || !ctx.isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds } = await getUserOrgAndVenues(user.id);
     const searchParams = req.nextUrl.searchParams;
     const venueId = searchParams.get('venue_id');
     const businessDate = searchParams.get('business_date');
@@ -26,6 +25,7 @@ export async function GET(req: NextRequest) {
     if (!venueId) {
       return NextResponse.json({ error: 'venue_id is required' }, { status: 400 });
     }
+    assertVenueAccess(venueId, venueIds);
 
     const supabase = getServiceClient();
 
@@ -48,21 +48,17 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data: data || [] });
-  } catch (err: any) {
-    console.error('[Attestation GET]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    const ctx = await resolveContext();
-    if (!ctx || !ctx.isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds, role } = await getUserOrgAndVenues(user.id);
+    assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef']);
     const body = await req.json();
     const { venue_id, business_date } = createSchema.parse(body);
+    assertVenueAccess(venue_id, venueIds);
 
     const supabase = getServiceClient();
 
@@ -95,8 +91,5 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
 
     return NextResponse.json({ success: true, data }, { status: 201 });
-  } catch (err: any) {
-    console.error('[Attestation POST]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }

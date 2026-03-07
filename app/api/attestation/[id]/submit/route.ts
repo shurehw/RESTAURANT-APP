@@ -1,6 +1,9 @@
-// POST /api/attestation/[id]/submit  — submit & lock attestation
+// POST /api/attestation/[id]/submit  â€” submit & lock attestation
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 import { submitAttestationSchema } from '@/lib/attestation/types';
 import type { TriggerResult } from '@/lib/attestation/types';
@@ -9,9 +12,16 @@ import { extractAndStoreSignals, type SignalExtractionInput } from '@/lib/ai/sig
 import { generateIntelligence } from '@/lib/database/operator-intelligence';
 
 type RouteContext = { params: Promise<{ id: string }> };
+const MIN_REVENUE_LEN = 20;
+const MIN_NOTE_LEN = 10;
+const hasColumn = (obj: Record<string, any>, key: string) => Object.prototype.hasOwnProperty.call(obj, key);
+const longEnough = (value: unknown, min: number) => typeof value === 'string' && value.trim().length >= min;
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
-  try {
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds, role } = await getUserOrgAndVenues(user.id);
+    assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef']);
     const { id } = await ctx.params;
     const supabase = getServiceClient();
 
@@ -25,11 +35,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     if (fetchError || !attestation) {
       return NextResponse.json({ error: 'Attestation not found' }, { status: 404 });
     }
+    assertVenueAccess(attestation.venue_id, venueIds);
 
     const body = await req.json().catch(() => ({}));
     const { amendment_reason } = submitAttestationSchema.parse(body);
 
-    const isAmendment = attestation.status === 'submitted';
+    const isAmendment = attestation.status === 'submitted' || attestation.status === 'amended';
 
     if (isAmendment && !amendment_reason) {
       return NextResponse.json(
@@ -47,51 +58,77 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       'revenue_driver', 'revenue_mgmt_impact', 'revenue_lost_opportunity',
       'revenue_demand_signal', 'revenue_quality', 'revenue_action',
     ] as const;
-    const MIN_REVENUE_LEN = 20;
-    const incompleteRevenue = revenuePromptKeys.filter(
-      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
-    );
-    if (incompleteRevenue.length > 0) {
+    const hasStructuredRevenue = hasColumn(attestation, 'revenue_driver');
+    if (hasStructuredRevenue) {
+      const incompleteRevenue = revenuePromptKeys.filter(
+        (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+      );
+      if (incompleteRevenue.length > 0) {
+        return NextResponse.json(
+          { error: `Revenue module incomplete - ${incompleteRevenue.length} prompt(s) need at least ${MIN_REVENUE_LEN} characters each` },
+          { status: 400 },
+        );
+      }
+    } else if (!longEnough(attestation.revenue_notes, MIN_REVENUE_LEN)) {
       return NextResponse.json(
-        { error: `Revenue module incomplete — ${incompleteRevenue.length} prompt(s) need at least ${MIN_REVENUE_LEN} characters each` },
+        { error: `Revenue module incomplete - provide at least ${MIN_REVENUE_LEN} characters` },
         { status: 400 },
       );
     }
 
     // Comps: structured prompt OR acknowledged
     const compPromptKeys = ['comp_driver'] as const;
-    const incompleteComps = compPromptKeys.filter(
-      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
-    );
-    if (incompleteComps.length > 0 && !attestation.comp_acknowledged) {
+    const hasStructuredComps = hasColumn(attestation, 'comp_driver');
+    if (hasStructuredComps) {
+      const incompleteComps = compPromptKeys.filter(
+        (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+      );
+      if (incompleteComps.length > 0 && !attestation.comp_acknowledged) {
+        return NextResponse.json(
+          { error: `Comps module incomplete - answer the comp prompt (${MIN_REVENUE_LEN}+ chars) or acknowledge nothing to report` },
+          { status: 400 },
+        );
+      }
+    } else if (hasColumn(attestation, 'comp_notes') && !longEnough(attestation.comp_notes, MIN_NOTE_LEN)) {
       return NextResponse.json(
-        { error: `Comps module incomplete — answer the comp prompt (${MIN_REVENUE_LEN}+ chars) or acknowledge nothing to report` },
+        { error: 'Comps module incomplete - provide comp notes' },
         { status: 400 },
       );
     }
 
     // FOH: both prompts OR acknowledged (fallback to legacy labor_acknowledged)
     const fohPromptKeys = ['labor_foh_coverage', 'foh_staffing_decision'] as const;
-    const incompleteFoh = fohPromptKeys.filter(
-      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
-    );
-    if (incompleteFoh.length > 0 && !attestation.foh_acknowledged && !attestation.labor_acknowledged) {
+    const hasStructuredFoh = hasColumn(attestation, 'labor_foh_coverage') || hasColumn(attestation, 'foh_staffing_decision');
+    if (hasStructuredFoh) {
+      const incompleteFoh = fohPromptKeys.filter(
+        (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+      );
+      if (incompleteFoh.length > 0 && !attestation.foh_acknowledged && !attestation.labor_acknowledged) {
+        return NextResponse.json(
+          { error: `FOH module incomplete - answer both prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+          { status: 400 },
+        );
+      }
+    } else if (!longEnough(attestation.labor_notes, MIN_NOTE_LEN) && !attestation.labor_acknowledged) {
       return NextResponse.json(
-        { error: `FOH module incomplete — answer both prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: 'Labor module incomplete - provide labor notes or acknowledge nothing to report' },
         { status: 400 },
       );
     }
 
     // BOH: both prompts OR acknowledged (fallback to legacy labor_acknowledged)
     const bohPromptKeys = ['labor_boh_performance', 'boh_staffing_decision'] as const;
-    const incompleteBoh = bohPromptKeys.filter(
-      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
-    );
-    if (incompleteBoh.length > 0 && !attestation.boh_acknowledged && !attestation.labor_acknowledged) {
-      return NextResponse.json(
-        { error: `BOH module incomplete — answer both prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
-        { status: 400 },
+    const hasStructuredBoh = hasColumn(attestation, 'labor_boh_performance') || hasColumn(attestation, 'boh_staffing_decision');
+    if (hasStructuredBoh) {
+      const incompleteBoh = bohPromptKeys.filter(
+        (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
       );
+      if (incompleteBoh.length > 0 && !attestation.boh_acknowledged && !attestation.labor_acknowledged) {
+        return NextResponse.json(
+          { error: `BOH module incomplete - answer both prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+          { status: 400 },
+        );
+      }
     }
 
     // Comps: if flagged, require resolutions
@@ -112,11 +149,15 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     }
 
     // Incidents: must have notes OR acknowledged
-    if (!((attestation.incident_notes?.length ?? 0) >= 10) && !attestation.incidents_acknowledged) {
-      return NextResponse.json(
-        { error: 'Incidents module is required — describe incidents or acknowledge nothing to report' },
-        { status: 400 },
-      );
+    const hasIncidentNotes = hasColumn(attestation, 'incident_notes');
+    const hasIncidentAck = hasColumn(attestation, 'incidents_acknowledged');
+    if (hasIncidentNotes || hasIncidentAck) {
+      if (!((attestation.incident_notes?.length ?? 0) >= MIN_NOTE_LEN) && !attestation.incidents_acknowledged) {
+        return NextResponse.json(
+          { error: 'Incidents module is required - describe incidents or acknowledge nothing to report' },
+          { status: 400 },
+        );
+      }
     }
 
     // Coaching: all 5 structured prompts (FOH + BOH + team focus) OR acknowledged
@@ -125,32 +166,48 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       'coaching_boh_standout', 'coaching_boh_development',
       'coaching_team_focus',
     ] as const;
-    const incompleteCoaching = coachingPromptKeys.filter(
-      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
-    );
-    if (incompleteCoaching.length > 0 && !attestation.coaching_acknowledged) {
+    const hasStructuredCoaching = hasColumn(attestation, 'coaching_foh_standout');
+    if (hasStructuredCoaching) {
+      const incompleteCoaching = coachingPromptKeys.filter(
+        (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+      );
+      if (incompleteCoaching.length > 0 && !attestation.coaching_acknowledged) {
+        return NextResponse.json(
+          { error: `Coaching module incomplete - answer all 5 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+          { status: 400 },
+        );
+      }
+    } else if (hasColumn(attestation, 'coaching_notes') && !longEnough(attestation.coaching_notes, MIN_NOTE_LEN)) {
       return NextResponse.json(
-        { error: `Coaching module incomplete — answer all 5 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: 'Coaching module incomplete - provide coaching notes' },
         { status: 400 },
       );
     }
 
     // Guest: all 3 structured prompts OR acknowledged
     const guestPromptKeys = ['guest_vip_notable', 'guest_experience', 'guest_opportunity'] as const;
-    const incompleteGuest = guestPromptKeys.filter(
-      (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
-    );
-    if (incompleteGuest.length > 0 && !attestation.guest_acknowledged) {
+    const hasStructuredGuest = hasColumn(attestation, 'guest_vip_notable');
+    if (hasStructuredGuest) {
+      const incompleteGuest = guestPromptKeys.filter(
+        (k) => !((attestation[k]?.length ?? 0) >= MIN_REVENUE_LEN),
+      );
+      if (incompleteGuest.length > 0 && !attestation.guest_acknowledged) {
+        return NextResponse.json(
+          { error: `Guest module incomplete - answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+          { status: 400 },
+        );
+      }
+    } else if (!longEnough(attestation.guest_notes, MIN_NOTE_LEN)) {
       return NextResponse.json(
-        { error: `Guest module incomplete — answer all 3 prompts (${MIN_REVENUE_LEN}+ chars each) or acknowledge nothing to report` },
+        { error: 'Guest module incomplete - provide guest notes' },
         { status: 400 },
       );
     }
 
     // Closing narrative: required
-    if (!attestation.closing_narrative) {
+    if (hasColumn(attestation, 'closing_narrative') && !attestation.closing_narrative) {
       return NextResponse.json(
-        { error: 'Closing summary is required — generate it on the Review step before submitting' },
+        { error: 'Closing summary is required - generate it on the Review step before submitting' },
         { status: 400 },
       );
     }
@@ -193,11 +250,14 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           status: 'amended' as const,
           amendment_reason,
           amended_at: now,
+          amended_by: user.id,
         }
       : {
           status: 'submitted' as const,
           submitted_at: now,
+          submitted_by: user.id,
           locked_at: now,
+          locked_by: user.id,
         };
 
     const { data: updated, error: updateError } = await (supabase as any)
@@ -209,7 +269,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
     if (updateError) throw updateError;
 
-    // Generate control plane actions (non-blocking — don't fail submission)
+    // Generate control plane actions (non-blocking â€” don't fail submission)
     let actionResult: { success: boolean; actionsCreated: number; errors?: string[] } = { success: true, actionsCreated: 0 };
     try {
       const [compRes, incidents, coaching] = await Promise.all([
@@ -247,7 +307,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       console.error('[Attestation] Control plane action generation failed:', err);
     }
 
-    // Signal extraction — AI-powered entity extraction from free-text (non-blocking)
+    // Signal extraction â€” AI-powered entity extraction from free-text (non-blocking)
     let signalResult: { extracted: number; stored: number; errors: string[]; ownership: import('@/lib/ai/signal-extractor').OwnershipScores | null } = { extracted: 0, stored: 0, errors: [], ownership: null };
     try {
       // Build field map from attestation text columns
@@ -270,13 +330,6 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         textFields[f] = attestation[f] ?? null;
       }
 
-      // Get venue name (already fetched above for control plane, reuse if possible)
-      const venueName = (() => {
-        // The venue query happened in the control plane block; we need a name.
-        // Re-query is safe since it's cached by Supabase's connection pooler.
-        return '';
-      })();
-
       const { data: venueForSignals } = await (supabase as any)
         .from('venues')
         .select('name')
@@ -288,13 +341,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         venue_id: attestation.venue_id,
         business_date: attestation.business_date,
         venue_name: venueForSignals?.name || '',
-        submitted_by: attestation.submitted_by || updated.submitted_by || undefined,
+        submitted_by: updated.submitted_by || attestation.submitted_by || user.id,
         fields: textFields,
       };
 
       signalResult = await extractAndStoreSignals(signalInput);
 
-      // Operator intelligence — internal signals for owner/director only (non-blocking)
+      // Operator intelligence â€” internal signals for owner/director only (non-blocking)
       try {
         const { data: venueWithOrg } = await (supabase as any)
           .from('venues')
@@ -317,7 +370,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
             venue_name: venueForSignals?.name || '',
             business_date: attestation.business_date,
             attestation_id: id,
-            submitted_by: attestation.submitted_by || undefined,
+            submitted_by: updated.submitted_by || attestation.submitted_by || user.id,
             submitted_by_name: submitterProfile?.full_name || undefined,
             ownership: signalResult.ownership ?? null,
           });
@@ -337,8 +390,5 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       signals_extracted: signalResult.extracted,
       signals_stored: signalResult.stored,
     });
-  } catch (err: any) {
-    console.error('[Attestation submit]', err);
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
-  }
+  });
 }

@@ -12,35 +12,40 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 
-// SLA: Attestation due by 2pm local time next day (hardcoded UTC-8 for now)
+// SLA: Attestation due by 2pm local time next day
 const ATTESTATION_DUE_HOUR = 14; // 2pm
-const TIMEZONE_OFFSET_HOURS = -8; // PST/PDT (TODO: fetch from venue.timezone)
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
+  return guard(async () => {
+    const user = await requireUser();
+    const { orgId } = await getUserOrgAndVenues(user.id);
+    const searchParams = request.nextUrl.searchParams;
 
-  // Date range (default: last 7 days)
-  const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
-  const startDate = searchParams.get('start_date') || (() => {
-    const d = new Date(endDate);
-    d.setDate(d.getDate() - 6); // 7 days including end_date
-    return d.toISOString().split('T')[0];
-  })();
+    // Date range (default: last 7 days)
+    const endDate = searchParams.get('end_date') || new Date().toISOString().split('T')[0];
+    const startDate = searchParams.get('start_date') || (() => {
+      const d = new Date(endDate);
+      d.setDate(d.getDate() - 6); // 7 days including end_date
+      return d.toISOString().split('T')[0];
+    })();
 
-  const venueIdFilter = searchParams.get('venue_id'); // optional, null = all venues
+    const venueIdFilter = searchParams.get('venue_id'); // optional, null = all venues
 
-  const supabase = getServiceClient();
+    const supabase = getServiceClient();
 
-  try {
     // ══════════════════════════════════════════════════════════════════════
     // 1. FETCH VENUES (scoped to user's organization)
     // ══════════════════════════════════════════════════════════════════════
 
     let venuesQuery = (supabase as any)
       .from('venues')
-      .select('id, name')
+      .select('id, name, timezone')
+      .eq('organization_id', orgId)
       .eq('is_active', true)
       .order('name');
 
@@ -76,6 +81,7 @@ export async function GET(request: NextRequest) {
     const expectedGrid: Array<{
       venue_id: string;
       venue_name: string;
+      timezone: string | null;
       business_date: string;
     }> = [];
 
@@ -84,6 +90,7 @@ export async function GET(request: NextRequest) {
         expectedGrid.push({
           venue_id: venue.id,
           venue_name: venue.name,
+          timezone: venue.timezone || 'America/Los_Angeles',
           business_date: dateRow.date,
         });
       }
@@ -131,6 +138,7 @@ export async function GET(request: NextRequest) {
     const gridWithState: Array<{
       venue_id: string;
       venue_name: string;
+      timezone: string | null;
       business_date: string;
       state: 'submitted' | 'pending' | 'late' | 'not_applicable';
       attestation_id?: string;
@@ -155,7 +163,7 @@ export async function GET(request: NextRequest) {
           submittedCount++;
         } else {
           // Draft: check if late or pending
-          const dueAt = computeDueDate(cell.business_date);
+          const dueAt = computeDueDate(cell.business_date, cell.timezone || 'America/Los_Angeles');
           if (now > dueAt) {
             state = 'late';
             lateCount++;
@@ -166,7 +174,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         // No attestation record exists yet
-        const dueAt = computeDueDate(cell.business_date);
+        const dueAt = computeDueDate(cell.business_date, cell.timezone || 'America/Los_Angeles');
         if (now > dueAt) {
           state = 'late';
           lateCount++;
@@ -185,6 +193,7 @@ export async function GET(request: NextRequest) {
       gridWithState.push({
         venue_id: cell.venue_id,
         venue_name: cell.venue_name,
+        timezone: cell.timezone,
         business_date: cell.business_date,
         state,
         attestation_id: attestation?.id,
@@ -229,7 +238,7 @@ export async function GET(request: NextRequest) {
         venue_name: cell.venue_name,
         business_date: cell.business_date,
         state: cell.state,
-        due_at: computeDueDate(cell.business_date).toISOString(),
+        due_at: computeDueDate(cell.business_date, cell.timezone || 'America/Los_Angeles').toISOString(),
         attestation_id: cell.attestation_id,
       }))
       .sort((a, b) => {
@@ -270,10 +279,13 @@ export async function GET(request: NextRequest) {
       .sort((a: any, b: any) => b.count - a.count);
 
     // Comp resolution codes
-    const { data: compResolutions } = await (supabase as any)
-      .from('comp_resolutions')
-      .select('resolution_code, is_policy_violation, requires_follow_up')
-      .in('attestation_id', (attestations || []).map((a: any) => a.id));
+    const attestationIds = (attestations || []).map((a: any) => a.id);
+    const { data: compResolutions } = attestationIds.length > 0
+      ? await (supabase as any)
+          .from('comp_resolutions')
+          .select('resolution_code, is_policy_violation, requires_follow_up')
+          .in('attestation_id', attestationIds)
+      : { data: [] };
 
     const compCodes = (compResolutions || []).reduce((acc: any, res: any) => {
       const code = res.resolution_code;
@@ -290,10 +302,12 @@ export async function GET(request: NextRequest) {
     ).length;
 
     // Incidents
-    const { data: incidents } = await (supabase as any)
-      .from('nightly_incidents')
-      .select('incident_type, severity, resolved, requires_escalation')
-      .in('attestation_id', (attestations || []).map((a: any) => a.id));
+    const { data: incidents } = attestationIds.length > 0
+      ? await (supabase as any)
+          .from('nightly_incidents')
+          .select('incident_type, severity, resolved, requires_escalation')
+          .in('attestation_id', attestationIds)
+      : { data: [] };
 
     const incidentsByType = (incidents || []).reduce((acc: any, inc: any) => {
       const type = inc.incident_type;
@@ -348,14 +362,7 @@ export async function GET(request: NextRequest) {
         incidents: incidentsArray,
       },
     });
-
-  } catch (error: any) {
-    console.error('Attestation dashboard API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch attestation dashboard data' },
-      { status: 500 }
-    );
-  }
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -365,9 +372,41 @@ export async function GET(request: NextRequest) {
 /**
  * Compute due date for attestation (business_date + 1 day at 2pm local time)
  */
-function computeDueDate(businessDate: string): Date {
-  const d = new Date(businessDate + 'T00:00:00');
-  d.setDate(d.getDate() + 1); // Next day
-  d.setHours(ATTESTATION_DUE_HOUR - TIMEZONE_OFFSET_HOURS, 0, 0, 0); // 2pm local → UTC
-  return d;
+function computeDueDate(businessDate: string, timezone: string): Date {
+  const [year, month, day] = businessDate.split('-').map(Number);
+  const dueDay = day + 1; // Next day, normalized by Date.UTC
+  const baseUtc = Date.UTC(year, month - 1, dueDay, ATTESTATION_DUE_HOUR, 0, 0);
+
+  // Convert local venue time to UTC, with a second pass to handle DST boundaries.
+  let offsetMinutes = getTimezoneOffsetMinutes(timezone, new Date(baseUtc));
+  let utcMs = baseUtc - offsetMinutes * 60_000;
+  offsetMinutes = getTimezoneOffsetMinutes(timezone, new Date(utcMs));
+  utcMs = baseUtc - offsetMinutes * 60_000;
+  return new Date(utcMs);
+}
+
+function getTimezoneOffsetMinutes(timezone: string, atUtc: Date): number {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      timeZoneName: 'shortOffset',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).formatToParts(atUtc);
+
+    const token = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT-8';
+    const match = token.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+    if (!match) return -8 * 60;
+    const sign = match[1] === '+' ? 1 : -1;
+    const hours = Number(match[2]);
+    const mins = Number(match[3] || '0');
+    return sign * (hours * 60 + mins);
+  } catch {
+    return -8 * 60;
+  }
 }

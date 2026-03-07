@@ -6,16 +6,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { guard } from '@/lib/route-guard';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: attestationId } = await params;
-  const supabase = getServiceClient();
+  return guard(async () => {
+    const user = await requireUser();
+    const { venueIds } = await getUserOrgAndVenues(user.id);
+    const { id: attestationId } = await params;
+    const supabase = getServiceClient();
 
-  try {
     // Fetch attestation with venue info
     const { data: attestation, error: attestationError } = await (supabase as any)
       .from('nightly_attestations')
@@ -33,6 +38,7 @@ export async function GET(
         { status: 404 }
       );
     }
+    assertVenueAccess(attestation.venue_id, venueIds);
 
     // Fetch comp resolutions
     const { data: compResolutions } = await (supabase as any)
@@ -79,12 +85,5 @@ export async function GET(
         coaching_actions: coachingActions || [],
       },
     });
-
-  } catch (error: any) {
-    console.error('Attestation detail API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to fetch attestation details' },
-      { status: 500 }
-    );
-  }
+  });
 }
