@@ -525,8 +525,11 @@ export function ReviewStep({
               {compResolutions.map((r) => (
                 <div key={r.id || r.check_id} className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CheckCircle2 className="h-3 w-3 text-sage shrink-0" />
-                  <span>#{r.check_id}</span>
                   <span className="font-medium text-foreground">
+                    {r.comp_amount ? `$${r.comp_amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'Comp'}
+                  </span>
+                  {r.employee_name && <span>— {r.employee_name}</span>}
+                  <span>
                     {COMP_RESOLUTION_LABELS[r.resolution_code as CompResolutionCode]}
                   </span>
                   {r.requires_follow_up && (
