@@ -131,15 +131,17 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       }
     }
 
-    // Comps: if flagged, require resolutions
+    // Comps: if flagged, require resolutions (exclude BOH-only stubs)
     if (triggers?.comp_resolution_required) {
       const { data: resolutions } = await (supabase as any)
         .from('comp_resolutions')
-        .select('id')
+        .select('id, resolution_code')
         .eq('attestation_id', id);
 
       const flaggedCount = triggers.flagged_comps?.length || 0;
-      const resolvedCount = resolutions?.length || 0;
+      const resolvedCount = (resolutions || []).filter(
+        (r: any) => r.resolution_code !== 'pending_foh_resolution',
+      ).length;
       if (resolvedCount < flaggedCount) {
         return NextResponse.json(
           { error: `${flaggedCount - resolvedCount} comp(s) still need resolution` },

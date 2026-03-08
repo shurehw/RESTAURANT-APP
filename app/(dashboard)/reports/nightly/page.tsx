@@ -2779,6 +2779,8 @@ export default function NightlyReportPage() {
               tip_pct: s.tip_pct ?? 0,
             }))}
             discountsTotal={report?.discounts?.reduce((sum, d) => sum + (d.amount || 0), 0) ?? 0}
+            hasCulinary={true}
+            hasEntertainment={true}
           />}
 
           {/* Check & Reservation Sheets */}

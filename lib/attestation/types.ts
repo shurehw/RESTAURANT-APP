@@ -24,8 +24,13 @@ export const COMP_RESOLUTION_CODES = [
   'legitimate_guest_recovery', 'manager_approved_promo',
   'employee_meal', 'vip_courtesy', 'kitchen_error',
   'service_failure', 'policy_violation', 'needs_investigation',
-  'training_required',
+  'training_required', 'pending_foh_resolution',
 ] as const;
+
+/** Resolution codes visible in the FOH dropdown (excludes sentinel) */
+export const FOH_RESOLUTION_CODES = COMP_RESOLUTION_CODES.filter(
+  (c) => c !== 'pending_foh_resolution',
+);
 
 export const INCIDENT_TYPES = [
   'guest_complaint', 'equipment_failure', 'staff_issue',
@@ -474,6 +479,7 @@ export const COMP_RESOLUTION_LABELS: Record<CompResolutionCode, string> = {
   policy_violation: 'Policy violation',
   needs_investigation: 'Needs investigation',
   training_required: 'Training required',
+  pending_foh_resolution: 'Pending FOH Resolution',
 };
 
 export const INCIDENT_TYPE_LABELS: Record<IncidentType, string> = {
@@ -636,6 +642,7 @@ export interface CompResolution {
   resolution_notes?: string;
   approved_by?: string;
   requires_follow_up: boolean;
+  boh_notes?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -838,6 +845,17 @@ export const compResolutionSchema = z.object({
   resolution_notes: z.string().max(500).optional().nullable(),
   approved_by: z.string().optional(),
   requires_follow_up: z.boolean().default(false),
+  boh_notes: z.string().max(1000).optional().nullable(),
+});
+
+/** BOH-only schema: kitchen context notes per comp */
+export const bohCompResolutionSchema = z.object({
+  check_id: z.string(),
+  boh_notes: z.string().min(1).max(1000),
+  check_amount: z.number().optional(),
+  comp_amount: z.number().optional(),
+  comp_reason_pos: z.string().optional(),
+  employee_name: z.string().optional(),
 });
 
 export const incidentSchema = z.object({

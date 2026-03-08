@@ -116,6 +116,7 @@ interface Props {
 const MODULE_LABELS: Record<keyof CompletionState, string> = {
   revenue: 'Revenue',
   comps: 'Comps',
+  bohComps: 'BOH Comps',
   foh: 'FOH',
   boh: 'BOH',
   incidents: 'Incidents',

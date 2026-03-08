@@ -23,6 +23,7 @@ import {
 export interface CompletionState {
   revenue: 'complete' | 'incomplete';
   comps: 'complete' | 'incomplete';
+  bohComps: 'complete' | 'incomplete';
   foh: 'complete' | 'incomplete';
   boh: 'complete' | 'incomplete';
   incidents: 'complete' | 'incomplete';
@@ -203,7 +204,15 @@ export function useAttestation(
         }
 
         const { data } = await res.json();
-        setCompResolutions((prev) => [...prev, data]);
+        setCompResolutions((prev) => {
+          const idx = prev.findIndex((r) => r.check_id === data.check_id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = data;
+            return next;
+          }
+          return [...prev, data];
+        });
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -334,7 +343,11 @@ export function useAttestation(
   const completionState: CompletionState = {
     revenue: revenueComplete ? 'complete' : 'incomplete',
     comps: (compsPromptsComplete || !!attestation?.comp_acknowledged)
-      && (!triggers?.comp_resolution_required || (triggers.flagged_comps?.length || 0) <= compResolutions.length)
+      && (!triggers?.comp_resolution_required || (triggers.flagged_comps?.length || 0) <= compResolutions.filter(r => r.resolution_code !== 'pending_foh_resolution').length)
+      ? 'complete' : 'incomplete',
+    bohComps: !triggers?.comp_resolution_required
+      || compResolutions.filter(r => r.boh_notes && r.boh_notes.length > 0).length >= (triggers?.flagged_comps?.length || 0)
+      || !!(attestation as any)?.boh_comps_acknowledged
       ? 'complete' : 'incomplete',
     foh: (fohPromptsComplete || !!attestation?.foh_acknowledged)
       && (!options?.entertainmentRequired || !!options?.entertainmentComplete)
@@ -350,10 +363,13 @@ export function useAttestation(
       ? 'complete' : 'incomplete',
   };
 
+  // bohComps is optional — kitchen context doesn't block submission
   const canSubmit =
     attestation?.status === 'draft' &&
     !!attestation?.closing_narrative &&
-    Object.values(completionState).every(v => v === 'complete');
+    Object.entries(completionState)
+      .filter(([key]) => key !== 'bohComps')
+      .every(([, v]) => v === 'complete');
 
   const isLocked = attestation?.status === 'submitted' || attestation?.status === 'amended';
 

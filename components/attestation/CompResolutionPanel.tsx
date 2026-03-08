@@ -19,10 +19,11 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
+  ChefHat,
 } from 'lucide-react';
 import type { CompResolution, TriggerResult } from '@/lib/attestation/types';
 import {
-  COMP_RESOLUTION_CODES,
+  FOH_RESOLUTION_CODES,
   COMP_RESOLUTION_LABELS,
   type CompResolutionCode,
 } from '@/lib/attestation/types';
@@ -46,7 +47,9 @@ function formatCurrency(v: number) {
 export function CompResolutionPanel({ triggers, resolutions, onAdd, disabled }: Props) {
   const flaggedComps = triggers?.flagged_comps || [];
   const isRequired = triggers?.comp_resolution_required ?? false;
-  const resolvedCount = resolutions.length;
+  const resolvedCount = resolutions.filter(
+    (r) => r.resolution_code !== 'pending_foh_resolution',
+  ).length;
   const totalCount = flaggedComps.length;
   const isComplete = resolvedCount >= totalCount;
 
@@ -109,7 +112,10 @@ interface CompRowProps {
 }
 
 function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
-  const [expanded, setExpanded] = useState(!existingResolution);
+  // Treat pending_foh_resolution as unresolved (BOH created stub)
+  const isResolved = existingResolution && existingResolution.resolution_code !== 'pending_foh_resolution';
+
+  const [expanded, setExpanded] = useState(!isResolved);
   const [resolutionCode, setResolutionCode] = useState<CompResolutionCode | ''>('');
   const [notes, setNotes] = useState('');
   const [approvedBy, setApprovedBy] = useState('');
@@ -134,13 +140,13 @@ function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
     setExpanded(false);
   };
 
-  if (existingResolution) {
+  if (isResolved) {
     return (
       <div
-        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-muted/30"
+        className="px-4 py-3 flex items-start gap-3 cursor-pointer hover:bg-muted/30"
         onClick={() => setExpanded(!expanded)}
       >
-        <CheckCircle2 className="h-4 w-4 text-sage shrink-0" />
+        <CheckCircle2 className="h-4 w-4 text-sage shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <div className="text-sm flex items-center gap-2">
             <span className="font-medium">{formatCurrency(comp.comp_amount)} comp</span>
@@ -149,12 +155,23 @@ function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
             </span>
           </div>
           {expanded && (
-            <div className="mt-1 text-xs text-muted-foreground">
-              Resolution: {COMP_RESOLUTION_LABELS[existingResolution.resolution_code as CompResolutionCode]}
-              {existingResolution.resolution_notes && (
-                <span> — {existingResolution.resolution_notes}</span>
+            <>
+              <div className="mt-1 text-xs text-muted-foreground">
+                Resolution: {COMP_RESOLUTION_LABELS[existingResolution!.resolution_code as CompResolutionCode]}
+                {existingResolution!.resolution_notes && (
+                  <span> — {existingResolution!.resolution_notes}</span>
+                )}
+              </div>
+              {existingResolution!.boh_notes && (
+                <div className="mt-1 text-xs flex items-start gap-1">
+                  <ChefHat className="h-3 w-3 text-brass shrink-0 mt-0.5" />
+                  <span>
+                    <span className="font-medium text-brass">Kitchen: </span>
+                    <span className="text-muted-foreground">{existingResolution!.boh_notes}</span>
+                  </span>
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
         {expanded ? (
@@ -207,6 +224,17 @@ function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
       {/* Resolution form */}
       {expanded && (
         <div className="mt-3 pl-7 space-y-3">
+          {/* BOH context banner — if BOH already added kitchen notes */}
+          {existingResolution?.boh_notes && (
+            <div className="bg-brass/5 border border-brass/20 rounded-md p-2 flex items-start gap-1.5">
+              <ChefHat className="h-3.5 w-3.5 text-brass shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <span className="font-medium text-brass">Kitchen Context: </span>
+                <span className="text-muted-foreground">{existingResolution.boh_notes}</span>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1">
             <label className="text-xs font-medium">Resolution code *</label>
             <Select
@@ -218,7 +246,7 @@ function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
                 <SelectValue placeholder="Select resolution..." />
               </SelectTrigger>
               <SelectContent>
-                {COMP_RESOLUTION_CODES.map((code) => (
+                {FOH_RESOLUTION_CODES.map((code) => (
                   <SelectItem key={code} value={code}>
                     {COMP_RESOLUTION_LABELS[code]}
                   </SelectItem>

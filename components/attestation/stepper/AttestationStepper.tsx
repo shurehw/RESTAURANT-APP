@@ -26,7 +26,9 @@ import { BOHStep } from './steps/BOHStep';
 import { IncidentsStep } from './steps/IncidentsStep';
 import { CoachingStep } from './steps/CoachingStep';
 import { GuestStep } from './steps/GuestStep';
+import { BOHCompsStep } from './steps/BOHCompsStep';
 import { ReviewStep } from './steps/ReviewStep';
+import { AttestationReport } from '@/components/attestation/AttestationReport';
 import type {
   NightlyAttestation,
   TriggerResult,
@@ -313,6 +315,14 @@ export function AttestationStepper({
       flagged: !!triggers?.labor_attestation_required,
     },
     {
+      id: 'boh_comps',
+      label: 'Comps',
+      icon: ShieldAlert,
+      status: 'required' as const,
+      completion: completionState.bohComps,
+      flagged: !!triggers?.comp_resolution_required,
+    },
+    {
       id: 'boh',
       label: 'BOH',
       icon: ChefHat,
@@ -366,8 +376,8 @@ export function AttestationStepper({
       return steps.filter(s => ['revenue', 'comps', 'foh', 'incidents', 'coaching', 'guest', 'review'].includes(s.id));
     }
     if (isBOHMode) {
-      // BOH manager: BOH → Incidents → Coaching → Guest → Done
-      return steps.filter(s => ['boh', 'incidents', 'coaching', 'guest'].includes(s.id));
+      // BOH manager: Comps (kitchen context) → BOH → Incidents → Coaching → Done
+      return steps.filter(s => ['boh_comps', 'boh', 'incidents', 'coaching'].includes(s.id));
     }
     return steps;
   }, [steps, isFOHMode, isBOHMode]);
@@ -452,184 +462,213 @@ export function AttestationStepper({
             : `Step-by-step attestation for ${venueName} on ${date}`}
         </SheetDescription>
 
-          <>
-            <div className="shrink-0">
-              <div className="px-6 pt-4 pb-2">
-                {isDepartmentMode && (
-                  <div className="flex items-center gap-2 mb-1">
-                    {isFOHMode
-                      ? <UserCheck className="h-4 w-4 text-brass" />
-                      : <ChefHat className="h-4 w-4 text-brass" />}
-                    <span className="text-xs font-semibold uppercase tracking-wide text-brass">
-                      {isFOHMode ? 'FOH — Front of House' : 'BOH — Back of House'}
-                    </span>
+          {isLocked && attestation ? (
+            <AttestationReport
+              attestation={attestation}
+              compResolutions={compResolutions}
+              incidents={incidents}
+              coachingActions={coachingActions}
+              venueName={venueName}
+              date={date}
+              submitting={submitting}
+              error={error}
+              onSubmit={handleSubmitAndClose}
+              reportSummary={reportSummary}
+              factsSummary={factsSummary}
+              compExceptions={compExceptions}
+              compReview={compReview}
+              compsByReason={compsByReason}
+            />
+          ) : (
+            <>
+              <div className="shrink-0">
+                <div className="px-6 pt-4 pb-2">
+                  {isDepartmentMode && (
+                    <div className="flex items-center gap-2 mb-1">
+                      {isFOHMode
+                        ? <UserCheck className="h-4 w-4 text-brass" />
+                        : <ChefHat className="h-4 w-4 text-brass" />}
+                      <span className="text-xs font-semibold uppercase tracking-wide text-brass">
+                        {isFOHMode ? 'FOH — Front of House' : 'BOH — Back of House'}
+                      </span>
+                    </div>
+                  )}
+                  <div className="text-xs text-muted-foreground">
+                    {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                      weekday: 'short', month: 'short', day: 'numeric',
+                    })}
                   </div>
-                )}
-                <div className="text-xs text-muted-foreground">
-                  {venueName} — {new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric',
-                  })}
                 </div>
+                <StepIndicator
+                  steps={activeSteps}
+                  currentStep={currentStep}
+                  onStepClick={setCurrentStep}
+                />
               </div>
-              <StepIndicator
-                steps={activeSteps}
-                currentStep={currentStep}
-                onStepClick={setCurrentStep}
-              />
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
-              {loading ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  Loading attestation...
-                </div>
-              ) : !attestation ? (
-                <div className="flex items-center justify-center py-12 text-muted-foreground">
-                  No attestation data available
-                </div>
-              ) : (
-                <>
-                  {activeStep.id === 'revenue' && (
-                    <RevenueStep
-                      triggers={triggers}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                      disabled={isLocked}
-                      netSales={reportSummary?.net_sales ?? 0}
-                      totalCovers={reportSummary?.total_covers ?? 0}
-                      totalComps={reportSummary?.total_comps ?? 0}
-                      forecast={factsSummary?.forecast}
-                      variance={factsSummary?.variance}
-                      foodSales={factsSummary?.food_sales || undefined}
-                      beverageSales={factsSummary?.beverage_sales || undefined}
-                      beveragePct={factsSummary?.beverage_pct}
-                    />
-                  )}
-                  {activeStep.id === 'comps' && (
-                    <CompsStep
-                      triggers={triggers}
-                      resolutions={compResolutions}
-                      onAdd={addCompResolution}
-                      disabled={isLocked}
-                      totalComps={reportSummary?.total_comps ?? 0}
-                      netSales={reportSummary?.net_sales ?? 0}
-                      exceptionSummary={compExceptions?.summary ?? null}
-                      reviewSummary={compReview?.summary ?? null}
-                      compsByReason={compsByReason}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                    />
-                  )}
-                  {activeStep.id === 'foh' && (
-                    <FOHStep
-                      triggers={triggers}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                      disabled={isLocked}
-                      labor={factsSummary?.labor ?? null}
-                      netSales={reportSummary?.net_sales ?? 0}
-                      covers={reportSummary?.total_covers ?? 0}
-                      laborExceptions={laborExceptions}
-                      hasEntertainment={hasEntertainment}
-                      venueId={venueId}
-                      businessDate={date}
-                      shiftLog={shiftLog}
-                      onShiftLogUpdate={setShiftLog}
-                    />
-                  )}
-                  {activeStep.id === 'boh' && (
-                    <BOHStep
-                      triggers={triggers}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                      disabled={isLocked}
-                      labor={factsSummary?.labor ?? null}
-                      netSales={reportSummary?.net_sales ?? 0}
-                      covers={reportSummary?.total_covers ?? 0}
-                      laborExceptions={laborExceptions}
-                      hasCulinary={hasCulinary}
-                      venueId={venueId}
-                      businessDate={date}
-                      culinaryLog={culinaryLog}
-                      onCulinaryLogUpdate={setCulinaryLog}
-                    />
-                  )}
-                  {activeStep.id === 'incidents' && (
-                    <IncidentsStep
-                      triggers={triggers}
-                      incidents={incidents}
-                      onAdd={addIncident}
-                      disabled={isLocked}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                    />
-                  )}
-                  {activeStep.id === 'coaching' && (
-                    <CoachingStep
-                      actions={coachingActions}
-                      onAdd={addCoaching}
-                      disabled={isLocked}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                    />
-                  )}
-                  {activeStep.id === 'guest' && (
-                    <GuestStep
-                      notableGuests={notableGuests}
-                      peopleWeKnow={peopleWeKnow}
-                      attestation={attestation}
-                      onUpdate={updateField}
-                      disabled={isLocked}
-                    />
-                  )}
-                  {activeStep.id === 'review' && (
-                    <ReviewStep
-                      attestation={attestation}
-                      triggers={triggers}
-                      compResolutions={compResolutions}
-                      incidents={incidents}
-                      coachingActions={coachingActions}
-                      completionState={adjustedCompletionState}
-                      canSubmit={adjustedCanSubmit}
-                      isLocked={isLocked}
-                      submitting={submitting}
-                      error={error}
-                      onSubmit={handleSubmitAndClose}
-                      steps={activeSteps}
-                      onStepClick={setCurrentStep}
-                      reportSummary={reportSummary}
-                      factsSummary={factsSummary}
-                      compExceptions={compExceptions}
-                      healthData={healthData}
-                      venueId={venueId}
-                      venueName={venueName}
-                      date={date}
-                      shiftLog={shiftLog}
-                      culinaryLog={culinaryLog}
-                      notableGuests={notableGuests}
-                      peopleWeKnow={peopleWeKnow}
-                      topItems={topItems}
-                      serverPerformance={serverPerformance}
-                      discountsTotal={discountsTotal}
-                      updateField={updateField}
-                    />
-                  )}
-                </>
-              )}
-            </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                {loading ? (
+                  <div className="flex items-center justify-center py-12 text-muted-foreground">
+                    Loading attestation...
+                  </div>
+                ) : !attestation ? (
+                  <div className="flex items-center justify-center py-12 text-muted-foreground">
+                    No attestation data available
+                  </div>
+                ) : (
+                  <>
+                    {activeStep.id === 'revenue' && (
+                      <RevenueStep
+                        triggers={triggers}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                        disabled={isLocked}
+                        netSales={reportSummary?.net_sales ?? 0}
+                        totalCovers={reportSummary?.total_covers ?? 0}
+                        totalComps={reportSummary?.total_comps ?? 0}
+                        forecast={factsSummary?.forecast}
+                        variance={factsSummary?.variance}
+                        foodSales={factsSummary?.food_sales || undefined}
+                        beverageSales={factsSummary?.beverage_sales || undefined}
+                        beveragePct={factsSummary?.beverage_pct}
+                      />
+                    )}
+                    {activeStep.id === 'comps' && (
+                      <CompsStep
+                        triggers={triggers}
+                        resolutions={compResolutions}
+                        onAdd={addCompResolution}
+                        disabled={isLocked}
+                        totalComps={reportSummary?.total_comps ?? 0}
+                        netSales={reportSummary?.net_sales ?? 0}
+                        exceptionSummary={compExceptions?.summary ?? null}
+                        reviewSummary={compReview?.summary ?? null}
+                        compsByReason={compsByReason}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                      />
+                    )}
+                    {activeStep.id === 'foh' && (
+                      <FOHStep
+                        triggers={triggers}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                        disabled={isLocked}
+                        labor={factsSummary?.labor ?? null}
+                        netSales={reportSummary?.net_sales ?? 0}
+                        covers={reportSummary?.total_covers ?? 0}
+                        laborExceptions={laborExceptions}
+                        hasEntertainment={hasEntertainment}
+                        venueId={venueId}
+                        businessDate={date}
+                        shiftLog={shiftLog}
+                        onShiftLogUpdate={setShiftLog}
+                      />
+                    )}
+                    {activeStep.id === 'boh_comps' && (
+                      <BOHCompsStep
+                        triggers={triggers}
+                        resolutions={compResolutions}
+                        onAdd={addCompResolution}
+                        disabled={isLocked}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                      />
+                    )}
+                    {activeStep.id === 'boh' && (
+                      <BOHStep
+                        triggers={triggers}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                        disabled={isLocked}
+                        labor={factsSummary?.labor ?? null}
+                        netSales={reportSummary?.net_sales ?? 0}
+                        covers={reportSummary?.total_covers ?? 0}
+                        laborExceptions={laborExceptions}
+                        hasCulinary={hasCulinary}
+                        venueId={venueId}
+                        businessDate={date}
+                        culinaryLog={culinaryLog}
+                        onCulinaryLogUpdate={setCulinaryLog}
+                      />
+                    )}
+                    {activeStep.id === 'incidents' && (
+                      <IncidentsStep
+                        triggers={triggers}
+                        incidents={incidents}
+                        onAdd={addIncident}
+                        disabled={isLocked}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                      />
+                    )}
+                    {activeStep.id === 'coaching' && (
+                      <CoachingStep
+                        actions={coachingActions}
+                        onAdd={addCoaching}
+                        disabled={isLocked}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                      />
+                    )}
+                    {activeStep.id === 'guest' && (
+                      <GuestStep
+                        notableGuests={notableGuests}
+                        peopleWeKnow={peopleWeKnow}
+                        attestation={attestation}
+                        onUpdate={updateField}
+                        disabled={isLocked}
+                      />
+                    )}
+                    {activeStep.id === 'review' && (
+                      <ReviewStep
+                        attestation={attestation}
+                        triggers={triggers}
+                        compResolutions={compResolutions}
+                        incidents={incidents}
+                        coachingActions={coachingActions}
+                        completionState={adjustedCompletionState}
+                        canSubmit={adjustedCanSubmit}
+                        isLocked={isLocked}
+                        submitting={submitting}
+                        error={error}
+                        onSubmit={handleSubmitAndClose}
+                        steps={activeSteps}
+                        onStepClick={setCurrentStep}
+                        reportSummary={reportSummary}
+                        factsSummary={factsSummary}
+                        compExceptions={compExceptions}
+                        healthData={healthData}
+                        venueId={venueId}
+                        venueName={venueName}
+                        date={date}
+                        shiftLog={shiftLog}
+                        culinaryLog={culinaryLog}
+                        notableGuests={notableGuests}
+                        peopleWeKnow={peopleWeKnow}
+                        topItems={topItems}
+                        serverPerformance={serverPerformance}
+                        discountsTotal={discountsTotal}
+                        updateField={updateField}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
 
-            <div className="shrink-0">
-              <StepNavigation
-                currentStep={currentStep}
-                totalSteps={activeSteps.length}
-                onBack={handleBack}
-                onNext={handleNext}
-                saving={saving}
-                isLastStep={isLastStep}
-                onDone={isBOHMode ? onClose : undefined}
-              />
-            </div>
-          </>
+              <div className="shrink-0">
+                <StepNavigation
+                  currentStep={currentStep}
+                  totalSteps={activeSteps.length}
+                  onBack={handleBack}
+                  onNext={handleNext}
+                  saving={saving}
+                  isLastStep={isLastStep}
+                  onDone={isBOHMode ? onClose : undefined}
+                />
+              </div>
+            </>
+          )}
       </SheetContent>
     </Sheet>
   );
