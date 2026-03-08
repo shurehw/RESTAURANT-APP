@@ -229,8 +229,8 @@ export function AttestationStepper({
   topItems = [],
   serverPerformance = [],
   discountsTotal = 0,
-  hasEntertainment = true,
-  hasCulinary = true,
+  hasEntertainment = false,
+  hasCulinary = false,
   initialStepId,
 }: AttestationStepperProps) {
   // ---------------------------------------------------------------------------
