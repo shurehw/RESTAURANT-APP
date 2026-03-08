@@ -15,6 +15,7 @@ interface VenueMapping {
   id: string;
   name: string;
   tipsee_location_uuid: string;
+  timezone?: string | null;
 }
 
 // Vercel Cron sends GET requests
@@ -50,9 +51,10 @@ async function handleSync(request: NextRequest) {
   const venueParam = searchParams?.get('venue'); // e.g., "nice-guy" or venue UUID
 
   let businessDate: string;
+  const useVenueLocalToday = dateParam === 'today';
   if (dateParam === 'today') {
     businessDate = new Date().toISOString().split('T')[0];
-    console.log(`[sync-tipsee] Live sync for today: ${businessDate}`);
+    console.log('[sync-tipsee] Live sync for today using per-venue local date');
   } else if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
     businessDate = dateParam;
     console.log(`[sync-tipsee] Manual sync requested for ${businessDate}`);
@@ -101,7 +103,8 @@ async function handleSync(request: NextRequest) {
         tipsee_location_uuid,
         venues (
           id,
-          name
+          name,
+          timezone
         )
       `)
       .eq('is_active', true);
@@ -127,6 +130,7 @@ async function handleSync(request: NextRequest) {
         id: m.venue_id,
         name: m.venues.name,
         tipsee_location_uuid: m.tipsee_location_uuid,
+        timezone: m.venues.timezone || null,
       }));
 
     // Apply venue filter if specified
@@ -161,14 +165,18 @@ async function handleSync(request: NextRequest) {
     for (const venue of venues) {
       try {
         const venueT0 = Date.now();
-        console.log(`[sync-tipsee] Syncing ${venue.name} (${venue.tipsee_location_uuid.substring(0, 8)}...)`);
+        const venueBusinessDate = useVenueLocalToday
+          ? getDateInTimezone(venue.timezone || 'America/Los_Angeles')
+          : businessDate;
+
+        console.log(`[sync-tipsee] Syncing ${venue.name} (${venue.tipsee_location_uuid.substring(0, 8)}...) for ${venueBusinessDate}`);
 
         // Detect POS type — Avero and Simphony venues use venue_day_facts,
         // only Upserve venues query TipSee check-level tables directly
         const posType = await getPosTypeForLocations([venue.tipsee_location_uuid]);
         const report = (posType === 'avero' || posType === 'simphony')
-          ? await fetchNightlyReportFromFacts(businessDate, venue.id)
-          : await fetchNightlyReport(businessDate, venue.tipsee_location_uuid);
+          ? await fetchNightlyReportFromFacts(venueBusinessDate, venue.id)
+          : await fetchNightlyReport(venueBusinessDate, venue.tipsee_location_uuid);
         const queryDuration = Date.now() - venueT0;
 
         // Upsert to cache
@@ -176,7 +184,7 @@ async function handleSync(request: NextRequest) {
           .from('tipsee_nightly_cache')
           .upsert({
             venue_id: venue.id,
-            business_date: businessDate,
+            business_date: venueBusinessDate,
             location_uuid: venue.tipsee_location_uuid,
             location_name: venue.name,
             report_data: report,
@@ -208,7 +216,7 @@ async function handleSync(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Sync completed',
-      syncDate: businessDate,
+      syncDate: useVenueLocalToday ? 'per-venue-local' : businessDate,
       venuesSynced,
       venuesFailed,
       totalDurationMs: totalDuration,
@@ -226,6 +234,24 @@ async function handleSync(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+function getDateInTimezone(timezone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const year = parts.find((p) => p.type === 'year')?.value;
+    const month = parts.find((p) => p.type === 'month')?.value;
+    const day = parts.find((p) => p.type === 'day')?.value;
+    if (!year || !month || !day) throw new Error('date parts missing');
+    return `${year}-${month}-${day}`;
+  } catch {
+    return new Date().toISOString().split('T')[0];
   }
 }
 

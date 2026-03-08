@@ -446,11 +446,12 @@ export async function GET(request: NextRequest) {
     let snapshotFallback = false;
     if (!summary) {
       const snapshot = await getLatestSnapshot(venueId, date);
-      if (snapshot && snapshot.net_sales > 0) {
-        const netSales = snapshot.net_sales;
+      if (snapshot) {
+        const netSales = snapshot.net_sales || 0;
         summary = {
           venue_id: venueId,
           business_date: date,
+          last_synced_at: snapshot.snapshot_at,
           net_sales: netSales,
           gross_sales: snapshot.gross_sales,
           food_sales: snapshot.food_sales,
