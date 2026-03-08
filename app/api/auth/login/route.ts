@@ -84,6 +84,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Ensure organization link exists for @hwoodgroup.com users (new AND existing)
+      // Uses ignoreDuplicates to never downgrade an existing role
       if (authUserId && email.toLowerCase().endsWith('@hwoodgroup.com')) {
         const { data: org } = await adminClient
           .from('organizations')
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
               organization_id: org.id,
               role: 'viewer',
               is_active: true,
-            }, { onConflict: 'organization_id,user_id' });
+            }, { onConflict: 'organization_id,user_id', ignoreDuplicates: true });
         }
       }
 
