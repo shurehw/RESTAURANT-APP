@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -389,10 +389,16 @@ export function AttestationStepper({
 
   const [currentStep, setCurrentStep] = useState(initialStep);
 
+  // Only reset to initialStep when the stepper OPENS — not when completion
+  // state changes mid-session.  Reacting to initialStep caused the stepper to
+  // auto-jump forward whenever a module became complete, which confused both
+  // users and automated tests.
+  const prevOpenRef = useRef(false);
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setCurrentStep(initialStep);
     }
+    prevOpenRef.current = open;
   }, [open, initialStep]);
 
   const handleNext = () => {
