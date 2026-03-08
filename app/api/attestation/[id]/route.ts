@@ -156,6 +156,13 @@ export async function PUT(req: NextRequest, ctx: RouteContext) {
 
     // Backward compatibility: drop unknown columns one-by-one for older schemas.
     for (let i = 0; i < 30; i++) {
+      // If all fields were stripped, nothing to update — return existing row
+      if (Object.keys(updates).length === 0) {
+        data = existing;
+        error = null;
+        break;
+      }
+
       const result = await (supabase as any)
         .from('nightly_attestations')
         .update(updates)
