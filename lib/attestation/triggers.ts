@@ -161,6 +161,9 @@ export function computeTriggers(
         comp_reason: comp.comp_reason,
         employee_name: comp.employee_name,
         trigger_reasons: triggers,
+        table_name: comp.table_name,
+        comped_items: comp.comped_items,
+        cardholder_name: comp.cardholder_name,
       });
     }
   }

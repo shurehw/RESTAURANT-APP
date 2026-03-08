@@ -690,6 +690,9 @@ export interface NightlyReportPayload {
     comp_amount: number;
     comp_reason: string;
     employee_name: string;
+    table_name?: string;
+    comped_items?: string[];
+    cardholder_name?: string | null;
   }>;
 
   // Covers
@@ -725,6 +728,9 @@ export interface TriggerResult {
     comp_reason: string;
     employee_name: string;
     trigger_reasons: string[];
+    table_name?: string;
+    comped_items?: string[];
+    cardholder_name?: string | null;
   }>;
   labor_attestation_required: boolean;
   labor_triggers: string[];

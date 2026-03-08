@@ -128,6 +128,7 @@ interface NightlyReportData {
     check_total: number;
     reason: string;
     comped_items: string[];
+    cardholder_name: string | null;
   }>;
   notableGuests: Array<{
     check_id: string;
@@ -704,6 +705,9 @@ export default function NightlyReportPage() {
         comp_amount: c.comp_total,
         comp_reason: c.reason,
         employee_name: c.server,
+        table_name: c.table_name,
+        comped_items: c.comped_items,
+        cardholder_name: c.cardholder_name,
       })),
       covers: nightlyCovers,
       forecasted_covers: fcstCovers,

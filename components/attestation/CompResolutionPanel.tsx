@@ -143,9 +143,9 @@ function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
         <CheckCircle2 className="h-4 w-4 text-sage shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-sm flex items-center gap-2">
-            <span className="font-medium">#{comp.check_id}</span>
+            <span className="font-medium">{formatCurrency(comp.comp_amount)} comp</span>
             <span className="text-muted-foreground">
-              {formatCurrency(comp.comp_amount)} — {comp.employee_name}
+              {comp.employee_name}{comp.table_name ? ` · ${comp.table_name}` : ''}
             </span>
           </div>
           {expanded && (
@@ -175,14 +175,25 @@ function CompRow({ comp, existingResolution, onAdd, disabled }: CompRowProps) {
       >
         <AlertTriangle className="h-4 w-4 text-error shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="text-sm flex items-center gap-2">
-            <span className="font-medium">#{comp.check_id}</span>
-            <span className="text-muted-foreground">
-              {formatCurrency(comp.comp_amount)} of {formatCurrency(comp.check_amount)}
+          <div className="text-sm flex items-center gap-2 flex-wrap">
+            <span className="font-medium">
+              {formatCurrency(comp.comp_amount)} comp
             </span>
+            {comp.check_amount > 0 && (
+              <span className="text-muted-foreground">
+                of {formatCurrency(comp.check_amount)} check
+              </span>
+            )}
             <span className="text-muted-foreground">— {comp.employee_name}</span>
           </div>
-          <div className="text-xs text-muted-foreground mt-0.5">
+          <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+            {comp.table_name && <span>{comp.table_name}</span>}
+            {comp.cardholder_name && <span>· {comp.cardholder_name}</span>}
+            {comp.comped_items && comp.comped_items.length > 0 && (
+              <span>· {comp.comped_items.slice(0, 3).join(', ')}{comp.comped_items.length > 3 ? ` +${comp.comped_items.length - 3}` : ''}</span>
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground/70 mt-0.5">
             {comp.trigger_reasons.join(' | ')}
           </div>
         </div>

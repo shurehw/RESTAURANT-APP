@@ -129,6 +129,7 @@ export interface NightlyReportData {
     check_total: number;
     reason: string;
     comped_items: string[];
+    cardholder_name: string | null;
   }>;
   logbook: any | null;
   notableGuests: Array<{
@@ -369,16 +370,25 @@ export async function fetchNightlyReport(
         WHERE check_id IN (SELECT id FROM public.tipsee_checks WHERE location_uuid = $1 AND trading_day = $2)
           AND comp_total > 0
         GROUP BY check_id
+      ),
+      best_payment AS (
+        SELECT DISTINCT ON (p.check_id)
+          p.check_id, p.cc_name
+        FROM public.tipsee_payments p
+        WHERE p.check_id IN (SELECT id FROM public.tipsee_checks WHERE location_uuid = $1 AND trading_day = $2)
+        ORDER BY p.check_id, (p.cc_name IS NOT NULL AND p.cc_name != '') DESC, p.amount DESC
       )
       SELECT DISTINCT
         c.id as check_id,
         c.table_name,
         c.employee_name as server,
         GREATEST(c.comp_total, COALESCE(ict.total, 0)) as comp_total,
-        c.revenue_total as check_total,
-        COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason
+        c.revenue_total + GREATEST(c.comp_total, COALESCE(ict.total, 0)) as check_total,
+        COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason,
+        bp.cc_name as cardholder_name
       FROM public.tipsee_checks c
       LEFT JOIN item_comp_totals ict ON ict.check_id = c.id
+      LEFT JOIN best_payment bp ON bp.check_id = c.id
       WHERE c.location_uuid = $1 AND c.trading_day = $2
         AND (c.comp_total > 0 OR ict.total > 0)
       ORDER BY GREATEST(c.comp_total, COALESCE(ict.total, 0)) DESC`,
