@@ -2,7 +2,7 @@
 // POST /api/attestation/[id]/comp-resolutions  — create/upsert resolution (FOH or BOH)
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getServiceClient } from '@/lib/supabase/service';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertVenueAccess, assertRole } from '@/lib/tenant';
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     const user = await requireUser();
     const { venueIds } = await getUserOrgAndVenues(user.id);
 
-    const supabase = await createClient();
+    const supabase = getServiceClient() as any;
 
     // Verify attestation access
     const { data: attestation } = await supabase
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     const { venueIds, role } = await getUserOrgAndVenues(user.id);
     assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef']);
 
-    const supabase = await createClient();
+    const supabase = getServiceClient() as any;
 
     const { data: attestation } = await supabase
       .from('nightly_attestations')
