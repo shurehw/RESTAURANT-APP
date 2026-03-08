@@ -167,12 +167,15 @@ export async function PUT(req: NextRequest, ctx: RouteContext) {
         .from('nightly_attestations')
         .update(updates)
         .eq('id', id)
-        .select()
-        .single();
+        .select();
 
-      data = result.data;
+      data = result.data?.[0] ?? null;
       error = result.error;
-      if (!error) break;
+      if (!error) {
+        // 0 rows from empty/no-op update is fine — return existing row
+        if (!data) data = existing;
+        break;
+      }
 
       const missing = extractMissingColumn(error);
       if (missing) {
