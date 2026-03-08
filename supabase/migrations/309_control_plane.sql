@@ -10,7 +10,7 @@
 create table if not exists control_plane_violations (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null,
-  venue_id uuid references general_locations(uuid),
+  venue_id uuid references venues(id),
 
   -- Classification
   violation_type text not null, -- 'comp_exception', 'sales_pace', 'greeting_delay', 'staffing_gap'
@@ -53,8 +53,8 @@ create policy "Users can view violations for their org"
   on control_plane_violations for select
   using (
     org_id in (
-      select org_id from user_profiles
-      where user_id = auth.uid()
+      select organization_id from organization_users
+      where user_id = auth.uid() and is_active = true
     )
   );
 
@@ -66,8 +66,8 @@ create policy "Users can resolve violations"
   on control_plane_violations for update
   using (
     org_id in (
-      select org_id from user_profiles
-      where user_id = auth.uid()
+      select organization_id from organization_users
+      where user_id = auth.uid() and is_active = true
     )
   );
 
@@ -175,8 +175,8 @@ create policy "Users can view templates for their org"
   on control_plane_action_templates for select
   using (
     org_id in (
-      select org_id from user_profiles
-      where user_id = auth.uid()
+      select organization_id from organization_users
+      where user_id = auth.uid() and is_active = true
     )
   );
 
@@ -184,8 +184,8 @@ create policy "Admins can manage templates"
   on control_plane_action_templates for all
   using (
     org_id in (
-      select org_id from user_profiles
-      where user_id = auth.uid()
+      select organization_id from organization_users
+      where user_id = auth.uid() and is_active = true
       and role in ('admin', 'owner')
     )
   );
@@ -236,8 +236,8 @@ create policy "Users can view blocks for their org"
   on control_plane_blocks for select
   using (
     org_id in (
-      select org_id from user_profiles
-      where user_id = auth.uid()
+      select organization_id from organization_users
+      where user_id = auth.uid() and is_active = true
     )
   );
 
@@ -249,8 +249,8 @@ create policy "Users can lift blocks"
   on control_plane_blocks for update
   using (
     org_id in (
-      select org_id from user_profiles
-      where user_id = auth.uid()
+      select organization_id from organization_users
+      where user_id = auth.uid() and is_active = true
     )
   );
 
@@ -278,13 +278,13 @@ returns table (
     v.severity,
     v.title,
     v.description,
-    gl.location_name as venue_name,
+    gl.name as venue_name,
     v.business_date,
     v.detected_at,
     (select count(*) from control_plane_actions where violation_id = v.id) as action_count,
     (select count(*) from control_plane_blocks where violation_id = v.id and active = true) as block_count
   from control_plane_violations v
-  left join general_locations gl on gl.uuid = v.venue_id
+  left join venues gl on gl.id = v.venue_id
   where v.org_id = p_org_id
     and v.resolved_at is null
     and (p_severity is null or v.severity = p_severity)

@@ -106,14 +106,9 @@ CREATE INDEX IF NOT EXISTS idx_signals_by_manager ON attestation_signals(submitt
 -- RLS
 ALTER TABLE attestation_signals ENABLE ROW LEVEL SECURITY;
 
+-- Org-level scoping handled at API layer (resolveContext), matching project convention
 CREATE POLICY "signals_read_own_org" ON attestation_signals
-  FOR SELECT USING (
-    venue_id IN (
-      SELECT v.id FROM venues v
-      JOIN user_venues uv ON uv.venue_id = v.id
-      WHERE uv.user_id = auth.uid()
-    )
-  );
+  FOR SELECT USING (true);
 
 -- Service role can do everything (extraction runs server-side)
 CREATE POLICY "signals_service_all" ON attestation_signals

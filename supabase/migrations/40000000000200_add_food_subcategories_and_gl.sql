@@ -192,6 +192,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS trg_auto_set_item_subcategory ON items;
 CREATE TRIGGER trg_auto_set_item_subcategory
   BEFORE INSERT OR UPDATE ON items
   FOR EACH ROW

@@ -48,7 +48,7 @@ CREATE POLICY "Users can view their org's shift logs"
   TO authenticated
   USING (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM organization_users
       WHERE user_id = auth.uid()
     )
   );
@@ -58,7 +58,7 @@ CREATE POLICY "Users can insert shift logs for their org"
   TO authenticated
   WITH CHECK (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM organization_users
       WHERE user_id = auth.uid()
     )
   );
@@ -68,7 +68,7 @@ CREATE POLICY "Users can update their org's shift logs"
   TO authenticated
   USING (
     organization_id IN (
-      SELECT organization_id FROM organization_members
+      SELECT organization_id FROM organization_users
       WHERE user_id = auth.uid()
     )
   );

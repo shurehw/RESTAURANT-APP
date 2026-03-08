@@ -64,5 +64,5 @@ ALTER TABLE organization_invites
   CHECK (role IN (
     'owner', 'director', 'gm', 'agm', 'manager',
     'exec_chef', 'sous_chef', 'readonly', 'pwa',
-    'onboarding'
+    'admin', 'viewer', 'onboarding'
   ));

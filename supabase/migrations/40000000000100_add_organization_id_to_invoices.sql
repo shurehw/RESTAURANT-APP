@@ -18,14 +18,14 @@ CREATE INDEX IF NOT EXISTS idx_invoices_organization_id ON invoices(organization
 DROP POLICY IF EXISTS "Users can view invoices for their organization" ON invoices;
 CREATE POLICY "Users can view invoices for their organization"
   ON invoices FOR SELECT
-  USING (organization_id IN (SELECT id FROM organizations WHERE id = auth.jwt() -> 'organization_id'));
+  USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 DROP POLICY IF EXISTS "Users can insert invoices for their organization" ON invoices;
 CREATE POLICY "Users can insert invoices for their organization"
   ON invoices FOR INSERT
-  WITH CHECK (organization_id IN (SELECT id FROM organizations WHERE id = auth.jwt() -> 'organization_id'));
+  WITH CHECK (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
 
 DROP POLICY IF EXISTS "Users can update invoices for their organization" ON invoices;
 CREATE POLICY "Users can update invoices for their organization"
   ON invoices FOR UPDATE
-  USING (organization_id IN (SELECT id FROM organizations WHERE id = auth.jwt() -> 'organization_id'));
+  USING (organization_id = (auth.jwt() ->> 'organization_id')::uuid);
