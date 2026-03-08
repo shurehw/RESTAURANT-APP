@@ -50,7 +50,10 @@ async function handleSync(request: NextRequest) {
   const venueParam = searchParams?.get('venue'); // e.g., "nice-guy" or venue UUID
 
   let businessDate: string;
-  if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+  if (dateParam === 'today') {
+    businessDate = new Date().toISOString().split('T')[0];
+    console.log(`[sync-tipsee] Live sync for today: ${businessDate}`);
+  } else if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
     businessDate = dateParam;
     console.log(`[sync-tipsee] Manual sync requested for ${businessDate}`);
   } else {

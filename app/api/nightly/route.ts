@@ -148,6 +148,11 @@ async function getCachedReport(locationUuid: string, businessDate: string): Prom
       .maybeSingle();
 
     if (cached?.report_data) {
+      // Skip cache with $0 — either stale (pre-service) or venue closed (live will also return $0)
+      const summary = cached.report_data.summary;
+      if (summary && summary.net_sales === 0 && summary.total_checks === 0) {
+        return null;
+      }
       return {
         ...cached.report_data,
         _synced_at: cached.synced_at,

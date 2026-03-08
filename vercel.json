@@ -107,6 +107,10 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/sync-tipsee?date=today",
+      "schedule": "*/15 22-23,0-10 * * *"
+    },
+    {
       "path": "/api/sales/poll",
       "schedule": "*/5 15-23,0-11 * * *"
     },

@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear, getSamePeriodLastYear, FiscalCalendarType } from '@/lib/fiscal-calendar';
 import { fetchLaborSummary } from '@/lib/database/tipsee'; // Fallback for live query
-import { getActiveSalesPaceVenues, getVenueFiscalConfig } from '@/lib/database/sales-pace';
+import { getActiveSalesPaceVenues, getVenueFiscalConfig, getLatestSnapshot } from '@/lib/database/sales-pace';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -441,15 +441,39 @@ export async function GET(request: NextRequest) {
     const ytdDailyCurrentResult = viewMode === 'ytd' ? results[ytdOffset + 4] : { data: [] };
     const ytdDailyPriorResult = viewMode === 'ytd' ? results[ytdOffset + 5] : { data: [] };
 
-    // Check if we have data
-    const summary = venueDayResult.data as any;
+    // Check if we have data — fall back to sales_snapshots for today's live data
+    let summary = venueDayResult.data as any;
+    let snapshotFallback = false;
     if (!summary) {
-      return NextResponse.json({
-        date,
-        venue_id: venueId,
-        has_data: false,
-        message: 'No fact data for this date. Data may not be synced yet.',
-      });
+      const snapshot = await getLatestSnapshot(venueId, date);
+      if (snapshot && snapshot.net_sales > 0) {
+        const netSales = snapshot.net_sales;
+        summary = {
+          venue_id: venueId,
+          business_date: date,
+          net_sales: netSales,
+          gross_sales: snapshot.gross_sales,
+          food_sales: snapshot.food_sales,
+          beverage_sales: snapshot.beverage_sales,
+          other_sales: Math.max(0, netSales - snapshot.food_sales - snapshot.beverage_sales),
+          checks_count: snapshot.checks_count,
+          covers_count: snapshot.covers_count,
+          comps_total: snapshot.comps_total,
+          voids_total: snapshot.voids_total,
+          beverage_pct: snapshot.bev_pct ?? (netSales > 0 ? (snapshot.beverage_sales / netSales) * 100 : 0),
+          wine_sales: 0, liquor_sales: 0, beer_sales: 0,
+          discounts_total: 0, taxes_total: 0, tips_total: 0,
+          items_sold: 0, is_complete: false,
+        };
+        snapshotFallback = true;
+      } else {
+        return NextResponse.json({
+          date,
+          venue_id: venueId,
+          has_data: false,
+          message: 'No fact data for this date. Data may not be synced yet.',
+        });
+      }
     }
 
     // Labor data: prefer synced labor_day_facts, fall back to live TipSee query
@@ -505,6 +529,28 @@ export async function GET(request: NextRequest) {
       }
     } else if (!laborData && !tipseeLocationUuid) {
       laborWarning = 'No TipSee location mapping configured for labor data';
+    }
+
+    // Fallback: use snapshot labor data if still no labor data
+    if (!laborData && snapshotFallback) {
+      const snap = await getLatestSnapshot(venueId, date);
+      if (snap && snap.labor_cost > 0) {
+        const netSales = snap.net_sales || 0;
+        const covers = snap.covers_count || 0;
+        laborData = {
+          total_hours: snap.labor_hours,
+          labor_cost: snap.labor_cost,
+          labor_pct: netSales > 0 ? (snap.labor_cost / netSales) * 100 : 0,
+          splh: snap.labor_hours > 0 ? netSales / snap.labor_hours : 0,
+          ot_hours: snap.labor_ot_hours,
+          covers_per_labor_hour: snap.labor_hours > 0 ? covers / snap.labor_hours : null,
+          employee_count: snap.labor_employee_count,
+          foh: buildDeptBreakdown(0, snap.labor_foh_cost, 0),
+          boh: buildDeptBreakdown(0, snap.labor_boh_cost, 0),
+          other: buildDeptBreakdown(0, snap.labor_other_cost, 0),
+        };
+        laborWarning = null;
+      }
     }
 
     // Process demand forecasts (with bias correction applied)
@@ -933,6 +979,7 @@ export async function GET(request: NextRequest) {
       date,
       venue_id: venueId,
       has_data: true,
+      _source: snapshotFallback ? 'sales_snapshot' : 'venue_day_facts',
       last_synced_at: summary.last_synced_at,
 
       summary: {
