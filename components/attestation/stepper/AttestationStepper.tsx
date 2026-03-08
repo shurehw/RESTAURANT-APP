@@ -16,6 +16,8 @@ import {
   Crown,
   ChefHat,
   ClipboardCheck,
+  Music,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { StepIndicator, type StepConfig } from './StepIndicator';
 import { StepNavigation } from './StepNavigation';
@@ -27,6 +29,8 @@ import { IncidentsStep } from './steps/IncidentsStep';
 import { CoachingStep } from './steps/CoachingStep';
 import { GuestStep } from './steps/GuestStep';
 import { BOHCompsStep } from './steps/BOHCompsStep';
+import { EntertainmentStep } from './steps/EntertainmentStep';
+import { CulinaryStep } from './steps/CulinaryStep';
 import { ReviewStep } from './steps/ReviewStep';
 import { AttestationReport } from '@/components/attestation/AttestationReport';
 import type {
@@ -310,10 +314,16 @@ export function AttestationStepper({
       label: 'FOH',
       icon: UserCheck,
       status: 'required' as const,
-      completion: completionState.foh === 'complete' && (!hasEntertainment || entertainmentComplete)
-        ? 'complete' as const : 'incomplete' as const,
+      completion: completionState.foh,
       flagged: !!triggers?.labor_attestation_required,
     },
+    ...(hasEntertainment ? [{
+      id: 'entertainment',
+      label: 'Entertainment',
+      icon: Music,
+      status: 'required' as const,
+      completion: completionState.entertainment,
+    }] : []),
     {
       id: 'boh_comps',
       label: 'Comps',
@@ -327,10 +337,16 @@ export function AttestationStepper({
       label: 'BOH',
       icon: ChefHat,
       status: 'required' as const,
-      completion: completionState.boh === 'complete' && (!hasCulinary || culinaryComplete)
-        ? 'complete' as const : 'incomplete' as const,
+      completion: completionState.boh,
       flagged: !!triggers?.labor_attestation_required,
     },
+    ...(hasCulinary ? [{
+      id: 'culinary',
+      label: 'Culinary',
+      icon: UtensilsCrossed,
+      status: 'required' as const,
+      completion: completionState.culinary,
+    }] : []),
     {
       id: 'incidents',
       label: 'Incidents',
@@ -358,10 +374,9 @@ export function AttestationStepper({
       label: 'Review',
       icon: ClipboardCheck,
       status: 'required' as const,
-      completion: (canSubmit && (!hasEntertainment || entertainmentComplete) && (!hasCulinary || culinaryComplete)) || isLocked
-        ? 'complete' as const : 'incomplete' as const,
+      completion: canSubmit || isLocked ? 'complete' as const : 'incomplete' as const,
     },
-  ], [triggers, completionState, canSubmit, isLocked, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
+  ], [triggers, completionState, canSubmit, isLocked, hasEntertainment, hasCulinary]);
 
   // ---------------------------------------------------------------------------
   // Filter steps by mode: FOH flow, BOH flow, or full stepper
@@ -372,12 +387,12 @@ export function AttestationStepper({
 
   const activeSteps: StepConfig[] = useMemo(() => {
     if (isFOHMode) {
-      // FOH manager: Revenue → Comps → FOH → Incidents → Coaching → Guest → Review+Submit
-      return steps.filter(s => ['revenue', 'comps', 'foh', 'incidents', 'coaching', 'guest', 'review'].includes(s.id));
+      // FOH manager: Revenue → Comps → FOH → Entertainment → Incidents → Coaching → Guest → Review+Submit
+      return steps.filter(s => ['revenue', 'comps', 'foh', 'entertainment', 'incidents', 'coaching', 'guest', 'review'].includes(s.id));
     }
     if (isBOHMode) {
-      // BOH manager: Comps (kitchen context) → BOH → Incidents → Coaching → Done
-      return steps.filter(s => ['boh_comps', 'boh', 'incidents', 'coaching'].includes(s.id));
+      // BOH manager: Comps (kitchen context) → BOH → Culinary → Incidents → Coaching → Done
+      return steps.filter(s => ['boh_comps', 'boh', 'culinary', 'incidents', 'coaching'].includes(s.id));
     }
     return steps;
   }, [steps, isFOHMode, isBOHMode]);
@@ -430,19 +445,6 @@ export function AttestationStepper({
     }
     return result;
   };
-
-  // Adjusted completion state: FOH includes entertainment, BOH includes culinary
-  const adjustedCompletionState: CompletionState = useMemo(() => ({
-    ...completionState,
-    foh: completionState.foh === 'complete' && (!hasEntertainment || entertainmentComplete)
-      ? 'complete' : 'incomplete',
-    boh: completionState.boh === 'complete' && (!hasCulinary || culinaryComplete)
-      ? 'complete' : 'incomplete',
-  }), [completionState, hasEntertainment, entertainmentComplete, hasCulinary, culinaryComplete]);
-
-  const adjustedCanSubmit = canSubmit
-    && (!hasEntertainment || entertainmentComplete)
-    && (!hasCulinary || culinaryComplete);
 
   const isLastStep = currentStep === activeSteps.length - 1;
   const activeStep = activeSteps[currentStep];
@@ -558,11 +560,15 @@ export function AttestationStepper({
                         netSales={reportSummary?.net_sales ?? 0}
                         covers={reportSummary?.total_covers ?? 0}
                         laborExceptions={laborExceptions}
-                        hasEntertainment={hasEntertainment}
+                      />
+                    )}
+                    {activeStep.id === 'entertainment' && (
+                      <EntertainmentStep
                         venueId={venueId}
                         businessDate={date}
                         shiftLog={shiftLog}
                         onShiftLogUpdate={setShiftLog}
+                        disabled={isLocked}
                       />
                     )}
                     {activeStep.id === 'boh_comps' && (
@@ -585,11 +591,15 @@ export function AttestationStepper({
                         netSales={reportSummary?.net_sales ?? 0}
                         covers={reportSummary?.total_covers ?? 0}
                         laborExceptions={laborExceptions}
-                        hasCulinary={hasCulinary}
+                      />
+                    )}
+                    {activeStep.id === 'culinary' && (
+                      <CulinaryStep
                         venueId={venueId}
                         businessDate={date}
                         culinaryLog={culinaryLog}
                         onCulinaryLogUpdate={setCulinaryLog}
+                        disabled={isLocked}
                       />
                     )}
                     {activeStep.id === 'incidents' && (
@@ -627,8 +637,8 @@ export function AttestationStepper({
                         compResolutions={compResolutions}
                         incidents={incidents}
                         coachingActions={coachingActions}
-                        completionState={adjustedCompletionState}
-                        canSubmit={adjustedCanSubmit}
+                        completionState={completionState}
+                        canSubmit={canSubmit}
                         isLocked={isLocked}
                         submitting={submitting}
                         error={error}

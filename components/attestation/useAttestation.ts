@@ -25,7 +25,9 @@ export interface CompletionState {
   comps: 'complete' | 'incomplete';
   bohComps: 'complete' | 'incomplete';
   foh: 'complete' | 'incomplete';
+  entertainment: 'complete' | 'incomplete';
   boh: 'complete' | 'incomplete';
+  culinary: 'complete' | 'incomplete';
   incidents: 'complete' | 'incomplete';
   coaching: 'complete' | 'incomplete';
   guest: 'complete' | 'incomplete';
@@ -350,11 +352,15 @@ export function useAttestation(
       || !!(attestation as any)?.boh_comps_acknowledged
       ? 'complete' : 'incomplete',
     foh: (fohPromptsComplete || !!attestation?.foh_acknowledged)
-      && (!options?.entertainmentRequired || !!options?.entertainmentComplete)
       ? 'complete' : 'incomplete',
+    entertainment: options?.entertainmentRequired
+      ? (options?.entertainmentComplete ? 'complete' : 'incomplete')
+      : 'complete',
     boh: (bohPromptsComplete || !!attestation?.boh_acknowledged)
-      && (!options?.culinaryRequired || !!options?.culinaryComplete)
       ? 'complete' : 'incomplete',
+    culinary: options?.culinaryRequired
+      ? (options?.culinaryComplete ? 'complete' : 'incomplete')
+      : 'complete',
     incidents: (attestation?.incident_notes?.length ?? 0) >= 10 || !!attestation?.incidents_acknowledged
       ? 'complete' : 'incomplete',
     coaching: (coachingPromptsComplete || !!attestation?.coaching_acknowledged)
@@ -364,11 +370,12 @@ export function useAttestation(
   };
 
   // bohComps is optional — kitchen context doesn't block submission
+  // culinary is optional — doesn't block FOH submission
   const canSubmit =
     attestation?.status === 'draft' &&
     !!attestation?.closing_narrative &&
     Object.entries(completionState)
-      .filter(([key]) => key !== 'bohComps')
+      .filter(([key]) => key !== 'bohComps' && key !== 'culinary')
       .every(([, v]) => v === 'complete');
 
   const isLocked = attestation?.status === 'submitted' || attestation?.status === 'amended';
