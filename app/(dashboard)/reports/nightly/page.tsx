@@ -42,8 +42,9 @@ import {
   Minus,
   Receipt,
   CalendarCheck,
-  UserCheck,
+  ClipboardPen,
   ChefHat,
+  Check,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
 import { AttestationStepper } from '@/components/attestation/stepper/AttestationStepper';
@@ -495,6 +496,8 @@ export default function NightlyReportPage() {
   );
 
   const [date, setDate] = useState(() => {
+    const urlDate = searchParams.get('date');
+    if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) return urlDate;
     const d = new Date();
     d.setDate(d.getDate() - 1);
     return d.toISOString().split('T')[0];
@@ -1195,24 +1198,49 @@ export default function NightlyReportPage() {
             )}
             {selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
               att.attestation ? (
-                <div className="flex gap-1.5">
+                att.isLocked ? (
                   <Button
-                    variant={att.isLocked ? 'outline' : 'brass'}
+                    variant="outline"
                     size="sm"
-                    onClick={() => { setAttestInitialStep('foh'); setAttestStepperOpen(true); }}
+                    onClick={() => { setAttestInitialStep(undefined); setAttestStepperOpen(true); }}
                   >
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    {att.isLocked ? 'FOH' : 'Attest FOH'}
+                    <ClipboardCheck className="h-4 w-4 mr-1" />
+                    View Report
                   </Button>
-                  <Button
-                    variant={att.isLocked ? 'outline' : 'brass'}
-                    size="sm"
-                    onClick={() => { setAttestInitialStep('boh'); setAttestStepperOpen(true); }}
-                  >
-                    <ChefHat className="h-4 w-4 mr-1" />
-                    {att.isLocked ? 'BOH' : 'Attest BOH'}
-                  </Button>
-                </div>
+                ) : (
+                  <div className="flex gap-1.5">
+                    <Button
+                      variant={att.completionState.foh === 'complete' ? 'outline' : 'brass'}
+                      size="sm"
+                      onClick={() => { setAttestInitialStep('foh'); setAttestStepperOpen(true); }}
+                    >
+                      {att.completionState.foh === 'complete'
+                        ? <Check className="h-4 w-4 mr-1 text-sage" />
+                        : <ClipboardPen className="h-4 w-4 mr-1" />}
+                      FOH {att.completionState.foh === 'complete' ? 'Done' : 'Attest'}
+                    </Button>
+                    <Button
+                      variant={att.completionState.boh === 'complete' ? 'outline' : 'brass'}
+                      size="sm"
+                      onClick={() => { setAttestInitialStep('boh'); setAttestStepperOpen(true); }}
+                    >
+                      {att.completionState.boh === 'complete'
+                        ? <Check className="h-4 w-4 mr-1 text-sage" />
+                        : <ChefHat className="h-4 w-4 mr-1" />}
+                      BOH {att.completionState.boh === 'complete' ? 'Done' : 'Attest'}
+                    </Button>
+                    {att.completionState.foh === 'complete' && att.completionState.boh === 'complete' && (
+                      <Button
+                        variant="brass"
+                        size="sm"
+                        onClick={() => { setAttestInitialStep(undefined); setAttestStepperOpen(true); }}
+                      >
+                        <ClipboardCheck className="h-4 w-4 mr-1" />
+                        Review &amp; Submit
+                      </Button>
+                    )}
+                  </div>
+                )
               ) : att.loading ? (
                 <Button variant="outline" size="sm" disabled>
                   <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
@@ -2617,32 +2645,65 @@ export default function NightlyReportPage() {
                       );
                     })}
                   </div>
-                  <div className="flex gap-1.5">
+                  {att.isLocked ? (
                     <Button
-                      variant={att.isLocked ? 'outline' : 'brass'}
+                      variant="outline"
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setAttestInitialStep('foh');
+                        setAttestInitialStep(undefined);
                         setAttestStepperOpen(true);
                       }}
                     >
-                      <UserCheck className="h-3.5 w-3.5 mr-1" />
-                      {att.isLocked ? 'FOH' : 'Attest FOH'}
+                      <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                      View Report
                     </Button>
-                    <Button
-                      variant={att.isLocked ? 'outline' : 'brass'}
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAttestInitialStep('boh');
-                        setAttestStepperOpen(true);
-                      }}
-                    >
-                      <ChefHat className="h-3.5 w-3.5 mr-1" />
-                      {att.isLocked ? 'BOH' : 'Attest BOH'}
-                    </Button>
-                  </div>
+                  ) : (
+                    <div className="flex gap-1.5">
+                      <Button
+                        variant={att.completionState.foh === 'complete' ? 'outline' : 'brass'}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAttestInitialStep('foh');
+                          setAttestStepperOpen(true);
+                        }}
+                      >
+                        {att.completionState.foh === 'complete'
+                          ? <Check className="h-3.5 w-3.5 mr-1 text-sage" />
+                          : <ClipboardPen className="h-3.5 w-3.5 mr-1" />}
+                        FOH {att.completionState.foh === 'complete' ? 'Done' : 'Attest'}
+                      </Button>
+                      <Button
+                        variant={att.completionState.boh === 'complete' ? 'outline' : 'brass'}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAttestInitialStep('boh');
+                          setAttestStepperOpen(true);
+                        }}
+                      >
+                        {att.completionState.boh === 'complete'
+                          ? <Check className="h-3.5 w-3.5 mr-1 text-sage" />
+                          : <ChefHat className="h-3.5 w-3.5 mr-1" />}
+                        BOH {att.completionState.boh === 'complete' ? 'Done' : 'Attest'}
+                      </Button>
+                      {att.completionState.foh === 'complete' && att.completionState.boh === 'complete' && (
+                        <Button
+                          variant="brass"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAttestInitialStep(undefined);
+                            setAttestStepperOpen(true);
+                          }}
+                        >
+                          <ClipboardCheck className="h-3.5 w-3.5 mr-1" />
+                          Review &amp; Submit
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
