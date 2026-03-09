@@ -12,6 +12,7 @@ import {
   ClipboardList,
   DollarSign,
   BarChart3,
+  Search,
   CalendarCheck,
   Calendar,
   Bot,
@@ -197,6 +198,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
             </NavSection>
           )}
 
+          {(permissions.orders || permissions.invoices || permissions.vendors || permissions.products || permissions.recipes || permissions.inventory) && (
           <NavSection title="COGS">
             {permissions.orders && (
               <NavLink href="/orders" icon={<ShoppingCart className="w-5 h-5" />}>
@@ -229,14 +231,18 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
               </NavLink>
             )}
           </NavSection>
+          )}
 
-          {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
-            <div className="pt-4 mt-4 border-t border-opsos-sage-500">
+          <div className="pt-4 mt-4 border-t border-opsos-sage-500">
+            <NavLink href="/research" icon={<Search className="w-5 h-5" />}>
+              Research
+            </NavLink>
+            {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
               <NavLink href="/admin/settings" icon={<Settings className="w-5 h-5" />}>
                 Settings
               </NavLink>
-            </div>
-          )}
+            )}
+          </div>
         </nav>
 
         {/* Footer — pinned to bottom */}

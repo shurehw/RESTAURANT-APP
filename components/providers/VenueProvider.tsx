@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { UserRole } from '@/lib/nav/role-permissions';
 
 interface Venue {
   id: string;
@@ -17,6 +18,7 @@ interface VenueContextType {
   setVenues: (venues: Venue[]) => void;
   isHydrated: boolean;
   isAllVenues: boolean; // True when "The h.wood Group" (all venues) is selected
+  userRole: UserRole;
 }
 
 const VenueContext = createContext<VenueContextType | undefined>(undefined);
@@ -24,11 +26,13 @@ const VenueContext = createContext<VenueContextType | undefined>(undefined);
 export function VenueProvider({
   children,
   initialVenue = null,
-  initialVenues = []
+  initialVenues = [],
+  userRole = 'manager',
 }: {
   children: React.ReactNode;
   initialVenue?: Venue | null;
   initialVenues?: Venue[];
+  userRole?: UserRole;
 }) {
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(initialVenue);
   const [venues, setVenues] = useState<Venue[]>(initialVenues);
@@ -57,7 +61,7 @@ export function VenueProvider({
   const isAllVenues = selectedVenue?.id === 'all';
 
   return (
-    <VenueContext.Provider value={{ selectedVenue, setSelectedVenue, venues, setVenues, isHydrated, isAllVenues }}>
+    <VenueContext.Provider value={{ selectedVenue, setSelectedVenue, venues, setVenues, isHydrated, isAllVenues, userRole }}>
       {children}
     </VenueContext.Provider>
   );

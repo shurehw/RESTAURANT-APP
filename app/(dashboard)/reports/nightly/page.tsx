@@ -486,7 +486,7 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 }
 
 export default function NightlyReportPage() {
-  const { selectedVenue, setSelectedVenue, isAllVenues } = useVenue();
+  const { selectedVenue, setSelectedVenue, isAllVenues, userRole } = useVenue();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -754,7 +754,9 @@ export default function NightlyReportPage() {
   }, [factsSummary, paceData, enrichment, nightlyNetSales, nightlyCovers]);
 
   // Attestation hook — lifted to page level so inline modules share state
-  const att = useAttestation(selectedVenue?.id, date, attestationReportData);
+  // Onboarding users can view nightly data but cannot create/submit attestations
+  const canAttest = userRole !== 'onboarding';
+  const att = useAttestation(canAttest ? selectedVenue?.id : undefined, date, attestationReportData);
 
   // Note: date is initialized to yesterday via useState initializer
 
@@ -1200,7 +1202,7 @@ export default function NightlyReportPage() {
                 </Button>
               </>
             )}
-            {selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
+            {canAttest && selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
               att.attestation ? (
                 att.isLocked ? (
                   <Button
@@ -2732,7 +2734,7 @@ export default function NightlyReportPage() {
           />}
 
           {/* Attestation Stepper Modal — single venue only */}
-          {!isAllVenues && <AttestationStepper
+          {canAttest && !isAllVenues && <AttestationStepper
             open={attestStepperOpen}
             onClose={() => { setAttestStepperOpen(false); setAttestInitialStep(undefined); }}
             initialStepId={attestInitialStep}

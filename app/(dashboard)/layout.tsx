@@ -30,6 +30,7 @@ export default async function DashboardLayout({
     admin: 'director',
     manager: 'manager',
     viewer: 'readonly',
+    onboarding: 'onboarding',
   };
 
   // Try user_profiles for granular nav role (gm, exec_chef, sous_chef, etc.)
@@ -101,7 +102,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <VenueProvider initialVenues={venues || []}>
+    <VenueProvider initialVenues={venues || []} userRole={userRole}>
       <div className="flex min-h-screen bg-background">
         {/* Skip to main content — keyboard/screen-reader shortcut */}
         <a
