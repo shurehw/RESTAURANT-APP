@@ -48,12 +48,15 @@ export default async function DashboardLayout({
     .eq("is_active", true)
     .maybeSingle();
 
-  // Priority: platform admin → user_profiles granular role → org role mapping → default manager
+  // Priority: platform admin → onboarding org override → user_profiles granular role → org role mapping → default manager
+  // Onboarding org role must win over stale profile roles to keep access constrained.
   let userRole: UserRole = platformAdmin
     ? 'platform_admin'
-    : (profile?.role as UserRole)
-      || ORG_TO_NAV_ROLE[orgRole]
-      || 'manager';
+    : orgRole === 'onboarding'
+      ? 'onboarding'
+      : (profile?.role as UserRole)
+        || ORG_TO_NAV_ROLE[orgRole]
+        || 'manager';
 
   // PWA-only users cannot access the dashboard — redirect to Pulse
   if (userRole === 'pwa') {

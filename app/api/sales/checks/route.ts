@@ -15,6 +15,15 @@ import {
   getPosTypeForLocations,
 } from '@/lib/database/tipsee';
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function toSafeInt(value: string | null, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -52,10 +61,16 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const locationUuids = await getTipseeMappingForVenue(venueId);
+    const mappedLocationUuids = await getTipseeMappingForVenue(venueId);
+    const locationUuids = [...new Set(
+      mappedLocationUuids
+        .map((value) => value?.trim())
+        .filter((value): value is string => !!value && UUID_REGEX.test(value)),
+    )];
+
     if (locationUuids.length === 0) {
       return NextResponse.json(
-        { error: 'No TipSee mapping for this venue' },
+        { error: 'No valid TipSee mapping for this venue' },
         { status: 404 }
       );
     }
@@ -71,9 +86,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const rawLimit = parseInt(request.nextUrl.searchParams.get('limit') || '50', 10);
-    const limit = rawLimit === 0 ? 0 : Math.min(rawLimit, 200); // 0 = fetch all
-    const offset = limit === 0 ? 0 : parseInt(request.nextUrl.searchParams.get('offset') || '0', 10);
+    const rawLimit = toSafeInt(request.nextUrl.searchParams.get('limit'), 50);
+    const limit = rawLimit === 0 ? 0 : Math.max(1, Math.min(rawLimit, 200)); // 0 = fetch all
+    const rawOffset = toSafeInt(request.nextUrl.searchParams.get('offset'), 0);
+    const offset = limit === 0 ? 0 : Math.max(0, rawOffset);
 
     const { checks, total } = await fetchChecksForDate(locationUuids, date, limit, offset);
     return NextResponse.json({

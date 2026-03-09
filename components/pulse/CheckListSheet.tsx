@@ -109,11 +109,14 @@ export function CheckListSheet({
     }
 
     fetch(`/api/sales/checks?venue_id=${venueId}&date=${date}&limit=${PAGE_SIZE}&offset=${offset}`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Server error (${res.status})`);
+      .then(async res => {
         const ct = res.headers.get('content-type') || '';
         if (!ct.includes('application/json')) throw new Error('Unexpected response from server');
-        return res.json();
+        const body = await res.json();
+        if (!res.ok) {
+          throw new Error(body?.error || `Server error (${res.status})`);
+        }
+        return body;
       })
       .then(data => {
         if (data.error) {
@@ -144,9 +147,10 @@ export function CheckListSheet({
     setLoadingMore(true);
 
     fetch(`/api/sales/checks?venue_id=${venueId}&date=${date}&limit=0`)
-      .then(res => {
-        if (!res.ok) throw new Error(`Server error (${res.status})`);
-        return res.json();
+      .then(async res => {
+        const body = await res.json();
+        if (!res.ok) throw new Error(body?.error || `Server error (${res.status})`);
+        return body;
       })
       .then(data => {
         if (!data.error) {

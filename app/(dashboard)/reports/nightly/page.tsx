@@ -40,7 +40,6 @@ import {
   ClipboardCheck,
   Lock,
   Minus,
-  Receipt,
   CalendarCheck,
   ClipboardPen,
   ChefHat,
@@ -54,10 +53,10 @@ import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
 import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/PeriodGaugeCard';
 import { LaborCard } from '@/components/pulse/LaborCard';
 import { CompCard } from '@/components/pulse/CompCard';
-import { CheckListSheet } from '@/components/pulse/CheckListSheet';
 import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
 import { ReservationListSheet } from '@/components/pulse/ReservationListSheet';
 import type { NightlyReportPayload } from '@/lib/attestation/types';
+import { getNavPermissions } from '@/lib/nav/role-permissions';
 
 // ---------------------------------------------------------------------------
 // Category classification helpers (used for actual item-level net computation)
@@ -529,7 +528,6 @@ export default function NightlyReportPage() {
   } | null>(null);
   const [attestStepperOpen, setAttestStepperOpen] = useState(false);
   const [attestInitialStep, setAttestInitialStep] = useState<string | undefined>(undefined);
-  const [checksSheetOpen, setChecksSheetOpen] = useState(false);
   const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
   const [checkDetailOpen, setCheckDetailOpen] = useState(false);
   const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
@@ -753,9 +751,9 @@ export default function NightlyReportPage() {
     };
   }, [factsSummary, paceData, enrichment, nightlyNetSales, nightlyCovers]);
 
-  // Attestation hook — lifted to page level so inline modules share state
-  // Onboarding users can view nightly data but cannot create/submit attestations
-  const canAttest = userRole !== 'onboarding';
+  // Attestation hook — lifted to page level so inline modules share state.
+  // Permission-based check is safer than role-name checks as role matrix evolves.
+  const canAttest = getNavPermissions(userRole).attestations;
   const att = useAttestation(canAttest ? selectedVenue?.id : undefined, date, attestationReportData);
 
   // Note: date is initialized to yesterday via useState initializer
@@ -1183,24 +1181,14 @@ export default function NightlyReportPage() {
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             {selectedVenue && !isAllVenues && viewMode === 'nightly' && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChecksSheetOpen(true)}
-                >
-                  <Receipt className="h-4 w-4 mr-1.5" />
-                  Checks
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setReservationsSheetOpen(true)}
-                >
-                  <CalendarCheck className="h-4 w-4 mr-1.5" />
-                  Reservations
-                </Button>
-              </>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReservationsSheetOpen(true)}
+              >
+                <CalendarCheck className="h-4 w-4 mr-1.5" />
+                Guest Ledger
+              </Button>
             )}
             {canAttest && selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
               att.attestation ? (
@@ -2788,17 +2776,6 @@ export default function NightlyReportPage() {
           {/* Check & Reservation Sheets */}
           {selectedVenue && !isAllVenues && (
             <>
-              <CheckListSheet
-                isOpen={checksSheetOpen}
-                onClose={() => setChecksSheetOpen(false)}
-                venueId={selectedVenue.id}
-                venueName={selectedVenue.name}
-                date={date}
-                onSelectCheck={(id) => {
-                  setSelectedCheckId(id);
-                  setCheckDetailOpen(true);
-                }}
-              />
               <CheckDetailDialog
                 checkId={selectedCheckId}
                 isOpen={checkDetailOpen}
@@ -2813,6 +2790,10 @@ export default function NightlyReportPage() {
                 venueId={selectedVenue.id}
                 venueName={selectedVenue.name}
                 date={date}
+                onSelectCheck={(id) => {
+                  setSelectedCheckId(id);
+                  setCheckDetailOpen(true);
+                }}
               />
             </>
           )}
