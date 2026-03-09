@@ -78,7 +78,8 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
       onTouchEnd={handleTouchEnd}
       className="contents"
     >
-      {/* Hamburger Button - Mobile Only */}
+      {/* Hamburger Button - Mobile Only (hidden for onboarding — only one page) */}
+      {userRole !== 'onboarding' && (
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="lg:hidden fixed top-6 left-4 z-50 p-2 bg-opsos-sage-600 text-white rounded-md shadow-lg"
@@ -86,6 +87,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
       >
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
+      )}
 
       {/* Overlay - Mobile Only */}
       {isOpen && (
