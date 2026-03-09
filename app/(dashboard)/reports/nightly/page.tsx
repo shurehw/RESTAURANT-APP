@@ -750,11 +750,8 @@ export default function NightlyReportPage() {
     };
   }, [factsSummary, paceData, enrichment, nightlyNetSales, nightlyCovers]);
 
-  // Attestation hook — lifted to page level so inline modules share state.
-  // Onboarding/readonly users can VIEW attestation history but cannot create/submit.
-  // The nav `attestations` permission controls history visibility; this gates creation.
-  const canAttest = userRole !== 'onboarding' && userRole !== 'readonly';
-  const att = useAttestation(canAttest ? selectedVenue?.id : undefined, date, attestationReportData);
+  // Attestation hook — lifted to page level so inline modules share state
+  const att = useAttestation(selectedVenue?.id, date, attestationReportData);
 
   // Note: date is initialized to yesterday via useState initializer
 
@@ -1190,7 +1187,7 @@ export default function NightlyReportPage() {
                 Guest Ledger
               </Button>
             )}
-            {canAttest && selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
+            {selectedVenue && !isAllVenues && viewMode === 'nightly' && !loading && (
               att.attestation ? (
                 att.isLocked ? (
                   <Button
@@ -2722,7 +2719,7 @@ export default function NightlyReportPage() {
           />}
 
           {/* Attestation Stepper Modal — single venue only */}
-          {canAttest && !isAllVenues && <AttestationStepper
+          {!isAllVenues && <AttestationStepper
             open={attestStepperOpen}
             onClose={() => { setAttestStepperOpen(false); setAttestInitialStep(undefined); }}
             initialStepId={attestInitialStep}
