@@ -56,7 +56,6 @@ import { CompCard } from '@/components/pulse/CompCard';
 import { CheckDetailDialog } from '@/components/pulse/CheckDetailDialog';
 import { ReservationListSheet } from '@/components/pulse/ReservationListSheet';
 import type { NightlyReportPayload } from '@/lib/attestation/types';
-import { getNavPermissions } from '@/lib/nav/role-permissions';
 
 // ---------------------------------------------------------------------------
 // Category classification helpers (used for actual item-level net computation)
@@ -752,8 +751,9 @@ export default function NightlyReportPage() {
   }, [factsSummary, paceData, enrichment, nightlyNetSales, nightlyCovers]);
 
   // Attestation hook — lifted to page level so inline modules share state.
-  // Permission-based check is safer than role-name checks as role matrix evolves.
-  const canAttest = getNavPermissions(userRole).attestations;
+  // Onboarding/readonly users can VIEW attestation history but cannot create/submit.
+  // The nav `attestations` permission controls history visibility; this gates creation.
+  const canAttest = userRole !== 'onboarding' && userRole !== 'readonly';
   const att = useAttestation(canAttest ? selectedVenue?.id : undefined, date, attestationReportData);
 
   // Note: date is initialized to yesterday via useState initializer
