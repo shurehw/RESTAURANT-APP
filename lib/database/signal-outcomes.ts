@@ -9,6 +9,24 @@
  */
 
 import { getServiceClient } from '@/lib/supabase/service';
+let signalsTableMissing = false;
+let missingTableWarned = false;
+
+function isMissingSignalsTableError(error: any): boolean {
+  if (!error) return false;
+  const text = [error.message, error.details, error.hint].filter(Boolean).join(' ');
+  return error.code === 'PGRST205' && text.includes('attestation_signals');
+}
+
+function shouldSilenceSignalsError(scope: string, error: any): boolean {
+  if (!isMissingSignalsTableError(error)) return false;
+  signalsTableMissing = true;
+  if (!missingTableWarned) {
+    console.warn(`[signal-outcomes] ${scope}: attestation_signals table is missing; returning empty fallback until migrations are applied.`);
+    missingTableWarned = true;
+  }
+  return true;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,6 +48,14 @@ export interface SignalRecord {
   commitment_text: string | null;
   commitment_target_date: string | null;
   commitment_status: string | null;
+  assigned_to_user_id: string | null;
+  assigned_to_name: string | null;
+  follow_up_date: string | null;
+  follow_up_status: string | null;
+  last_followed_up_at: string | null;
+  last_follow_up_note: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
   outcome_notes: string | null;
   extracted_at: string;
 }
@@ -54,6 +80,14 @@ export interface OpenCommitment {
   commitment_status: string;
   source_field: string;
   days_open: number;
+  assigned_to_user_id: string | null;
+  assigned_to_name: string | null;
+  follow_up_date: string | null;
+  follow_up_status: string | null;
+  last_followed_up_at: string | null;
+  last_follow_up_note: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
 }
 
 export interface PriorNightContext {
@@ -70,12 +104,13 @@ export async function getOpenCommitments(
   venueId: string,
   options?: { limit?: number; olderThan?: string },
 ): Promise<OpenCommitment[]> {
+  if (signalsTableMissing) return [];
   const supabase = getServiceClient();
   const limit = options?.limit ?? 20;
 
   let query = (supabase as any)
     .from('attestation_signals')
-    .select('id, business_date, commitment_text, entity_name, commitment_target_date, commitment_status, source_field, extracted_at')
+    .select('id, business_date, commitment_text, entity_name, commitment_target_date, commitment_status, source_field, extracted_at, assigned_to_user_id, assigned_to_name, follow_up_date, follow_up_status, last_followed_up_at, last_follow_up_note, resolved_at, resolved_by')
     .eq('venue_id', venueId)
     .eq('signal_type', 'action_commitment')
     .in('commitment_status', ['open', 'due'])
@@ -89,6 +124,7 @@ export async function getOpenCommitments(
   const { data, error } = await query;
 
   if (error) {
+    if (shouldSilenceSignalsError('getOpenCommitments', error)) return [];
     console.error('[signal-outcomes] getOpenCommitments error:', error);
     return [];
   }
@@ -110,6 +146,7 @@ export async function getEmployeeMentionHistory(
   venueId: string,
   options?: { days?: number; minMentions?: number },
 ): Promise<EmployeeMentionSummary[]> {
+  if (signalsTableMissing) return [];
   const supabase = getServiceClient();
   const days = options?.days ?? 30;
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -124,6 +161,7 @@ export async function getEmployeeMentionHistory(
     .order('business_date', { ascending: false });
 
   if (error) {
+    if (shouldSilenceSignalsError('getEmployeeMentionHistory', error)) return [];
     console.error('[signal-outcomes] getEmployeeMentionHistory error:', error);
     return [];
   }
@@ -181,6 +219,7 @@ export async function getRecentIssues(
   venueId: string,
   options?: { days?: number; limit?: number },
 ): Promise<SignalRecord[]> {
+  if (signalsTableMissing) return [];
   const supabase = getServiceClient();
   const days = options?.days ?? 14;
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -195,6 +234,7 @@ export async function getRecentIssues(
     .limit(options?.limit ?? 10);
 
   if (error) {
+    if (shouldSilenceSignalsError('getRecentIssues', error)) return [];
     console.error('[signal-outcomes] getRecentIssues error:', error);
     return [];
   }
@@ -209,6 +249,7 @@ export async function getRecentIssues(
 export async function getSignalsForAttestation(
   attestationId: string,
 ): Promise<SignalRecord[]> {
+  if (signalsTableMissing) return [];
   const supabase = getServiceClient();
 
   const { data, error } = await (supabase as any)
@@ -219,6 +260,7 @@ export async function getSignalsForAttestation(
     .order('confidence', { ascending: false });
 
   if (error) {
+    if (shouldSilenceSignalsError('getSignalsForAttestation', error)) return [];
     console.error('[signal-outcomes] getSignalsForAttestation error:', error);
     return [];
   }
@@ -254,11 +296,12 @@ export async function buildPriorNightContext(
 export async function markOverdueCommitments(
   venueId: string,
 ): Promise<number> {
+  if (signalsTableMissing) return 0;
   const supabase = getServiceClient();
   const today = new Date().toISOString().split('T')[0];
 
   // Mark 'open' commitments past their target date as 'due'
-  const { data: dueSoon } = await (supabase as any)
+  const { data: dueSoon, error: dueSoonError } = await (supabase as any)
     .from('attestation_signals')
     .update({ commitment_status: 'due', commitment_checked_at: new Date().toISOString() })
     .eq('venue_id', venueId)
@@ -267,10 +310,15 @@ export async function markOverdueCommitments(
     .not('commitment_target_date', 'is', null)
     .lte('commitment_target_date', today)
     .select('id');
+  if (dueSoonError) {
+    if (shouldSilenceSignalsError('markOverdueCommitments', dueSoonError)) return 0;
+    console.error('[signal-outcomes] markOverdueCommitments dueSoon error:', dueSoonError);
+    return 0;
+  }
 
   // Mark 'due' commitments older than 7 days as 'unfulfilled' (no evidence of follow-through)
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const { data: unfulfilled } = await (supabase as any)
+  const { data: unfulfilled, error: unfulfilledError } = await (supabase as any)
     .from('attestation_signals')
     .update({ commitment_status: 'unfulfilled', commitment_checked_at: new Date().toISOString() })
     .eq('venue_id', venueId)
@@ -278,9 +326,14 @@ export async function markOverdueCommitments(
     .eq('commitment_status', 'due')
     .lte('business_date', weekAgo)
     .select('id');
+  if (unfulfilledError) {
+    if (shouldSilenceSignalsError('markOverdueCommitments', unfulfilledError)) return 0;
+    console.error('[signal-outcomes] markOverdueCommitments unfulfilled error:', unfulfilledError);
+    return 0;
+  }
 
   // Also mark open commitments without a target date that are > 7 days old
-  const { data: staleOpen } = await (supabase as any)
+  const { data: staleOpen, error: staleOpenError } = await (supabase as any)
     .from('attestation_signals')
     .update({ commitment_status: 'due', commitment_checked_at: new Date().toISOString() })
     .eq('venue_id', venueId)
@@ -289,6 +342,11 @@ export async function markOverdueCommitments(
     .is('commitment_target_date', null)
     .lte('business_date', weekAgo)
     .select('id');
+  if (staleOpenError) {
+    if (shouldSilenceSignalsError('markOverdueCommitments', staleOpenError)) return 0;
+    console.error('[signal-outcomes] markOverdueCommitments staleOpen error:', staleOpenError);
+    return 0;
+  }
 
   const total = (dueSoon?.length ?? 0) + (unfulfilled?.length ?? 0) + (staleOpen?.length ?? 0);
   if (total > 0) {
@@ -306,6 +364,7 @@ export async function resolveCommitment(
   outcomeAttestationId: string,
   outcomeNotes: string,
 ): Promise<boolean> {
+  if (signalsTableMissing) return false;
   const supabase = getServiceClient();
 
   const { error } = await (supabase as any)
@@ -319,7 +378,108 @@ export async function resolveCommitment(
     .eq('id', signalId);
 
   if (error) {
+    if (shouldSilenceSignalsError('resolveCommitment', error)) return false;
     console.error('[signal-outcomes] resolveCommitment error:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function assignCommitment(
+  signalId: string,
+  assignment: {
+    assigned_to_user_id: string;
+    assigned_to_name: string;
+    follow_up_date?: string | null;
+  },
+): Promise<boolean> {
+  if (signalsTableMissing) return false;
+  const supabase = getServiceClient();
+
+  const payload: Record<string, any> = {
+    assigned_to_user_id: assignment.assigned_to_user_id,
+    assigned_to_name: assignment.assigned_to_name,
+  };
+  if (assignment.follow_up_date !== undefined) {
+    payload.follow_up_date = assignment.follow_up_date;
+  }
+
+  const { error } = await (supabase as any)
+    .from('attestation_signals')
+    .update(payload)
+    .eq('id', signalId)
+    .eq('signal_type', 'action_commitment');
+
+  if (error) {
+    if (shouldSilenceSignalsError('assignCommitment', error)) return false;
+    console.error('[signal-outcomes] assignCommitment error:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function updateCommitmentFollowUp(
+  signalId: string,
+  updates: {
+    follow_up_status?: 'open' | 'due' | 'in_progress' | 'resolved' | 'escalated';
+    follow_up_date?: string | null;
+    last_follow_up_note?: string | null;
+    last_followed_up_at?: string | null;
+  },
+): Promise<boolean> {
+  if (signalsTableMissing) return false;
+  const supabase = getServiceClient();
+
+  const payload: Record<string, any> = {};
+  if (updates.follow_up_status !== undefined) payload.follow_up_status = updates.follow_up_status;
+  if (updates.follow_up_date !== undefined) payload.follow_up_date = updates.follow_up_date;
+  if (updates.last_follow_up_note !== undefined) payload.last_follow_up_note = updates.last_follow_up_note;
+  if (updates.last_followed_up_at !== undefined) payload.last_followed_up_at = updates.last_followed_up_at;
+
+  const { error } = await (supabase as any)
+    .from('attestation_signals')
+    .update(payload)
+    .eq('id', signalId)
+    .eq('signal_type', 'action_commitment');
+
+  if (error) {
+    if (shouldSilenceSignalsError('updateCommitmentFollowUp', error)) return false;
+    console.error('[signal-outcomes] updateCommitmentFollowUp error:', error);
+    return false;
+  }
+  return true;
+}
+
+export async function resolveCommitmentAction(
+  signalId: string,
+  resolvedBy: string,
+  resolutionNote?: string | null,
+): Promise<boolean> {
+  if (signalsTableMissing) return false;
+  const supabase = getServiceClient();
+  const now = new Date().toISOString();
+
+  const payload: Record<string, any> = {
+    commitment_status: 'fulfilled',
+    follow_up_status: 'resolved',
+    resolved_at: now,
+    resolved_by: resolvedBy,
+    last_followed_up_at: now,
+  };
+  if (resolutionNote !== undefined) {
+    payload.last_follow_up_note = resolutionNote;
+    payload.outcome_notes = resolutionNote;
+  }
+
+  const { error } = await (supabase as any)
+    .from('attestation_signals')
+    .update(payload)
+    .eq('id', signalId)
+    .eq('signal_type', 'action_commitment');
+
+  if (error) {
+    if (shouldSilenceSignalsError('resolveCommitmentAction', error)) return false;
+    console.error('[signal-outcomes] resolveCommitmentAction error:', error);
     return false;
   }
   return true;
@@ -338,6 +498,7 @@ export async function getOrgOpenCommitments(
   orgId: string,
   options?: { limit?: number },
 ): Promise<OrgOpenCommitment[]> {
+  if (signalsTableMissing) return [];
   const supabase = getServiceClient();
   const limit = options?.limit ?? 15;
 
@@ -356,7 +517,7 @@ export async function getOrgOpenCommitments(
   // Query open/due commitments across all org venues
   const { data, error } = await (supabase as any)
     .from('attestation_signals')
-    .select('id, business_date, commitment_text, entity_name, commitment_target_date, commitment_status, source_field, venue_id, submitted_by')
+    .select('id, business_date, commitment_text, entity_name, commitment_target_date, commitment_status, source_field, venue_id, submitted_by, assigned_to_user_id, assigned_to_name, follow_up_date, follow_up_status, last_followed_up_at, last_follow_up_note, resolved_at, resolved_by')
     .in('venue_id', venueIds)
     .eq('signal_type', 'action_commitment')
     .in('commitment_status', ['open', 'due'])
@@ -364,6 +525,7 @@ export async function getOrgOpenCommitments(
     .limit(limit);
 
   if (error) {
+    if (shouldSilenceSignalsError('getOrgOpenCommitments', error)) return [];
     console.error('[signal-outcomes] getOrgOpenCommitments error:', error);
     return [];
   }
@@ -393,6 +555,14 @@ export async function getOrgOpenCommitments(
     days_open: Math.floor(
       (today.getTime() - new Date(row.business_date).getTime()) / (1000 * 60 * 60 * 24),
     ),
+    assigned_to_user_id: row.assigned_to_user_id ?? null,
+    assigned_to_name: row.assigned_to_name ?? null,
+    follow_up_date: row.follow_up_date ?? null,
+    follow_up_status: row.follow_up_status ?? row.commitment_status,
+    last_followed_up_at: row.last_followed_up_at ?? null,
+    last_follow_up_note: row.last_follow_up_note ?? null,
+    resolved_at: row.resolved_at ?? null,
+    resolved_by: row.resolved_by ?? null,
     venue_name: venueNameMap.get(row.venue_id) || 'Unknown',
     manager_name: managerNameMap.get(row.submitted_by) || null,
   }));

@@ -93,17 +93,39 @@ export async function resolveContext(): Promise<TenantContext | null> {
     return null; // Invalid custom user
   }
 
-  // Look up auth.users ID by email via database function
-  // (auth.admin.listUsers() API is broken on this project)
+  // Look up auth.users ID by email via database function.
+  // Different environments have shipped two RPC names/arg shapes, so try both.
   const adminClient = createAdminClient();
-  const { data: authUid, error: rpcError } = await adminClient
-    .rpc('get_auth_uid_by_email', { lookup_email: customUser.email });
 
-  if (rpcError) {
-    console.error('[resolveContext] RPC get_auth_uid_by_email error:', rpcError.message);
+  let matchingAuthUserId: string | null = null;
+  let rpcError: any = null;
+
+  {
+    const primary = await adminClient.rpc('get_auth_user_id_by_email', {
+      user_email: customUser.email,
+    });
+    if (!primary.error && primary.data) {
+      matchingAuthUserId = primary.data;
+    } else {
+      rpcError = primary.error;
+    }
   }
 
-  const matchingAuthUserId: string | null = authUid || null;
+  if (!matchingAuthUserId) {
+    const fallback = await adminClient.rpc('get_auth_uid_by_email', {
+      lookup_email: customUser.email,
+    });
+    if (!fallback.error && fallback.data) {
+      matchingAuthUserId = fallback.data;
+      rpcError = null;
+    } else if (!rpcError) {
+      rpcError = fallback.error;
+    }
+  }
+
+  if (rpcError) {
+    console.error('[resolveContext] auth user lookup RPC error:', rpcError.message);
+  }
 
   if (!matchingAuthUserId) {
     // User exists in custom table but not in auth.users

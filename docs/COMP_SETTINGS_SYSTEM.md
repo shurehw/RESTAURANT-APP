@@ -495,10 +495,9 @@ const review = await reviewComps(historicalData, settings);
 
 ## Related Documentation
 
-- [AI Comp Review System](./AI_COMP_REVIEW.md)
-- [Control Plane Architecture](./CONTROL_PLANE.md)
-- [Settings Versioning (P0)](./P0_DELIVERABLES.md)
-- [TipSee Integration](./TIPSEE_INTEGRATION.md)
+- [Enforcement Engine Architecture](./architecture/enforcement-engine.md)
+- [Data Pipeline (TipSee)](./architecture/data-pipeline.md)
+- [P0 Implementation Summary](./P0_IMPLEMENTATION_SUMMARY.md)
 
 ---
 

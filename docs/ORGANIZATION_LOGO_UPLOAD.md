@@ -274,4 +274,4 @@ SELECT * FROM storage.buckets WHERE id = 'organization-assets';
 
 - [Comp Settings System](./COMP_SETTINGS_SYSTEM.md)
 - [SOP Generation](./COMP_SETTINGS_SYSTEM.md#sop-generation)
-- [Organization Management](./ORGANIZATION_MANAGEMENT.md)
+- [Comp Settings System](./COMP_SETTINGS_SYSTEM.md)

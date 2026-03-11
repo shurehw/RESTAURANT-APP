@@ -733,3 +733,58 @@ export async function pushShiftSettings(
     };
   }
 }
+
+/**
+ * Write guest notes back to a SevenRooms reservation.
+ *
+ * Caller should pass the full (merged) notes string — this function
+ * overwrites the reservation's notes field in SR.
+ *
+ * Follows the pushShiftSettings pattern: graceful 404/405 → 'unsupported'.
+ */
+export async function updateReservationNotes(
+  srReservationId: string,
+  notes: string,
+): Promise<PushResult> {
+  try {
+    const token = await authenticate();
+
+    const res = await fetch(
+      `${BASE_URL}/reservations/${encodeURIComponent(srReservationId)}`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notes }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      },
+    );
+
+    if (res.status === 404 || res.status === 405) {
+      return {
+        success: false,
+        status: 'unsupported',
+        message: 'SevenRooms API does not support updating reservation notes',
+      };
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      return {
+        success: false,
+        status: 'error',
+        message: `SR API returned ${res.status}: ${text.slice(0, 200)}`,
+      };
+    }
+
+    return { success: true, status: 'success', message: 'Notes pushed to SevenRooms' };
+  } catch (err: any) {
+    return {
+      success: false,
+      status: 'error',
+      message: err.message || 'Notes push failed',
+    };
+  }
+}

@@ -23,8 +23,7 @@ import {
 import { getServiceClient } from '@/lib/supabase/service';
 import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear, getSamePeriodLastYear } from '@/lib/fiscal-calendar';
 import { fetchCompsByReasonForRange, type CompByReason } from '@/lib/database/tipsee';
-import type { PtdWeekRow } from '@/components/reports/PeriodWeekBreakdown';
-import type { YtdPeriodRow } from '@/components/reports/YtdPeriodBreakdown';
+import type { PtdWeekRow, YtdPeriodRow } from '@/lib/types/pulse';
 
 // ══════════════════════════════════════════════════════════════════════════
 // TYPES

@@ -472,7 +472,7 @@ await resolveViolation(
 ## Related Files
 
 - **Migration:** `supabase/migrations/227_control_plane.sql`
-- **Data Layer:** `lib/database/action-center.ts`
-- **Integrations:** `lib/action-center/integrations.ts`
+- **Data Layer:** `lib/database/control-plane.ts`
+- **Integrations:** `lib/attestation/control-plane.ts`
 - **APIs:** `app/api/action-center/*/route.ts`
 - **Dashboard:** `app/(dashboard)/action-center/page.tsx`

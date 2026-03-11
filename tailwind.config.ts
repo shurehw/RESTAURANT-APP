@@ -1,6 +1,6 @@
 /**
  * OpsOS Tailwind Configuration
- * Premium tech aesthetic — vibrant orange accent, cool neutrals, monospace headings
+ * A modern, minimal UI system inspired by vintage ledgers and built for hospitality operations.
  */
 
 import type { Config } from "tailwindcss";
@@ -15,67 +15,58 @@ export default {
   theme: {
     extend: {
       colors: {
-        // OpsOS Brand Palette — Premium Tech
+        // OpsOS Brand Palette — Vintage Ledger
         opsos: {
           slate: {
-            DEFAULT: "#0A0A0A",
-            50: "#FAFAFA",
-            100: "#F5F5F5",
-            200: "#E5E5E5",
-            300: "#D4D4D4",
-            400: "#A3A3A3",
-            500: "#737373",
-            600: "#525252",
-            700: "#404040",
-            800: "#262626",
-            900: "#171717",
+            "DEFAULT": "#1B1D1F",
+            "50": "#F8F9F9",
+            "100": "#E9EAEB",
+            "200": "#D2D5D7",
+            "300": "#B6BCC0",
+            "400": "#98A1A6",
+            "500": "#7B848A",
+            "600": "#63696E",
+            "700": "#4F5458",
+            "800": "#393E41",
+            "900": "#1B1D1F"
           },
           fog: {
-            DEFAULT: "#FAFAFA",
-            50: "#FFFFFF",
-            100: "#FAFAFA",
-            200: "#F5F5F5",
-            300: "#E5E5E5",
-            400: "#D4D4D4",
+            "DEFAULT": "#F5F5F4",
+            "50": "#FFFFFF",
+            "100": "#F5F5F4",
+            "200": "#E7E7E6",
+            "300": "#D8D8D7",
+            "400": "#C9C9C8"
           },
           brass: {
-            DEFAULT: "#FF5A1F",
-            50: "#FFF7ED",
-            100: "#FFEDD5",
-            200: "#FED7AA",
-            300: "#FDBA74",
-            400: "#FB923C",
-            500: "#FF5A1F",
-            600: "#EA4C0C",
-            700: "#C2410C",
-            800: "#9A3412",
-            900: "#7C2D12",
+            "DEFAULT": "#C4A46B",
+            "50": "#FDF9F2",
+            "100": "#F9F2E3",
+            "200": "#F2E5C7",
+            "300": "#EAD7A9",
+            "400": "#DFC98B",
+            "500": "#C4A46B",
+            "600": "#A98E5A",
+            "700": "#8C764A",
+            "800": "#6F5C3A",
+            "900": "#52442A"
           },
           sage: {
-            DEFAULT: "#64748B",
-            50: "#F8FAFC",
-            100: "#F1F5F9",
-            200: "#E2E8F0",
-            300: "#CBD5E1",
-            400: "#94A3B8",
-            500: "#64748B",
-            600: "#475569",
-            700: "#334155",
-            800: "#1E293B",
-            900: "#0F172A",
+            "DEFAULT": "#92A69C",
+            "50": "#F3F5F4",
+            "100": "#E8ECE9",
+            "200": "#D1D8D4",
+            "300": "#BAC5BE",
+            "400": "#A2B1A8",
+            "500": "#92A69C",
+            "600": "#7F8F86",
+            "700": "#6A776F",
+            "800": "#555F59",
+            "900": "#404743"
           },
           error: {
-            DEFAULT: "#DC2626",
-            50: "#FEF2F2",
-            100: "#FEE2E2",
-            200: "#FECACA",
-            300: "#FCA5A5",
-            400: "#F87171",
-            500: "#EF4444",
-            600: "#DC2626",
-            700: "#B91C1C",
-            800: "#991B1B",
-            900: "#7F1D1D",
+            "DEFAULT": "#C76864",
+            // Add shades for error if needed
           },
         },
 
@@ -141,9 +132,9 @@ export default {
       },
 
       fontFamily: {
-        sans: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
-        mono: ["var(--font-jetbrains-mono)", "monospace"],
-        heading: ["var(--font-jetbrains-mono)", "monospace"],
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        mono: ["var(--font-ibm-plex-mono)", "monospace"],
+        heading: ["var(--font-inter)", "sans-serif"],
       },
 
       fontSize: {

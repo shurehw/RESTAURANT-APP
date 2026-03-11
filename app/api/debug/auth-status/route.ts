@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 
 /**
  * Debug endpoint to check auth status
@@ -18,6 +20,20 @@ export async function GET() {
 
     // Try to get user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
+    let fallbackUser: any = null;
+    let tenantContext: any = null;
+    let fallbackError: string | null = null;
+
+    try {
+      fallbackUser = await requireUser();
+      tenantContext = await getUserOrgAndVenues(fallbackUser.id);
+    } catch (error) {
+      fallbackError = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error && 'message' in error
+          ? String((error as any).message)
+          : String(error);
+    }
 
     return NextResponse.json({
       authenticated: !!user,
@@ -35,6 +51,9 @@ export async function GET() {
         })),
         totalCookies: allCookies.length,
       },
+      fallbackUser,
+      tenantContext,
+      fallbackError,
     });
   } catch (error) {
     return NextResponse.json({

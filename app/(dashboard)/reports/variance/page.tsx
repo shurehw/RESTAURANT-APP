@@ -42,8 +42,10 @@ export default async function VarianceReportPage() {
   // Aggregate across all venues the user has access to
   const totalItems = coverageRows?.reduce((sum, r) => sum + (r.total_items || 0), 0) || 0;
   const unmappedItems = coverageRows?.reduce((sum, r) => sum + (r.unmapped_items || 0), 0) || 0;
-  const salesCoveragePct = coverageRows?.length
-    ? Math.round(coverageRows.reduce((sum, r) => sum + (r.sales_coverage_pct || 0), 0) / coverageRows.length)
+  const totalCoveredSales = coverageRows?.reduce((sum, r) => sum + (r.mapped_sales || 0), 0) || 0;
+  const totalCoverageSales = coverageRows?.reduce((sum, r) => sum + (r.total_sales || 0), 0) || 0;
+  const salesCoveragePct = totalCoverageSales > 0
+    ? Math.round((totalCoveredSales / totalCoverageSales) * 100)
     : 0;
 
   return (

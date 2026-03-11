@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+function normalizeMenuItemName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /**
  * GET /api/cogs/mappings?venue_id=xxx[&unmapped=true]
  * List menu item → recipe mappings for a venue
@@ -156,13 +165,13 @@ export async function POST(req: NextRequest) {
   // Build case-insensitive lookup
   const recipeByName = new Map<string, string>();
   for (const r of recipes) {
-    recipeByName.set(r.name.toLowerCase().trim(), r.id);
+    recipeByName.set(normalizeMenuItemName(r.name), r.id);
   }
 
   // Match
   let matched = 0;
   for (const item of unmapped) {
-    const recipeId = recipeByName.get(item.menu_item_name.toLowerCase().trim());
+    const recipeId = recipeByName.get(normalizeMenuItemName(item.menu_item_name));
     if (recipeId) {
       await supabase
         .from('menu_item_recipe_map')

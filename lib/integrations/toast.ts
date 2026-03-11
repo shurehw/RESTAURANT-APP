@@ -29,15 +29,17 @@ export interface ToastOrder {
   openedDate: string;
   closedDate: string | null;
   voidDate: string | null;
-  guestCount: number;
-  numberOfGuests?: number;
-  server: { guid: string; firstName: string; lastName: string } | null;
-  table: { name: string } | null;
+  numberOfGuests: number;
+  server: { guid: string; firstName?: string; lastName?: string } | null;
+  table: { guid: string; name?: string } | null;
   checks: Array<{
     totalAmount: number;
     amount: number; // subtotal before tax
-    tipAmount: number;
     taxAmount: number;
+    payments: Array<{
+      amount: number;
+      tipAmount: number;
+    }>;
     selections: Array<{
       guid: string;
       displayName: string;
@@ -48,7 +50,7 @@ export interface ToastOrder {
       modifiers: any[];
     }>;
     appliedDiscounts: Array<{
-      name: string;
+      name?: string;
       discountAmount: number;
       approver: { firstName: string; lastName: string } | null;
     }>;
@@ -104,6 +106,23 @@ export interface ToastItemSummary {
   net_sales: number;
   comps_total: number;
   voids_total: number;
+}
+
+export interface ToastLaborSummary {
+  total_hours: number;
+  ot_hours: number;
+  labor_cost: number;
+  punch_count: number;
+  employee_count: number;
+  foh_hours: number;
+  foh_cost: number;
+  foh_employee_count: number;
+  boh_hours: number;
+  boh_cost: number;
+  boh_employee_count: number;
+  other_hours: number;
+  other_cost: number;
+  other_employee_count: number;
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -269,8 +288,67 @@ async function getToastAccessToken(config: ToastVenueConfig): Promise<string> {
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
+ * Fetch sales category GUID → name map from Toast Config API.
+ * Used to resolve salesCategory references on order selections.
+ */
+async function getSalesCategoryMap(config: ToastVenueConfig): Promise<Map<string, string>> {
+  const accessToken = await getToastAccessToken(config);
+  const response = await fetch(
+    `${config.api_base}/config/v2/salesCategories`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Toast-Restaurant-External-ID': config.restaurant_guid,
+      },
+      signal: AbortSignal.timeout(15_000),
+    }
+  );
+
+  const catMap = new Map<string, string>();
+  if (!response.ok) return catMap;
+
+  const categories: any[] = await response.json();
+  for (const cat of categories) {
+    if (cat.guid && cat.name) {
+      catMap.set(cat.guid, cat.name);
+    }
+  }
+  return catMap;
+}
+
+/**
+ * Fetch employee name lookup map from Toast Labor API.
+ * Used to resolve server GUIDs to human-readable names.
+ */
+async function getEmployeeNameMap(config: ToastVenueConfig): Promise<Map<string, string>> {
+  const accessToken = await getToastAccessToken(config);
+  const response = await fetch(
+    `${config.api_base}/labor/v1/employees`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Toast-Restaurant-External-ID': config.restaurant_guid,
+      },
+      signal: AbortSignal.timeout(30_000),
+    }
+  );
+
+  const nameMap = new Map<string, string>();
+  if (!response.ok) return nameMap;
+
+  const employees: any[] = await response.json();
+  for (const emp of employees) {
+    if (emp.guid && (emp.firstName || emp.lastName)) {
+      nameMap.set(emp.guid, `${emp.firstName || ''} ${emp.lastName || ''}`.trim());
+    }
+  }
+  return nameMap;
+}
+
+/**
  * Fetch all orders for a business date from Toast Orders API v2.
- * Handles OAuth2 authentication and pagination (100 orders per page).
+ * Uses /ordersBulk endpoint for full order details with pagination.
+ * Resolves server GUIDs to names via the Labor API.
  */
 export async function fetchToastOrders(
   config: ToastVenueConfig,
@@ -278,19 +356,26 @@ export async function fetchToastOrders(
 ): Promise<ToastOrder[]> {
   const accessToken = await getToastAccessToken(config);
   const bdate = businessDate.replace(/-/g, ''); // YYYYMMDD format
-  const url = `${config.api_base}/orders/v2/orders`;
+  const url = `${config.api_base}/orders/v2/ordersBulk`;
   const headers: Record<string, string> = {
     'Authorization': `Bearer ${accessToken}`,
     'Toast-Restaurant-External-ID': config.restaurant_guid,
     'Content-Type': 'application/json',
   };
 
-  const allOrders: ToastOrder[] = [];
+  // Fetch employee names and sales categories in parallel with first page
+  const nameMapPromise = getEmployeeNameMap(config);
+  const catMapPromise = getSalesCategoryMap(config);
+
+  const allOrders: any[] = [];
   let page = 1;
 
   while (true) {
-    const params = new URLSearchParams({ businessDate: bdate });
-    if (page > 1) params.set('pageToken', String(page));
+    const params = new URLSearchParams({
+      businessDate: bdate,
+      pageSize: '100',
+      page: String(page),
+    });
 
     const response = await fetch(`${url}?${params}`, {
       method: 'GET',
@@ -303,7 +388,7 @@ export async function fetchToastOrders(
       throw new Error(`Toast Orders API error: ${response.status} ${response.statusText}`);
     }
 
-    const orders: ToastOrder[] = await response.json();
+    const orders: any[] = await response.json();
     if (!orders || orders.length === 0) break;
 
     allOrders.push(...orders);
@@ -313,7 +398,48 @@ export async function fetchToastOrders(
     page++;
   }
 
-  return allOrders;
+  // Resolve server names and sales categories
+  const nameMap = await nameMapPromise;
+  const catMap = await catMapPromise;
+
+  return allOrders.map((raw: any) => ({
+    guid: raw.guid,
+    openedDate: raw.openedDate,
+    closedDate: raw.closedDate,
+    voidDate: raw.voidDate,
+    numberOfGuests: raw.numberOfGuests || 1,
+    server: raw.server ? {
+      guid: raw.server.guid,
+      firstName: nameMap.get(raw.server.guid)?.split(' ')[0],
+      lastName: nameMap.get(raw.server.guid)?.split(' ').slice(1).join(' '),
+    } : null,
+    table: raw.table ? { guid: raw.table.guid, name: raw.table.externalId } : null,
+    checks: (raw.checks || []).map((c: any) => ({
+      totalAmount: c.totalAmount || 0,
+      amount: c.amount || 0,
+      taxAmount: c.taxAmount || 0,
+      payments: (c.payments || []).map((p: any) => ({
+        amount: p.amount || 0,
+        tipAmount: p.tipAmount || 0,
+      })),
+      selections: (c.selections || []).map((s: any) => ({
+        guid: s.guid,
+        displayName: s.displayName || 'Unknown',
+        quantity: s.quantity || 1,
+        price: s.price || 0,
+        salesCategory: s.salesCategory?.guid && catMap.has(s.salesCategory.guid)
+          ? { guid: s.salesCategory.guid, name: catMap.get(s.salesCategory.guid)! }
+          : s.salesCategory,
+        voidDate: s.voidDate,
+        modifiers: s.modifiers || [],
+      })),
+      appliedDiscounts: (c.appliedDiscounts || []).map((d: any) => ({
+        name: d.name,
+        discountAmount: d.discountAmount || 0,
+        approver: d.approver || null,
+      })),
+    })),
+  })) as ToastOrder[];
 }
 
 /**
@@ -376,6 +502,152 @@ export async function testToastConnection(
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// LABOR DATA (Time Entries + Jobs)
+// ══════════════════════════════════════════════════════════════════════════
+
+// FOH jobs: Server, Bartender, Barback, Host, Runner, Expo, Busser, Cashier
+// BOH jobs: Chef, Sous Chef, Line Cook, Dishwasher
+const FOH_JOBS = new Set(['server', 'bartender', 'barback', 'host', 'runner', 'expo', 'busser', 'cashier', 'shift lead']);
+const BOH_JOBS = new Set(['chef', 'sous chef', 'line cook', 'dishwasher', 'cook', 'prep cook']);
+
+function classifyJob(jobTitle: string): 'foh' | 'boh' | 'other' {
+  const lower = jobTitle.toLowerCase();
+  if (FOH_JOBS.has(lower)) return 'foh';
+  if (BOH_JOBS.has(lower)) return 'boh';
+  if (lower.includes('cook') || lower.includes('chef') || lower.includes('dish')) return 'boh';
+  if (lower.includes('server') || lower.includes('bar') || lower.includes('host') || lower.includes('bus') || lower.includes('runner')) return 'foh';
+  return 'other';
+}
+
+/**
+ * Fetch job title lookup map from Toast Labor API.
+ * Returns GUID → job title map.
+ */
+async function getJobMap(config: ToastVenueConfig): Promise<Map<string, string>> {
+  const accessToken = await getToastAccessToken(config);
+  const response = await fetch(
+    `${config.api_base}/labor/v1/jobs`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Toast-Restaurant-External-ID': config.restaurant_guid,
+      },
+      signal: AbortSignal.timeout(15_000),
+    }
+  );
+
+  const jobMap = new Map<string, string>();
+  if (!response.ok) return jobMap;
+
+  const jobs: any[] = await response.json();
+  for (const j of jobs) {
+    if (j.guid && (j.title || j.name)) {
+      jobMap.set(j.guid, j.title || j.name);
+    }
+  }
+  return jobMap;
+}
+
+/**
+ * Fetch time entries for a business date from Toast Labor API.
+ * Aggregates into labor_day_facts shape with FOH/BOH breakdown.
+ */
+export async function fetchToastLabor(
+  config: ToastVenueConfig,
+  businessDate: string
+): Promise<ToastLaborSummary> {
+  const accessToken = await getToastAccessToken(config);
+
+  // Toast uses ISO-8601 dates: yyyy-MM-dd'T'HH:mm:ss.SSS-0000
+  const startDate = `${businessDate}T00:00:00.000-0000`;
+  const endDate = `${businessDate}T23:59:59.999-0000`;
+
+  // Fetch time entries and job map in parallel
+  const [teResponse, jobMap] = await Promise.all([
+    fetch(
+      `${config.api_base}/labor/v1/timeEntries?startDate=${startDate}&endDate=${endDate}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Toast-Restaurant-External-ID': config.restaurant_guid,
+        },
+        signal: AbortSignal.timeout(30_000),
+      }
+    ),
+    getJobMap(config),
+  ]);
+
+  const summary: ToastLaborSummary = {
+    total_hours: 0, ot_hours: 0, labor_cost: 0,
+    punch_count: 0, employee_count: 0,
+    foh_hours: 0, foh_cost: 0, foh_employee_count: 0,
+    boh_hours: 0, boh_cost: 0, boh_employee_count: 0,
+    other_hours: 0, other_cost: 0, other_employee_count: 0,
+  };
+
+  if (!teResponse.ok) return summary;
+
+  const entries: any[] = await teResponse.json();
+  if (entries.length === 0) return summary;
+
+  const employeesSeen = new Set<string>();
+  const fohEmployees = new Set<string>();
+  const bohEmployees = new Set<string>();
+  const otherEmployees = new Set<string>();
+
+  for (const e of entries) {
+    // Skip entries with no clock-out (still working) — regularHours will be 0
+    const regHours = e.regularHours || 0;
+    const otHours = e.overtimeHours || 0;
+    const totalHours = regHours + otHours;
+    if (totalHours === 0) continue;
+
+    const wage = e.hourlyWage || 0;
+    // OT at 1.5x (Toast doesn't expose OT factor, standard is 1.5x)
+    const cost = (regHours * wage) + (otHours * wage * 1.5);
+
+    const empGuid = e.employeeReference?.guid || '';
+    const jobGuid = e.jobReference?.guid || '';
+    const jobTitle = jobMap.get(jobGuid) || '';
+    const dept = classifyJob(jobTitle);
+
+    summary.total_hours += totalHours;
+    summary.ot_hours += otHours;
+    summary.labor_cost += cost;
+    summary.punch_count++;
+    employeesSeen.add(empGuid);
+
+    if (dept === 'foh') {
+      summary.foh_hours += totalHours;
+      summary.foh_cost += cost;
+      fohEmployees.add(empGuid);
+    } else if (dept === 'boh') {
+      summary.boh_hours += totalHours;
+      summary.boh_cost += cost;
+      bohEmployees.add(empGuid);
+    } else {
+      summary.other_hours += totalHours;
+      summary.other_cost += cost;
+      otherEmployees.add(empGuid);
+    }
+  }
+
+  summary.employee_count = employeesSeen.size;
+  summary.foh_employee_count = fohEmployees.size;
+  summary.boh_employee_count = bohEmployees.size;
+  summary.other_employee_count = otherEmployees.size;
+
+  // Round all numbers
+  for (const key of Object.keys(summary) as Array<keyof ToastLaborSummary>) {
+    if (typeof summary[key] === 'number' && !key.includes('count')) {
+      (summary as any)[key] = Math.round((summary[key] as number) * 100) / 100;
+    }
+  }
+
+  return summary;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
 // DATA AGGREGATION
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -426,13 +698,17 @@ export function aggregateToastOrders(orders: ToastOrder[]): ToastDaySummary {
     if (order.voidDate) continue;
 
     summary.checks_count++;
-    summary.covers_count += Math.max(1, order.guestCount || order.numberOfGuests || 1);
+    summary.covers_count += Math.max(1, order.numberOfGuests || 1);
 
     for (const check of order.checks || []) {
       summary.gross_sales += check.totalAmount || 0;
       summary.net_sales += check.amount || 0;
-      summary.tips_total += check.tipAmount || 0;
       summary.taxes_total += check.taxAmount || 0;
+
+      // Tips are at the payment level in Toast
+      for (const pmt of check.payments || []) {
+        summary.tips_total += pmt.tipAmount || 0;
+      }
 
       // Comps from applied discounts
       for (const disc of check.appliedDiscounts || []) {
@@ -499,11 +775,13 @@ export function aggregateToastServers(orders: ToastOrder[]): ToastServerSummary[
 
     const s = byServer.get(serverName)!;
     s.checks_count++;
-    s.covers_count += Math.max(1, order.guestCount || order.numberOfGuests || 1);
+    s.covers_count += Math.max(1, order.numberOfGuests || 1);
 
     for (const check of order.checks || []) {
       s.gross_sales += check.totalAmount || 0;
-      s.tips_total += check.tipAmount || 0;
+      for (const pmt of check.payments || []) {
+        s.tips_total += pmt.tipAmount || 0;
+      }
       for (const disc of check.appliedDiscounts || []) {
         s.comps_total += Math.abs(disc.discountAmount || 0);
       }

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
 import { requireUser } from '@/lib/auth';
+import { syncApprovedInvoiceCostsToRecipes } from '@/lib/invoices/cost-sync';
 
 export async function POST(
   request: NextRequest,
@@ -94,6 +95,12 @@ export async function POST(
     if (auditError) {
       // Log but don't fail - audit trail is important but shouldn't block approval
       console.error('Error creating approval audit record:', auditError);
+    }
+
+    try {
+      await syncApprovedInvoiceCostsToRecipes(id, { createdBy: user.id });
+    } catch (costSyncError) {
+      console.error('Error syncing invoice costs to recipes:', costSyncError);
     }
 
     return NextResponse.json({ 

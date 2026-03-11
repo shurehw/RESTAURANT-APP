@@ -13,16 +13,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-export interface PtdWeekRow {
-  week: number;
-  label: string;
-  start_date: string;
-  end_date: string;
-  net_sales: number;
-  covers: number;
-  prior_net_sales: number | null;
-  prior_covers: number | null;
-}
+export type { PtdWeekRow } from '@/lib/types/pulse';
+import type { PtdWeekRow } from '@/lib/types/pulse';
 
 const fmtCurrency = (n: number) =>
   n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 });

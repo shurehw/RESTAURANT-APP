@@ -10,6 +10,7 @@ import {
   Bell,
   Save,
 } from 'lucide-react';
+import NightlySubscribers from '@/components/settings/NightlySubscribers';
 
 interface OrganizationSettings {
   // Labor
@@ -230,6 +231,9 @@ export default function OrganizationSettingsPage() {
             )}
           </div>
         </Card>
+
+        {/* Nightly Report Subscribers */}
+        <NightlySubscribers briefingEnabled={settings.daily_briefing_enabled} />
       </div>
     </div>
   );

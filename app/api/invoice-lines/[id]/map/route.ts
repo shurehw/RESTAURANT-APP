@@ -2,6 +2,7 @@ import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
 import { cookies } from 'next/headers';
+import { syncApprovedInvoiceCostsToRecipes } from '@/lib/invoices/cost-sync';
 
 export async function POST(
   request: NextRequest,
@@ -108,7 +109,7 @@ export async function POST(
     // Get the invoice line details to learn vendor SKU
     const { data: invoiceLine } = await adminClient
       .from('invoice_lines')
-      .select('description, vendor_item_code, invoice_id, invoices(vendor_id)')
+      .select('description, vendor_item_code, invoice_id, invoices(vendor_id, status)')
       .eq('id', id)
       .single();
 
@@ -197,6 +198,18 @@ export async function POST(
       } catch (e) {
         console.warn('⚠️ Pack config learn failed:', e);
       }
+    }
+
+    try {
+      const invoiceStatus = (invoiceLine.invoices as any)?.status || null;
+      if (invoiceStatus === 'approved') {
+        await syncApprovedInvoiceCostsToRecipes(invoiceLine.invoice_id, {
+          lineIds: [id],
+          createdBy: userId,
+        });
+      }
+    } catch (costSyncError) {
+      console.error('Error syncing mapped invoice line costs to recipes:', costSyncError);
     }
 
     return NextResponse.json({ success: true });

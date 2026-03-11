@@ -73,6 +73,36 @@ export async function createOrder(prevState: CreateOrderState, formData: FormDat
           };
         }
       }
+
+      // Mercantile catalog enforcement: if org has Mercantile Desk integration
+      // with enforce_catalog_only, block POs containing mercantile-sourced items
+      // that aren't in the synced catalog.
+      const { data: mercantileIntegration } = await (service as any)
+        .from('mercantile_integrations')
+        .select('enforce_catalog_only')
+        .eq('organization_id', venue.organization_id)
+        .maybeSingle();
+
+      if (mercantileIntegration?.enforce_catalog_only) {
+        // Check if any requested items are mercantile-sourced but not in catalog
+        const itemIds = items.map(i => i.item_id);
+        const { data: mercantileItems } = await (service as any)
+          .from('items')
+          .select('id, name, mercantile_product_id, is_active')
+          .eq('organization_id', venue.organization_id)
+          .not('mercantile_product_id', 'is', null)
+          .in('id', itemIds);
+
+        const inactiveItems = (mercantileItems || []).filter(
+          (i: any) => !i.is_active
+        );
+
+        if (inactiveItems.length > 0) {
+          return {
+            error: `These items have been removed from the brand catalog: ${inactiveItems.map((i: any) => i.name).join(', ')}`,
+          };
+        }
+      }
     }
 
     // Calculate total amount

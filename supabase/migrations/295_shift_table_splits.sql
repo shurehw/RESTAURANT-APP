@@ -34,7 +34,7 @@ CREATE POLICY "Org members can view shift_table_splits"
   USING (
     EXISTS (
       SELECT 1 FROM venues v
-      JOIN org_users ou ON ou.org_id = v.org_id
+      JOIN organization_users ou ON ou.organization_id = v.organization_id
       WHERE v.id = shift_table_splits.venue_id
         AND ou.user_id = auth.uid()
     )

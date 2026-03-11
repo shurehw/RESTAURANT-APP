@@ -14,6 +14,7 @@ import {
   aggregateToastOrders,
   aggregateToastServers,
   aggregateToastItems,
+  fetchToastLabor,
   updateToastSyncStatus,
 } from '@/lib/integrations/toast';
 
@@ -1233,6 +1234,40 @@ export async function syncVenueDayToast(
       rowsLoaded++;
     }
 
+    // Labor day facts from Toast time entries
+    try {
+      const labor = await fetchToastLabor(config, businessDate);
+      if (labor.punch_count > 0) {
+        await (supabase as any)
+          .from('labor_day_facts')
+          .upsert({
+            venue_id: venueId,
+            business_date: businessDate,
+            total_hours: labor.total_hours,
+            ot_hours: labor.ot_hours,
+            labor_cost: labor.labor_cost,
+            punch_count: labor.punch_count,
+            employee_count: labor.employee_count,
+            net_sales: day.net_sales,
+            covers: day.covers_count,
+            foh_hours: labor.foh_hours,
+            foh_cost: labor.foh_cost,
+            foh_employee_count: labor.foh_employee_count,
+            boh_hours: labor.boh_hours,
+            boh_cost: labor.boh_cost,
+            boh_employee_count: labor.boh_employee_count,
+            other_hours: labor.other_hours,
+            other_cost: labor.other_cost,
+            other_employee_count: labor.other_employee_count,
+            last_synced_at: new Date().toISOString(),
+            etl_run_id: etlRunId,
+          }, { onConflict: 'venue_id,business_date' });
+        rowsLoaded++;
+      }
+    } catch (laborErr: any) {
+      console.warn(`Toast labor sync warning for ${venueId}/${businessDate}: ${laborErr.message}`);
+    }
+
     // Auto-discover new menu items for COGS mapping
     await syncMenuItemMappings(venueId, supabase);
 
@@ -1325,9 +1360,12 @@ export async function syncToday(): Promise<SyncResult[]> {
  * Sync yesterday's data for all venues (useful for nightly closeout)
  */
 export async function syncYesterday(): Promise<SyncResult[]> {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const dateStr = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+  // Get today in Pacific time first, then subtract 1 day
+  // (avoids UTC-to-PT offset causing off-by-one when cron runs at 4 AM UTC)
+  const todayPT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+  const d = new Date(todayPT + 'T12:00:00'); // noon to avoid DST edge cases
+  d.setDate(d.getDate() - 1);
+  const dateStr = d.toISOString().split('T')[0];
   return syncAllVenuesForDate(dateStr);
 }
 
@@ -1351,6 +1389,13 @@ export async function backfillDateRange(
     posTypes.set(m.venue_id, await getPosType(pool, m.tipsee_location_uuid));
   }
 
+  // Toast venues (direct API, no TipSee mapping)
+  const toastVenues = await getActiveToastVenues();
+  const tipseeVenueIds = new Set(mappings.map(m => m.venue_id));
+  const filteredToastVenues = toastVenues
+    .filter(tv => !tipseeVenueIds.has(tv.venue_id))
+    .filter(tv => !venueId || tv.venue_id === venueId);
+
   let total = 0;
   let successful = 0;
   let failed = 0;
@@ -1361,6 +1406,7 @@ export async function backfillDateRange(
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().split('T')[0];
 
+    // TipSee-mapped venues (Simphony, Upserve, Avero)
     for (const mapping of filteredMappings) {
       total++;
       const posType = posTypes.get(mapping.venue_id) || 'upserve';
@@ -1379,6 +1425,20 @@ export async function backfillDateRange(
         failed++;
         console.error(`Failed to sync ${mapping.venue_name} for ${dateStr}: ${result.error}`);
       }
+    }
+
+    // Toast venues (direct API)
+    for (const tv of filteredToastVenues) {
+      total++;
+      console.log(`Backfilling ${tv.venue_name} for ${dateStr} (toast)...`);
+      const result = await syncVenueDayToast(tv.venue_id, dateStr);
+      if (result.success) {
+        successful++;
+      } else {
+        failed++;
+        console.error(`Failed to sync ${tv.venue_name} for ${dateStr}: ${result.error}`);
+      }
+      console.log(`  ${result.success ? '✓' : '✗'} ${result.rows_loaded} rows in ${result.duration_ms}ms`);
     }
   }
 
