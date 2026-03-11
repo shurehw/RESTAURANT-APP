@@ -6,6 +6,16 @@ import { DraggableTable } from './DraggableTable';
 import { SectionOverlay } from './SectionOverlay';
 import type { VenueTable, VenueSection, VenueLabel } from '@/lib/database/floor-plan';
 
+export interface TableVisualMeta {
+  status: string;
+  seatedAt: string | null;
+  currentSpend: number;
+  turnNumber: number;
+  isVip: boolean;
+  isArrived: boolean;
+  spendIntensity: number; // 0-1
+}
+
 interface FloorPlanCanvasProps {
   tables: VenueTable[];
   sections: VenueSection[];
@@ -14,6 +24,8 @@ interface FloorPlanCanvasProps {
   highlightedTableIds?: Set<string>;
   tableColorMap?: Map<string, string>;
   tableLabelMap?: Map<string, string>;
+  tableMetaMap?: Map<string, TableVisualMeta>;
+  transitioningTableIds?: Set<string>;
   onSelectTable: (id: string, additive: boolean) => void;
   onDeselectAll: () => void;
   onDoubleClickTable: (table: VenueTable) => void;
@@ -30,6 +42,8 @@ export function FloorPlanCanvas({
   highlightedTableIds,
   tableColorMap,
   tableLabelMap,
+  tableMetaMap,
+  transitioningTableIds,
   onSelectTable,
   onDeselectAll,
   onDoubleClickTable,
@@ -116,6 +130,8 @@ export function FloorPlanCanvas({
         const overrideColor = tableColorMap?.get(table.id);
         const isHighlighted = highlightedTableIds?.has(table.id) ?? false;
         const label = tableLabelMap?.get(table.id);
+        const meta = tableMetaMap?.get(table.id);
+        const isTransitioning = transitioningTableIds?.has(table.id) ?? false;
         return (
           <div key={table.id}>
             <DraggableTable
@@ -124,6 +140,8 @@ export function FloorPlanCanvas({
               isSelected={selectedTableIds.has(table.id)}
               isHighlighted={isHighlighted}
               overrideColor={overrideColor}
+              meta={meta}
+              isTransitioning={isTransitioning}
               onSelect={onSelectTable}
               onDoubleClick={onDoubleClickTable}
               onResize={onResize}

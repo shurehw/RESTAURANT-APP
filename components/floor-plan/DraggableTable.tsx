@@ -2,6 +2,8 @@
 
 import { useDraggable } from '@dnd-kit/core';
 import { TableShape } from './TableShape';
+import { TurnProgressRing } from './TurnProgressRing';
+import type { TableVisualMeta } from './FloorPlanCanvas';
 import type { VenueTable, VenueSection } from '@/lib/database/floor-plan';
 
 interface DraggableTableProps {
@@ -10,6 +12,8 @@ interface DraggableTableProps {
   isSelected: boolean;
   isHighlighted?: boolean;
   overrideColor?: string;
+  meta?: TableVisualMeta;
+  isTransitioning?: boolean;
   onSelect: (id: string, additive: boolean) => void;
   onDoubleClick: (table: VenueTable) => void;
   onResize?: (tableId: string, dw: number, dh: number, dx: number, dy: number) => void;
@@ -22,6 +26,8 @@ export function DraggableTable({
   isSelected,
   isHighlighted,
   overrideColor,
+  meta,
+  isTransitioning,
   onSelect,
   onDoubleClick,
   onResize,
@@ -31,6 +37,11 @@ export function DraggableTable({
     id: `table-${table.id}`,
     data: { type: 'table', table },
   });
+
+  const isFixture = table.table_number.startsWith('BAR-CTR');
+  const showProgressRing = readOnly && meta?.seatedAt && ['seated', 'occupied', 'check_dropped'].includes(meta.status);
+  const showVipShimmer = readOnly && meta?.isVip && !isFixture;
+  const showArrivalAlert = readOnly && meta?.isArrived && !isFixture;
 
   const style: React.CSSProperties = {
     position: 'absolute',
@@ -42,8 +53,17 @@ export function DraggableTable({
       ? `translate(${transform.x}px, ${transform.y}px) rotate(${table.rotation}deg)`
       : `rotate(${table.rotation}deg)`,
     zIndex: isDragging ? 50 : isSelected ? 20 : 10,
-    cursor: readOnly || table.table_number.startsWith('BAR-CTR') ? 'default' : 'grab',
+    cursor: readOnly || isFixture ? 'default' : 'grab',
     transition: isDragging ? undefined : 'box-shadow 150ms ease',
+    // Arrival alert animation
+    ...(showArrivalAlert ? {
+      animation: 'arrival-alert 1s ease-in-out infinite',
+      '--glow-color': `${overrideColor || '#3B82F6'}60`,
+    } as React.CSSProperties : {}),
+    // Transition pulse
+    ...(isTransitioning && !showArrivalAlert ? {
+      animation: 'table-transition-pulse 400ms ease-out',
+    } : {}),
   };
 
   // In staff mode, use the split's color; otherwise use section color
@@ -83,8 +103,31 @@ export function DraggableTable({
           sectionColor={sectionColor}
           tableNumber={table.table_number}
           isSelected={isSelected}
+          meta={meta}
         />
       </div>
+
+      {/* VIP gold shimmer overlay */}
+      {showVipShimmer && (
+        <div
+          className="absolute inset-[8%] rounded-full pointer-events-none"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255,215,0,0.08) 40%, rgba(255,215,0,0.18) 50%, rgba(255,215,0,0.08) 60%, transparent 100%)',
+            backgroundSize: '200% 100%',
+            animation: 'vip-shimmer 3s ease-in-out infinite',
+            zIndex: 25,
+            border: '1px solid rgba(255,215,0,0.25)',
+          }}
+        />
+      )}
+
+      {/* Turn-time progress ring */}
+      {showProgressRing && meta?.seatedAt && (
+        <TurnProgressRing
+          seatedAt={meta.seatedAt}
+          shape={table.shape}
+        />
+      )}
 
       {/* Resize handles — only when selected in edit mode */}
       {isSelected && onResize && !readOnly && (

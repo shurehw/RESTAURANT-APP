@@ -37,24 +37,7 @@ export function FloorPlanToolbar({
   onToggleSnap,
 }: FloorPlanToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-white border-b">
-      {/* Venue selector */}
-      {venues.length > 1 && (
-        <select
-          value={selectedVenueId}
-          onChange={(e) => onVenueChange(e.target.value)}
-          className="px-3 py-1.5 border rounded-md text-sm"
-        >
-          {venues.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.name}
-            </option>
-          ))}
-        </select>
-      )}
-
-      <div className="border-l h-6 mx-1" />
-
+    <div className="flex flex-wrap items-center gap-3 px-4 py-2 bg-gray-50 border-b">
       {/* Layout actions */}
       <Button variant="outline" size="sm" onClick={onAddTable}>
         <Plus className="w-4 h-4 mr-1" />

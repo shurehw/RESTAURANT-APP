@@ -1,19 +1,10 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { StaffCard } from './StaffCard';
-import { SectionDropZone } from './SectionDropZone';
-import type { VenueSection } from '@/lib/database/floor-plan';
+import { RefreshCw, Plus } from 'lucide-react';
+import type { ShiftTableSplit, VenueTable } from '@/lib/database/floor-plan';
 
 interface StaffMember {
-  employee_id: string;
-  employee_name: string;
-  position_name: string;
-}
-
-interface Assignment {
-  id: string;
-  section_id: string;
   employee_id: string;
   employee_name: string;
   position_name: string;
@@ -27,57 +18,49 @@ const SHIFT_OPTIONS = [
 ];
 
 interface StaffSidebarProps {
-  sections: VenueSection[];
-  assignments: Assignment[];
+  splits: ShiftTableSplit[];
   unassigned: StaffMember[];
-  onRemoveAssignment: (employeeId: string) => void;
+  tables: VenueTable[];
+  onResplit: () => void;
+  onRemoveSplit: (splitId: string) => void;
+  onHighlightTables: (tableIds: string[]) => void;
   date: string;
   onDateChange: (date: string) => void;
   shiftType: string;
   onShiftTypeChange: (shift: string) => void;
   loading: boolean;
+  resplitting: boolean;
 }
 
 export function StaffSidebar({
-  sections,
-  assignments,
+  splits,
   unassigned,
-  onRemoveAssignment,
+  tables,
+  onResplit,
+  onRemoveSplit,
+  onHighlightTables,
   date,
   onDateChange,
   shiftType,
   onShiftTypeChange,
   loading,
+  resplitting,
 }: StaffSidebarProps) {
-  // Group assignments by section
-  const bySectionId = new Map<string, StaffMember[]>();
-  for (const a of assignments) {
-    const list = bySectionId.get(a.section_id) || [];
-    list.push({
-      employee_id: a.employee_id,
-      employee_name: a.employee_name,
-      position_name: a.position_name,
-    });
-    bySectionId.set(a.section_id, list);
-  }
-
-  // Find section name for an assigned employee
-  const assignmentSectionName = (employeeId: string): string | undefined => {
-    const a = assignments.find((x) => x.employee_id === employeeId);
-    if (!a) return undefined;
-    return sections.find((s) => s.id === a.section_id)?.name;
-  };
+  // Build a lookup: table_id → table_number
+  const tableNumMap = new Map(tables.map((t) => [t.id, t.table_number]));
+  // Build a lookup: table_id → max_capacity
+  const tableCapMap = new Map(tables.map((t) => [t.id, t.max_capacity]));
 
   return (
     <div className="w-72 border-l bg-white flex flex-col overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h3 className="text-sm font-semibold text-gray-800">Staff Assignments</h3>
+        <h3 className="text-sm font-semibold text-gray-800">Staff Sections</h3>
         <p className="text-xs text-gray-400 mt-0.5">
-          Drag staff to sections below
+          Auto-split by scheduled servers
         </p>
       </div>
 
-      {/* Date + shift picker — staff assignments vary by shift */}
+      {/* Date + shift picker */}
       <div className="px-3 py-2 border-b flex gap-2">
         <Input
           type="date"
@@ -98,11 +81,69 @@ export function StaffSidebar({
         </select>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {loading ? (
           <p className="text-sm text-gray-400 text-center py-4">Loading schedule...</p>
         ) : (
           <>
+            {/* Server cards */}
+            {splits.map((split) => {
+              const tableNums = split.table_ids
+                .map((id) => tableNumMap.get(id) || '?')
+                .sort((a, b) => {
+                  const na = parseInt(a, 10);
+                  const nb = parseInt(b, 10);
+                  if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                  return a.localeCompare(b);
+                });
+              const totalCovers = split.table_ids.reduce(
+                (sum, id) => sum + (tableCapMap.get(id) || 0),
+                0,
+              );
+
+              return (
+                <div
+                  key={split.id}
+                  className="rounded-lg border bg-gray-50 overflow-hidden"
+                  onMouseEnter={() => onHighlightTables(split.table_ids)}
+                  onMouseLeave={() => onHighlightTables([])}
+                >
+                  <div className="flex items-center gap-2 px-3 py-2">
+                    <div
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: split.section_color }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {split.employee_name || 'Unknown'}
+                      </div>
+                      <div className="text-[11px] text-gray-500">
+                        {split.position_name || 'Server'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => onRemoveSplit(split.id)}
+                      className="text-gray-400 hover:text-red-500 text-xs"
+                      title="Remove assignment"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                  <div className="px-3 pb-2">
+                    <div className="text-[11px] text-gray-600">
+                      Tables:{' '}
+                      <span className="font-medium text-gray-800">
+                        {tableNums.join(', ')}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-0.5">
+                      {split.table_ids.length} tables &middot; {totalCovers} covers
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
             {/* Unassigned staff */}
             {unassigned.length > 0 && (
               <div>
@@ -111,63 +152,42 @@ export function StaffSidebar({
                 </h4>
                 <div className="space-y-1.5">
                   {unassigned.map((s) => (
-                    <StaffCard
+                    <div
                       key={s.employee_id}
-                      employeeId={s.employee_id}
-                      name={s.employee_name}
-                      position={s.position_name}
-                    />
+                      className="flex items-center gap-2 px-3 py-2 rounded-md border border-dashed border-gray-300 bg-white"
+                    >
+                      <div className="w-3 h-3 rounded-full bg-gray-300 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-700 truncate">{s.employee_name}</div>
+                        <div className="text-[11px] text-gray-400">{s.position_name}</div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Section drop zones */}
-            {sections.length > 0 && (
-              <div>
-                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                  Sections
-                </h4>
-                <div className="space-y-2">
-                  {sections.map((section) => (
-                    <SectionDropZone
-                      key={section.id}
-                      section={section}
-                      assignedStaff={bySectionId.get(section.id) || []}
-                      onRemoveStaff={onRemoveAssignment}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Assigned staff (if they need to be re-dragged) */}
-            {assignments.length > 0 && (
-              <div>
-                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                  Assigned ({assignments.length})
-                </h4>
-                <div className="space-y-1.5">
-                  {assignments.map((a) => (
-                    <StaffCard
-                      key={a.employee_id}
-                      employeeId={a.employee_id}
-                      name={a.employee_name}
-                      position={a.position_name}
-                      assignedSection={assignmentSectionName(a.employee_id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {unassigned.length === 0 && assignments.length === 0 && (
+            {splits.length === 0 && unassigned.length === 0 && (
               <p className="text-sm text-gray-400 text-center py-8">
                 No scheduled FOH staff for this shift
               </p>
             )}
           </>
         )}
+      </div>
+
+      {/* Bottom actions */}
+      <div className="px-3 py-2 border-t flex gap-2">
+        <button
+          onClick={onResplit}
+          disabled={resplitting || loading}
+          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium
+            bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${resplitting ? 'animate-spin' : ''}`} />
+          Re-Split
+        </button>
       </div>
     </div>
   );
