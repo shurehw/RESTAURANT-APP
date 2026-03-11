@@ -525,9 +525,9 @@ export function AttestationStepper({
                         attestation={attestation}
                         onUpdate={updateField}
                         disabled={isLocked}
-                        netSales={reportSummary?.net_sales ?? 0}
-                        totalCovers={reportSummary?.total_covers ?? 0}
-                        totalComps={reportSummary?.total_comps ?? 0}
+                        netSales={factsSummary?.net_sales ?? reportSummary?.net_sales ?? 0}
+                        totalCovers={factsSummary?.total_covers ?? reportSummary?.total_covers ?? 0}
+                        totalComps={factsSummary?.total_comps ?? reportSummary?.total_comps ?? 0}
                         forecast={factsSummary?.forecast}
                         variance={factsSummary?.variance}
                         foodSales={factsSummary?.food_sales || undefined}
@@ -541,8 +541,8 @@ export function AttestationStepper({
                         resolutions={compResolutions}
                         onAdd={addCompResolution}
                         disabled={isLocked}
-                        totalComps={reportSummary?.total_comps ?? 0}
-                        netSales={reportSummary?.net_sales ?? 0}
+                        totalComps={factsSummary?.total_comps ?? reportSummary?.total_comps ?? 0}
+                        netSales={factsSummary?.net_sales ?? reportSummary?.net_sales ?? 0}
                         exceptionSummary={compExceptions?.summary ?? null}
                         reviewSummary={compReview?.summary ?? null}
                         compsByReason={compsByReason}
@@ -557,8 +557,8 @@ export function AttestationStepper({
                         onUpdate={updateField}
                         disabled={isLocked}
                         labor={factsSummary?.labor ?? null}
-                        netSales={reportSummary?.net_sales ?? 0}
-                        covers={reportSummary?.total_covers ?? 0}
+                        netSales={factsSummary?.net_sales ?? reportSummary?.net_sales ?? 0}
+                        covers={factsSummary?.total_covers ?? reportSummary?.total_covers ?? 0}
                         laborExceptions={laborExceptions}
                       />
                     )}
@@ -588,8 +588,8 @@ export function AttestationStepper({
                         onUpdate={updateField}
                         disabled={isLocked}
                         labor={factsSummary?.labor ?? null}
-                        netSales={reportSummary?.net_sales ?? 0}
-                        covers={reportSummary?.total_covers ?? 0}
+                        netSales={factsSummary?.net_sales ?? reportSummary?.net_sales ?? 0}
+                        covers={factsSummary?.total_covers ?? reportSummary?.total_covers ?? 0}
                         laborExceptions={laborExceptions}
                       />
                     )}

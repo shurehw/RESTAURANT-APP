@@ -1359,17 +1359,18 @@ export default function NightlyReportPage() {
         <>
           {/* Performance vs Benchmarks — Pulse-style gauge cards */}
           {(() => {
-            // For nightly: use paceData (same source as Pulse — sales_snapshots)
+            // For nightly: prefer factsSummary (authoritative), enhance with
+            // paceData snapshots only when they carry a non-zero value.
             // For WTD/PTD/YTD: use factsSummary (venue_day_facts aggregations)
             const liveNetSales = viewMode === 'nightly'
-              ? (paceData?.current?.net_sales ?? nightlyNetSales)
+              ? (paceData?.current?.net_sales || nightlyNetSales)
               : viewMode === 'wtd'
                 ? (factsSummary?.variance?.wtd_net_sales || 0)
                 : viewMode === 'ptd'
                   ? (factsSummary?.variance?.ptd_net_sales || 0)
                   : (factsSummary?.variance?.ytd_net_sales || 0);
             const liveCovers = viewMode === 'nightly'
-              ? (paceData?.current?.covers_count ?? nightlyCovers)
+              ? (paceData?.current?.covers_count || nightlyCovers)
               : viewMode === 'wtd'
                 ? (factsSummary?.variance?.wtd_covers || 0)
                 : viewMode === 'ptd'
