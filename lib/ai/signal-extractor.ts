@@ -35,7 +35,8 @@ export type SignalType =
   | 'menu_item'
   | 'operational_issue'
   | 'guest_insight'
-  | 'staffing_signal';
+  | 'staffing_signal'
+  | 'entertainment';
 
 export type MentionSentiment = 'positive' | 'negative' | 'neutral' | 'actionable';
 export type CommitmentStatus = 'open' | 'due' | 'fulfilled' | 'unfulfilled' | 'superseded';
@@ -195,6 +196,12 @@ EXTRACT these signal types:
    - mention_context: What happened and impact
    - mention_sentiment: negative (short/issue), neutral (adequate), positive (well-staffed)
 
+7. **entertainment** — DJ, live music, performers, events, activations, or any entertainment-related notes. Include:
+   - entity_name: Performer/DJ name, act name, or event type if mentioned
+   - entity_type: category (dj, live_music, performer, activation, event, etc.)
+   - mention_context: What happened and crowd/revenue impact
+   - mention_sentiment: positive (drove energy/revenue), negative (issue/no-show/bad fit), neutral (informational)
+
 RULES:
 - Only extract signals you are confident about (confidence >= 0.7)
 - One signal per distinct entity/action — don't duplicate
@@ -272,7 +279,7 @@ Return a JSON object with two keys:
 {
   "signals": [
     {
-      "signal_type": "employee_mention" | "action_commitment" | "menu_item" | "operational_issue" | "guest_insight" | "staffing_signal",
+      "signal_type": "employee_mention" | "action_commitment" | "menu_item" | "operational_issue" | "guest_insight" | "staffing_signal" | "entertainment",
       "extracted_text": "the exact phrase from the manager's text",
       "source_field": "the field name it came from",
       "confidence": 0.7 to 1.0,

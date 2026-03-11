@@ -637,3 +637,178 @@ export async function getOrgRecentSignals(
     commitment_status: row.commitment_status,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Signal trend — multi-view signal counts by type for trend chart
+// ---------------------------------------------------------------------------
+
+import {
+  type FiscalCalendarType,
+  getAllPeriodsInFiscalYear,
+  getFiscalYearStart,
+} from '@/lib/fiscal-calendar';
+
+export interface SignalTrendBucket {
+  key: string;
+  label: string;
+  employee: number;
+  issue: number;
+  guest: number;
+  menu: number;
+  staffing: number;
+  entertainment: number;
+  total: number;
+}
+
+export interface SignalTrendData {
+  weekly: SignalTrendBucket[];
+  period: SignalTrendBucket[];
+  yearly: SignalTrendBucket[];
+}
+
+function emptyBucket(key: string, label: string): SignalTrendBucket {
+  return { key, label, employee: 0, issue: 0, guest: 0, menu: 0, staffing: 0, entertainment: 0, total: 0 };
+}
+
+function incrementBucket(bucket: SignalTrendBucket, signalType: string) {
+  bucket.total++;
+  switch (signalType) {
+    case 'employee_mention': bucket.employee++; break;
+    case 'operational_issue': bucket.issue++; break;
+    case 'guest_insight': bucket.guest++; break;
+    case 'menu_item': bucket.menu++; break;
+    case 'staffing_signal': bucket.staffing++; break;
+    case 'entertainment': bucket.entertainment++; break;
+  }
+}
+
+export async function getOrgSignalTrend(orgId: string): Promise<SignalTrendData> {
+  const supabase = getServiceClient();
+  const now = new Date();
+  const cutoff365 = new Date(now);
+  cutoff365.setDate(cutoff365.getDate() - 365);
+  const cutoffStr = cutoff365.toISOString().split('T')[0];
+
+  // Get venue IDs + org fiscal settings in parallel
+  const [venueResult, orgResult] = await Promise.all([
+    (supabase as any)
+      .from('venues')
+      .select('id')
+      .eq('organization_id', orgId)
+      .eq('is_active', true),
+    (supabase as any)
+      .from('organizations')
+      .select('fiscal_calendar_type, fiscal_year_start_date')
+      .eq('id', orgId)
+      .maybeSingle(),
+  ]);
+
+  const venues = venueResult.data;
+  if (!venues || venues.length === 0) {
+    return { weekly: [], period: [], yearly: [] };
+  }
+
+  const venueIds = venues.map((v: any) => v.id);
+  const calendarType: FiscalCalendarType = orgResult.data?.fiscal_calendar_type || 'standard';
+  const fyStartDate: string | null = orgResult.data?.fiscal_year_start_date || null;
+
+  // Fetch all non-commitment signals for trailing year
+  const { data, error } = await (supabase as any)
+    .from('attestation_signals')
+    .select('business_date, signal_type')
+    .in('venue_id', venueIds)
+    .neq('signal_type', 'action_commitment')
+    .gte('business_date', cutoffStr)
+    .order('business_date', { ascending: true })
+    .limit(5000);
+
+  if (error) {
+    console.error('[signal-analytics] getOrgSignalTrend error:', error);
+    return { weekly: [], period: [], yearly: [] };
+  }
+
+  const rows: Array<{ business_date: string; signal_type: string }> = data || [];
+
+  // ---- Weekly view (8 weeks) ----
+  const weekMap = new Map<string, SignalTrendBucket>();
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i * 7);
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+    const key = monday.toISOString().split('T')[0];
+    if (!weekMap.has(key)) {
+      weekMap.set(key, emptyBucket(
+        key,
+        monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      ));
+    }
+  }
+
+  const weekCutoff = new Date(now);
+  weekCutoff.setDate(weekCutoff.getDate() - 8 * 7);
+  const weekCutoffStr = weekCutoff.toISOString().split('T')[0];
+
+  for (const row of rows) {
+    if (row.business_date < weekCutoffStr) continue;
+    const d = new Date(`${row.business_date}T00:00:00`);
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+    const key = monday.toISOString().split('T')[0];
+
+    let bucket = weekMap.get(key);
+    if (!bucket) {
+      bucket = emptyBucket(key, monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+      weekMap.set(key, bucket);
+    }
+    incrementBucket(bucket, row.signal_type);
+  }
+
+  // ---- Period view (current FY periods) ----
+  const fyStart = getFiscalYearStart(now, calendarType, fyStartDate);
+  const periods = getAllPeriodsInFiscalYear(fyStart, calendarType);
+  const periodMap = new Map<number, SignalTrendBucket>();
+  for (const p of periods) {
+    periodMap.set(p.period, emptyBucket(
+      String(p.period),
+      `P${p.period}`,
+    ));
+  }
+
+  for (const row of rows) {
+    for (const p of periods) {
+      if (row.business_date >= p.startDate && row.business_date <= p.endDate) {
+        const bucket = periodMap.get(p.period)!;
+        incrementBucket(bucket, row.signal_type);
+        break;
+      }
+    }
+  }
+
+  // ---- Yearly view (12 months trailing) ----
+  const monthMap = new Map<string, SignalTrendBucket>();
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    monthMap.set(key, emptyBucket(
+      key,
+      d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+    ));
+  }
+
+  for (const row of rows) {
+    const key = row.business_date.slice(0, 7); // YYYY-MM
+    const bucket = monthMap.get(key);
+    if (bucket) {
+      incrementBucket(bucket, row.signal_type);
+    }
+  }
+
+  return {
+    weekly: Array.from(weekMap.values()).sort((a, b) => a.key.localeCompare(b.key)),
+    period: Array.from(periodMap.values()).sort((a, b) => Number(a.key) - Number(b.key)),
+    yearly: Array.from(monthMap.values()).sort((a, b) => a.key.localeCompare(b.key)),
+  };
+}

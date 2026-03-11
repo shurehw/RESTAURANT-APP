@@ -1,24 +1,38 @@
 /**
- * Dashboard Landing — Action Center + Operator Intelligence + Enforcement Scores
- * Enforcement-first landing: shows all active violations across OpSOS systems
- * Owner/admin also see intelligence feed and composite enforcement scores
+ * Dashboard Landing — Action Queue + Signal Feed + Operator Intelligence
+ * Unified action queue merges commitments and violations by urgency.
+ * Signal feed shows read-only informational signals from attestations.
+ * Owner/admin also see intelligence feed and composite enforcement scores.
  */
 
 import { requireUser } from '@/lib/auth/require-user';
 import { getActiveViolations } from '@/lib/database/enforcement';
 import { getActiveIntelligence } from '@/lib/database/operator-intelligence';
 import { getOrgOpenCommitments } from '@/lib/database/signal-outcomes';
-import { getOrgRecentSignals } from '@/lib/database/signal-analytics';
-import { ViolationFeed } from '@/components/action-center/violation-feed';
+import { getOrgRecentSignals, getOrgSignalTrend } from '@/lib/database/signal-analytics';
 import { IntelligenceFeed } from '@/components/operator/IntelligenceFeed';
 import { DisciplineScores } from '@/components/home/DisciplineScores';
-import { SignalIntelligence } from '@/components/home/SignalIntelligence';
-import { ShieldAlert, Activity } from 'lucide-react';
+import { ActionQueue } from '@/components/home/ActionQueue';
+import { SignalFeed } from '@/components/home/SignalFeed';
+import { ShieldAlert } from 'lucide-react';
 import { getServiceClient } from '@/lib/supabase/service';
 
 export default async function DashboardPage() {
-  const { profile } = await requireUser();
+  const { user, profile } = await requireUser();
   const isOperator = profile.role === 'owner' || profile.role === 'admin';
+  let currentUserName = user.email || 'Current user';
+
+  try {
+    const supabase = getServiceClient() as any;
+    const { data: currentProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    currentUserName = currentProfile?.full_name || currentUserName;
+  } catch {
+    // Fallback to email when profile lookup fails
+  }
 
   // Get all active violations (graceful fallback if RPC not yet deployed)
   let violations: any[] = [];
@@ -42,7 +56,6 @@ export default async function DashboardPage() {
     // Fetch latest enforcement scores
     try {
       const supabase = getServiceClient() as any;
-      const today = new Date().toISOString().split('T')[0];
       const cutoff7d = new Date();
       cutoff7d.setDate(cutoff7d.getDate() - 7);
       const cutoffStr = cutoff7d.toISOString().split('T')[0];
@@ -84,13 +97,15 @@ export default async function DashboardPage() {
     }
   }
 
-  // Signals & Follow-Ups — visible to all roles
+  // Attestation-derived actions, supporting signals, and trend data
   let orgCommitments: Awaited<ReturnType<typeof getOrgOpenCommitments>> = [];
   let orgSignals: Awaited<ReturnType<typeof getOrgRecentSignals>> = [];
+  let signalTrend: Awaited<ReturnType<typeof getOrgSignalTrend>> = { weekly: [], period: [], yearly: [] };
   try {
-    [orgCommitments, orgSignals] = await Promise.all([
+    [orgCommitments, orgSignals, signalTrend] = await Promise.all([
       getOrgOpenCommitments(profile.org_id!, { limit: 15 }),
       getOrgRecentSignals(profile.org_id!, { days: 7, limit: 50 }),
+      getOrgSignalTrend(profile.org_id!),
     ]);
   } catch {
     // Table may not exist yet — render empty state
@@ -147,78 +162,16 @@ export default async function DashboardPage() {
         />
       )}
 
-      {/* Signals & Follow-Ups — visible to all roles */}
-      {(orgCommitments.length > 0 || orgSignals.length > 0) && (
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <Activity className="h-5 w-5 text-brass" />
-            <div>
-              <h2 className="text-lg font-semibold">Signals & Follow-Ups</h2>
-              <p className="text-xs text-muted-foreground">
-                Attestation signals and open commitments across venues
-              </p>
-            </div>
-            {orgCommitments.length > 0 && (
-              <div className="ml-auto flex gap-3 text-sm">
-                {orgCommitments.filter(c => c.commitment_status === 'due').length > 0 && (
-                  <span className="text-red-600 font-semibold">
-                    {orgCommitments.filter(c => c.commitment_status === 'due').length} due
-                  </span>
-                )}
-                {orgCommitments.filter(c => c.commitment_status === 'open').length > 0 && (
-                  <span className="text-amber-600 font-semibold">
-                    {orgCommitments.filter(c => c.commitment_status === 'open').length} open
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          <SignalIntelligence
-            commitments={orgCommitments}
-            signals={orgSignals}
-          />
-        </div>
-      )}
+      {/* Unified Action Queue — commitments + violations merged by urgency */}
+      <ActionQueue
+        commitments={orgCommitments}
+        violations={{ critical, warnings, info }}
+        currentUserId={user.id}
+        currentUserName={currentUserName}
+      />
 
-      {/* Action Center — visible to all roles */}
-      <div>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Action Center</h1>
-            <p className="text-muted-foreground">
-              Active violations and enforcement actions
-            </p>
-          </div>
-          <div className="flex gap-4 text-sm">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {critical.length}
-              </div>
-              <div className="text-muted-foreground">Critical</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-600">
-                {warnings.length}
-              </div>
-              <div className="text-muted-foreground">Warnings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {info.length}
-              </div>
-              <div className="text-muted-foreground">Info</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <ViolationFeed
-            critical={critical}
-            warnings={warnings}
-            info={info}
-          />
-        </div>
-      </div>
+      {/* Signal Feed — read-only informational signals (excludes commitments) */}
+      <SignalFeed signals={orgSignals} trendData={signalTrend} />
     </div>
   );
 }
