@@ -3,15 +3,19 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login', '/coming-soon', '/api/landing', '/share', '/api/share', '/accept-invite'];
+const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login', '/host-stand/login', '/coming-soon', '/api/landing', '/share', '/api/share', '/accept-invite'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
 
-  // Marketing domain — serve landing page on root only, skip auth
+  // Marketing domain — serve landing page on root only for unauthenticated visitors
   if (hostname.includes('prime-cost.com') && pathname === '/') {
-    return NextResponse.rewrite(new URL('/coming-soon.html', request.url));
+    const hasSession = request.cookies.getAll().some(c => c.name.includes('-auth-token'));
+    const hasLegacy = request.cookies.get('user_id');
+    if (!hasSession && !hasLegacy) {
+      return NextResponse.rewrite(new URL('/coming-soon.html', request.url));
+    }
   }
 
   // Allow public routes
