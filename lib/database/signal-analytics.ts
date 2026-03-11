@@ -818,3 +818,205 @@ export async function getOrgSignalTrend(orgId: string): Promise<SignalTrendData>
     yearly: Array.from(monthMap.values()).sort((a, b) => a.key.localeCompare(b.key)),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Commitment Follow-Through Rates (org-level, per manager)
+// ---------------------------------------------------------------------------
+
+export interface ManagerFollowThrough {
+  manager_id: string;
+  manager_name: string | null;
+  commitments_made: number;
+  commitments_fulfilled: number;
+  commitments_unfulfilled: number;
+  commitments_open: number;
+  follow_through_rate: number; // 0-1
+}
+
+export async function getOrgFollowThroughRates(
+  orgId: string,
+  options?: { days?: number },
+): Promise<ManagerFollowThrough[]> {
+  const supabase = getServiceClient();
+  const days = options?.days ?? 90;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+    .toISOString().split('T')[0];
+
+  const { data: venues } = await (supabase as any)
+    .from('venues')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('is_active', true);
+
+  if (!venues || venues.length === 0) return [];
+  const venueIds = venues.map((v: any) => v.id);
+
+  const { data: signals, error } = await (supabase as any)
+    .from('attestation_signals')
+    .select('submitted_by, commitment_status')
+    .in('venue_id', venueIds)
+    .eq('signal_type', 'action_commitment')
+    .gte('business_date', cutoff)
+    .not('submitted_by', 'is', null);
+
+  if (error || !signals?.length) return [];
+
+  const byManager = new Map<string, {
+    made: number; fulfilled: number; unfulfilled: number; open: number;
+  }>();
+
+  for (const s of signals) {
+    if (!byManager.has(s.submitted_by)) {
+      byManager.set(s.submitted_by, { made: 0, fulfilled: 0, unfulfilled: 0, open: 0 });
+    }
+    const m = byManager.get(s.submitted_by)!;
+    m.made++;
+    if (s.commitment_status === 'fulfilled') m.fulfilled++;
+    else if (s.commitment_status === 'unfulfilled') m.unfulfilled++;
+    else m.open++;
+  }
+
+  const managerIds = [...byManager.keys()];
+  const { data: profiles } = await (supabase as any)
+    .from('user_profiles')
+    .select('id, full_name')
+    .in('id', managerIds);
+
+  const nameMap = new Map<string, string | null>();
+  for (const p of profiles || []) nameMap.set(p.id, p.full_name);
+
+  const results: ManagerFollowThrough[] = [];
+  for (const [managerId, data] of byManager) {
+    const closed = data.fulfilled + data.unfulfilled;
+    results.push({
+      manager_id: managerId,
+      manager_name: nameMap.get(managerId) || null,
+      commitments_made: data.made,
+      commitments_fulfilled: data.fulfilled,
+      commitments_unfulfilled: data.unfulfilled,
+      commitments_open: data.open,
+      follow_through_rate: closed > 0 ? data.fulfilled / closed : 0,
+    });
+  }
+
+  results.sort((a, b) => a.follow_through_rate - b.follow_through_rate);
+  return results;
+}
+
+// ---------------------------------------------------------------------------
+// Manager Command Score Trend (operator-only, 8-week sparklines)
+// ---------------------------------------------------------------------------
+
+export interface ManagerWeeklyScore {
+  week_start: string;
+  week_label: string;
+  avg_command_score: number;
+}
+
+export interface ManagerCommandTrend {
+  manager_id: string;
+  manager_name: string | null;
+  current_avg: number;
+  trend: 'improving' | 'declining' | 'stable' | 'insufficient_data';
+  weeks: ManagerWeeklyScore[];
+}
+
+export async function getManagerCommandScoreTrend(
+  orgId: string,
+): Promise<ManagerCommandTrend[]> {
+  const supabase = getServiceClient();
+  const cutoff = new Date(Date.now() - 56 * 24 * 60 * 60 * 1000)
+    .toISOString().split('T')[0];
+
+  const { data: venues } = await (supabase as any)
+    .from('venues')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('is_active', true);
+
+  if (!venues || venues.length === 0) return [];
+  const venueIds = venues.map((v: any) => v.id);
+
+  const { data, error } = await (supabase as any)
+    .from('nightly_attestations')
+    .select('submitted_by, business_date, ownership_scores')
+    .in('venue_id', venueIds)
+    .gte('business_date', cutoff)
+    .not('ownership_scores', 'is', null)
+    .not('submitted_by', 'is', null)
+    .order('business_date', { ascending: true });
+
+  if (error || !data?.length) return [];
+
+  const scored = data.filter(
+    (r: any) => r.ownership_scores?.overall_command_score != null,
+  );
+  if (scored.length === 0) return [];
+
+  // Group by manager → ISO week
+  const byManager = new Map<string, Map<string, number[]>>();
+
+  for (const row of scored) {
+    if (!byManager.has(row.submitted_by)) {
+      byManager.set(row.submitted_by, new Map());
+    }
+    const weeks = byManager.get(row.submitted_by)!;
+    const d = new Date(`${row.business_date}T00:00:00`);
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+    const weekKey = monday.toISOString().split('T')[0];
+
+    if (!weeks.has(weekKey)) weeks.set(weekKey, []);
+    weeks.get(weekKey)!.push(row.ownership_scores.overall_command_score);
+  }
+
+  const managerIds = [...byManager.keys()];
+  const { data: profiles } = await (supabase as any)
+    .from('user_profiles')
+    .select('id, full_name')
+    .in('id', managerIds);
+
+  const nameMap = new Map<string, string | null>();
+  for (const p of profiles || []) nameMap.set(p.id, p.full_name);
+
+  const results: ManagerCommandTrend[] = [];
+  for (const [managerId, weekMap] of byManager) {
+    const weeks: ManagerWeeklyScore[] = [];
+    for (const [weekStart, scores] of weekMap) {
+      const avg = scores.reduce((s, v) => s + v, 0) / scores.length;
+      const monday = new Date(`${weekStart}T00:00:00`);
+      weeks.push({
+        week_start: weekStart,
+        week_label: monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        avg_command_score: +avg.toFixed(1),
+      });
+    }
+    weeks.sort((a, b) => a.week_start.localeCompare(b.week_start));
+
+    const allScores = weeks.map((w) => w.avg_command_score);
+    const currentAvg = allScores.length > 0
+      ? +(allScores.slice(-2).reduce((s, v) => s + v, 0) / Math.min(2, allScores.length)).toFixed(1)
+      : 0;
+
+    let trend: ManagerCommandTrend['trend'] = 'insufficient_data';
+    if (weeks.length >= 4) {
+      const mid = Math.floor(weeks.length / 2);
+      const avgFirst = weeks.slice(0, mid).reduce((s, w) => s + w.avg_command_score, 0) / mid;
+      const avgSecond = weeks.slice(mid).reduce((s, w) => s + w.avg_command_score, 0) / (weeks.length - mid);
+      const diff = avgSecond - avgFirst;
+      trend = diff > 0.5 ? 'improving' : diff < -0.5 ? 'declining' : 'stable';
+    }
+
+    results.push({
+      manager_id: managerId,
+      manager_name: nameMap.get(managerId) || null,
+      current_avg: currentAvg,
+      trend,
+      weeks,
+    });
+  }
+
+  results.sort((a, b) => a.current_avg - b.current_avg);
+  return results;
+}

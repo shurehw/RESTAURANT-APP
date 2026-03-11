@@ -9,11 +9,18 @@ import { requireUser } from '@/lib/auth/require-user';
 import { getActiveViolations } from '@/lib/database/enforcement';
 import { getActiveIntelligence } from '@/lib/database/operator-intelligence';
 import { getOrgOpenCommitments } from '@/lib/database/signal-outcomes';
-import { getOrgRecentSignals, getOrgSignalTrend } from '@/lib/database/signal-analytics';
+import {
+  getOrgRecentSignals,
+  getOrgSignalTrend,
+  getOrgFollowThroughRates,
+  getManagerCommandScoreTrend,
+} from '@/lib/database/signal-analytics';
 import { IntelligenceFeed } from '@/components/operator/IntelligenceFeed';
 import { DisciplineScores } from '@/components/home/DisciplineScores';
 import { ActionQueue } from '@/components/home/ActionQueue';
 import { SignalFeed } from '@/components/home/SignalFeed';
+import { FollowThroughRate } from '@/components/home/FollowThroughRate';
+import { CommandScoreTrend } from '@/components/home/CommandScoreTrend';
 import { ShieldAlert } from 'lucide-react';
 import { getServiceClient } from '@/lib/supabase/service';
 
@@ -42,10 +49,11 @@ export default async function DashboardPage() {
     // RPC may not exist yet — render empty state
   }
 
-  // Operator-only: fetch intelligence items + enforcement scores
+  // Operator-only: fetch intelligence items + enforcement scores + command score trends
   let intelligence: any[] = [];
   let venueScores: any[] = [];
   let managerScores: any[] = [];
+  let commandScoreTrends: Awaited<ReturnType<typeof getManagerCommandScoreTrend>> = [];
   if (isOperator) {
     try {
       intelligence = await getActiveIntelligence(profile.org_id!, { limit: 30 });
@@ -95,17 +103,25 @@ export default async function DashboardPage() {
     } catch {
       // Table may not exist yet
     }
+
+    try {
+      commandScoreTrends = await getManagerCommandScoreTrend(profile.org_id!);
+    } catch {
+      // Table may not exist yet
+    }
   }
 
-  // Attestation-derived actions, supporting signals, and trend data
+  // Attestation-derived actions, supporting signals, trend data, and follow-through rates
   let orgCommitments: Awaited<ReturnType<typeof getOrgOpenCommitments>> = [];
   let orgSignals: Awaited<ReturnType<typeof getOrgRecentSignals>> = [];
   let signalTrend: Awaited<ReturnType<typeof getOrgSignalTrend>> = { weekly: [], period: [], yearly: [] };
+  let followThroughRates: Awaited<ReturnType<typeof getOrgFollowThroughRates>> = [];
   try {
-    [orgCommitments, orgSignals, signalTrend] = await Promise.all([
+    [orgCommitments, orgSignals, signalTrend, followThroughRates] = await Promise.all([
       getOrgOpenCommitments(profile.org_id!, { limit: 15 }),
       getOrgRecentSignals(profile.org_id!, { days: 7, limit: 50 }),
       getOrgSignalTrend(profile.org_id!),
+      getOrgFollowThroughRates(profile.org_id!),
     ]);
   } catch {
     // Table may not exist yet — render empty state
@@ -159,6 +175,20 @@ export default async function DashboardPage() {
         <DisciplineScores
           venueScores={venueScores}
           managerScores={managerScores}
+        />
+      )}
+
+      {/* Command Score Trend — operator only */}
+      {isOperator && commandScoreTrends.length > 0 && (
+        <CommandScoreTrend managers={commandScoreTrends} />
+      )}
+
+      {/* Commitment Follow-Through — all roles, scoped */}
+      {followThroughRates.length > 0 && (
+        <FollowThroughRate
+          managers={followThroughRates}
+          currentUserId={user.id}
+          isOperator={isOperator}
         />
       )}
 

@@ -77,16 +77,49 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [trendView, setTrendView] = useState<TrendView>('weekly');
+  const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
 
   const informationalSignals = useMemo(
     () => signals.filter((s) => s.signal_type !== 'action_commitment'),
     [signals],
   );
 
+  const entityClusters = useMemo(() => {
+    const byEntity = new Map<string, {
+      count: number; positive: number; negative: number; neutral: number; actionable: number;
+    }>();
+
+    for (const s of informationalSignals) {
+      if (!s.entity_name) continue;
+      const name = s.entity_name;
+      if (!byEntity.has(name)) {
+        byEntity.set(name, { count: 0, positive: 0, negative: 0, neutral: 0, actionable: 0 });
+      }
+      const cluster = byEntity.get(name)!;
+      cluster.count++;
+      if (s.mention_sentiment === 'positive') cluster.positive++;
+      else if (s.mention_sentiment === 'negative') cluster.negative++;
+      else if (s.mention_sentiment === 'actionable') cluster.actionable++;
+      else cluster.neutral++;
+    }
+
+    return [...byEntity.entries()]
+      .filter(([, data]) => data.count >= 2)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.count - a.count);
+  }, [informationalSignals]);
+
   const filteredSignals = useMemo(() => {
-    if (activeTab === 'all') return informationalSignals;
-    return informationalSignals.filter((s) => s.signal_type === activeTab);
-  }, [informationalSignals, activeTab]);
+    let filtered = activeTab === 'all'
+      ? informationalSignals
+      : informationalSignals.filter((s) => s.signal_type === activeTab);
+
+    if (selectedEntity) {
+      filtered = filtered.filter((s) => s.entity_name === selectedEntity);
+    }
+
+    return filtered;
+  }, [informationalSignals, activeTab, selectedEntity]);
 
   const chartData: SignalTrendBucket[] = trendData[trendView] || [];
   const hasTrend = chartData.some((b) => b.total > 0);
@@ -197,6 +230,67 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
                     <span>{s.label}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Entity Clustering */}
+          {entityClusters.length > 0 && (
+            <div>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+                Recurring Entities
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {entityClusters.map((entity) => (
+                  <button
+                    key={entity.name}
+                    onClick={() =>
+                      setSelectedEntity(selectedEntity === entity.name ? null : entity.name)
+                    }
+                    className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors ${
+                      selectedEntity === entity.name
+                        ? 'bg-brass/10 font-semibold text-brass ring-1 ring-brass/30'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span className="font-medium">{entity.name}</span>
+                    <span className="text-[10px] opacity-70">{entity.count}</span>
+                    <span className="ml-0.5 inline-flex gap-px">
+                      {entity.negative > 0 && (
+                        <span
+                          className="inline-block h-2 rounded-sm bg-red-400"
+                          style={{ width: `${Math.max(4, entity.negative * 6)}px` }}
+                        />
+                      )}
+                      {entity.actionable > 0 && (
+                        <span
+                          className="inline-block h-2 rounded-sm bg-amber-400"
+                          style={{ width: `${Math.max(4, entity.actionable * 6)}px` }}
+                        />
+                      )}
+                      {entity.neutral > 0 && (
+                        <span
+                          className="inline-block h-2 rounded-sm bg-gray-300"
+                          style={{ width: `${Math.max(4, entity.neutral * 6)}px` }}
+                        />
+                      )}
+                      {entity.positive > 0 && (
+                        <span
+                          className="inline-block h-2 rounded-sm bg-emerald-400"
+                          style={{ width: `${Math.max(4, entity.positive * 6)}px` }}
+                        />
+                      )}
+                    </span>
+                  </button>
+                ))}
+                {selectedEntity && (
+                  <button
+                    onClick={() => setSelectedEntity(null)}
+                    className="rounded-md px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear filter
+                  </button>
+                )}
               </div>
             </div>
           )}
