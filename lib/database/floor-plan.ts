@@ -66,6 +66,22 @@ export interface SectionStaffAssignment {
   created_at: string;
 }
 
+export interface ShiftTableSplit {
+  id: string;
+  org_id: string;
+  venue_id: string;
+  business_date: string;
+  shift_type: string;
+  employee_id: string;
+  table_ids: string[];
+  section_label: string;
+  section_color: string;
+  created_at: string;
+  // Joined fields
+  employee_name?: string;
+  position_name?: string;
+}
+
 export interface FloorPlan {
   sections: VenueSection[];
   tables: VenueTable[];
@@ -328,6 +344,96 @@ export async function autoPopulateFromSchedule(
   }));
 }
 
+/**
+ * Smart auto-assign: for each unassigned employee, find their most recent
+ * section assignment on the same day-of-week + shift type (last 4 weeks).
+ * Auto-creates those assignments so the floor plan pre-populates.
+ * Returns the number of auto-assignments created.
+ */
+export async function autoAssignFromHistory(
+  venueId: string,
+  orgId: string,
+  date: string,
+  shiftType: string,
+  unassignedEmployeeIds: string[],
+): Promise<number> {
+  if (unassignedEmployeeIds.length === 0) return 0;
+
+  const supabase = getServiceClient();
+
+  // Compute DOW (0=Sun, 6=Sat) for matching
+  const dow = new Date(date + 'T12:00:00').getDay();
+
+  // Look back 4 weeks for same DOW + shift type assignments
+  const lookbackDate = new Date(date + 'T12:00:00');
+  lookbackDate.setDate(lookbackDate.getDate() - 28);
+  const lookbackStr = lookbackDate.toISOString().slice(0, 10);
+
+  // Fetch recent assignments for these employees on the same DOW + shift
+  const { data: recentAssignments, error } = await (supabase as any)
+    .from('section_staff_assignments')
+    .select('employee_id, section_id, business_date')
+    .eq('venue_id', venueId)
+    .eq('shift_type', shiftType)
+    .in('employee_id', unassignedEmployeeIds)
+    .gte('business_date', lookbackStr)
+    .lt('business_date', date)
+    .order('business_date', { ascending: false });
+
+  if (error || !recentAssignments?.length) return 0;
+
+  // For each employee, pick the most frequently assigned section
+  const employeeSections = new Map<string, Map<string, number>>();
+  for (const a of recentAssignments) {
+    // Check DOW matches
+    const aDate = new Date(a.business_date + 'T12:00:00');
+    if (aDate.getDay() !== dow) continue;
+
+    if (!employeeSections.has(a.employee_id)) {
+      employeeSections.set(a.employee_id, new Map());
+    }
+    const counts = employeeSections.get(a.employee_id)!;
+    counts.set(a.section_id, (counts.get(a.section_id) || 0) + 1);
+  }
+
+  // Verify sections still exist (active)
+  const { data: activeSections } = await (supabase as any)
+    .from('venue_sections')
+    .select('id')
+    .eq('venue_id', venueId)
+    .eq('is_active', true);
+  const activeSectionIds = new Set((activeSections || []).map((s: any) => s.id));
+
+  let created = 0;
+  for (const [employeeId, sectionCounts] of employeeSections) {
+    // Pick section with highest count
+    let bestSection = '';
+    let bestCount = 0;
+    for (const [sectionId, count] of sectionCounts) {
+      if (count > bestCount && activeSectionIds.has(sectionId)) {
+        bestSection = sectionId;
+        bestCount = count;
+      }
+    }
+    if (!bestSection) continue;
+
+    // Auto-create the assignment
+    try {
+      await upsertStaffAssignment(venueId, orgId, {
+        section_id: bestSection,
+        employee_id: employeeId,
+        business_date: date,
+        shift_type: shiftType,
+      });
+      created++;
+    } catch {
+      // Skip on conflict — shouldn't happen but be safe
+    }
+  }
+
+  return created;
+}
+
 // ── Labels ──────────────────────────────────────────────────────
 
 export async function getLabelsForVenue(venueId: string): Promise<VenueLabel[]> {
@@ -432,4 +538,205 @@ export async function getFloorPlanTableMap(
     map.set(t.table_number, t.max_capacity);
   }
   return map;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// SHIFT TABLE SPLITS — Dynamic per-shift table assignments
+// ══════════════════════════════════════════════════════════════════
+
+const SPLIT_COLORS = [
+  '#EF4444', '#3B82F6', '#10B981', '#F59E0B',
+  '#8B5CF6', '#EC4899', '#14B8A6', '#F97316',
+];
+
+/**
+ * Pure function: auto-split tables into N groups using angular sweep.
+ * Groups spatially adjacent tables together by computing each table's
+ * angle from the centroid and splitting the sorted list evenly.
+ */
+export function autoSplitTables(
+  tables: VenueTable[],
+  serverCount: number,
+): { label: string; color: string; table_ids: string[] }[] {
+  if (serverCount <= 0 || tables.length === 0) return [];
+
+  const n = Math.min(serverCount, tables.length);
+
+  // Compute centroid
+  const cx = tables.reduce((s, t) => s + t.pos_x + t.width / 2, 0) / tables.length;
+  const cy = tables.reduce((s, t) => s + t.pos_y + t.height / 2, 0) / tables.length;
+
+  // Compute angle from centroid for each table
+  const withAngle = tables.map((t) => ({
+    id: t.id,
+    angle: Math.atan2(t.pos_y + t.height / 2 - cy, t.pos_x + t.width / 2 - cx),
+    isBar: t.shape === 'bar_seat',
+  }));
+
+  // Separate bar seats — group them together as one section
+  const barTables = withAngle.filter((t) => t.isBar);
+  const floorTables = withAngle.filter((t) => !t.isBar);
+
+  // Sort floor tables by angle
+  floorTables.sort((a, b) => a.angle - b.angle);
+
+  const groups: { label: string; color: string; table_ids: string[] }[] = [];
+
+  // If there are bar seats and enough servers, give bar its own section
+  const barGetsOwnSection = barTables.length > 0 && n > 1;
+  const floorServerCount = barGetsOwnSection ? n - 1 : n;
+
+  // Split floor tables into floorServerCount groups
+  const perGroup = Math.ceil(floorTables.length / Math.max(1, floorServerCount));
+  for (let i = 0; i < floorServerCount; i++) {
+    const slice = floorTables.slice(i * perGroup, (i + 1) * perGroup);
+    if (slice.length === 0) continue;
+    groups.push({
+      label: `Section ${groups.length + 1}`,
+      color: SPLIT_COLORS[groups.length % SPLIT_COLORS.length],
+      table_ids: slice.map((t) => t.id),
+    });
+  }
+
+  // Add bar section
+  if (barGetsOwnSection) {
+    groups.push({
+      label: 'Bar',
+      color: SPLIT_COLORS[groups.length % SPLIT_COLORS.length],
+      table_ids: barTables.map((t) => t.id),
+    });
+  } else if (barTables.length > 0 && groups.length > 0) {
+    // Not enough servers for bar to be separate — add bar to last group
+    groups[groups.length - 1].table_ids.push(...barTables.map((t) => t.id));
+  }
+
+  return groups;
+}
+
+/** Fetch existing shift splits for a venue/date/shift. */
+export async function getShiftSplits(
+  venueId: string,
+  date: string,
+  shiftType: string,
+): Promise<ShiftTableSplit[]> {
+  const supabase = getServiceClient();
+  const { data, error } = await (supabase as any)
+    .from('shift_table_splits')
+    .select('*, employee:employees(first_name, last_name, position:positions(name))')
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .eq('shift_type', shiftType);
+
+  if (error) {
+    console.error('[floor-plan] Failed to fetch shift splits:', error.message);
+    return [];
+  }
+
+  return (data || []).map((row: any) => ({
+    ...row,
+    employee_name: row.employee
+      ? `${row.employee.first_name} ${row.employee.last_name}`
+      : 'Unknown',
+    position_name: row.employee?.position?.name || 'Unknown',
+    employee: undefined,
+  }));
+}
+
+/** Upsert a single shift split row. */
+export async function upsertShiftSplit(
+  venueId: string,
+  orgId: string,
+  split: {
+    employee_id: string;
+    table_ids: string[];
+    section_label: string;
+    section_color: string;
+    business_date: string;
+    shift_type: string;
+  },
+): Promise<ShiftTableSplit> {
+  const supabase = getServiceClient();
+  const { data, error } = await (supabase as any)
+    .from('shift_table_splits')
+    .upsert(
+      {
+        venue_id: venueId,
+        org_id: orgId,
+        ...split,
+      },
+      { onConflict: 'venue_id,business_date,shift_type,employee_id' },
+    )
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/** Delete all splits for a venue/date/shift (for re-split). */
+export async function deleteShiftSplits(
+  venueId: string,
+  date: string,
+  shiftType: string,
+): Promise<void> {
+  const supabase = getServiceClient();
+  const { error } = await (supabase as any)
+    .from('shift_table_splits')
+    .delete()
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .eq('shift_type', shiftType);
+
+  if (error) {
+    console.error('[floor-plan] Failed to delete shift splits:', error.message);
+    throw error;
+  }
+}
+
+/** Move one table from one employee to another within a shift. */
+export async function reassignTable(
+  venueId: string,
+  date: string,
+  shiftType: string,
+  tableId: string,
+  fromEmployeeId: string,
+  toEmployeeId: string,
+): Promise<void> {
+  const supabase = getServiceClient();
+
+  // Remove from source
+  const { data: fromRow } = await (supabase as any)
+    .from('shift_table_splits')
+    .select('id, table_ids')
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .eq('shift_type', shiftType)
+    .eq('employee_id', fromEmployeeId)
+    .single();
+
+  if (fromRow) {
+    const newIds = (fromRow.table_ids as string[]).filter((id: string) => id !== tableId);
+    await (supabase as any)
+      .from('shift_table_splits')
+      .update({ table_ids: newIds })
+      .eq('id', fromRow.id);
+  }
+
+  // Add to target
+  const { data: toRow } = await (supabase as any)
+    .from('shift_table_splits')
+    .select('id, table_ids')
+    .eq('venue_id', venueId)
+    .eq('business_date', date)
+    .eq('shift_type', shiftType)
+    .eq('employee_id', toEmployeeId)
+    .single();
+
+  if (toRow) {
+    const newIds = [...(toRow.table_ids as string[]), tableId];
+    await (supabase as any)
+      .from('shift_table_splits')
+      .update({ table_ids: newIds })
+      .eq('id', toRow.id);
+  }
 }
