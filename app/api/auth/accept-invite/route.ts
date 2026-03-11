@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createClient, createAdminClient } from '@/lib/supabase/server';
 import { getInviteByToken, markInviteAccepted } from '@/lib/database/team';
 import { getServiceClient } from '@/lib/supabase/service';
 import { ROLE_LABELS } from '@/lib/nav/role-permissions';
@@ -180,8 +180,9 @@ export async function POST(request: NextRequest) {
     // 5. Mark invite accepted
     await markInviteAccepted(invite.id);
 
-    // 6. Sign in via Supabase so session cookies are set
-    const { error: signInError } = await adminClient.auth.signInWithPassword({
+    // 6. Sign in via cookie-aware client so session cookies are set on the browser
+    const supabaseAuth = await createClient();
+    const { error: signInError } = await supabaseAuth.auth.signInWithPassword({
       email: invite.email.toLowerCase(),
       password,
     });
