@@ -657,6 +657,9 @@ export interface SignalTrendBucket {
   menu: number;
   staffing: number;
   entertainment: number;
+  comps: number;
+  culinary: number;
+  revenue: number;
   total: number;
 }
 
@@ -667,7 +670,7 @@ export interface SignalTrendData {
 }
 
 function emptyBucket(key: string, label: string): SignalTrendBucket {
-  return { key, label, employee: 0, issue: 0, guest: 0, menu: 0, staffing: 0, entertainment: 0, total: 0 };
+  return { key, label, employee: 0, issue: 0, guest: 0, menu: 0, staffing: 0, entertainment: 0, comps: 0, culinary: 0, revenue: 0, total: 0 };
 }
 
 function incrementBucket(bucket: SignalTrendBucket, signalType: string) {
@@ -679,6 +682,9 @@ function incrementBucket(bucket: SignalTrendBucket, signalType: string) {
     case 'menu_item': bucket.menu++; break;
     case 'staffing_signal': bucket.staffing++; break;
     case 'entertainment': bucket.entertainment++; break;
+    case 'comp_pattern': bucket.comps++; break;
+    case 'culinary': bucket.culinary++; break;
+    case 'revenue_insight': bucket.revenue++; break;
   }
 }
 

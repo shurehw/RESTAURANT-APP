@@ -10,6 +10,9 @@ import {
   Users,
   UtensilsCrossed,
   Music,
+  DollarSign,
+  ChefHat,
+  TrendingUp,
   type LucideIcon,
   Radio,
 } from 'lucide-react';
@@ -33,6 +36,9 @@ const SIGNAL_TYPE_CONFIG: Record<string, { icon: LucideIcon; color: string; char
   guest_insight: { icon: Star, color: 'text-purple-600', chartColor: '#9333ea', label: 'Guest' },
   staffing_signal: { icon: Users, color: 'text-orange-600', chartColor: '#ea580c', label: 'Staffing' },
   entertainment: { icon: Music, color: 'text-pink-600', chartColor: '#db2777', label: 'Entertainment' },
+  comp_pattern: { icon: DollarSign, color: 'text-amber-600', chartColor: '#d97706', label: 'Comps' },
+  culinary: { icon: ChefHat, color: 'text-teal-600', chartColor: '#0d9488', label: 'Culinary' },
+  revenue_insight: { icon: TrendingUp, color: 'text-indigo-600', chartColor: '#4f46e5', label: 'Revenue' },
 };
 
 const CHART_SERIES = [
@@ -42,6 +48,9 @@ const CHART_SERIES = [
   { key: 'menu', label: 'Menu', color: '#059669' },
   { key: 'staffing', label: 'Staffing', color: '#ea580c' },
   { key: 'entertainment', label: 'Entertainment', color: '#db2777' },
+  { key: 'comps', label: 'Comps', color: '#d97706' },
+  { key: 'culinary', label: 'Culinary', color: '#0d9488' },
+  { key: 'revenue', label: 'Revenue', color: '#4f46e5' },
 ] as const;
 
 const FEED_TABS = [
@@ -52,6 +61,9 @@ const FEED_TABS = [
   { id: 'menu_item', label: 'Menu' },
   { id: 'staffing_signal', label: 'Staffing' },
   { id: 'entertainment', label: 'Entertainment' },
+  { id: 'comp_pattern', label: 'Comps' },
+  { id: 'culinary', label: 'Culinary' },
+  { id: 'revenue_insight', label: 'Revenue' },
 ];
 
 type TrendView = 'weekly' | 'period' | 'yearly';
@@ -168,7 +180,7 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
                       name={s.label}
                       stackId="signals"
                       fill={s.color}
-                      radius={s.key === 'entertainment' ? [2, 2, 0, 0] : undefined}
+                      radius={s.key === 'revenue' ? [2, 2, 0, 0] : undefined}
                     />
                   ))}
                 </BarChart>

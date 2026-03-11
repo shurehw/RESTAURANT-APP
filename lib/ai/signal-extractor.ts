@@ -9,6 +9,10 @@
  *   - operational_issue: equipment, systems, process breakdowns
  *   - guest_insight: VIP mentions, regulars, notable interactions
  *   - staffing_signal: call-outs, coverage gaps, scheduling problems
+ *   - entertainment: DJ, live music, performers, events
+ *   - comp_pattern: comp behavior trends, policy compliance, buyback patterns
+ *   - culinary: kitchen ops, 86'd items, prep issues, food quality
+ *   - revenue_insight: demand patterns, lost opportunities, capacity utilization
  *
  *   Tone (1-5 each):
  *   - detail_depth: names, numbers, tables vs. vague generalizations
@@ -36,7 +40,10 @@ export type SignalType =
   | 'operational_issue'
   | 'guest_insight'
   | 'staffing_signal'
-  | 'entertainment';
+  | 'entertainment'
+  | 'comp_pattern'
+  | 'culinary'
+  | 'revenue_insight';
 
 export type MentionSentiment = 'positive' | 'negative' | 'neutral' | 'actionable';
 export type CommitmentStatus = 'open' | 'due' | 'fulfilled' | 'unfulfilled' | 'superseded';
@@ -202,6 +209,22 @@ EXTRACT these signal types:
    - mention_context: What happened and crowd/revenue impact
    - mention_sentiment: positive (drove energy/revenue), negative (issue/no-show/bad fit), neutral (informational)
 
+8. **comp_pattern** — Comp behavior patterns, policy compliance, buyback trends, excessive comping. Include:
+   - entity_name: Server/bartender name if a specific person is comping, or comp type (buyback, manager comp, kitchen error, etc.)
+   - mention_context: What pattern was observed and business impact
+   - mention_sentiment: negative (excessive/policy violation), neutral (normal operation), actionable (needs investigation)
+
+9. **culinary** — Kitchen operations: 86'd items, prep issues, ticket times, food quality, food cost concerns, vendor/delivery problems. Include:
+   - entity_name: Dish name, station, or area affected if mentioned
+   - entity_type: category (prep, quality, ticket_time, 86d, food_cost, vendor, etc.)
+   - mention_context: What happened and service impact
+   - mention_sentiment: negative (quality issue/failure), neutral (informational), positive (kitchen executed well)
+
+10. **revenue_insight** — Revenue observations: demand patterns, lost opportunities, weather/event impact, pricing signals, capacity utilization. Include:
+   - entity_name: Revenue center or daypart if specific (bar, dining room, patio, lunch, dinner, late night)
+   - mention_context: What demand or revenue pattern was observed
+   - mention_sentiment: positive (strong demand/beat forecast), negative (slow/lost revenue), neutral (informational)
+
 RULES:
 - Only extract signals you are confident about (confidence >= 0.7)
 - One signal per distinct entity/action — don't duplicate
@@ -279,7 +302,7 @@ Return a JSON object with two keys:
 {
   "signals": [
     {
-      "signal_type": "employee_mention" | "action_commitment" | "menu_item" | "operational_issue" | "guest_insight" | "staffing_signal" | "entertainment",
+      "signal_type": "employee_mention" | "action_commitment" | "menu_item" | "operational_issue" | "guest_insight" | "staffing_signal" | "entertainment" | "comp_pattern" | "culinary" | "revenue_insight",
       "extracted_text": "the exact phrase from the manager's text",
       "source_field": "the field name it came from",
       "confidence": 0.7 to 1.0,
