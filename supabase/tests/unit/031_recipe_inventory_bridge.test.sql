@@ -18,7 +18,10 @@ BEGIN
   v_expected_cost := 3.05;
 
   -- Execute
-  v_calculated_cost := calculate_recipe_cost('test-recipe-001', 'test-venue-001');
+  v_calculated_cost := calculate_recipe_cost(
+    '00000000-0000-0000-0004-000000000001',
+    '00000000-0000-0000-0001-000000000001'
+  );
 
   -- Assert
   IF ABS(v_calculated_cost - v_expected_cost) > 0.01 THEN
@@ -39,7 +42,10 @@ BEGIN
   v_expected_cost := 15.50;
 
   -- Execute
-  v_calculated_cost := calculate_recipe_cost('test-recipe-003', 'test-venue-001');
+  v_calculated_cost := calculate_recipe_cost(
+    '00000000-0000-0000-0004-000000000003',
+    '00000000-0000-0000-0001-000000000001'
+  );
 
   -- Assert
   IF ABS(v_calculated_cost - v_expected_cost) > 0.01 THEN
@@ -55,13 +61,16 @@ DECLARE
   v_history_count INT;
 BEGIN
   -- Execute
-  PERFORM calculate_recipe_cost('test-recipe-001', 'test-venue-001');
+  PERFORM calculate_recipe_cost(
+    '00000000-0000-0000-0004-000000000001',
+    '00000000-0000-0000-0001-000000000001'
+  );
 
   -- Check history was created
   SELECT COUNT(*) INTO v_history_count
   FROM recipe_costs
-  WHERE recipe_id = 'test-recipe-001'
-    AND venue_id = 'test-venue-001';
+  WHERE recipe_id = '00000000-0000-0000-0004-000000000001'
+    AND venue_id  = '00000000-0000-0000-0001-000000000001';
 
   -- Assert
   IF v_history_count = 0 THEN
@@ -78,16 +87,19 @@ DECLARE
   v_new_item_id UUID;
 BEGIN
   -- Create item with no inventory balance
-  INSERT INTO items (id, name, sku, base_uom, is_active)
-  VALUES ('test-item-999', 'New Item', 'NEW-999', 'ea', true)
+  INSERT INTO items (id, organization_id, sku, name, category, base_uom, is_active)
+  VALUES ('00000000-0000-0000-0003-000000000099', '00000000-0000-0000-0000-000000000001', 'NEW-999', 'New Item', 'food', 'ea', true)
   RETURNING id INTO v_new_item_id;
 
   -- Add to recipe
   INSERT INTO recipe_components (recipe_id, item_id, quantity, unit)
-  VALUES ('test-recipe-001', v_new_item_id, 1.0, 'ea');
+  VALUES ('00000000-0000-0000-0004-000000000001', v_new_item_id, 1.0, 'ea');
 
   -- Execute (should not fail, should use 0 for missing cost)
-  v_calculated_cost := calculate_recipe_cost('test-recipe-001', 'test-venue-001');
+  v_calculated_cost := calculate_recipe_cost(
+    '00000000-0000-0000-0004-000000000001',
+    '00000000-0000-0000-0001-000000000001'
+  );
 
   -- Assert (should still calculate)
   IF v_calculated_cost IS NULL THEN
@@ -103,7 +115,11 @@ BEGIN
   -- Try to insert duplicate
   BEGIN
     INSERT INTO recipe_components (recipe_id, item_id, quantity, unit)
-    VALUES ('test-recipe-001', 'test-item-001', 0.75, 'lb');
+    VALUES (
+      '00000000-0000-0000-0004-000000000001',
+      '00000000-0000-0000-0003-000000000001',
+      0.75, 'lb'
+    );
 
     RAISE EXCEPTION 'Duplicate recipe component was allowed';
   EXCEPTION
@@ -118,7 +134,7 @@ DECLARE
   v_calculated_cost NUMERIC;
 BEGIN
   -- Execute with NULL venue_id
-  v_calculated_cost := calculate_recipe_cost('test-recipe-001', NULL);
+  v_calculated_cost := calculate_recipe_cost('00000000-0000-0000-0004-000000000001', NULL);
 
   -- Should calculate based on any available inventory
   IF v_calculated_cost IS NULL THEN
@@ -134,7 +150,11 @@ BEGIN
   -- Try to insert negative quantity
   BEGIN
     INSERT INTO recipe_components (recipe_id, item_id, quantity, unit)
-    VALUES ('test-recipe-001', 'test-item-003', -1.0, 'lb');
+    VALUES (
+      '00000000-0000-0000-0004-000000000001',
+      '00000000-0000-0000-0003-000000000003',
+      -1.0, 'lb'
+    );
 
     RAISE EXCEPTION 'Negative quantity was allowed';
   EXCEPTION
@@ -152,7 +172,8 @@ BEGIN
   -- Get original timestamp
   SELECT updated_at INTO v_original_updated_at
   FROM recipe_components
-  WHERE recipe_id = 'test-recipe-001' AND item_id = 'test-item-001';
+  WHERE recipe_id = '00000000-0000-0000-0004-000000000001'
+    AND item_id   = '00000000-0000-0000-0003-000000000001';
 
   -- Wait a moment
   PERFORM pg_sleep(0.1);
@@ -160,12 +181,14 @@ BEGIN
   -- Update the component
   UPDATE recipe_components
   SET quantity = 0.6
-  WHERE recipe_id = 'test-recipe-001' AND item_id = 'test-item-001';
+  WHERE recipe_id = '00000000-0000-0000-0004-000000000001'
+    AND item_id   = '00000000-0000-0000-0003-000000000001';
 
   -- Get new timestamp
   SELECT updated_at INTO v_new_updated_at
   FROM recipe_components
-  WHERE recipe_id = 'test-recipe-001' AND item_id = 'test-item-001';
+  WHERE recipe_id = '00000000-0000-0000-0004-000000000001'
+    AND item_id   = '00000000-0000-0000-0003-000000000001';
 
   -- Assert
   IF v_new_updated_at <= v_original_updated_at THEN

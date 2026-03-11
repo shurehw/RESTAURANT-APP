@@ -16,7 +16,7 @@ DECLARE
 BEGIN
   -- Execute
   v_alert_id := create_alert(
-    'test-venue-001',
+    '00000000-0000-0000-0001-000000000001',
     'labor_overage',
     'critical',
     'Labor cost exceeded budget',
@@ -49,7 +49,7 @@ DECLARE
 BEGIN
   -- Create alert
   v_alert_id := create_alert(
-    'test-venue-001',
+    '00000000-0000-0000-0001-000000000001',
     'cogs_high',
     'warning',
     'COGS high',
@@ -79,7 +79,7 @@ DECLARE
 BEGIN
   -- Create alert
   v_alert_id := create_alert(
-    'test-venue-001',
+    '00000000-0000-0000-0001-000000000001',
     'sales_low',
     'info',
     'Sales below target',
@@ -88,7 +88,7 @@ BEGIN
   );
 
   -- Acknowledge alert
-  PERFORM acknowledge_alert(v_alert_id, 'test-user-004');
+  PERFORM acknowledge_alert(v_alert_id, '00000000-0000-0000-0006-000000000004');
 
   -- Verify acknowledgment
   SELECT acknowledged, acknowledged_by INTO v_acknowledged, v_acknowledged_by
@@ -100,7 +100,7 @@ BEGIN
     RAISE EXCEPTION 'Alert not marked as acknowledged';
   END IF;
 
-  IF v_acknowledged_by != 'test-user-004' THEN
+  IF v_acknowledged_by != '00000000-0000-0000-0006-000000000004' THEN
     RAISE EXCEPTION 'Alert acknowledged_by incorrect';
   END IF;
 
@@ -115,20 +115,20 @@ DECLARE
 BEGIN
   -- Create and acknowledge alert
   v_alert_id := create_alert(
-    'test-venue-001',
-    'test_alert',
+    '00000000-0000-0000-0001-000000000001',
+    'anomaly_detected',
     'info',
     'Test',
     'Test message',
     NULL
   );
 
-  PERFORM acknowledge_alert(v_alert_id, 'test-user-004');
+  PERFORM acknowledge_alert(v_alert_id, '00000000-0000-0000-0006-000000000004');
 
   -- Try to acknowledge again
-  v_result := acknowledge_alert(v_alert_id, 'test-user-001');
+  v_result := acknowledge_alert(v_alert_id, '00000000-0000-0000-0006-000000000001');
 
-  -- Assert (should return false)
+  -- Assert (should return false — already acknowledged)
   IF v_result = true THEN
     RAISE EXCEPTION 'Should not be able to re-acknowledge alert';
   END IF;
@@ -139,10 +139,10 @@ END $$;
 -- Test 5: Daily budget unique constraint
 DO $$
 BEGIN
-  -- Try to insert duplicate budget
+  -- Try to insert duplicate budget for venue/date already seeded by fixture
   BEGIN
     INSERT INTO daily_budgets (venue_id, business_date, sales_budget, labor_budget, cogs_budget_pct, prime_cost_budget_pct)
-    VALUES ('test-venue-001', CURRENT_DATE, 1500.00, 300.00, 32.00, 62.00);
+    VALUES ('00000000-0000-0000-0001-000000000001', CURRENT_DATE, 1500.00, 300.00, 32.00, 62.00);
 
     RAISE EXCEPTION 'Duplicate daily budget was allowed';
   EXCEPTION
@@ -157,7 +157,7 @@ BEGIN
   -- Try to insert invalid COGS percentage (>100)
   BEGIN
     INSERT INTO daily_budgets (venue_id, business_date, sales_budget, labor_budget, cogs_budget_pct, prime_cost_budget_pct)
-    VALUES ('test-venue-001', CURRENT_DATE + INTERVAL '10 days', 1000.00, 250.00, 150.00, 60.00);
+    VALUES ('00000000-0000-0000-0001-000000000001', CURRENT_DATE + INTERVAL '10 days', 1000.00, 250.00, 150.00, 60.00);
 
     RAISE EXCEPTION 'Invalid COGS percentage was allowed';
   EXCEPTION
@@ -172,7 +172,7 @@ BEGIN
   -- Try to insert negative sales budget
   BEGIN
     INSERT INTO daily_budgets (venue_id, business_date, sales_budget, labor_budget, cogs_budget_pct, prime_cost_budget_pct)
-    VALUES ('test-venue-001', CURRENT_DATE + INTERVAL '11 days', -500.00, 250.00, 30.00, 60.00);
+    VALUES ('00000000-0000-0000-0001-000000000001', CURRENT_DATE + INTERVAL '11 days', -500.00, 250.00, 30.00, 60.00);
 
     RAISE EXCEPTION 'Negative sales budget was allowed';
   EXCEPTION
@@ -189,17 +189,17 @@ DECLARE
 BEGIN
   -- Create alert with complex metadata
   v_alert_id := create_alert(
-    'test-venue-001',
+    '00000000-0000-0000-0001-000000000001',
     'cost_spike',
     'critical',
     'Cost spike detected',
     'Chicken breast price increased 25%',
     jsonb_build_object(
-      'item_id', 'test-item-001',
-      'old_price', 5.00,
-      'new_price', 6.25,
+      'item_id',      '00000000-0000-0000-0003-000000000001',
+      'old_price',    5.00,
+      'new_price',    6.25,
       'variance_pct', 25.0,
-      'z_score', 3.2
+      'z_score',      3.2
     )
   );
 
@@ -209,7 +209,7 @@ BEGIN
   WHERE id = v_alert_id;
 
   -- Assert metadata stored correctly
-  IF v_metadata->>'item_id' != 'test-item-001' THEN
+  IF v_metadata->>'item_id' != '00000000-0000-0000-0003-000000000001' THEN
     RAISE EXCEPTION 'Alert metadata not stored correctly';
   END IF;
 
@@ -220,14 +220,14 @@ BEGIN
   RAISE NOTICE 'PASS: Alert with metadata';
 END $$;
 
--- Test 9: Alert severity enum validation
+-- Test 9: Alert severity validation
 DO $$
 BEGIN
-  -- Try to insert invalid severity
+  -- Try to insert invalid severity (CHECK constraint → check_violation)
   BEGIN
     PERFORM create_alert(
-      'test-venue-001',
-      'test_alert',
+      '00000000-0000-0000-0001-000000000001',
+      'anomaly_detected',
       'super_critical', -- Invalid
       'Test',
       'Test message',
@@ -236,18 +236,18 @@ BEGIN
 
     RAISE EXCEPTION 'Invalid severity was allowed';
   EXCEPTION
-    WHEN invalid_text_representation THEN
-      RAISE NOTICE 'PASS: Alert severity enum validation';
+    WHEN check_violation THEN
+      RAISE NOTICE 'PASS: Alert severity validation';
   END;
 END $$;
 
--- Test 10: Alert type enum validation
+-- Test 10: Alert type validation
 DO $$
 BEGIN
-  -- Try to insert invalid alert type
+  -- Try to insert invalid alert type (CHECK constraint → check_violation)
   BEGIN
     PERFORM create_alert(
-      'test-venue-001',
+      '00000000-0000-0000-0001-000000000001',
       'invalid_type', -- Invalid
       'warning',
       'Test',
@@ -257,8 +257,8 @@ BEGIN
 
     RAISE EXCEPTION 'Invalid alert type was allowed';
   EXCEPTION
-    WHEN invalid_text_representation THEN
-      RAISE NOTICE 'PASS: Alert type enum validation';
+    WHEN check_violation THEN
+      RAISE NOTICE 'PASS: Alert type validation';
   END;
 END $$;
 
@@ -271,7 +271,7 @@ BEGIN
   INSERT INTO alert_rules (rule_name, rule_type, metric, condition, threshold_pct, severity, is_active)
   VALUES ('Test Inactive Rule', 'variance', 'test_metric', '>', 10, 'info', false);
 
-  -- Verify it's not in active index
+  -- Verify it's not in active rules
   SELECT COUNT(*) INTO v_rule_count
   FROM alert_rules
   WHERE rule_name = 'Test Inactive Rule' AND is_active = true;
@@ -292,7 +292,8 @@ BEGIN
   -- Get original timestamp
   SELECT updated_at INTO v_original_updated_at
   FROM daily_budgets
-  WHERE venue_id = 'test-venue-001' AND business_date = CURRENT_DATE;
+  WHERE venue_id      = '00000000-0000-0000-0001-000000000001'
+    AND business_date = CURRENT_DATE;
 
   -- Wait a moment
   PERFORM pg_sleep(0.1);
@@ -300,12 +301,14 @@ BEGIN
   -- Update the budget
   UPDATE daily_budgets
   SET sales_budget = 1100.00
-  WHERE venue_id = 'test-venue-001' AND business_date = CURRENT_DATE;
+  WHERE venue_id      = '00000000-0000-0000-0001-000000000001'
+    AND business_date = CURRENT_DATE;
 
   -- Get new timestamp
   SELECT updated_at INTO v_new_updated_at
   FROM daily_budgets
-  WHERE venue_id = 'test-venue-001' AND business_date = CURRENT_DATE;
+  WHERE venue_id      = '00000000-0000-0000-0001-000000000001'
+    AND business_date = CURRENT_DATE;
 
   -- Assert
   IF v_new_updated_at <= v_original_updated_at THEN
