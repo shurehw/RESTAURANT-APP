@@ -26,6 +26,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { useVenue } from '@/components/providers/VenueProvider';
 import type { OrgSignalItem } from '@/lib/database/signal-analytics';
 import type { SignalTrendData, SignalTrendBucket } from '@/lib/database/signal-analytics';
 
@@ -74,14 +75,21 @@ interface SignalFeedProps {
 }
 
 export function SignalFeed({ signals, trendData }: SignalFeedProps) {
+  const { selectedVenue, isAllVenues } = useVenue();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [trendView, setTrendView] = useState<TrendView>('weekly');
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
 
+  // Filter by selected venue (show all when "All Venues" selected)
+  const venueSignals = useMemo(
+    () => isAllVenues ? signals : signals.filter(s => s.venue_name === selectedVenue?.name),
+    [signals, selectedVenue?.name, isAllVenues],
+  );
+
   const informationalSignals = useMemo(
-    () => signals.filter((s) => s.signal_type !== 'action_commitment'),
-    [signals],
+    () => venueSignals.filter((s) => s.signal_type !== 'action_commitment'),
+    [venueSignals],
   );
 
   const entityClusters = useMemo(() => {

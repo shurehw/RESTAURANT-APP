@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useVenue } from '@/components/providers/VenueProvider';
 import type { OrgOpenCommitment } from '@/lib/database/signal-outcomes';
 
 interface Violation {
@@ -45,12 +46,24 @@ export function ActionQueue({
   currentUserId,
   currentUserName,
 }: ActionQueueProps) {
+  const { selectedVenue, isAllVenues } = useVenue();
   const [isOpen, setIsOpen] = useState(true);
+
+  // Filter by selected venue (show all when "All Venues" selected)
+  const filteredCommitments = useMemo(() =>
+    isAllVenues ? commitments : commitments.filter(c => c.venue_name === selectedVenue?.name),
+    [commitments, selectedVenue?.name, isAllVenues],
+  );
+  const filteredViolations = useMemo(() => {
+    if (isAllVenues) return violations;
+    const f = (v: Violation[]) => v.filter(x => x.venue_name === selectedVenue?.name);
+    return { critical: f(violations.critical), warnings: f(violations.warnings), info: f(violations.info) };
+  }, [violations, selectedVenue?.name, isAllVenues]);
 
   const items = useMemo(() => {
     const result: ActionItem[] = [];
 
-    for (const c of commitments) {
+    for (const c of filteredCommitments) {
       const urgency =
         c.commitment_status === 'due'
           ? 100 + c.days_open
@@ -61,9 +74,9 @@ export function ActionQueue({
     }
 
     const allViolations = [
-      ...violations.critical.map((v) => ({ ...v, _sev: 'critical' as const })),
-      ...violations.warnings.map((v) => ({ ...v, _sev: 'warning' as const })),
-      ...violations.info.map((v) => ({ ...v, _sev: 'info' as const })),
+      ...filteredViolations.critical.map((v) => ({ ...v, _sev: 'critical' as const })),
+      ...filteredViolations.warnings.map((v) => ({ ...v, _sev: 'warning' as const })),
+      ...filteredViolations.info.map((v) => ({ ...v, _sev: 'info' as const })),
     ];
 
     for (const v of allViolations) {
@@ -72,12 +85,12 @@ export function ActionQueue({
     }
 
     return result.sort((a, b) => b.urgency - a.urgency);
-  }, [commitments, violations]);
+  }, [filteredCommitments, filteredViolations]);
 
-  const dueCount = commitments.filter((c) => c.commitment_status === 'due').length;
-  const openCount = commitments.filter((c) => c.commitment_status === 'open').length;
-  const criticalCount = violations.critical.length;
-  const warningCount = violations.warnings.length;
+  const dueCount = filteredCommitments.filter((c) => c.commitment_status === 'due').length;
+  const openCount = filteredCommitments.filter((c) => c.commitment_status === 'open').length;
+  const criticalCount = filteredViolations.critical.length;
+  const warningCount = filteredViolations.warnings.length;
 
   if (items.length === 0) return null;
 
