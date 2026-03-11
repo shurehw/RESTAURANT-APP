@@ -473,6 +473,17 @@ function InviteMemberDialog({
         setRole('manager');
         setAllVenues(true);
         setSelectedVenueIds([]);
+        // If email delivery failed, show the invite link so user can share manually
+        if (data.emailSent === false && data.inviteUrl) {
+          const copyLink = confirm(
+            `Invite created but the email could not be sent.\n\nCopy the invite link to send manually?`
+          );
+          if (copyLink) {
+            navigator.clipboard.writeText(data.inviteUrl).catch(() => {
+              prompt('Copy this invite link:', data.inviteUrl);
+            });
+          }
+        }
       } else {
         const detail = data.details?.fieldErrors
           ? Object.entries(data.details.fieldErrors).map(([k, v]) => `${k}: ${v}`).join(', ')

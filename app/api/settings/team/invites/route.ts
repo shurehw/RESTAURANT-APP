@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
       expiresInDays: 7,
     });
 
+    let emailSent = false;
     try {
       const resend = getResendClient();
       await resend.emails.send({
@@ -130,11 +131,17 @@ export async function POST(request: NextRequest) {
         subject: `You're invited to join ${org?.name || 'OpSOS'}`,
         html,
       });
+      emailSent = true;
     } catch (emailError) {
       console.error('[team-invites] Failed to send invite email:', emailError);
-      // Don't fail the whole request — invite is created in DB
     }
 
-    return NextResponse.json({ success: true, invite });
+    return NextResponse.json({
+      success: true,
+      invite,
+      emailSent,
+      // Always return the invite URL so UI can show it as fallback
+      inviteUrl,
+    });
   });
 }
