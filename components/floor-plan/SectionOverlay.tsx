@@ -12,7 +12,7 @@ export function SectionOverlay({ section, tables }: SectionOverlayProps) {
   if (sectionTables.length === 0) return null;
 
   // Compute bounding box from table positions (with padding)
-  const PAD = 3; // % padding around bounding box
+  const PAD = 2;
   const minX = Math.max(0, Math.min(...sectionTables.map((t) => t.pos_x)) - PAD);
   const minY = Math.max(0, Math.min(...sectionTables.map((t) => t.pos_y)) - PAD);
   const maxX = Math.min(100, Math.max(...sectionTables.map((t) => t.pos_x + t.width)) + PAD);
@@ -20,20 +20,19 @@ export function SectionOverlay({ section, tables }: SectionOverlayProps) {
 
   return (
     <div
-      className="absolute rounded-lg border-2 border-dashed pointer-events-none"
+      className="absolute rounded-lg pointer-events-none"
       style={{
         left: `${minX}%`,
         top: `${minY}%`,
         width: `${maxX - minX}%`,
         height: `${maxY - minY}%`,
-        backgroundColor: `${section.color}18`,
-        borderColor: `${section.color}60`,
+        border: `1px solid ${section.color}15`,
         zIndex: 1,
       }}
     >
       <span
-        className="absolute -top-5 left-1 text-[10px] font-semibold px-1 rounded"
-        style={{ color: section.color, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}
+        className="absolute -top-3.5 left-1.5 text-[8px] font-medium tracking-wider uppercase px-1"
+        style={{ color: `${section.color}60` }}
       >
         {section.name}
       </span>

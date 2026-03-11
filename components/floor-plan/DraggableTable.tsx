@@ -8,18 +8,24 @@ interface DraggableTableProps {
   table: VenueTable;
   section?: VenueSection;
   isSelected: boolean;
-  onSelect: (id: string) => void;
+  isHighlighted?: boolean;
+  overrideColor?: string;
+  onSelect: (id: string, additive: boolean) => void;
   onDoubleClick: (table: VenueTable) => void;
   onResize?: (tableId: string, dw: number, dh: number, dx: number, dy: number) => void;
+  readOnly?: boolean;
 }
 
 export function DraggableTable({
   table,
   section,
   isSelected,
+  isHighlighted,
+  overrideColor,
   onSelect,
   onDoubleClick,
   onResize,
+  readOnly,
 }: DraggableTableProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `table-${table.id}`,
@@ -36,11 +42,12 @@ export function DraggableTable({
       ? `translate(${transform.x}px, ${transform.y}px) rotate(${table.rotation}deg)`
       : `rotate(${table.rotation}deg)`,
     zIndex: isDragging ? 50 : isSelected ? 20 : 10,
-    cursor: 'grab',
+    cursor: readOnly || table.table_number.startsWith('BAR-CTR') ? 'default' : 'grab',
     transition: isDragging ? undefined : 'box-shadow 150ms ease',
   };
 
-  const sectionColor = section?.color || '#6B7280';
+  // In staff mode, use the split's color; otherwise use section color
+  const sectionColor = overrideColor || section?.color || '#6B7280';
 
   return (
     <div
@@ -52,18 +59,20 @@ export function DraggableTable({
       <div
         className={`
           w-full h-full
-          ${isDragging ? 'opacity-80' : ''}
-          ${isSelected ? 'ring-2 ring-opsos-brass-500 ring-offset-1 ring-offset-[#1a1a2e] rounded-full' : ''}
+          ${isDragging ? 'opacity-80 scale-105' : ''}
+          ${isSelected ? 'ring-[1.5px] ring-white/60 ring-offset-1 ring-offset-transparent rounded-full' : ''}
+          ${isHighlighted ? 'ring-[1.5px] ring-white/40 ring-offset-1 ring-offset-transparent rounded-full' : ''}
         `}
-        {...listeners}
-        {...attributes}
+        {...(readOnly ? {} : listeners)}
+        {...(readOnly ? {} : attributes)}
         onClick={(e) => {
           e.stopPropagation();
-          onSelect(table.id);
+          if (table.table_number.startsWith('BAR-CTR')) return;
+          onSelect(table.id, e.shiftKey || e.metaKey || e.ctrlKey);
         }}
         onDoubleClick={(e) => {
           e.stopPropagation();
-          onDoubleClick(table);
+          if (!readOnly) onDoubleClick(table);
         }}
         title={`Table ${table.table_number} | ${table.min_capacity || 1}-${table.max_capacity} guests`}
       >
@@ -77,8 +86,8 @@ export function DraggableTable({
         />
       </div>
 
-      {/* Resize handles — only when selected, outside drag listeners */}
-      {isSelected && onResize && (
+      {/* Resize handles — only when selected in edit mode */}
+      {isSelected && onResize && !readOnly && (
         <>
           <ResizeCorner position="se" tableId={table.id} onResize={onResize} />
           <ResizeCorner position="sw" tableId={table.id} onResize={onResize} />

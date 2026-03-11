@@ -23,9 +23,25 @@ export function TableShape({
   tableNumber,
   isSelected,
 }: TableShapeProps) {
+  // ── Fixture rendering (bar counter, walls, etc.) — solid surface, no text/chairs ──
+  if (tableNumber.startsWith('BAR-CTR')) {
+    return (
+      <div className="relative w-full h-full">
+        <div
+          className="absolute inset-[2%] rounded-[4px]"
+          style={{
+            background: `linear-gradient(135deg, #2a2a3e 0%, #1e1e30 100%)`,
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 8px rgba(0,0,0,0.3)',
+          }}
+        />
+      </div>
+    );
+  }
+
   const capacityLabel =
     minCapacity && minCapacity > 1 && minCapacity !== capacity
-      ? `${minCapacity}-${capacity}`
+      ? `${minCapacity}–${capacity}`
       : `${capacity}`;
 
   return (
@@ -39,23 +55,39 @@ export function TableShape({
       <div
         className={`
           absolute inset-[12%] flex flex-col items-center justify-center
-          border-2 transition-colors
+          transition-all duration-150
           ${getShapeClass(shape)}
         `}
         style={{
-          backgroundColor: `${sectionColor}30`,
-          borderColor: `${sectionColor}90`,
+          background: `linear-gradient(145deg, ${sectionColor}35 0%, ${sectionColor}20 100%)`,
+          border: `1.5px solid ${sectionColor}70`,
           boxShadow: isSelected
-            ? `0 0 0 2px ${sectionColor}60, inset 0 1px 2px rgba(0,0,0,0.3)`
-            : 'inset 0 1px 2px rgba(0,0,0,0.2)',
+            ? `0 0 12px ${sectionColor}40, inset 0 1px 0 rgba(255,255,255,0.08)`
+            : `inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 6px rgba(0,0,0,0.2)`,
         }}
       >
-        <span className="font-bold text-[10px] leading-none text-white drop-shadow-sm">
+        <span
+          className="font-semibold leading-none text-white"
+          style={{
+            fontSize: shape === 'bar_seat' ? '8px' : '11px',
+            letterSpacing: '0.02em',
+            textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+          }}
+        >
           {tableNumber}
         </span>
-        <span className="text-[7px] text-gray-400 leading-none mt-0.5">
-          {capacityLabel}
-        </span>
+        {shape !== 'bar_seat' && (
+          <span
+            className="leading-none mt-0.5"
+            style={{
+              fontSize: '7px',
+              color: `${sectionColor}CC`,
+              letterSpacing: '0.03em',
+            }}
+          >
+            {capacityLabel}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -99,12 +131,12 @@ function ChairLayout({
           key={i}
           className="absolute rounded-full"
           style={{
-            width: '14%',
-            height: '14%',
+            width: '11%',
+            height: '11%',
             left: `${chair.x}%`,
             top: `${chair.y}%`,
-            backgroundColor: `${sectionColor}40`,
-            border: `1px solid ${sectionColor}60`,
+            background: `radial-gradient(circle at 40% 35%, ${sectionColor}50 0%, ${sectionColor}25 100%)`,
+            border: `1px solid ${sectionColor}35`,
             transform: `translate(-50%, -50%)`,
           }}
         />

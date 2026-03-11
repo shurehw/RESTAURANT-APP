@@ -10,22 +10,32 @@ interface FloorPlanCanvasProps {
   tables: VenueTable[];
   sections: VenueSection[];
   labels: VenueLabel[];
-  selectedTableId: string | null;
-  onSelectTable: (id: string | null) => void;
+  selectedTableIds: Set<string>;
+  highlightedTableIds?: Set<string>;
+  tableColorMap?: Map<string, string>;
+  tableLabelMap?: Map<string, string>;
+  onSelectTable: (id: string, additive: boolean) => void;
+  onDeselectAll: () => void;
   onDoubleClickTable: (table: VenueTable) => void;
   onResize?: (tableId: string, dw: number, dh: number, dx: number, dy: number) => void;
   onDoubleClickLabel?: (label: VenueLabel) => void;
+  readOnly?: boolean;
 }
 
 export function FloorPlanCanvas({
   tables,
   sections,
   labels,
-  selectedTableId,
+  selectedTableIds,
+  highlightedTableIds,
+  tableColorMap,
+  tableLabelMap,
   onSelectTable,
+  onDeselectAll,
   onDoubleClickTable,
   onResize,
   onDoubleClickLabel,
+  readOnly,
 }: FloorPlanCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -35,8 +45,8 @@ export function FloorPlanCanvas({
   });
 
   const handleCanvasClick = useCallback(() => {
-    onSelectTable(null);
-  }, [onSelectTable]);
+    onDeselectAll();
+  }, [onDeselectAll]);
 
   // Map section_id → section for quick lookup
   const sectionMap = new Map(sections.map((s) => [s.id, s]));
@@ -47,22 +57,30 @@ export function FloorPlanCanvas({
         setNodeRef(node);
         (containerRef as any).current = node;
       }}
-      className="relative w-full bg-[#1a1a2e] border border-gray-800 rounded-lg overflow-hidden"
-      style={{ aspectRatio: '16 / 10' }}
+      className="relative w-full border border-white/[0.04] rounded-xl overflow-hidden"
+      style={{
+        aspectRatio: '16 / 10',
+        background: readOnly
+          ? 'radial-gradient(ellipse at 50% 40%, #1c1c30 0%, #111120 50%, #0a0a16 100%)'
+          : '#1a1a2e',
+      }}
       onClick={handleCanvasClick}
     >
-      {/* Grid dots background */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle, #2a2a4e 1px, transparent 1px)',
-          backgroundSize: '2.5% 4%',
-        }}
-      />
+      {/* Subtle grid — editor only */}
+      {!readOnly && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle, #2a2a4e 0.5px, transparent 0.5px)',
+            backgroundSize: '2.5% 4%',
+            opacity: 0.5,
+          }}
+        />
+      )}
 
-      {/* Section overlays (behind tables) */}
-      {sections.map((section) => (
+      {/* Section overlays (behind tables) — editor only */}
+      {!readOnly && sections.map((section) => (
         <SectionOverlay
           key={section.id}
           section={section}
@@ -74,7 +92,7 @@ export function FloorPlanCanvas({
       {labels.map((label) => (
         <span
           key={label.id}
-          className="absolute font-bold uppercase tracking-widest select-none pointer-events-auto cursor-grab"
+          className={`absolute font-bold uppercase tracking-widest select-none pointer-events-auto ${readOnly ? 'cursor-default' : 'cursor-grab'}`}
           style={{
             left: `${label.pos_x}%`,
             top: `${label.pos_y}%`,
@@ -86,7 +104,7 @@ export function FloorPlanCanvas({
           }}
           onDoubleClick={(e) => {
             e.stopPropagation();
-            onDoubleClickLabel?.(label);
+            if (!readOnly) onDoubleClickLabel?.(label);
           }}
         >
           {label.text}
@@ -94,17 +112,49 @@ export function FloorPlanCanvas({
       ))}
 
       {/* Tables */}
-      {tables.map((table) => (
-        <DraggableTable
-          key={table.id}
-          table={table}
-          section={table.section_id ? sectionMap.get(table.section_id) : undefined}
-          isSelected={selectedTableId === table.id}
-          onSelect={onSelectTable}
-          onDoubleClick={onDoubleClickTable}
-          onResize={onResize}
-        />
-      ))}
+      {tables.map((table) => {
+        const overrideColor = tableColorMap?.get(table.id);
+        const isHighlighted = highlightedTableIds?.has(table.id) ?? false;
+        const label = tableLabelMap?.get(table.id);
+        return (
+          <div key={table.id}>
+            <DraggableTable
+              table={table}
+              section={table.section_id ? sectionMap.get(table.section_id) : undefined}
+              isSelected={selectedTableIds.has(table.id)}
+              isHighlighted={isHighlighted}
+              overrideColor={overrideColor}
+              onSelect={onSelectTable}
+              onDoubleClick={onDoubleClickTable}
+              onResize={onResize}
+              readOnly={readOnly}
+            />
+            {label && (
+              <div
+                className="absolute pointer-events-none text-center"
+                style={{
+                  left: `${table.pos_x}%`,
+                  top: `${table.pos_y + table.height + 0.3}%`,
+                  width: `${table.width}%`,
+                  zIndex: 15,
+                }}
+              >
+                <span
+                  className="text-[8px] font-medium px-1.5 py-0.5 rounded-sm truncate max-w-full inline-block"
+                  style={{
+                    color: 'rgba(255,255,255,0.85)',
+                    background: 'rgba(0,0,0,0.45)',
+                    backdropFilter: 'blur(4px)',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {label}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
 
       {/* Empty state */}
       {tables.length === 0 && labels.length === 0 && (
