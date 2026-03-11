@@ -56,6 +56,9 @@ interface ReportSummary {
 }
 
 interface FactsSummary {
+  net_sales?: number;
+  total_covers?: number;
+  total_comps?: number;
   food_sales?: number;
   beverage_sales?: number;
   beverage_pct?: number;
