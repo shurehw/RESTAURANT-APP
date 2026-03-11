@@ -35,6 +35,8 @@ const SHAPE_OPTIONS: { value: VenueTable['shape']; label: string }[] = [
   { value: 'square', label: 'Square' },
   { value: 'rectangle', label: 'Rectangle' },
   { value: 'booth', label: 'Booth' },
+  { value: 'half_circle', label: 'Half-Circle Booth' },
+  { value: 'pullman', label: 'Pullman Booth' },
   { value: 'bar_seat', label: 'Bar Seat' },
 ];
 

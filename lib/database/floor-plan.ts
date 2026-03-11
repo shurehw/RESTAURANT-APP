@@ -28,7 +28,7 @@ export interface VenueTable {
   table_number: string;
   min_capacity: number;
   max_capacity: number;
-  shape: 'round' | 'square' | 'rectangle' | 'bar_seat' | 'booth' | 'oval';
+  shape: 'round' | 'square' | 'rectangle' | 'bar_seat' | 'booth' | 'oval' | 'half_circle' | 'pullman';
   pos_x: number;
   pos_y: number;
   width: number;
