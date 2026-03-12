@@ -47,7 +47,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     const { id } = await ctx.params;
     const user = await requireUser();
     const { venueIds, role } = await getUserOrgAndVenues(user.id);
-    assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef', 'onboarding']);
+    assertRole(role, ['owner', 'admin', 'director', 'gm', 'agm', 'manager', 'exec_chef', 'sous_chef', 'onboarding', 'readonly', 'viewer']);
 
     const supabase = getServiceClient() as any;
 

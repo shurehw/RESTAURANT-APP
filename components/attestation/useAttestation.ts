@@ -48,6 +48,7 @@ export function useAttestation(
   businessDate: string | undefined,
   reportData: NightlyReportPayload | null,
   options?: {
+    createIfMissing?: boolean;
     entertainmentRequired?: boolean;
     entertainmentComplete?: boolean;
     culinaryRequired?: boolean;
@@ -89,20 +90,40 @@ export function useAttestation(
     setError(null);
 
     try {
-      // Try to create (returns existing if already exists)
-      const createRes = await fetch('/api/attestation', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ venue_id: venueId, business_date: businessDate }),
-      });
+      // First try read path so view-only roles can still load existing attestations.
+      const listRes = await fetch(
+        `/api/attestation?venue_id=${encodeURIComponent(venueId)}&business_date=${encodeURIComponent(businessDate)}`,
+        { credentials: 'include' },
+      );
+      if (!listRes.ok) {
+        throw new Error(await extractError(listRes, 'Failed to fetch attestation list'));
+      }
+      const listJson = await listRes.json();
+      const existing = Array.isArray(listJson?.data) ? listJson.data[0] : null;
 
-      if (!createRes.ok) {
-        throw new Error(await extractError(createRes, 'Failed to create attestation'));
+      let attestationId = existing?.id as string | undefined;
+
+      // Only create when explicitly allowed and no record exists yet.
+      if (!attestationId && (options?.createIfMissing ?? true)) {
+        const createRes = await fetch('/api/attestation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ venue_id: venueId, business_date: businessDate }),
+        });
+
+        if (!createRes.ok) {
+          throw new Error(await extractError(createRes, 'Failed to create attestation'));
+        }
+
+        const { data: created } = await createRes.json();
+        attestationId = created?.id;
       }
 
-      const { data: created } = await createRes.json();
-      const attestationId = created.id;
+      // No existing attestation and creation disabled for this role.
+      if (!attestationId) {
+        return;
+      }
 
       // Fetch full attestation with children
       const detailRes = await fetch(`/api/attestation/${attestationId}`, {
@@ -124,7 +145,7 @@ export function useAttestation(
     } finally {
       setLoading(false);
     }
-  }, [venueId, businessDate]);
+  }, [venueId, businessDate, options?.createIfMissing]);
 
   useEffect(() => {
     initAttestation();

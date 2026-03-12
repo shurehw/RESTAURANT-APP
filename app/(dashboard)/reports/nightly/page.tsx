@@ -751,7 +751,23 @@ export default function NightlyReportPage() {
   }, [factsSummary, paceData, enrichment, nightlyNetSales, nightlyCovers]);
 
   // Attestation hook — lifted to page level so inline modules share state
-  const att = useAttestation(selectedVenue?.id, date, attestationReportData);
+  const canCreateAttestation = [
+    'platform_admin',
+    'owner',
+    'admin',
+    'director',
+    'gm',
+    'agm',
+    'manager',
+    'exec_chef',
+    'sous_chef',
+    'onboarding',
+    'readonly',
+  ].includes(userRole);
+
+  const att = useAttestation(selectedVenue?.id, date, attestationReportData, {
+    createIfMissing: canCreateAttestation,
+  });
 
   // Note: date is initialized to yesterday via useState initializer
 
