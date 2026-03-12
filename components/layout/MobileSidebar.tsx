@@ -193,6 +193,11 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
                 </NavLink>
               )}
               {permissions.laborSchedule && (
+                <NavLink href="/labor/schedule/compare" icon={<BarChart3 className="w-5 h-5" />}>
+                  Compare
+                </NavLink>
+              )}
+              {permissions.laborSchedule && (
                 <NavLink href="/floor-plan" icon={<LayoutGrid className="w-5 h-5" />}>
                   Floor Plan
                 </NavLink>
