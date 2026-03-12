@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     // Fetch the reservation for party size + section preference
     const { data: rez } = await (supabase as any)
       .from('reservations')
-      .select('id, venue_id, first_name, last_name, party_size, section_id, notes, is_vip')
+      .select('id, venue_id, first_name, last_name, party_size, section_id, notes, seating_preference, arrival_time, is_vip')
       .eq('id', reservation_id)
       .eq('venue_id', venue_id)
       .single();
@@ -67,6 +67,9 @@ export async function GET(request: NextRequest) {
     // Run seating algorithm
     const candidates = await findBestTableForParty(venue_id, date, rez.party_size, {
       section_id: rez.section_id || undefined,
+      seating_preference: rez.seating_preference || undefined,
+      is_vip: !!rez.is_vip,
+      requested_time: rez.arrival_time || undefined,
     });
 
     if (!candidates.length) {
@@ -124,6 +127,8 @@ export async function GET(request: NextRequest) {
         section_name: section?.name ?? null,
         section_color: section?.color ?? null,
         score: top.score,
+        operational_score: top.operational_score ?? null,
+        predictive_adjustment: top.predictive_adjustment ?? null,
         reason: suggestion.reason,
       },
     });
@@ -181,7 +186,13 @@ export async function POST(request: NextRequest) {
 // ── Helpers ───────────────────────────────────────────────────────────
 
 function buildReason(
-  top: { table_id: string; table_number: string; section_id: string | null; score: number },
+  top: {
+    table_id: string;
+    table_number: string;
+    section_id: string | null;
+    score: number;
+    predictive_reason?: string | null;
+  },
   rez: { party_size: number; section_id: string | null; is_vip: boolean },
   section: { name: string } | null,
 ): string {
@@ -190,5 +201,6 @@ function buildReason(
   if (rez.is_vip) parts.push('VIP placement');
   if (rez.section_id && rez.section_id === top.section_id) parts.push('preferred section');
   parts.push(`capacity fit for ${rez.party_size}`);
+  if (top.predictive_reason) parts.push(`predictive: ${top.predictive_reason}`);
   return parts.join(', ');
 }

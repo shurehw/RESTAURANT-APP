@@ -6,6 +6,17 @@
 
 import { getServiceClient } from '@/lib/supabase/service';
 import type { TableState } from '@/lib/floor-management/table-state-machine';
+import { getYieldConfigOrDefault } from '@/lib/database/rez-yield-config';
+import { getSlotDemandMetrics, getPickupPace } from '@/lib/database/rez-yield-metrics';
+import { getDemandCalendarEntry } from '@/lib/database/demand-calendar';
+import { getCoversBookedPerSlot } from '@/lib/database/reservations';
+import {
+  forecastDemand,
+  forecastDuration,
+  forecastStress,
+  forecastWalkinPressure,
+  type ForecastContext,
+} from '@/lib/ai/rez-yield-forecaster';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -94,6 +105,16 @@ export interface TableStatusEvent {
   actor_type: string;
   actor_id: string | null;
   occurred_at: string;
+}
+
+interface SeatCandidate {
+  table_id: string;
+  table_number: string;
+  section_id: string | null;
+  score: number;
+  operational_score?: number;
+  predictive_adjustment?: number;
+  predictive_reason?: string | null;
 }
 
 // ── Table Status Queries ────────────────────────────────────────
@@ -458,8 +479,10 @@ export async function findBestTableForParty(
   preferences?: {
     section_id?: string;
     seating_preference?: string;
+    is_vip?: boolean;
+    requested_time?: string;
   },
-): Promise<{ table_id: string; table_number: string; section_id: string | null; score: number }[]> {
+): Promise<SeatCandidate[]> {
   const supabase = getServiceClient();
 
   // Get all available tables that fit the party
@@ -492,8 +515,8 @@ async function scoreAndRank(
   venueId: string,
   date: string,
   partySize: number,
-  preferences?: { section_id?: string; seating_preference?: string },
-): Promise<{ table_id: string; table_number: string; section_id: string | null; score: number }[]> {
+  preferences?: { section_id?: string; seating_preference?: string; is_vip?: boolean; requested_time?: string },
+): Promise<SeatCandidate[]> {
   const supabase = getServiceClient();
   const tableIds = tables.map((t: any) => t.id);
 
@@ -536,45 +559,266 @@ async function scoreAndRank(
     if (sec) sectionOccupancy.set(sec, (sectionOccupancy.get(sec) || 0) + 1);
   }
 
+  const predictive = await computePredictiveScoringContext(
+    venueId,
+    date,
+    partySize,
+    (allTables || []) as Array<{ id: string; section_id: string | null }>,
+    preferences,
+  );
+
   // Score each available table
   const scored = tables
     .filter((t: any) => !occupiedSet.has(t.id))
     .map((t: any) => {
-      let score = 100;
+      let operationalScore = 100;
 
       // Capacity fit: prefer closest match (penalty for wasted seats)
       const wastedSeats = t.max_capacity - partySize;
-      score -= wastedSeats * 10;
+      operationalScore -= wastedSeats * 10;
 
       // Section balance: prefer less-occupied sections
       const secOcc = sectionOccupancy.get(t.section_id) || 0;
-      score -= secOcc * 5;
+      operationalScore -= secOcc * 5;
 
       // Section preference: bonus for matching requested section
       if (preferences?.section_id && t.section_id === preferences.section_id) {
-        score += 30;
+        operationalScore += 30;
       }
 
       // Seating preference: bonus for matching shape preferences
       if (preferences?.seating_preference) {
         const pref = preferences.seating_preference.toLowerCase();
-        if (pref.includes('booth') && t.shape === 'booth') score += 20;
-        if (pref.includes('bar') && t.shape === 'bar_seat') score += 20;
-        if (pref.includes('round') && t.shape === 'round') score += 15;
-        if (pref.includes('patio') && t.shape === 'rectangle') score += 10;
+        if (pref.includes('booth') && t.shape === 'booth') operationalScore += 20;
+        if (pref.includes('bar') && t.shape === 'bar_seat') operationalScore += 20;
+        if (pref.includes('round') && t.shape === 'round') operationalScore += 15;
+        if (pref.includes('patio') && t.shape === 'rectangle') operationalScore += 10;
       }
+
+      const adjustments: string[] = [];
+      const predictiveAdjustment = applyPredictiveAdjustment({
+        wastedSeats,
+        tableId: t.id,
+        sectionId: t.section_id,
+        isVip: !!preferences?.is_vip,
+        predictive,
+        adjustments,
+      });
+      const score = operationalScore + predictiveAdjustment;
 
       return {
         table_id: t.id,
         table_number: t.table_number,
         section_id: t.section_id,
         score,
+        operational_score: operationalScore,
+        predictive_adjustment: predictiveAdjustment,
+        predictive_reason: adjustments.length > 0 ? adjustments.join(', ') : null,
       };
     });
 
   // Sort by score descending
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, 5);
+}
+
+interface PredictiveContext {
+  enabled: boolean;
+  demand_strength: 'weak' | 'moderate' | 'strong' | 'very_strong';
+  slot_stress: number;
+  walkin_pressure: number;
+  vip_table_ids: Set<string>;
+  duration_by_section: Map<string, number>;
+}
+
+interface PredictiveAdjustmentInput {
+  wastedSeats: number;
+  tableId: string;
+  sectionId: string | null;
+  isVip: boolean;
+  predictive: PredictiveContext | null;
+  adjustments: string[];
+}
+
+function applyPredictiveAdjustment(input: PredictiveAdjustmentInput): number {
+  const { wastedSeats, tableId, sectionId, isVip, predictive, adjustments } = input;
+  if (!predictive?.enabled) return 0;
+
+  let delta = 0;
+  const highStress = predictive.slot_stress >= 70;
+  const highWalkin = predictive.walkin_pressure >= 65;
+  const lowPressure = predictive.slot_stress < 45 && predictive.walkin_pressure < 45;
+
+  if (highStress || highWalkin) {
+    if (wastedSeats >= 4) {
+      delta -= 8;
+      adjustments.push('high-pressure large-top protection');
+    } else if (wastedSeats <= 1) {
+      delta += 3;
+      adjustments.push('high-pressure tight fit');
+    }
+  }
+
+  if (predictive.demand_strength === 'very_strong' || predictive.demand_strength === 'strong') {
+    if (wastedSeats >= 3) {
+      delta -= 4;
+      adjustments.push('strong-demand capacity conservation');
+    }
+  } else if (predictive.demand_strength === 'weak' && wastedSeats <= 2) {
+    delta += 2;
+    adjustments.push('weak-demand flexibility');
+  }
+
+  const durationKey = sectionId || '__none__';
+  const predictedDuration = predictive.duration_by_section.get(durationKey) || 90;
+  if ((highStress || highWalkin) && predictedDuration > 105) {
+    const penalty = Math.min(12, Math.round((predictedDuration - 90) / 3));
+    delta -= penalty;
+    adjustments.push(`duration-risk ${predictedDuration}m`);
+  } else if (lowPressure && predictedDuration > 105) {
+    const bonus = Math.min(4, Math.round((predictedDuration - 90) / 10));
+    if (bonus > 0) {
+      delta += bonus;
+      adjustments.push('low-pressure comfort fit');
+    }
+  }
+
+  const isVipTable = predictive.vip_table_ids.has(tableId);
+  if (isVip && isVipTable) {
+    delta += 20;
+    adjustments.push('vip-table preference');
+  } else if (!isVip && isVipTable && (highStress || highWalkin)) {
+    delta -= 12;
+    adjustments.push('reserve-vip-table during pressure');
+  }
+
+  return delta;
+}
+
+async function computePredictiveScoringContext(
+  venueId: string,
+  date: string,
+  partySize: number,
+  allTables: Array<{ id: string; section_id: string | null }>,
+  preferences?: { section_id?: string; seating_preference?: string; is_vip?: boolean; requested_time?: string },
+): Promise<PredictiveContext | null> {
+  try {
+    const config = await getYieldConfigOrDefault(venueId);
+    if (!config.yield_engine_enabled) return null;
+
+    const supabase = getServiceClient();
+    const [venueRow, existingForecast, slotDemand, pickupPace, demandCalendar, coversPerSlot] = await Promise.all([
+      (supabase as any).from('venues').select('name').eq('id', venueId).maybeSingle(),
+      (supabase as any)
+        .from('demand_forecasts')
+        .select('covers_predicted, revenue_predicted, walkin_covers_predicted')
+        .eq('venue_id', venueId)
+        .eq('business_date', date)
+        .eq('shift_type', 'dinner')
+        .order('forecast_date', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      getSlotDemandMetrics(venueId, date),
+      getPickupPace(venueId, date),
+      getDemandCalendarEntry(venueId, date),
+      getCoversBookedPerSlot(venueId, date, 15),
+    ]);
+
+    const requestedTime = normalizeTimeSlot(preferences?.requested_time) || getCurrentSlot();
+    const shiftType = inferShiftType(requestedTime);
+    const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+    const forecastCtx: ForecastContext = {
+      venue_id: venueId,
+      venue_name: venueRow.data?.name || 'Venue',
+      business_date: date,
+      day_of_week: dayOfWeek,
+      shift_type: shiftType,
+      current_time: requestedTime,
+      is_event_night: demandCalendar?.has_private_event ?? false,
+      is_holiday: demandCalendar?.is_holiday ?? false,
+      demand_modifier: demandCalendar ? {
+        multiplier: demandCalendar.demand_multiplier,
+        narrative: demandCalendar.narrative,
+        confidence: demandCalendar.confidence,
+        is_quiet_period: demandCalendar.is_quiet_period,
+        open_pacing_recommended: demandCalendar.open_pacing_recommended,
+        lookahead_extension_days: demandCalendar.lookahead_extension_days,
+        holiday_name: demandCalendar.holiday_name,
+        has_private_event: demandCalendar.has_private_event,
+        private_event_is_buyout: demandCalendar.private_event_is_buyout,
+      } : undefined,
+    };
+
+    const demand = await forecastDemand(forecastCtx, existingForecast.data || null, slotDemand, pickupPace);
+
+    const bookingsPerSlot: Record<string, number> = {};
+    let totalBookedCovers = 0;
+    for (const [slot, covers] of coversPerSlot.entries()) {
+      bookingsPerSlot[slot] = covers;
+      totalBookedCovers += covers;
+    }
+
+    const walkins = await forecastWalkinPressure(forecastCtx, null, totalBookedCovers);
+    const totalTables = allTables.length || 30;
+    const maxCoversPerSlot = Math.max(20, Math.round(totalTables * 2.5));
+    const stress = await forecastStress(forecastCtx, bookingsPerSlot, maxCoversPerSlot, 90, totalTables);
+
+    const uniqueSections = new Set<string>();
+    for (const t of allTables) uniqueSections.add(t.section_id || '__none__');
+
+    const durationBySection = new Map<string, number>();
+    await Promise.all(
+      Array.from(uniqueSections).map(async (sectionKey) => {
+        const sectionId = sectionKey === '__none__' ? undefined : sectionKey;
+        const duration = await forecastDuration(
+          forecastCtx,
+          partySize,
+          sectionId,
+          null,
+          !!preferences?.is_vip,
+        );
+        durationBySection.set(sectionKey, duration.predicted_mins);
+      }),
+    );
+
+    const walkinSlot = walkins.find((w) => w.slot === requestedTime);
+    const stressSlot = stress.find((s) => s.slot === requestedTime);
+
+    return {
+      enabled: true,
+      demand_strength: demand.demand_strength,
+      slot_stress: stressSlot?.stress_score ?? 50,
+      walkin_pressure: walkinSlot?.pressure_score ?? 50,
+      vip_table_ids: new Set(config.vip_table_ids || []),
+      duration_by_section: durationBySection,
+    };
+  } catch (err) {
+    console.error('[floor-mgmt] Predictive scoring fallback to operational mode:', err);
+    return null;
+  }
+}
+
+function normalizeTimeSlot(value?: string): string | null {
+  if (!value) return null;
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const h = Math.max(0, Math.min(23, Number(match[1])));
+  const m = Math.max(0, Math.min(59, Number(match[2])));
+  const rounded = Math.floor(m / 15) * 15;
+  return `${String(h).padStart(2, '0')}:${String(rounded).padStart(2, '0')}`;
+}
+
+function getCurrentSlot(): string {
+  const now = new Date();
+  const rounded = Math.floor(now.getMinutes() / 15) * 15;
+  return `${String(now.getHours()).padStart(2, '0')}:${String(rounded).padStart(2, '0')}`;
+}
+
+function inferShiftType(slot: string): 'lunch' | 'dinner' | 'late_night' {
+  const hour = Number(slot.split(':')[0] || '18');
+  if (hour < 16) return 'lunch';
+  if (hour >= 22 || hour <= 3) return 'late_night';
+  return 'dinner';
 }
 
 // ── Event Queries ────────────────────────────────────────────────
