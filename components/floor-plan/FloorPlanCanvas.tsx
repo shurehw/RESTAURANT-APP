@@ -26,6 +26,8 @@ interface FloorPlanCanvasProps {
   tableLabelMap?: Map<string, string>;
   tableMetaMap?: Map<string, TableVisualMeta>;
   transitioningTableIds?: Set<string>;
+  sectionServerMap?: Map<string, string>;
+  sectionCoverMap?: Map<string, number>;
   onSelectTable: (id: string, additive: boolean) => void;
   onDeselectAll: () => void;
   onDoubleClickTable: (table: VenueTable) => void;

@@ -31,6 +31,10 @@ interface HostStandSidebarProps {
   waitlist: WaitlistEntry[];
   onAddWaitlist: () => void;
   onSeatWalkin: () => void;
+  onNewReservation?: () => void;
+  onMarkArrived?: (rezId: string) => Promise<void>;
+  onMarkNoShow?: (rezId: string) => Promise<void>;
+  onCancelReservation?: (rezId: string) => Promise<void>;
 }
 
 /** Format "HH:MM:SS" or "HH:MM" → "8:00 PM" */
