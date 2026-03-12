@@ -19,6 +19,7 @@ import { TableStatusLegend } from './TableStatusLegend';
 import { TableActionSheet } from './TableActionSheet';
 import { AddWaitlistDialog } from './AddWaitlistDialog';
 import { SeatWalkinDialog } from './SeatWalkinDialog';
+import { NewReservationDialog } from './NewReservationDialog';
 import { SeatSuggestionToast } from './SeatSuggestionToast';
 import { STATE_COLORS, getBusinessDate } from './constants';
 
@@ -133,6 +134,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [showWaitlistDialog, setShowWaitlistDialog] = useState(false);
   const [showSeatWalkinDialog, setShowSeatWalkinDialog] = useState(false);
+  const [showNewReservationDialog, setShowNewReservationDialog] = useState(false);
   const [seatWalkinTableId, setSeatWalkinTableId] = useState<string | undefined>();
   const [seatWalkinTableNumber, setSeatWalkinTableNumber] = useState<string | undefined>();
 
@@ -393,6 +395,14 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
     });
   }
 
+  // Cover count per section (seated + occupied + check_dropped tables)
+  const sectionCoverMap = new Map<string, number>();
+  for (const t of liveTables) {
+    if (t.section_id && ['seated', 'occupied', 'check_dropped'].includes(t.status) && t.party_size) {
+      sectionCoverMap.set(t.section_id, (sectionCoverMap.get(t.section_id) ?? 0) + t.party_size);
+    }
+  }
+
   // ── Table Actions ──────────────────────────────────────────────
 
   const selectedTable = selectedTableId
@@ -461,6 +471,15 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         console.error('[host-stand] Transition failed:', data.error);
       }
 
+      // When cancelling a reserved table, also cancel the reservation record
+      if (action === 'clear' && selectedTable.status === 'reserved' && selectedTable.reservation_id) {
+        fetch(`/api/reservations/${selectedTable.reservation_id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancelled' }),
+        }).catch(() => {});
+      }
+
       setSelectedTableId(null);
       fetchLiveData();
     } catch (err) {
@@ -472,6 +491,41 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
     setSeatWalkinTableId(undefined);
     setSeatWalkinTableNumber(undefined);
     setShowSeatWalkinDialog(true);
+  };
+
+  const handleMarkArrived = async (rezId: string) => {
+    try {
+      await fetch(`/api/reservations/${rezId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'arrived' }),
+      });
+      fetchLiveData();
+    } catch {
+      // Silently ignore — next poll will pick up state
+    }
+  };
+
+  const handleMarkNoShow = async (rezId: string) => {
+    try {
+      await fetch(`/api/reservations/${rezId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'no_show' }),
+      });
+      fetchLiveData();
+    } catch {}
+  };
+
+  const handleCancelReservation = async (rezId: string) => {
+    try {
+      await fetch(`/api/reservations/${rezId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancelled' }),
+      });
+      fetchLiveData();
+    } catch {}
   };
 
   // ── Drag-to-seat ───────────────────────────────────────────────
@@ -578,6 +632,10 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
               waitlist={waitlist}
               onAddWaitlist={() => setShowWaitlistDialog(true)}
               onSeatWalkin={handleSeatWalkinFromSidebar}
+              onNewReservation={() => setShowNewReservationDialog(true)}
+              onMarkArrived={handleMarkArrived}
+              onMarkNoShow={handleMarkNoShow}
+              onCancelReservation={handleCancelReservation}
             />
           </div>
 
@@ -594,6 +652,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
               tableMetaMap={tableMetaMap}
               transitioningTableIds={transitioningTableIds}
               sectionServerMap={sectionServerMap}
+              sectionCoverMap={sectionCoverMap}
               onSelectTable={handleTableSelect}
               onDeselectAll={handleDeselectAll}
               onDoubleClickTable={() => {}}
@@ -645,6 +704,16 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
           />
         );
       })()}
+
+      {/* New reservation dialog */}
+      {showNewReservationDialog && (
+        <NewReservationDialog
+          venueId={venueId}
+          date={businessDate}
+          onClose={() => setShowNewReservationDialog(false)}
+          onCreated={fetchLiveData}
+        />
+      )}
 
       {/* Add waitlist dialog */}
       {showWaitlistDialog && (
