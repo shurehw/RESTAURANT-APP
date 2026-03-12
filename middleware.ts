@@ -9,6 +9,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
 
+  // Common typo guard: redirect /logn to /login
+  if (pathname === '/logn') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   // Marketing domain — serve landing page on root only for unauthenticated visitors
   if (hostname.includes('prime-cost.com') && pathname === '/') {
     const hasSession = request.cookies.getAll().some(c => c.name.includes('-auth-token'));

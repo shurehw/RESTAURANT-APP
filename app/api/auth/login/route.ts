@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         const { data: org } = await adminClient
           .from('organizations')
           .select('id')
-          .or('slug.eq.hwood-group,name.eq.The h.wood Group,name.eq.Hwood Group')
+          .or('slug.eq.hwood-group,slug.eq.the-h-wood-group,name.eq.The h.wood Group,name.eq.Hwood Group')
           .single();
 
         if (org) {
@@ -110,9 +110,28 @@ export async function POST(request: NextRequest) {
           email: email.toLowerCase(),
           password: password,
         });
-        
+
         if (signInError) {
-          console.error('[LOGIN] Supabase signIn error (non-fatal):', signInError.message);
+          console.error('[LOGIN] Supabase signIn error:', signInError.message);
+          return NextResponse.json(
+            { error: 'Unable to establish session. Please try again.' },
+            { status: 503 }
+          );
+        }
+
+        // Ensure authenticated user has org access before redirecting to app shell.
+        const { data: membership } = await adminClient
+          .from('organization_users')
+          .select('organization_id')
+          .eq('user_id', authUserId)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!membership?.organization_id) {
+          return NextResponse.json(
+            { error: 'No organization access. Contact an admin to assign your account.' },
+            { status: 403 }
+          );
         }
       }
     } catch (authSyncError) {

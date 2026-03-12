@@ -19,7 +19,20 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const { orgId, role: orgRole, venueIds: allowedVenueIds } = await getUserOrgAndVenues(user.id);
+  let orgId: string;
+  let orgRole: string;
+  let allowedVenueIds: string[];
+  try {
+    const tenant = await getUserOrgAndVenues(user.id);
+    orgId = tenant.orgId;
+    orgRole = tenant.role;
+    allowedVenueIds = tenant.venueIds;
+  } catch (error: any) {
+    if (error?.code === 'NO_ORG' || error?.status === 403) {
+      redirect('/login?error=no_org');
+    }
+    throw error;
+  }
 
   // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
   const supabase = createAdminClient();

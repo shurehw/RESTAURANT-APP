@@ -11,6 +11,12 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const authError = searchParams.get('error');
+  const bannerError = error || (
+    authError === 'no_org'
+      ? 'No organization access found for this account. Contact an admin to assign your account.'
+      : null
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,9 +50,9 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
+      {bannerError && (
         <div className="bg-red-50 border border-red-200 text-red-800 rounded p-3 text-sm">
-          {error}
+          {bannerError}
         </div>
       )}
 

@@ -90,11 +90,11 @@ export async function POST(request: NextRequest) {
           const { data: org } = await adminClient
             .from('organizations')
             .select('id')
-            .or('slug.eq.hwood-group,name.eq.The h.wood Group,name.eq.Hwood Group')
+            .or('slug.eq.hwood-group,slug.eq.the-h-wood-group,name.eq.The h.wood Group,name.eq.Hwood Group')
             .single();
 
           if (org) {
-            await adminClient
+            const { error: linkError } = await adminClient
               .from('organization_users')
               .upsert({
                 user_id: authUser.user.id,
@@ -104,7 +104,19 @@ export async function POST(request: NextRequest) {
               }, {
                 onConflict: 'organization_id,user_id'
               });
+            if (linkError) {
+              console.error('Error linking existing user to organization:', linkError);
+              return NextResponse.json(
+                { error: 'Account created but organization assignment failed. Please contact support.' },
+                { status: 500 }
+              );
+            }
             console.log(`Linked existing user ${email} to h.wood group organization`);
+          } else {
+            return NextResponse.json(
+              { error: 'No default organization found for your domain. Please contact support.' },
+              { status: 500 }
+            );
           }
         }
 
@@ -188,8 +200,9 @@ export async function POST(request: NextRequest) {
       const { data: orgBySlug } = await adminClient
         .from('organizations')
         .select('id')
-        .eq('slug', 'hwood-group')
-        .single();
+        .in('slug', ['hwood-group', 'the-h-wood-group'])
+        .limit(1)
+        .maybeSingle();
 
       if (orgBySlug) {
         org = orgBySlug;
@@ -218,12 +231,18 @@ export async function POST(request: NextRequest) {
 
         if (linkError) {
           console.error('Error linking user to organization:', linkError);
-          // Don't fail signup, but log the error
+          return NextResponse.json(
+            { error: 'Account created but organization assignment failed. Please contact support.' },
+            { status: 500 }
+          );
         } else {
           console.log(`Successfully linked user ${authUserId} to h.wood group organization`);
         }
       } else {
-        console.error('h.wood group organization not found. User created but not linked to organization.');
+        return NextResponse.json(
+          { error: 'No default organization found for your domain. Please contact support.' },
+          { status: 500 }
+        );
       }
     }
 
