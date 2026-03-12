@@ -30,7 +30,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return guard(async () => {
-    rateLimit(request, ':team-members');
+    await rateLimit(request, ':team-members');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
     const { id: targetUserId } = await params;
@@ -66,7 +66,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return guard(async () => {
-    rateLimit(request, ':team-members');
+    await rateLimit(request, ':team-members');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
     const { id: targetUserId } = await params;

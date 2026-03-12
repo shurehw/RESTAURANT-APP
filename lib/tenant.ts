@@ -29,7 +29,9 @@ export async function getUserOrgAndVenues(
     .from('organization_users')
     .select('organization_id, role, venue_ids')
     .eq('user_id', userId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .order('accepted_at', { ascending: false, nullsFirst: false })
+    .order('invited_at', { ascending: false, nullsFirst: false });
 
   console.log('[tenant] getUserOrgAndVenues for', userId, '→', orgs?.length, 'orgs, error:', error?.message);
 
@@ -75,7 +77,8 @@ export async function getUserOrganizations(
   const { data: orgs, error } = await client
     .from('organization_users')
     .select('organization_id, role, venue_ids')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('is_active', true);
 
   if (error || !orgs || orgs.length === 0) {
     throw {

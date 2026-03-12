@@ -69,10 +69,9 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check for legacy user_id cookie (migration support)
-  const legacyUserId = request.cookies.get('user_id');
-
-  // Allow access if either auth method is present
-  if (supabaseUser || legacyUserId) {
+  // Allow access only with valid Supabase auth session.
+  // Legacy user_id cookie is not sufficient for access control.
+  if (supabaseUser) {
     return supabaseResponse;
   }
 

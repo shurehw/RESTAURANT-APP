@@ -21,7 +21,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return guard(async () => {
-    rateLimit(request, ':team-invites');
+    await rateLimit(request, ':team-invites');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
     const { id: inviteId } = await params;
@@ -95,7 +95,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   return guard(async () => {
-    rateLimit(request, ':team-invites');
+    await rateLimit(request, ':team-invites');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
     const { id: inviteId } = await params;

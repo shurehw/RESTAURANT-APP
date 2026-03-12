@@ -41,18 +41,29 @@ export async function POST(request: NextRequest) {
       .eq('email', email.toLowerCase())
       .single();
 
-    // Check if auth user exists
-    let existingAuth = null;
+    // Check if auth user exists (avoid paginated listUsers scan)
+    let existingAuthId: string | null = null;
     try {
-      const { data: existingAuthUsers } = await adminClient.auth.admin.listUsers();
-      existingAuth = existingAuthUsers?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase()) || null;
-    } catch (listError) {
-      console.error('Error listing auth users:', listError);
+      const primary = await adminClient.rpc('get_auth_user_id_by_email', {
+        user_email: email.toLowerCase(),
+      });
+      if (!primary.error && primary.data) {
+        existingAuthId = primary.data;
+      } else {
+        const fallback = await adminClient.rpc('get_auth_uid_by_email', {
+          lookup_email: email.toLowerCase(),
+        });
+        if (!fallback.error && fallback.data) {
+          existingAuthId = fallback.data;
+        }
+      }
+    } catch (lookupError) {
+      console.error('Error looking up auth user by email:', lookupError);
       // Continue - we'll try to create the auth user anyway
     }
 
     // If user exists in custom table but not in auth.users, create auth user and link them
-    if (existingUser && !existingAuth) {
+    if (existingUser && !existingAuthId) {
       // User exists in custom table but not in auth - create auth user and link to org
       console.log(`[SIGNUP] User ${email} exists in custom table (ID: ${existingUser.id}) but not in auth.users. Creating auth user...`);
       
@@ -111,7 +122,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If user exists in both tables, they're already registered
-    if (existingUser && existingAuth) {
+    if (existingUser && existingAuthId) {
       return NextResponse.json(
         { error: 'Email already registered' },
         { status: 409 }

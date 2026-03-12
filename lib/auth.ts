@@ -83,9 +83,9 @@ export async function requireUser(): Promise<AuthedUser> {
     console.error('[auth] Legacy-to-auth user resolution failed:', e);
   }
 
-  // Keep existing degraded fallback behavior if resolution fails.
-  return {
-    id: legacyUserId,
-    email: undefined,
+  throw {
+    status: 401,
+    code: 'UNAUTHORIZED',
+    message: 'Authentication required',
   };
 }

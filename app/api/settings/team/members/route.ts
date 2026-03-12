@@ -13,7 +13,7 @@ import { getTeamMembers, getOrgVenues } from '@/lib/database/team';
 
 export async function GET(request: NextRequest) {
   return guard(async () => {
-    rateLimit(request, ':team-members');
+    await rateLimit(request, ':team-members');
     const user = await requireUser();
     const { orgId, role } = await getUserOrgAndVenues(user.id);
 

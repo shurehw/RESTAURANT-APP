@@ -94,23 +94,30 @@ export async function POST(request: NextRequest) {
 
     if (createError) {
       if (createError.message?.includes('already been registered')) {
-        // User exists — find by email and update
-        const { data: existingUsers } = await adminClient.auth.admin.listUsers({
-          page: 1,
-          perPage: 1000,
+        // User exists — resolve by email via RPC (no pagination limits)
+        let existingAuthId: string | null = null;
+        const primary = await adminClient.rpc('get_auth_user_id_by_email', {
+          user_email: invite.email.toLowerCase(),
         });
-        const existingAuth = existingUsers?.users?.find(
-          (u) => u.email?.toLowerCase() === invite.email.toLowerCase()
-        );
+        if (!primary.error && primary.data) {
+          existingAuthId = primary.data;
+        } else {
+          const fallback = await adminClient.rpc('get_auth_uid_by_email', {
+            lookup_email: invite.email.toLowerCase(),
+          });
+          if (!fallback.error && fallback.data) {
+            existingAuthId = fallback.data;
+          }
+        }
 
-        if (existingAuth) {
-          await adminClient.auth.admin.updateUserById(existingAuth.id, {
+        if (existingAuthId) {
+          await adminClient.auth.admin.updateUserById(existingAuthId, {
             password,
             user_metadata: { full_name },
           });
-          authUserId = existingAuth.id;
+          authUserId = existingAuthId;
         } else {
-          console.error('[accept-invite] User registered but not found in listUsers');
+          console.error('[accept-invite] User registered but not found via email lookup RPC');
           return NextResponse.json(
             { error: 'Failed to create account. Please try again.' },
             { status: 500 }
