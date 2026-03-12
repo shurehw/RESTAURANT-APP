@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { createClient } from '@/lib/supabase/client';
 import { FloorPlanCanvas } from '@/components/floor-plan/FloorPlanCanvas';
 import type { VenueTable, VenueSection, VenueLabel } from '@/lib/database/floor-plan';
 import type { TableState } from '@/lib/floor-management/table-state-machine';
@@ -20,6 +21,7 @@ import { TableActionSheet } from './TableActionSheet';
 import { AddWaitlistDialog } from './AddWaitlistDialog';
 import { SeatWalkinDialog } from './SeatWalkinDialog';
 import { NewReservationDialog } from './NewReservationDialog';
+import { CombineTablesDialog } from './CombineTablesDialog';
 import { SeatSuggestionToast } from './SeatSuggestionToast';
 import { STATE_COLORS, getBusinessDate } from './constants';
 
@@ -122,6 +124,30 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
 
   const [sectionServerMap, setSectionServerMap] = useState<Map<string, string>>(new Map());
 
+  // Table combo state: comboId → combined_table_ids[], primaryTableId → comboId
+  interface TableCombo { id: string; primary_table_id: string; combined_table_ids: string[] }
+  const [activeCombos, setActiveCombos] = useState<TableCombo[]>([]);
+
+  const fetchCombos = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/floor-plan/live/combos?venue_id=${venueId}&date=${businessDate}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setActiveCombos(data.combos || []);
+    } catch {}
+  }, [venueId, businessDate]);
+
+  useEffect(() => { fetchCombos(); }, [fetchCombos]);
+
+  // Derived sets for canvas rendering
+  const comboTableIds = new Set(activeCombos.flatMap((c) => c.combined_table_ids));
+  const comboPrimaryIds = new Set(activeCombos.map((c) => c.primary_table_id));
+  // tableId → combo for action sheet lookups
+  const tableComboMap = new Map<string, TableCombo>();
+  for (const c of activeCombos) {
+    for (const tid of c.combined_table_ids) tableComboMap.set(tid, c);
+  }
+
   // Seat suggestion state
   const [activeSuggestion, setActiveSuggestion] = useState<{
     id: string; expires_at: string; reservation_id: string; guest_name: string; party_size: number; is_vip: boolean;
@@ -135,6 +161,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
   const [showWaitlistDialog, setShowWaitlistDialog] = useState(false);
   const [showSeatWalkinDialog, setShowSeatWalkinDialog] = useState(false);
   const [showNewReservationDialog, setShowNewReservationDialog] = useState(false);
+  const [showCombineDialog, setShowCombineDialog] = useState(false);
   const [seatWalkinTableId, setSeatWalkinTableId] = useState<string | undefined>();
   const [seatWalkinTableNumber, setSeatWalkinTableNumber] = useState<string | undefined>();
 
@@ -181,11 +208,36 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
     }
   }, [venueId, businessDate]);
 
+  // Initial load + 60s fallback poll (Realtime handles the fast path)
   useEffect(() => {
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 30_000);
+    fetchCombos();
+    const interval = setInterval(() => {
+      fetchLiveData();
+      fetchCombos();
+    }, 60_000);
     return () => clearInterval(interval);
-  }, [fetchLiveData]);
+  }, [fetchLiveData, fetchCombos]);
+
+  // Supabase Realtime — subscribe to table_status changes for instant updates
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`floor-live:${venueId}:${businessDate}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'table_status', filter: `venue_id=eq.${venueId}` },
+        () => { fetchLiveData(); },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'table_combos', filter: `venue_id=eq.${venueId}` },
+        () => { fetchCombos(); },
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [venueId, businessDate, fetchLiveData, fetchCombos]);
 
   // ── Server Section Assignments (once per business date) ──────────
 
@@ -235,10 +287,26 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
   }, [syncReservations]);
 
   // ── AI Seat Suggestion Trigger ─────────────────────────────────
-  // Fires when a reservation transitions to 'arrived'. Uses a ref to
-  // prevent duplicate requests across rapid re-renders / poll cycles.
+  // Fires when a reservation transitions to 'arrived', and also when
+  // called explicitly after a table clears with arrived guests waiting.
 
   const prevUpcomingRef = useRef<Map<string, string>>(new Map()); // id → status
+
+  // Reusable function to fire a suggestion for the first arrived party waiting
+  const triggerSuggestionForArrivedParty = useCallback((currentUpcoming: UpcomingReservation[]) => {
+    if (activeSuggestion) return;
+    const arrivedRez = currentUpcoming.find(
+      (r) => r.status === 'arrived' && !pendingSuggestionRef.current.has(r.id)
+    );
+    if (!arrivedRez) return;
+
+    pendingSuggestionRef.current.add(arrivedRez.id);
+    fetch(`/api/floor-plan/live/suggest-seat?venue_id=${venueId}&date=${businessDate}&reservation_id=${arrivedRez.id}&trigger=table_opened`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data?.suggestion) setActiveSuggestion(data.suggestion); })
+      .catch(() => {})
+      .finally(() => pendingSuggestionRef.current.delete(arrivedRez.id));
+  }, [venueId, businessDate, activeSuggestion]);
 
   useEffect(() => {
     const prev = prevUpcomingRef.current;
@@ -428,6 +496,26 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       return;
     }
 
+    if (action === 'combine_tables') {
+      setShowCombineDialog(true);
+      return;
+    }
+
+    if (action === 'release_combo') {
+      const combo = tableComboMap.get(selectedTable.table_id);
+      if (combo) {
+        await fetch('/api/floor-plan/live/combos', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ combo_id: combo.id }),
+        }).catch(() => {});
+        setSelectedTableId(null);
+        await fetchCombos();
+        fetchLiveData();
+      }
+      return;
+    }
+
     if (action === 'force_complete') {
       await handleForceComplete(selectedTable);
       return;
@@ -471,6 +559,31 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         console.error('[host-stand] Transition failed:', data.error);
       }
 
+      // For seat/clear on a combo primary, propagate to all secondary tables
+      const combo = tableComboMap.get(selectedTable.table_id);
+      const secondaryIds = combo
+        ? combo.combined_table_ids.filter((id) => id !== selectedTable.table_id)
+        : [];
+
+      if (secondaryIds.length > 0 && (action === 'seat' || action === 'clear')) {
+        await Promise.all(secondaryIds.map((tableId) =>
+          fetch('/api/floor-plan/live/transition', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ venue_id: venueId, table_id: tableId, date: businessDate, action: apiAction }),
+          }).catch(() => {})
+        ));
+        // Release combo when clearing
+        if (action === 'clear' && combo) {
+          await fetch('/api/floor-plan/live/combos', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ combo_id: combo.id }),
+          }).catch(() => {});
+          fetchCombos();
+        }
+      }
+
       // When cancelling a reserved table, also cancel the reservation record
       if (action === 'clear' && selectedTable.status === 'reserved' && selectedTable.reservation_id) {
         fetch(`/api/reservations/${selectedTable.reservation_id}`, {
@@ -481,7 +594,12 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       }
 
       setSelectedTableId(null);
-      fetchLiveData();
+      await fetchLiveData();
+
+      // After a table clears, fire suggestion for any arrived party already waiting
+      if (action === 'clear') {
+        triggerSuggestionForArrivedParty(upcoming);
+      }
     } catch (err) {
       console.error('[host-stand] Transition error:', err);
     }
@@ -609,8 +727,32 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       });
       if (!res.ok) break;
     }
+
+    // Propagate force_complete to combo secondary tables, then release combo
+    const combo = tableComboMap.get(table.table_id);
+    if (combo) {
+      const secondaryIds = combo.combined_table_ids.filter((id) => id !== table.table_id);
+      for (const secId of secondaryIds) {
+        for (const action of actions) {
+          await fetch('/api/floor-plan/live/transition', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ venue_id: venueId, table_id: secId, date: businessDate, action }),
+          }).catch(() => {});
+        }
+      }
+      await fetch('/api/floor-plan/live/combos', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ combo_id: combo.id }),
+      }).catch(() => {});
+      fetchCombos();
+    }
+
     setSelectedTableId(null);
-    fetchLiveData();
+    await fetchLiveData();
+    // Table just cleared — fire suggestion for any arrived party already waiting
+    triggerSuggestionForArrivedParty(upcoming);
   };
 
   // ── Render ─────────────────────────────────────────────────────
@@ -653,6 +795,8 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
               transitioningTableIds={transitioningTableIds}
               sectionServerMap={sectionServerMap}
               sectionCoverMap={sectionCoverMap}
+              comboTableIds={comboTableIds}
+              comboPrimaryIds={comboPrimaryIds}
               onSelectTable={handleTableSelect}
               onDeselectAll={handleDeselectAll}
               onDoubleClickTable={() => {}}
@@ -688,6 +832,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
           ? allRezs.find(r => r.id === selectedTable.reservation_id)
           : null;
 
+        const tableCombo = tableComboMap.get(selectedTable.table_id);
         return (
           <TableActionSheet
             table={{
@@ -695,6 +840,8 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
               reservation_id: selectedTable.reservation_id,
               reservation_notes: matchingRez?.notes ?? null,
               client_requests: matchingRez?.client_requests ?? null,
+              combo_id: tableCombo?.id ?? null,
+              is_combo_primary: tableCombo?.primary_table_id === selectedTable.table_id,
             }}
             venueId={venueId}
             businessDate={businessDate}
@@ -734,6 +881,30 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
           tableNumber={seatWalkinTableNumber}
           onClose={() => setShowSeatWalkinDialog(false)}
           onSeated={fetchLiveData}
+        />
+      )}
+
+      {/* Combine tables dialog */}
+      {showCombineDialog && selectedTable && (
+        <CombineTablesDialog
+          primaryTable={{
+            table_id: selectedTable.table_id,
+            table_number: selectedTable.table_number,
+            max_capacity: selectedTable.max_capacity,
+            section_id: selectedTable.section_id,
+          }}
+          availableTables={liveTables
+            .filter((t) => t.status === 'available' && !comboTableIds.has(t.table_id))
+            .map((t) => ({
+              table_id: t.table_id,
+              table_number: t.table_number,
+              max_capacity: t.max_capacity,
+              section_id: t.section_id,
+            }))}
+          venueId={venueId}
+          date={businessDate}
+          onClose={() => { setShowCombineDialog(false); setSelectedTableId(null); }}
+          onCombined={() => { fetchCombos(); fetchLiveData(); }}
         />
       )}
 

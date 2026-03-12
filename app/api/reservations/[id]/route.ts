@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues } from '@/lib/tenant';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { rateLimit } from '@/lib/rate-limit';
 import {
   getReservationById,
@@ -27,7 +27,7 @@ export async function PATCH(
   return guard(async () => {
     rateLimit(request, ':reservations');
     const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const { venueIds } = await getUserOrgAndVenues(user.id);
 
     const { id } = await params;
 
@@ -35,6 +35,7 @@ export async function PATCH(
     if (!rez) {
       return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
     }
+    assertVenueAccess(rez.venue_id, venueIds);
 
     const body = await request.json();
     const {
@@ -84,9 +85,14 @@ export async function POST(
   return guard(async () => {
     rateLimit(request, ':reservations');
     const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const { venueIds } = await getUserOrgAndVenues(user.id);
 
     const { id } = await params;
+    const rez = await getReservationById(id);
+    if (!rez) {
+      return NextResponse.json({ error: 'Reservation not found' }, { status: 404 });
+    }
+    assertVenueAccess(rez.venue_id, venueIds);
 
     const body = await request.json();
     const { action, metadata } = body;
