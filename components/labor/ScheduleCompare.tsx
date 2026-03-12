@@ -45,8 +45,9 @@ interface WeekSummary {
   totalCost: number;
   laborPct: number | null;
   projectedRevenue: number | null;
-  byPosition: Record<string, { count: number; hours: number; cost: number }>;
+  byPosition: Record<string, { count: number; hours: number; cost: number; category?: string }>;
   byDay: Record<string, { count: number; hours: number; cost: number }>;
+  byPositionByDay: Record<string, Record<string, number>>; // position -> date -> count
   fohHours: number;
   bohHours: number;
 }
@@ -538,6 +539,288 @@ export function ScheduleCompare({ venueId, venueName, currentWeekStart }: Props)
               })}
             </div>
           </Card>
+
+          {/* ── Detailed Position Analysis ── */}
+          <Card className="overflow-hidden">
+            <div className="p-4 border-b bg-gray-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-gray-500" />
+                <h3 className="text-sm font-semibold text-gray-800">Position-Level Assessment</h3>
+                <span className="text-xs text-gray-400 ml-1">Current week vs. previous weeks average</span>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-40">Position</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-indigo-700 bg-indigo-50">Current<br/>Shifts</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-500">Avg Prev<br/>Shifts</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-500">Delta</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-indigo-700 bg-indigo-50">Current<br/>Hours</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-500">Avg Prev<br/>Hours</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-500">Delta<br/>Hours</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-indigo-700 bg-indigo-50">Current<br/>Cost</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-500">Avg Prev<br/>Cost</th>
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-600 w-28">Assessment</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allPositions.map((pos, pidx) => {
+                    const curr = currentWeek?.byPosition[pos];
+                    const currCount = curr?.count ?? 0;
+                    const currHours = curr?.hours ?? 0;
+                    const currCost = curr?.cost ?? 0;
+
+                    // Average across all previous weeks
+                    const prevData = prevWeeks.filter(w => w.status !== 'missing');
+                    const avgCount = prevData.length > 0
+                      ? prevData.reduce((sum, w) => sum + (w.byPosition[pos]?.count ?? 0), 0) / prevData.length
+                      : 0;
+                    const avgHours = prevData.length > 0
+                      ? prevData.reduce((sum, w) => sum + (w.byPosition[pos]?.hours ?? 0), 0) / prevData.length
+                      : 0;
+                    const avgCost = prevData.length > 0
+                      ? prevData.reduce((sum, w) => sum + (w.byPosition[pos]?.cost ?? 0), 0) / prevData.length
+                      : 0;
+
+                    const countDelta = currCount - avgCount;
+                    const hoursDelta = currHours - avgHours;
+                    const countPctChange = avgCount > 0 ? (countDelta / avgCount) * 100 : 0;
+
+                    // Assessment
+                    let assessment: 'overstaffed' | 'understaffed' | 'good' | 'neutral' = 'neutral';
+                    let assessmentLabel = '—';
+                    let assessmentColor = 'bg-gray-100 text-gray-500';
+                    if (avgCount > 0 && currCount > 0) {
+                      if (countPctChange > 25) {
+                        assessment = 'overstaffed';
+                        assessmentLabel = 'Over-staffed';
+                        assessmentColor = 'bg-red-100 text-red-700 border border-red-200';
+                      } else if (countPctChange > 10) {
+                        assessment = 'overstaffed';
+                        assessmentLabel = 'Slightly over';
+                        assessmentColor = 'bg-amber-100 text-amber-700 border border-amber-200';
+                      } else if (countPctChange < -25) {
+                        assessment = 'understaffed';
+                        assessmentLabel = 'Under-staffed';
+                        assessmentColor = 'bg-blue-100 text-blue-700 border border-blue-200';
+                      } else if (countPctChange < -10) {
+                        assessment = 'understaffed';
+                        assessmentLabel = 'Slightly under';
+                        assessmentColor = 'bg-sky-100 text-sky-700 border border-sky-200';
+                      } else {
+                        assessment = 'good';
+                        assessmentLabel = 'On target';
+                        assessmentColor = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+                      }
+                    }
+
+                    return (
+                      <tr key={pos} className={`border-b ${pidx % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                        <td className="px-4 py-2.5 font-medium text-gray-800">{pos}</td>
+                        <td className="text-center px-3 py-2.5 bg-indigo-50/40 font-semibold text-indigo-700">{currCount}</td>
+                        <td className="text-center px-3 py-2.5 text-gray-600">{avgCount.toFixed(1)}</td>
+                        <td className="text-center px-3 py-2.5">
+                          {countDelta !== 0 && (
+                            <span className={`text-xs font-medium ${countDelta > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                              {countDelta > 0 ? '+' : ''}{countDelta.toFixed(1)}
+                            </span>
+                          )}
+                          {countDelta === 0 && <span className="text-gray-300 text-xs">—</span>}
+                        </td>
+                        <td className="text-center px-3 py-2.5 bg-indigo-50/40 font-semibold text-indigo-700">{currHours.toFixed(0)}h</td>
+                        <td className="text-center px-3 py-2.5 text-gray-600">{avgHours.toFixed(0)}h</td>
+                        <td className="text-center px-3 py-2.5">
+                          {hoursDelta !== 0 && (
+                            <span className={`text-xs font-medium ${hoursDelta > 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                              {hoursDelta > 0 ? '+' : ''}{hoursDelta.toFixed(0)}h
+                            </span>
+                          )}
+                          {hoursDelta === 0 && <span className="text-gray-300 text-xs">—</span>}
+                        </td>
+                        <td className="text-center px-3 py-2.5 bg-indigo-50/40 font-semibold text-indigo-700">${Math.round(currCost).toLocaleString()}</td>
+                        <td className="text-center px-3 py-2.5 text-gray-600">${Math.round(avgCost).toLocaleString()}</td>
+                        <td className="text-center px-3 py-2.5">
+                          <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${assessmentColor}`}>
+                            {assessmentLabel}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {/* Totals row */}
+                  {(() => {
+                    const totalCurrShifts = currentWeek?.totalShifts ?? 0;
+                    const totalCurrHours = currentWeek?.totalHours ?? 0;
+                    const totalCurrCost = currentWeek?.totalCost ?? 0;
+                    const prevData = prevWeeks.filter(w => w.status !== 'missing');
+                    const avgPrevShifts = prevData.length > 0
+                      ? prevData.reduce((s, w) => s + w.totalShifts, 0) / prevData.length : 0;
+                    const avgPrevHours = prevData.length > 0
+                      ? prevData.reduce((s, w) => s + w.totalHours, 0) / prevData.length : 0;
+                    const avgPrevCost = prevData.length > 0
+                      ? prevData.reduce((s, w) => s + w.totalCost, 0) / prevData.length : 0;
+                    const shiftDelta = totalCurrShifts - avgPrevShifts;
+                    const hrDelta = totalCurrHours - avgPrevHours;
+                    const overallPct = avgPrevShifts > 0 ? (shiftDelta / avgPrevShifts) * 100 : 0;
+
+                    let overallAssessment = 'On target';
+                    let overallColor = 'bg-emerald-600 text-white';
+                    if (overallPct > 25) {
+                      overallAssessment = `Over-staffed (+${overallPct.toFixed(0)}%)`;
+                      overallColor = 'bg-red-600 text-white';
+                    } else if (overallPct > 10) {
+                      overallAssessment = `Slightly over (+${overallPct.toFixed(0)}%)`;
+                      overallColor = 'bg-amber-500 text-white';
+                    } else if (overallPct < -25) {
+                      overallAssessment = `Under-staffed (${overallPct.toFixed(0)}%)`;
+                      overallColor = 'bg-blue-600 text-white';
+                    } else if (overallPct < -10) {
+                      overallAssessment = `Slightly under (${overallPct.toFixed(0)}%)`;
+                      overallColor = 'bg-sky-500 text-white';
+                    }
+
+                    return (
+                      <tr className="border-t-2 border-gray-300 bg-gray-100 font-bold">
+                        <td className="px-4 py-3 text-gray-900">TOTAL</td>
+                        <td className="text-center px-3 py-3 bg-indigo-100/60 text-indigo-800">{totalCurrShifts}</td>
+                        <td className="text-center px-3 py-3 text-gray-700">{avgPrevShifts.toFixed(0)}</td>
+                        <td className="text-center px-3 py-3">
+                          <span className={`text-xs font-bold ${shiftDelta > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {shiftDelta > 0 ? '+' : ''}{shiftDelta.toFixed(0)}
+                          </span>
+                        </td>
+                        <td className="text-center px-3 py-3 bg-indigo-100/60 text-indigo-800">{totalCurrHours.toFixed(0)}h</td>
+                        <td className="text-center px-3 py-3 text-gray-700">{avgPrevHours.toFixed(0)}h</td>
+                        <td className="text-center px-3 py-3">
+                          <span className={`text-xs font-bold ${hrDelta > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                            {hrDelta > 0 ? '+' : ''}{hrDelta.toFixed(0)}h
+                          </span>
+                        </td>
+                        <td className="text-center px-3 py-3 bg-indigo-100/60 text-indigo-800">${Math.round(totalCurrCost).toLocaleString()}</td>
+                        <td className="text-center px-3 py-3 text-gray-700">${Math.round(avgPrevCost).toLocaleString()}</td>
+                        <td className="text-center px-3 py-3">
+                          <span className={`inline-block px-2 py-1 rounded text-[11px] font-bold ${overallColor}`}>
+                            {overallAssessment}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* ── Position Daily Heatmap ── */}
+          <Card className="overflow-hidden">
+            <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-gray-500" />
+              <h3 className="text-sm font-semibold text-gray-800">Position x Day Heatmap</h3>
+              <span className="text-xs text-gray-400 ml-1">Current week headcount per position per day</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-40">Position</th>
+                    {DOW.map(d => (
+                      <th key={d} className={`text-center px-3 py-2.5 font-medium text-xs ${d === 'Fri' || d === 'Sat' || d === 'Sun' ? 'text-amber-700 bg-amber-50' : 'text-gray-600'}`}>
+                        {d}
+                      </th>
+                    ))}
+                    <th className="text-center px-3 py-2.5 font-medium text-xs text-gray-600 bg-gray-100">Week Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allPositions.map((pos, pidx) => {
+                    const dates = weekDates(currentWeek?.weekStart ?? anchorWeek);
+                    const posTotal = currentWeek?.byPosition[pos]?.count ?? 0;
+                    const maxPerDay = Math.max(...dates.map(d => currentWeek?.byPositionByDay?.[pos]?.[d] ?? 0), 1);
+
+                    return (
+                      <tr key={pos} className={`border-b ${pidx % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                        <td className="px-4 py-2 font-medium text-gray-700 text-xs">{pos}</td>
+                        {dates.map((date, dIdx) => {
+                          const count = currentWeek?.byPositionByDay?.[pos]?.[date] ?? 0;
+                          const isWeekend = dIdx >= 4; // Fri, Sat, Sun
+                          const intensity = maxPerDay > 0 ? count / maxPerDay : 0;
+                          const bg = count === 0 ? '' :
+                            intensity > 0.8 ? 'bg-indigo-200' :
+                            intensity > 0.5 ? 'bg-indigo-100' : 'bg-indigo-50';
+
+                          return (
+                            <td key={date} className={`text-center px-3 py-2 ${isWeekend ? 'bg-amber-50/30' : ''} ${bg}`}>
+                              {count > 0 ? (
+                                <span className="text-xs font-medium text-gray-700">{count}</span>
+                              ) : (
+                                <span className="text-gray-300 text-xs">—</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                        <td className="text-center px-3 py-2 bg-gray-100 font-semibold text-gray-800">
+                          {posTotal > 0 ? posTotal : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          {/* ── Savings Opportunity Summary ── */}
+          {(() => {
+            const prevData = prevWeeks.filter(w => w.status !== 'missing');
+            if (prevData.length === 0 || !currentWeek) return null;
+            const avgPrevCost = prevData.reduce((s, w) => s + w.totalCost, 0) / prevData.length;
+            const costDelta = (currentWeek?.totalCost ?? 0) - avgPrevCost;
+            if (costDelta <= 0) return null; // Only show if over budget
+
+            const annualized = costDelta * 52;
+            const overstaffedPositions = allPositions.filter(pos => {
+              const curr = currentWeek?.byPosition[pos]?.count ?? 0;
+              const avg = prevData.reduce((s, w) => s + (w.byPosition[pos]?.count ?? 0), 0) / prevData.length;
+              return avg > 0 && ((curr - avg) / avg) > 0.25;
+            });
+
+            return (
+              <Card className="p-5 border-l-4 border-amber-400 bg-amber-50/50">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-bold text-amber-900 mb-1">Optimization Opportunity</h3>
+                    <p className="text-sm text-amber-800">
+                      Current week labor cost is <strong>${Math.round(costDelta).toLocaleString()}</strong> higher
+                      than the {prevData.length}-week average.
+                      {annualized > 0 && (
+                        <> Annualized impact: <strong>${Math.round(annualized).toLocaleString()}</strong>.</>
+                      )}
+                    </p>
+                    {overstaffedPositions.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-semibold text-amber-700 mb-1">Positions with 25%+ more shifts than average:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {overstaffedPositions.map(pos => {
+                            const curr = currentWeek?.byPosition[pos]?.count ?? 0;
+                            const avg = prevData.reduce((s, w) => s + (w.byPosition[pos]?.count ?? 0), 0) / prevData.length;
+                            return (
+                              <span key={pos} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-200/60 text-amber-900 text-xs font-medium">
+                                {pos}
+                                <span className="text-amber-600 text-[10px]">+{(curr - avg).toFixed(0)}</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+            );
+          })()}
         </>
       )}
     </div>
@@ -589,8 +872,9 @@ async function fetchWeekSummary(venueId: string, weekStart: string): Promise<Wee
   const shifts: ShiftRecord[] = data.shifts ?? [];
   const schedule = data.schedule;
 
-  const byPosition: Record<string, { count: number; hours: number; cost: number }> = {};
+  const byPosition: Record<string, { count: number; hours: number; cost: number; category?: string }> = {};
   const byDay: Record<string, { count: number; hours: number; cost: number }> = {};
+  const byPositionByDay: Record<string, Record<string, number>> = {};
   let fohHours = 0;
   let bohHours = 0;
 
@@ -602,7 +886,7 @@ async function fetchWeekSummary(venueId: string, weekStart: string): Promise<Wee
     const cost = Number(s.scheduled_cost) || 0;
 
     // By position
-    if (!byPosition[pos]) byPosition[pos] = { count: 0, hours: 0, cost: 0 };
+    if (!byPosition[pos]) byPosition[pos] = { count: 0, hours: 0, cost: 0, category: cat };
     byPosition[pos].count += 1;
     byPosition[pos].hours += hrs;
     byPosition[pos].cost += cost;
@@ -612,6 +896,10 @@ async function fetchWeekSummary(venueId: string, weekStart: string): Promise<Wee
     byDay[date].count += 1;
     byDay[date].hours += hrs;
     byDay[date].cost += cost;
+
+    // By position by day
+    if (!byPositionByDay[pos]) byPositionByDay[pos] = {};
+    byPositionByDay[pos][date] = (byPositionByDay[pos][date] || 0) + 1;
 
     // FOH / BOH
     if (cat === 'front_of_house') fohHours += hrs;
@@ -629,6 +917,7 @@ async function fetchWeekSummary(venueId: string, weekStart: string): Promise<Wee
     projectedRevenue: schedule.projected_revenue ? Number(schedule.projected_revenue) : null,
     byPosition,
     byDay,
+    byPositionByDay,
     fohHours,
     bohHours,
   };
@@ -646,6 +935,7 @@ function emptyWeek(weekStart: string): WeekSummary {
     projectedRevenue: null,
     byPosition: {},
     byDay: {},
+    byPositionByDay: {},
     fohHours: 0,
     bohHours: 0,
   };
