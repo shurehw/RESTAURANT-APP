@@ -1,0 +1,681 @@
+'use client';
+
+/**
+ * HostStandView — Full-screen live floor management surface.
+ * Polls live floor data every 30s and renders the floor plan
+ * with state-colored tables, upcoming arrivals, waitlist, and metrics.
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
+import { FloorPlanCanvas } from '@/components/floor-plan/FloorPlanCanvas';
+import type { VenueTable, VenueSection, VenueLabel } from '@/lib/database/floor-plan';
+import type { TableState } from '@/lib/floor-management/table-state-machine';
+import type { TableVisualMeta } from '@/components/floor-plan/FloorPlanCanvas';
+import { HostStandHeader } from './HostStandHeader';
+import { HostStandSidebar } from './HostStandSidebar';
+import { HostStandMetricsBar } from './HostStandMetricsBar';
+import { TableStatusLegend } from './TableStatusLegend';
+import { TableActionSheet } from './TableActionSheet';
+import { AddWaitlistDialog } from './AddWaitlistDialog';
+import { SeatWalkinDialog } from './SeatWalkinDialog';
+import { SeatSuggestionToast } from './SeatSuggestionToast';
+import { STATE_COLORS, getBusinessDate } from './constants';
+
+// ── Types ────────────────────────────────────────────────────────
+
+interface LiveTable {
+  id: string;
+  table_id: string;
+  table_number: string;
+  section_id: string | null;
+  status: TableState;
+  party_size: number | null;
+  guest_name?: string;
+  seated_at: string | null;
+  current_spend: number;
+  turn_number: number;
+  min_capacity: number;
+  max_capacity: number;
+  shape: string;
+  pos_x: number;
+  pos_y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  reservation_id: string | null;
+}
+
+interface UpcomingReservation {
+  id: string;
+  guest_name: string;
+  party_size: number;
+  arrival_time: string;
+  status: string;
+  is_vip: boolean;
+  notes: string | null;
+  client_requests: string | null;
+  table_ids?: string[];
+}
+
+interface WaitlistEntry {
+  id: string;
+  guest_name: string;
+  party_size: number;
+  quoted_wait: number | null;
+  added_at: string;
+  status: string;
+}
+
+interface LiveSummary {
+  total_tables: number;
+  available: number;
+  total_covers: number;
+  total_revenue: number;
+  avg_turn_minutes: number;
+  waitlist_count: number;
+}
+
+interface HostStandViewProps {
+  venueId: string;
+  venueName: string;
+  hostName: string;
+  userId: string;
+}
+
+// ── Component ────────────────────────────────────────────────────
+
+export function HostStandView({ venueId, venueName, hostName }: HostStandViewProps) {
+  const [businessDate, setBusinessDate] = useState(getBusinessDate);
+
+  const handleDateNav = useCallback((delta: number) => {
+    setBusinessDate((prev) => {
+      const d = new Date(prev + 'T12:00:00');
+      d.setDate(d.getDate() + delta);
+      return d.toISOString().slice(0, 10);
+    });
+  }, []);
+
+  const handleDateSet = useCallback((date: string) => {
+    setBusinessDate(date);
+  }, []);
+
+  // Live data state
+  const [sections, setSections] = useState<VenueSection[]>([]);
+  const [labels, setLabels] = useState<VenueLabel[]>([]);
+  const [liveTables, setLiveTables] = useState<LiveTable[]>([]);
+  const [upcoming, setUpcoming] = useState<UpcomingReservation[]>([]);
+  const [seatedReservations, setSeatedReservations] = useState<UpcomingReservation[]>([]);
+  const [completedRez, setCompletedRez] = useState<UpcomingReservation[]>([]);
+  const [noShows, setNoShows] = useState<UpcomingReservation[]>([]);
+  const [cancelledRez, setCancelledRez] = useState<UpcomingReservation[]>([]);
+  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+  const [summary, setSummary] = useState<LiveSummary>({
+    total_tables: 0,
+    available: 0,
+    total_covers: 0,
+    total_revenue: 0,
+    avg_turn_minutes: 0,
+    waitlist_count: 0,
+  });
+
+  const [sectionServerMap, setSectionServerMap] = useState<Map<string, string>>(new Map());
+
+  // Seat suggestion state
+  const [activeSuggestion, setActiveSuggestion] = useState<{
+    id: string; expires_at: string; reservation_id: string; guest_name: string; party_size: number; is_vip: boolean;
+    table_id: string; table_number: string; section_name: string | null;
+    section_color: string | null; reason: string | null;
+  } | null>(null);
+  const pendingSuggestionRef = useRef<Set<string>>(new Set()); // rez IDs with in-flight suggestion requests
+
+  // UI state
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [showWaitlistDialog, setShowWaitlistDialog] = useState(false);
+  const [showSeatWalkinDialog, setShowSeatWalkinDialog] = useState(false);
+  const [seatWalkinTableId, setSeatWalkinTableId] = useState<string | undefined>();
+  const [seatWalkinTableNumber, setSeatWalkinTableNumber] = useState<string | undefined>();
+
+  // ── Data Fetching ──────────────────────────────────────────────
+
+  const fetchLiveData = useCallback(async () => {
+    try {
+      const [liveRes, summaryRes, waitlistRes] = await Promise.all([
+        fetch(`/api/floor-plan/live?venue_id=${venueId}&date=${businessDate}`),
+        fetch(`/api/floor-plan/live/summary?venue_id=${venueId}&date=${businessDate}`),
+        fetch(`/api/waitlist?venue_id=${venueId}&date=${businessDate}`),
+      ]);
+
+      if (liveRes.ok) {
+        const liveData = await liveRes.json();
+        setSections(liveData.sections || []);
+        setLabels(liveData.labels || []);
+        setLiveTables(liveData.tables || []);
+        setUpcoming(liveData.upcoming || []);
+        setSeatedReservations(liveData.seated_reservations || []);
+        setCompletedRez(liveData.completed || []);
+        setNoShows(liveData.no_shows || []);
+        setCancelledRez(liveData.cancelled || []);
+      }
+
+      if (summaryRes.ok) {
+        const summaryData = await summaryRes.json();
+        setSummary({
+          total_tables: summaryData.total_tables || 0,
+          available: summaryData.available || 0,
+          total_covers: summaryData.total_covers || 0,
+          total_revenue: summaryData.total_revenue || 0,
+          avg_turn_minutes: summaryData.avg_turn_minutes || 0,
+          waitlist_count: summaryData.waitlist_count || 0,
+        });
+      }
+
+      if (waitlistRes.ok) {
+        const waitlistData = await waitlistRes.json();
+        setWaitlist(waitlistData.entries || []);
+      }
+    } catch {
+      // Silently handle — will retry on next poll
+    }
+  }, [venueId, businessDate]);
+
+  useEffect(() => {
+    fetchLiveData();
+    const interval = setInterval(fetchLiveData, 30_000);
+    return () => clearInterval(interval);
+  }, [fetchLiveData]);
+
+  // ── Server Section Assignments (once per business date) ──────────
+
+  useEffect(() => {
+    async function fetchServerSections() {
+      try {
+        const res = await fetch(
+          `/api/floor-plan/server-sections?venue_id=${venueId}&date=${businessDate}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const map = new Map<string, string>();
+        for (const a of data.assignments || []) {
+          if (a.section_id && a.server_name) {
+            // Show first name only to keep it compact
+            map.set(a.section_id, a.server_name.split(' ')[0]);
+          }
+        }
+        setSectionServerMap(map);
+      } catch {
+        // Non-critical — silently ignore
+      }
+    }
+    fetchServerSections();
+  }, [venueId, businessDate]);
+
+  // ── Real-time SR Sync (every 2 min) ─────────────────────────────
+
+  const syncReservations = useCallback(async () => {
+    try {
+      await fetch('/api/floor-plan/live/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId, date: businessDate }),
+      });
+      // After sync, refresh live data to pick up changes
+      fetchLiveData();
+    } catch {
+      // Silently handle — will retry on next poll
+    }
+  }, [venueId, businessDate, fetchLiveData]);
+
+  useEffect(() => {
+    syncReservations(); // Initial sync on mount
+    const interval = setInterval(syncReservations, 120_000); // Every 2 min
+    return () => clearInterval(interval);
+  }, [syncReservations]);
+
+  // ── AI Seat Suggestion Trigger ─────────────────────────────────
+  // Fires when a reservation transitions to 'arrived'. Uses a ref to
+  // prevent duplicate requests across rapid re-renders / poll cycles.
+
+  const prevUpcomingRef = useRef<Map<string, string>>(new Map()); // id → status
+
+  useEffect(() => {
+    const prev = prevUpcomingRef.current;
+    const next = new Map<string, string>();
+    for (const r of upcoming) next.set(r.id, r.status);
+    prevUpcomingRef.current = next;
+
+    // Find reservations that just became 'arrived'
+    const newArrivals = upcoming.filter(
+      (r) => r.status === 'arrived' && prev.get(r.id) !== 'arrived'
+    );
+
+    for (const rez of newArrivals) {
+      if (pendingSuggestionRef.current.has(rez.id)) continue;
+      if (activeSuggestion) continue; // one at a time
+      pendingSuggestionRef.current.add(rez.id);
+
+      fetch(`/api/floor-plan/live/suggest-seat?venue_id=${venueId}&date=${businessDate}&reservation_id=${rez.id}&trigger=arrived`)
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data?.suggestion) {
+            setActiveSuggestion(data.suggestion);
+          }
+        })
+        .catch(() => {})
+        .finally(() => pendingSuggestionRef.current.delete(rez.id));
+    }
+  }, [upcoming, venueId, businessDate, activeSuggestion]);
+
+  const handleSuggestionAccept = async (suggestion: NonNullable<typeof activeSuggestion>) => {
+    setActiveSuggestion(null);
+    // Log outcome
+    await fetch('/api/floor-plan/live/suggest-seat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ suggestion_id: suggestion.id, outcome: 'accepted', actual_table_id: suggestion.table_id, actual_table_number: suggestion.table_number }),
+    }).catch(() => {});
+
+    // Find the arrived reservation for this suggestion
+    const rez = upcoming.find((r) => r.id === suggestion.reservation_id && r.status === 'arrived');
+    if (!rez) return;
+
+    // Seat the reservation on the suggested table
+    await fetch('/api/floor-plan/live/transition', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        venue_id: venueId, table_id: suggestion.table_id,
+        date: businessDate, action: 'seat',
+        reservation_id: rez.id, party_size: rez.party_size, expected_duration: 90,
+      }),
+    }).catch(() => {});
+    fetchLiveData();
+  };
+
+  const handleSuggestionDismiss = async (suggestion: NonNullable<typeof activeSuggestion>, outcome: 'dismissed' | 'expired') => {
+    setActiveSuggestion(null);
+    await fetch('/api/floor-plan/live/suggest-seat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ suggestion_id: suggestion.id, outcome }),
+    }).catch(() => {});
+  };
+
+  // ── Canvas Data Mapping ────────────────────────────────────────
+
+  // Map LiveTable → VenueTable format for FloorPlanCanvas
+  const canvasTables: VenueTable[] = liveTables.map((t) => ({
+    id: t.table_id,
+    org_id: '',
+    venue_id: venueId,
+    section_id: t.section_id,
+    table_number: t.table_number,
+    min_capacity: t.min_capacity,
+    max_capacity: t.max_capacity,
+    shape: t.shape as VenueTable['shape'],
+    pos_x: t.pos_x,
+    pos_y: t.pos_y,
+    width: t.width,
+    height: t.height,
+    rotation: t.rotation,
+    is_active: true,
+    created_at: '',
+    updated_at: '',
+  }));
+
+  // Build color map from table states
+  const tableColorMap = new Map<string, string>();
+  for (const t of liveTables) {
+    tableColorMap.set(t.table_id, STATE_COLORS[t.status]);
+  }
+
+  // Build label map — guest names on occupied/reserved tables
+  const tableLabelMap = new Map<string, string>();
+  for (const t of liveTables) {
+    if (t.guest_name && ['reserved', 'seated', 'occupied', 'check_dropped'].includes(t.status)) {
+      tableLabelMap.set(t.table_id, t.guest_name);
+    }
+  }
+
+  // ── Visual Meta (animations, VIP, spend, arrivals) ───────────
+  const prevStatusRef = useRef<Map<string, string>>(new Map());
+  const [transitioningTableIds, setTransitioningTableIds] = useState<Set<string>>(new Set());
+
+  // Detect state transitions on each data refresh
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    const transitioning = new Set<string>();
+
+    for (const t of liveTables) {
+      const oldStatus = prev.get(t.table_id);
+      if (oldStatus && oldStatus !== t.status) {
+        transitioning.add(t.table_id);
+      }
+    }
+
+    // Update prev map
+    const next = new Map<string, string>();
+    for (const t of liveTables) next.set(t.table_id, t.status);
+    prevStatusRef.current = next;
+
+    if (transitioning.size > 0) {
+      setTransitioningTableIds(transitioning);
+      // Clear after animation completes
+      const timer = setTimeout(() => setTransitioningTableIds(new Set()), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [liveTables]);
+
+  // Build VIP and arrived sets from reservation data
+  const allRezForMeta = [...upcoming, ...seatedReservations];
+  const vipRezIds = new Set(allRezForMeta.filter(r => r.is_vip).map(r => r.id));
+  const arrivedTableIds = new Set<string>();
+  for (const r of upcoming) {
+    if (r.status === 'arrived' && r.table_ids) {
+      for (const tid of r.table_ids) arrivedTableIds.add(tid);
+    }
+  }
+
+  // Compute spend intensity
+  const maxSpend = Math.max(1, ...liveTables.map(t => t.current_spend || 0));
+
+  // Build the meta map
+  const tableMetaMap = new Map<string, TableVisualMeta>();
+  for (const t of liveTables) {
+    tableMetaMap.set(t.table_id, {
+      status: t.status,
+      seatedAt: t.seated_at,
+      currentSpend: t.current_spend || 0,
+      turnNumber: t.turn_number || 0,
+      isVip: !!(t.reservation_id && vipRezIds.has(t.reservation_id)),
+      isArrived: arrivedTableIds.has(t.table_id),
+      spendIntensity: (t.current_spend || 0) / maxSpend,
+    });
+  }
+
+  // ── Table Actions ──────────────────────────────────────────────
+
+  const selectedTable = selectedTableId
+    ? liveTables.find((t) => t.table_id === selectedTableId)
+    : null;
+
+  const handleTableSelect = useCallback((id: string) => {
+    setSelectedTableId(id);
+  }, []);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedTableId(null);
+  }, []);
+
+  const handleTableAction = async (action: string) => {
+    if (!selectedTable) return;
+
+    if (action === 'seat_walkin') {
+      setSeatWalkinTableId(selectedTable.table_id);
+      setSeatWalkinTableNumber(selectedTable.table_number);
+      setShowSeatWalkinDialog(true);
+      setSelectedTableId(null);
+      return;
+    }
+
+    if (action === 'force_complete') {
+      await handleForceComplete(selectedTable);
+      return;
+    }
+
+    // Map action to API action name
+    const actionMap: Record<string, string> = {
+      seat: 'seat',
+      bus: 'bus',
+      clear: 'clear',
+      block: 'block',
+      unblock: 'unblock',
+    };
+
+    const apiAction = actionMap[action];
+    if (!apiAction) return;
+
+    try {
+      const body: Record<string, unknown> = {
+        venue_id: venueId,
+        table_id: selectedTable.table_id,
+        date: businessDate,
+        action: apiAction,
+      };
+
+      // For seating a reserved party, pass reservation details
+      if (action === 'seat' && selectedTable.reservation_id) {
+        body.reservation_id = selectedTable.reservation_id;
+        body.party_size = selectedTable.party_size || 2;
+        body.expected_duration = 90;
+      }
+
+      const res = await fetch('/api/floor-plan/live/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        console.error('[host-stand] Transition failed:', data.error);
+      }
+
+      setSelectedTableId(null);
+      fetchLiveData();
+    } catch (err) {
+      console.error('[host-stand] Transition error:', err);
+    }
+  };
+
+  const handleSeatWalkinFromSidebar = () => {
+    setSeatWalkinTableId(undefined);
+    setSeatWalkinTableNumber(undefined);
+    setShowSeatWalkinDialog(true);
+  };
+
+  // ── Drag-to-seat ───────────────────────────────────────────────
+
+  const [activeDragData, setActiveDragData] = useState<{ guest_name: string; party_size: number } | null>(null);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    if (event.active.data.current?.type === 'reservation') {
+      const rez = event.active.data.current.reservation as UpcomingReservation;
+      setActiveDragData({ guest_name: rez.guest_name, party_size: rez.party_size });
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveDragData(null);
+    const { active, over } = event;
+    if (!over || !active) return;
+    if (active.data.current?.type !== 'reservation' || over.data.current?.type !== 'table') return;
+
+    const rez = active.data.current.reservation as UpcomingReservation;
+    const tableId = over.data.current.tableId as string;
+    const tableStatus = over.data.current.tableStatus as string;
+    if (!['available', 'reserved'].includes(tableStatus)) return;
+
+    try {
+      await fetch('/api/floor-plan/live/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          table_id: tableId,
+          date: businessDate,
+          action: 'seat',
+          reservation_id: rez.id,
+          party_size: rez.party_size,
+          expected_duration: 90,
+        }),
+      });
+
+      // If there was an open suggestion and host chose a different table, log as overridden
+      if (
+        activeSuggestion &&
+        activeSuggestion.reservation_id === rez.id &&
+        activeSuggestion.table_id !== tableId
+      ) {
+        fetch('/api/floor-plan/live/suggest-seat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            suggestion_id: activeSuggestion.id,
+            outcome: 'overridden',
+            actual_table_id: tableId,
+          }),
+        }).catch(() => {});
+        setActiveSuggestion(null);
+      }
+
+      fetchLiveData();
+    } catch (err) {
+      console.error('[host-stand] Drag seat failed:', err);
+    }
+  };
+
+  // ── Force Complete (chain through state machine to bussing) ────
+
+  const handleForceComplete = async (table: LiveTable) => {
+    const sequences: Record<string, string[]> = {
+      seated: ['occupy', 'check_drop', 'bus', 'clear'],
+      occupied: ['check_drop', 'bus', 'clear'],
+      check_dropped: ['bus', 'clear'],
+      bussing: ['clear'],
+    };
+    const actions = sequences[table.status];
+    if (!actions) return;
+
+    for (const action of actions) {
+      const res = await fetch('/api/floor-plan/live/transition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId, table_id: table.table_id, date: businessDate, action }),
+      });
+      if (!res.ok) break;
+    }
+    setSelectedTableId(null);
+    fetchLiveData();
+  };
+
+  // ── Render ─────────────────────────────────────────────────────
+
+  return (
+    <div className="flex flex-col h-screen bg-[#0A0A0A] overflow-hidden">
+      <HostStandHeader venueName={venueName} hostName={hostName} businessDate={businessDate} onDateNav={handleDateNav} onDateSet={handleDateSet} />
+
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex flex-1 min-h-0">
+          {/* Sidebar — left */}
+          <div className="w-80 shrink-0">
+            <HostStandSidebar
+              upcoming={upcoming}
+              seatedReservations={seatedReservations}
+              completed={completedRez}
+              noShows={noShows}
+              cancelled={cancelledRez}
+              waitlist={waitlist}
+              onAddWaitlist={() => setShowWaitlistDialog(true)}
+              onSeatWalkin={handleSeatWalkinFromSidebar}
+            />
+          </div>
+
+          {/* Floor plan area */}
+          <div className="flex-1 flex flex-col p-4 gap-3">
+            <FloorPlanCanvas
+              tables={canvasTables}
+              sections={sections}
+              labels={labels}
+              selectedTableIds={new Set(selectedTableId ? [selectedTableId] : [])}
+              highlightedTableIds={activeSuggestion ? new Set([activeSuggestion.table_id]) : undefined}
+              tableColorMap={tableColorMap}
+              tableLabelMap={tableLabelMap}
+              tableMetaMap={tableMetaMap}
+              transitioningTableIds={transitioningTableIds}
+              sectionServerMap={sectionServerMap}
+              onSelectTable={handleTableSelect}
+              onDeselectAll={handleDeselectAll}
+              onDoubleClickTable={() => {}}
+              readOnly
+            />
+            <TableStatusLegend />
+          </div>
+        </div>
+
+        {/* Drag overlay — shows what's being dragged */}
+        <DragOverlay dropAnimation={null}>
+          {activeDragData && (
+            <div className="px-3 py-2 bg-[#FF5A1F] text-white text-sm font-semibold rounded-lg shadow-xl whitespace-nowrap pointer-events-none">
+              {activeDragData.guest_name || 'Guest'} · {activeDragData.party_size}
+            </div>
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      <HostStandMetricsBar
+        totalCovers={summary.total_covers}
+        available={summary.available}
+        totalTables={summary.total_tables}
+        avgTurnMinutes={summary.avg_turn_minutes}
+        waitlistCount={summary.waitlist_count}
+        totalRevenue={summary.total_revenue}
+      />
+
+      {/* Table action sheet */}
+      {selectedTable && (() => {
+        const allRezs = [...upcoming, ...seatedReservations, ...completedRez];
+        const matchingRez = selectedTable.reservation_id
+          ? allRezs.find(r => r.id === selectedTable.reservation_id)
+          : null;
+
+        return (
+          <TableActionSheet
+            table={{
+              ...selectedTable,
+              reservation_id: selectedTable.reservation_id,
+              reservation_notes: matchingRez?.notes ?? null,
+              client_requests: matchingRez?.client_requests ?? null,
+            }}
+            venueId={venueId}
+            businessDate={businessDate}
+            onAction={handleTableAction}
+            onClose={() => setSelectedTableId(null)}
+            onNoteAdded={fetchLiveData}
+          />
+        );
+      })()}
+
+      {/* Add waitlist dialog */}
+      {showWaitlistDialog && (
+        <AddWaitlistDialog
+          venueId={venueId}
+          date={businessDate}
+          onClose={() => setShowWaitlistDialog(false)}
+          onAdded={fetchLiveData}
+        />
+      )}
+
+      {/* Seat walk-in dialog */}
+      {showSeatWalkinDialog && (
+        <SeatWalkinDialog
+          venueId={venueId}
+          date={businessDate}
+          tableId={seatWalkinTableId}
+          tableNumber={seatWalkinTableNumber}
+          onClose={() => setShowSeatWalkinDialog(false)}
+          onSeated={fetchLiveData}
+        />
+      )}
+
+      {/* AI seat suggestion toast */}
+      {activeSuggestion && (
+        <SeatSuggestionToast
+          suggestion={activeSuggestion}
+          onAccept={handleSuggestionAccept}
+          onDismiss={handleSuggestionDismiss}
+        />
+      )}
+    </div>
+  );
+}
