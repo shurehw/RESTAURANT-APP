@@ -16,7 +16,7 @@ import { z } from 'zod';
 
 const VALID_ROLES = [
   'owner', 'director', 'gm', 'agm', 'manager',
-  'exec_chef', 'sous_chef', 'readonly', 'pwa',
+  'exec_chef', 'sous_chef', 'onboarding', 'readonly', 'pwa',
 ] as const;
 
 const updateMemberSchema = z.object({
