@@ -23,11 +23,14 @@ import {
   AlertCircle,
   TrendingUp,
   Users,
+  LayoutGrid,
+  UserCircle2,
 } from 'lucide-react';
 import { ShiftEditDialog } from './ShiftEditDialog';
 import { AddShiftDialog } from './AddShiftDialog';
 import { ScheduleChangeLog } from './ScheduleChangeLog';
 import { ShiftTimelineChart } from './ShiftTimelineChart';
+import { EmployeeScheduleView } from './EmployeeScheduleView';
 
 interface Shift {
   id: string;
@@ -109,6 +112,9 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
   const [approving, setApproving] = useState(false);
   const [reopening, setReopening] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  // View mode: 'position' (manager view) | 'employee' (staff-facing view)
+  const [view, setView] = useState<'position' | 'employee'>('position');
 
   // Edit dialog state
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
@@ -502,6 +508,32 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
             </div>
           </div>
 
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setView('position')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                view === 'position'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Position View
+            </button>
+            <button
+              onClick={() => setView('employee')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                view === 'employee'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <UserCircle2 className="w-3.5 h-3.5" />
+              Employee View
+            </button>
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-2">
             <Button
@@ -592,8 +624,17 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
         onShiftClick={handleShiftClick}
       />
 
-      {/* Calendar Grid */}
-      <div className="bg-white border rounded-lg overflow-hidden">
+      {/* Employee Schedule View */}
+      {view === 'employee' && (
+        <EmployeeScheduleView
+          shifts={activeShifts}
+          weekDays={weekDays}
+          isLocked={schedule.status === 'locked'}
+        />
+      )}
+
+      {/* Position Calendar Grid */}
+      <div className={`bg-white border rounded-lg overflow-hidden ${view === 'employee' ? 'hidden' : ''}`}>
         {/* Header Row - Days */}
         <div className="grid grid-cols-8 border-b bg-gray-50">
           <div className="p-3 text-sm font-medium text-gray-600">Position</div>
