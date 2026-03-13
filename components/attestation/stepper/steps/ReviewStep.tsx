@@ -180,10 +180,13 @@ export function ReviewStep({
     setNarrativeError(null);
 
     try {
-      const avgCheck =
-        reportSummary.total_covers > 0
-          ? reportSummary.net_sales / reportSummary.total_covers
-          : 0;
+      // Prefer factsSummary values (enriched) over reportSummary (raw POS totals)
+      // — some POS integrations (e.g. Simphony) populate food/bev breakdowns
+      //   but leave net_sales/total_covers at 0 in the raw summary.
+      const netSales = factsSummary?.net_sales ?? reportSummary.net_sales
+        || ((factsSummary?.food_sales ?? 0) + (factsSummary?.beverage_sales ?? 0));
+      const totalCovers = factsSummary?.total_covers ?? reportSummary.total_covers ?? 0;
+      const avgCheck = totalCovers > 0 ? netSales / totalCovers : 0;
 
       const res = await fetch('/api/ai/closing-narrative', {
         method: 'POST',
@@ -194,8 +197,8 @@ export function ReviewStep({
           venueName,
           venue_id: venueId,
           // Raw data
-          net_sales: reportSummary.net_sales,
-          total_covers: reportSummary.total_covers,
+          net_sales: netSales,
+          total_covers: totalCovers,
           avg_check: avgCheck,
           food_sales: factsSummary?.food_sales ?? 0,
           beverage_sales: factsSummary?.beverage_sales ?? 0,

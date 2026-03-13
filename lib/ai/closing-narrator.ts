@@ -186,6 +186,11 @@ const fmtPct = (v: number | null) => v != null ? `${v >= 0 ? '+' : ''}${v.toFixe
 export function buildFinancialSnapshot(input: ClosingNarrativeInput): string {
   const dayOfWeek = new Date(input.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
 
+  // Derive net_sales from food + beverage if the caller passed 0 but has category data
+  const netSales = input.net_sales || (input.food_sales + input.beverage_sales);
+  const totalCovers = input.total_covers;
+  const avgCheck = input.avg_check || (totalCovers > 0 ? netSales / totalCovers : 0);
+
   const lines: string[] = [];
 
   // Header
@@ -194,11 +199,11 @@ export function buildFinancialSnapshot(input: ClosingNarrativeInput): string {
   lines.push('');
 
   // Revenue block
-  lines.push(`Revenue: ${fmtCurrency(input.net_sales)}    Covers: ${input.total_covers}    Avg Check: ${fmtCurrency(input.avg_check)}`);
+  lines.push(`Revenue: ${fmtCurrency(netSales)}    Covers: ${totalCovers}    Avg Check: ${fmtCurrency(avgCheck)}`);
   if (input.checks_count > 0) {
     lines.push(`Checks: ${input.checks_count}    Avg Party: ${input.avg_party_size.toFixed(1)}`);
   }
-  const foodPct = input.net_sales > 0 ? ((input.food_sales / input.net_sales) * 100).toFixed(0) : '0';
+  const foodPct = netSales > 0 ? ((input.food_sales / netSales) * 100).toFixed(0) : '0';
   const bevPct = input.beverage_pct.toFixed(0);
   lines.push(`Food: ${fmtCurrency(input.food_sales)} (${foodPct}%)    Beverage: ${fmtCurrency(input.beverage_sales)} (${bevPct}%)`);
 
