@@ -19,6 +19,8 @@ interface TableInfo {
   reservation_id: string | null;
   reservation_notes: string | null;
   client_requests: string | null;
+  combo_id: string | null;
+  is_combo_primary: boolean;
 }
 
 interface TableActionSheetProps {
