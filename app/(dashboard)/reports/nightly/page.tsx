@@ -2385,9 +2385,9 @@ export default function NightlyReportPage() {
                                 </thead>
                                 <tbody>
                                   {report?.discounts?.map((disc, i) => {
-                                    const pct = totalComps > 0
-                                      ? ((disc.amount || 0) / totalComps * 100).toFixed(0)
-                                      : '0';
+                                    const pct = nightlyNetSales > 0
+                                      ? ((disc.amount || 0) / nightlyNetSales * 100).toFixed(1)
+                                      : '0.0';
                                     return (
                                       <tr key={i}>
                                         <td className="font-medium">{disc.reason}</td>
