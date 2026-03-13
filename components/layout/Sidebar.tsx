@@ -42,6 +42,7 @@ export function Sidebar({ user }: SidebarProps) {
         </NavSection>
         <div className="border-t my-2"></div>
         <NavLink href="/admin/settings">Settings</NavLink>
+        <NavLink href="/admin/mockups">Mockups Admin</NavLink>
       </nav>
 
       <div className="absolute bottom-0 w-64 border-t p-4">

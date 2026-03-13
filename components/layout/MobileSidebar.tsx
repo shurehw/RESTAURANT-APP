@@ -249,6 +249,11 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
                 Settings
               </NavLink>
             )}
+            {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
+              <NavLink href="/admin/mockups" icon={<Search className="w-5 h-5" />}>
+                Mockups Admin
+              </NavLink>
+            )}
           </div>
         </nav>
 
