@@ -1020,7 +1020,8 @@ export async function fetchSimphonyItemSummary(
  */
 export async function fetchSimphonyNightlyReport(
   date: string,
-  locationUuid: string
+  locationUuid: string,
+  venueId?: string
 ): Promise<NightlyReportData> {
   const pool = getTipseePool();
 
@@ -1106,12 +1107,17 @@ export async function fetchSimphonyNightlyReport(
     if (bev > 0) salesByCategory.push({ category: 'Beverage', gross_sales: bev, comps: 0, voids: 0, net_sales: bev });
   }
 
+  // Fetch server performance from Simphony BI API if venueId available
+  const servers = venueId
+    ? await fetchSimphonyServerPerformance(venueId, date)
+    : [];
+
   return {
     date,
     summary: summary as NightlyReportData['summary'],
     salesByCategory,
     salesBySubcategory: [],
-    servers: [],
+    servers,
     menuItems: itemRows.map(r => ({
       name: r.name,
       qty: r.qty,
@@ -1124,6 +1130,91 @@ export async function fetchSimphonyNightlyReport(
     notableGuests: [],
     peopleWeKnow: [],
   };
+}
+
+/**
+ * Fetch per-server performance for Simphony venues via the BI API.
+ * Returns data in the same shape as Upserve server data for seamless display.
+ */
+export async function fetchSimphonyServerPerformance(
+  venueId: string,
+  businessDate: string
+): Promise<Array<{
+  employee_name: string;
+  employee_role_name: string;
+  tickets: number;
+  covers: number;
+  net_sales: number;
+  avg_ticket: number;
+  avg_turn_mins: number;
+  avg_per_cover: number;
+  tip_pct: number | null;
+  total_tips: number;
+}>> {
+  try {
+    const { getSimphonyLocationMapping, getValidIdToken, getSimphonyConfig } =
+      await import('@/lib/database/simphony-tokens');
+    const { getEmployeeDailyTotals, getEmployeeDimensions } =
+      await import('@/lib/integrations/simphony-bi');
+
+    const mapping = await getSimphonyLocationMapping(venueId);
+    if (!mapping) return [];
+
+    const [idToken, config] = await Promise.all([
+      getValidIdToken(mapping.org_identifier),
+      getSimphonyConfig(mapping.org_identifier),
+    ]);
+
+    const [totals, dimensions] = await Promise.all([
+      getEmployeeDailyTotals(config, idToken, mapping.loc_ref, businessDate),
+      getEmployeeDimensions(config, idToken, mapping.loc_ref),
+    ]);
+
+    // Build empNum → name map from dimensions
+    const nameMap = new Map<number, string>();
+    for (const emp of dimensions || []) {
+      const name = emp.chkNm || [emp.frstNm, emp.lstNm].filter(Boolean).join(' ') || `Employee #${emp.num}`;
+      nameMap.set(emp.num, name);
+    }
+
+    // Aggregate across revenue centers per employee
+    const byEmployee = new Map<number, {
+      netSales: number; checks: number; guests: number; tips: number; discounts: number;
+    }>();
+    for (const entry of totals.employees || []) {
+      const existing = byEmployee.get(entry.empNum) || {
+        netSales: 0, checks: 0, guests: 0, tips: 0, discounts: 0,
+      };
+      existing.netSales += entry.netSlsTtl || 0;
+      existing.checks += entry.chkCnt || 0;
+      existing.guests += entry.gstCnt || 0;
+      existing.tips += entry.tipTtl || 0;
+      existing.discounts += Math.abs(entry.dscTtl || 0);
+      byEmployee.set(entry.empNum, existing);
+    }
+
+    // Convert to server data format
+    const servers = Array.from(byEmployee.entries())
+      .filter(([, data]) => data.netSales > 0 || data.checks > 0)
+      .map(([empNum, data]) => ({
+        employee_name: nameMap.get(empNum) || `Employee #${empNum}`,
+        employee_role_name: 'Server', // Simphony BI doesn't provide role per daily totals
+        tickets: data.checks,
+        covers: data.guests,
+        net_sales: data.netSales,
+        avg_ticket: data.checks > 0 ? data.netSales / data.checks : 0,
+        avg_turn_mins: 0, // Not available from BI API
+        avg_per_cover: data.guests > 0 ? data.netSales / data.guests : 0,
+        tip_pct: data.netSales > 0 ? Math.round((data.tips / data.netSales) * 1000) / 10 : null,
+        total_tips: data.tips,
+      }))
+      .sort((a, b) => b.net_sales - a.net_sales);
+
+    return servers;
+  } catch (err: any) {
+    console.warn(`[tipsee] Simphony server performance failed for ${venueId}: ${err.message}`);
+    return [];
+  }
 }
 
 // ============================================================================

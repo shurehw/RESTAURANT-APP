@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
         .maybeSingle();
 
       const [report, compsByReason] = await Promise.all([
-        fetchSimphonyNightlyReport(date, location),
+        fetchSimphonyNightlyReport(date, location, simMapping?.venue_id),
         fetchCompsByReason([location], date, simMapping?.venue_id),
       ]);
       return NextResponse.json({

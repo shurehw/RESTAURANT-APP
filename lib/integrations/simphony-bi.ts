@@ -88,6 +88,31 @@ export interface SimphonyDiscountDimension {
   rptGrpName?: string;
 }
 
+// Employee endpoints
+export interface SimphonyEmployeeEntry {
+  empNum: number;
+  rvcNum: number;
+  netSlsTtl?: number;
+  chkCnt?: number;
+  gstCnt?: number;
+  tipTtl?: number;
+  svcTtl?: number;
+  dscTtl?: number;
+}
+
+export interface SimphonyEmployeeDailyTotals {
+  locRef: string;
+  busDt: string;
+  employees: SimphonyEmployeeEntry[];
+}
+
+export interface SimphonyEmployeeDimension {
+  num: number;
+  frstNm?: string;
+  lstNm?: string;
+  chkNm?: string; // check name (display name on checks)
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // PKCE HELPERS
 // ══════════════════════════════════════════════════════════════════════════
@@ -466,6 +491,68 @@ export async function getDiscountDimensions(
   const data = await res.json() as any;
   // Response shape: { locRef, discounts: [...] }
   return (data.discounts || data) as SimphonyDiscountDimension[];
+}
+
+/**
+ * Get employee daily totals — per-employee sales/check/tip breakdown.
+ * Returns empNum + rvcNum level data; join with getEmployeeDimensions for names.
+ */
+export async function getEmployeeDailyTotals(
+  config: SimphonyBIConfig,
+  idToken: string,
+  locRef: string,
+  busDt: string
+): Promise<SimphonyEmployeeDailyTotals> {
+  const url = `${config.appServer}/bi/v1/${config.orgIdentifier}/getEmployeeDailyTotals`;
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ locRef, busDt }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Simphony getEmployeeDailyTotals failed: ${res.status} - ${text.slice(0, 300)}`
+    );
+  }
+
+  return await res.json() as SimphonyEmployeeDailyTotals;
+}
+
+/**
+ * Get employee dimensions — metadata for all employees at a location.
+ * Returns num → name mapping.
+ */
+export async function getEmployeeDimensions(
+  config: SimphonyBIConfig,
+  idToken: string,
+  locRef: string
+): Promise<SimphonyEmployeeDimension[]> {
+  const url = `${config.appServer}/bi/v1/${config.orgIdentifier}/getEmployeeDimensions`;
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ locRef }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Simphony getEmployeeDimensions failed: ${res.status} - ${text.slice(0, 300)}`
+    );
+  }
+
+  const data = await res.json() as any;
+  return (data.employees || data) as SimphonyEmployeeDimension[];
 }
 
 // ══════════════════════════════════════════════════════════════════════════
