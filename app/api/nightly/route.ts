@@ -88,9 +88,19 @@ export async function GET(request: NextRequest) {
 
     // Simphony venues (e.g. Dallas) — query Simphony-specific tables
     if (posType === 'simphony') {
+      // Resolve venue_id so fetchCompsByReason can use Simphony BI API
+      // for real discount names instead of generic "Discounts - RC N"
+      const supabaseClient = getServiceClient();
+      const { data: simMapping } = await (supabaseClient as any)
+        .from('venue_tipsee_mapping')
+        .select('venue_id')
+        .eq('tipsee_location_uuid', location)
+        .eq('is_active', true)
+        .maybeSingle();
+
       const [report, compsByReason] = await Promise.all([
         fetchSimphonyNightlyReport(date, location),
-        fetchCompsByReason([location], date),
+        fetchCompsByReason([location], date, simMapping?.venue_id),
       ]);
       return NextResponse.json({
         ...report,

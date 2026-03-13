@@ -2349,12 +2349,15 @@ export default function NightlyReportPage() {
                   </div>
                 ) : ((report?.discounts?.length ?? 0) > 0 || (report?.detailedComps?.length ?? 0) > 0) ? (
                   <Tabs defaultValue="by-reason" className="w-full">
-                    <div className="px-4 pt-3">
-                      <TabsList className="w-full grid grid-cols-2">
-                        <TabsTrigger value="by-reason">By Reason</TabsTrigger>
-                        <TabsTrigger value="all-comps">All Comps ({report?.detailedComps?.length})</TabsTrigger>
-                      </TabsList>
-                    </div>
+                    {/* Only show tab switcher when both views have data */}
+                    {(report?.detailedComps?.length ?? 0) > 0 && (
+                      <div className="px-4 pt-3">
+                        <TabsList className="w-full grid grid-cols-2">
+                          <TabsTrigger value="by-reason">By Reason</TabsTrigger>
+                          <TabsTrigger value="all-comps">All Comps ({report?.detailedComps?.length})</TabsTrigger>
+                        </TabsList>
+                      </div>
+                    )}
 
                     <TabsContent value="by-reason" className="mt-0">
                       {(report?.discounts?.length ?? 0) > 0 ? (
