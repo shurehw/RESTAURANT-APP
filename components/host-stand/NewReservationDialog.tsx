@@ -9,13 +9,36 @@ interface NewReservationDialogProps {
   onCreated: () => void;
 }
 
+function generateTimeSlots(startH = 11, endH = 23, intervalMin = 30): string[] {
+  const slots: string[] = [];
+  let h = startH;
+  let m = 0;
+  while (h < endH || (h === endH && m === 0)) {
+    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+    m += intervalMin;
+    if (m >= 60) { h++; m -= 60; }
+  }
+  return slots;
+}
+
+function formatSlot(time: string): string {
+  const [hStr, mStr] = time.split(':');
+  let h = parseInt(hStr, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${h}:${mStr} ${ampm}`;
+}
+
+const TIME_SLOTS = generateTimeSlots(11, 23, 30);
+
 export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewReservationDialogProps) {
-  const [guestName, setGuestName] = useState('');
-  const [partySize, setPartySize] = useState(2);
-  const [time, setTime] = useState('19:00');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [partySize, setPartySize] = useState(2);
+  const [arrivalTime, setArrivalTime] = useState('18:00');
   const [notes, setNotes] = useState('');
-  const [isVip, setIsVip] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,125 +53,147 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           venue_id: venueId,
-          date,
-          guest_name: guestName.trim(),
+          first_name: firstName,
+          last_name: lastName || undefined,
+          phone: phone || undefined,
           party_size: partySize,
-          arrival_time: time,
-          phone: phone.trim() || null,
-          notes: notes.trim() || null,
-          is_vip: isVip,
+          business_date: date,
+          arrival_time: arrivalTime,
+          notes: notes || undefined,
+          channel: 'phone',
         }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+        if (res.status === 409 || data.slot) {
+          const rem = data.remaining ?? 0;
+          throw new Error(`Slot full — ${rem} cover${rem !== 1 ? 's' : ''} remaining. Try another time.`);
+        }
         throw new Error(data.error || 'Failed to create reservation');
       }
 
       onCreated();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">New Reservation</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div
+        className="relative w-full max-w-md bg-[#141414] rounded-xl border border-gray-700 p-6 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-bold text-white mb-4">New Reservation</h2>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+          <div className="bg-red-900/40 border border-red-700 text-red-300 rounded-lg p-3 text-sm mb-4">
+            {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Guest Name *</label>
-            <input
-              type="text"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              required
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Guest name"
-            />
-          </div>
-
+          {/* Name */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Party Size *</label>
+              <label className="block text-sm text-gray-400 mb-1">First Name</label>
               <input
-                type="number"
-                min={1}
-                max={20}
-                value={partySize}
-                onChange={(e) => setPartySize(Number(e.target.value))}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+                placeholder="First"
+                required
+                autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+              <label className="block text-sm text-gray-400 mb-1">Last Name</label>
               <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                required
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+                placeholder="Last"
               />
             </div>
           </div>
 
+          {/* Party size */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm text-gray-400 mb-1">Party Size</label>
+            <div className="grid grid-cols-6 gap-1.5">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setPartySize(n)}
+                  className={`h-10 rounded-lg text-sm font-medium transition-colors ${
+                    partySize === n
+                      ? 'bg-[#FF5A1F] text-white'
+                      : 'bg-[#1a1a1a] text-gray-300 border border-gray-700 hover:border-gray-500'
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Arrival Time</label>
+            <select
+              value={arrivalTime}
+              onChange={(e) => setArrivalTime(e.target.value)}
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F] appearance-none"
+            >
+              {TIME_SLOTS.map((slot) => (
+                <option key={slot} value={slot}>{formatSlot(slot)}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Phone (optional)</label>
             <input
-              type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Optional"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+              placeholder="(555) 123-4567"
+              type="tel"
             />
           </div>
 
+          {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-            <textarea
+            <label className="block text-sm text-gray-400 mb-1">Notes (optional)</label>
+            <input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              rows={2}
-              placeholder="Allergies, special requests, etc."
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+              placeholder="Birthday, seating preference, allergies..."
             />
           </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isVip}
-              onChange={(e) => setIsVip(e.target.checked)}
-              className="rounded border-gray-300"
-            />
-            <span className="text-sm text-gray-700">VIP Guest</span>
-          </label>
 
           <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="flex-1 h-12 bg-[#1a1a1a] hover:bg-[#222] text-white rounded-lg border border-gray-700 font-medium transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={loading || !guestName.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              disabled={loading || !firstName || !arrivalTime}
+              className="flex-1 h-12 bg-[#FF5A1F] hover:bg-[#E04D18] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Create Reservation'}
+              {loading ? 'Booking...' : 'Book Reservation'}
             </button>
           </div>
         </form>
