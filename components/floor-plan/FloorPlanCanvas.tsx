@@ -28,6 +28,8 @@ interface FloorPlanCanvasProps {
   transitioningTableIds?: Set<string>;
   sectionServerMap?: Map<string, string>;
   sectionCoverMap?: Map<string, number>;
+  comboTableIds?: Set<string>;
+  comboPrimaryIds?: Set<string>;
   onSelectTable: (id: string, additive: boolean) => void;
   onDeselectAll: () => void;
   onDoubleClickTable: (table: VenueTable) => void;
@@ -46,6 +48,8 @@ export function FloorPlanCanvas({
   tableLabelMap,
   tableMetaMap,
   transitioningTableIds,
+  comboTableIds: _comboTableIds,
+  comboPrimaryIds: _comboPrimaryIds,
   onSelectTable,
   onDeselectAll,
   onDoubleClickTable,
