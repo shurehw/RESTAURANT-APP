@@ -10,6 +10,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { resolveContext } from "@/lib/auth/resolveContext";
 import { ItemBulkImport } from "@/components/items/ItemBulkImport";
 import { ProductsTable } from "@/components/products/ProductsTable";
+import Link from "next/link";
 
 export default async function ProductsPage() {
   // ========================================================================
@@ -143,6 +144,14 @@ export default async function ProductsPage() {
           <p className="text-muted-foreground">
             Manage food & beverage products across all venues
           </p>
+          <div className="mt-2">
+            <Link
+              href="/products/competitor-pricing"
+              className="text-sm text-opsos-sage-700 hover:text-opsos-sage-800 underline"
+            >
+              Open custom catalog competitor pricing
+            </Link>
+          </div>
         </div>
 
         <div className="text-right">
