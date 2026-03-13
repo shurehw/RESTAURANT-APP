@@ -296,6 +296,19 @@ interface FactsSummary {
     vs_ytd_pct: number | null;
     vs_ytd_covers_pct: number | null;
   };
+  // Server performance for current day (from server_day_facts)
+  servers?: Array<{
+    employee_name: string;
+    employee_role_name: string;
+    tickets: number;
+    covers: number;
+    net_sales: number;
+    avg_ticket: number;
+    avg_turn_mins: number;
+    avg_per_cover: number;
+    tip_pct: number | null;
+    total_tips: number;
+  }>;
   // Aggregated server performance
   servers_wtd?: Array<{
     employee_name: string;
@@ -889,6 +902,7 @@ export default function NightlyReportPage() {
             setFactsSummary({
               ...factsData.summary,
               salesByCategory: factsData.salesByCategory,
+              servers: factsData.servers,
               labor: factsData.labor,
               labor_sdlw: factsData.labor_sdlw,
               labor_sdly: factsData.labor_sdly,
@@ -1069,6 +1083,7 @@ export default function NightlyReportPage() {
           setFactsSummary({
             ...factsData.summary,
             salesByCategory: factsData.salesByCategory,
+            servers: factsData.servers,
             labor: factsData.labor,
             labor_sdlw: factsData.labor_sdlw,
             labor_sdly: factsData.labor_sdly,
@@ -2092,7 +2107,7 @@ export default function NightlyReportPage() {
                   }
 
                   const serverData = viewMode === 'nightly'
-                    ? (report?.servers || [])
+                    ? (report?.servers?.length ? report.servers : factsSummary?.servers || [])
                     : viewMode === 'wtd'
                       ? factsSummary?.servers_wtd || []
                       : viewMode === 'ptd'

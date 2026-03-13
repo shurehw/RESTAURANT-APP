@@ -40,6 +40,8 @@ interface Props {
   // Context for closing narrative
   reportSummary: { net_sales: number; total_covers: number; total_comps: number; total_checks?: number; total_voids?: number } | null;
   factsSummary: {
+    net_sales?: number;
+    total_covers?: number;
     food_sales?: number;
     beverage_sales?: number;
     beverage_pct?: number;
@@ -183,7 +185,7 @@ export function ReviewStep({
       // Prefer factsSummary values (enriched) over reportSummary (raw POS totals)
       // — some POS integrations (e.g. Simphony) populate food/bev breakdowns
       //   but leave net_sales/total_covers at 0 in the raw summary.
-      const netSales = factsSummary?.net_sales ?? reportSummary.net_sales
+      const netSales = (factsSummary?.net_sales ?? reportSummary.net_sales)
         || ((factsSummary?.food_sales ?? 0) + (factsSummary?.beverage_sales ?? 0));
       const totalCovers = factsSummary?.total_covers ?? reportSummary.total_covers ?? 0;
       const avgCheck = totalCovers > 0 ? netSales / totalCovers : 0;
