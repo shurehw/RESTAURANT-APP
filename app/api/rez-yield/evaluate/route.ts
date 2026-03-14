@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveContext } from '@/lib/auth/resolveContext';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getYieldConfigOrDefault, logYieldDecision } from '@/lib/database/rez-yield-config';
 import { getSlotDemandMetrics, getPickupPace } from '@/lib/database/rez-yield-metrics';
@@ -59,10 +60,13 @@ export async function POST(request: NextRequest) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  if (!ctx.orgId) {
+  if (!ctx.isAuthenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { orgId, venueIds } = await getUserOrgAndVenues(ctx.authUserId);
+  if (!orgId) {
     return NextResponse.json({ error: 'No organization context' }, { status: 403 });
   }
-  const orgId = ctx.orgId;
 
   const body = await request.json();
   const {
@@ -82,6 +86,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  assertVenueAccess(venue_id, venueIds);
 
   const supabase = getServiceClient();
   const date = service_date;

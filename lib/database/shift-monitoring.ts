@@ -454,7 +454,7 @@ export async function executeAdjustment(
   executedBy: string
 ): Promise<boolean> {
   const supabase = getServiceClient();
-  const { error } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from('realtime_adjustments')
     .update({
       status: 'approved',
@@ -463,13 +463,15 @@ export async function executeAdjustment(
     })
     .eq('id', adjustmentId)
     .eq('venue_id', venueId)
-    .eq('status', 'pending');
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('Failed to execute adjustment:', error.message);
     return false;
   }
-  return true;
+  return Boolean(data?.id);
 }
 
 export async function rejectAdjustment(
@@ -479,7 +481,7 @@ export async function rejectAdjustment(
   rejectedBy: string
 ): Promise<boolean> {
   const supabase = getServiceClient();
-  const { error } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from('realtime_adjustments')
     .update({
       status: 'rejected',
@@ -488,13 +490,15 @@ export async function rejectAdjustment(
     })
     .eq('id', adjustmentId)
     .eq('venue_id', venueId)
-    .eq('status', 'pending');
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('Failed to reject adjustment:', error.message);
     return false;
   }
-  return true;
+  return Boolean(data?.id);
 }
 
 export async function getAdjustmentById(

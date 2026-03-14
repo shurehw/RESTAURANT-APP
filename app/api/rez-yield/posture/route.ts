@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveContext } from '@/lib/auth/resolveContext';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { getServiceClient } from '@/lib/supabase/service';
 import { getYieldConfigOrDefault, logPostureSnapshot } from '@/lib/database/rez-yield-config';
 import { getSlotDemandMetrics, getPickupPace } from '@/lib/database/rez-yield-metrics';
@@ -40,6 +41,10 @@ export async function GET(request: NextRequest) {
   if (!ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  if (!ctx.isAuthenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const { venueIds } = await getUserOrgAndVenues(ctx.authUserId);
 
   const params = request.nextUrl.searchParams;
   const venueId = params.get('venue_id');
@@ -49,6 +54,7 @@ export async function GET(request: NextRequest) {
   if (!venueId) {
     return NextResponse.json({ error: 'venue_id required' }, { status: 400 });
   }
+  assertVenueAccess(venueId, venueIds);
 
   const supabase = getServiceClient();
   const dow = new Date(date + 'T12:00:00').getDay();
