@@ -9,6 +9,7 @@
     "lint": "next lint",
     "seed": "tsx scripts/seed.ts",
     "type-check": "tsc --noEmit",
+    "test:run": "node --import tsx --test",
     "test:db": "bash supabase/tests/run-tests.sh",
     "test:db:unit": "bash supabase/tests/run-tests.sh --unit",
     "test:db:integration": "bash supabase/tests/run-tests.sh --integration",
@@ -16,7 +17,13 @@
     "test:db:verbose": "bash supabase/tests/run-tests.sh --verbose",
     "check:boundaries": "node scripts/check-import-boundaries.mjs",
     "check:refs": "node scripts/check-stale-refs.mjs",
-    "check:all": "npm run check:boundaries && npm run check:refs"
+    "check:all": "npm run check:boundaries && npm run check:refs",
+    "test:e2e": "npx playwright test",
+    "test:e2e:swarm": "npx playwright test --project=dashboard --grep \"@swarm\"",
+    "test:e2e:swarm:all": "npx playwright test --project=dashboard --project=manager --project=vendor --grep \"@swarm\"",
+    "test:e2e:ui": "npx playwright test --ui",
+    "test:e2e:host": "npx playwright test --project=host-stand",
+    "test:e2e:dash": "npx playwright test --project=dashboard"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
@@ -72,6 +79,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
+    "@playwright/test": "^1.58.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22",
     "@types/react": "^19",
