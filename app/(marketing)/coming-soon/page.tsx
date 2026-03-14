@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Head from 'next/head';
 
 // ── K Symbol (matches KevaOSLogo component) ─────────────────────
 function KMark({ size = 32, color = '#D4622B' }: { size?: number; color?: string }) {
@@ -15,54 +16,42 @@ function KMark({ size = 32, color = '#D4622B' }: { size?: number; color?: string
   );
 }
 
-// ── Loop Steps ───────────────────────────────────────────────────
-const LOOP_STEPS = ['Revenue', 'Costs', 'Labor', 'Purchasing', 'Guests', 'Compliance'];
+// ── Proof Strip Steps ────────────────────────────────────────────
+const PROOF_STEPS = ['Catch the leak.', 'Assign the owner.', 'Enforce the close.'];
 
-// ── Feature Cards ────────────────────────────────────────────────
+// ── Feature Cards (3 cards: Find / Route / Close) ───────────────
 const FEATURES = [
   {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        <circle cx="11" cy="11" r="8"/>
+        <path d="m21 21-4.35-4.35"/>
       </svg>
     ),
-    label: 'Enforcement Engine',
-    title: 'Nothing slips.',
-    desc: 'Comp policies, labor targets, and SOPs enforced in real time — not discovered in a Monday morning spreadsheet.',
+    title: 'Find it.',
+    desc: 'Margin leaks, labor drift, comp abuse, broken standards \u2014 surfaced automatically, not discovered in a Monday debrief.',
   },
   {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2a4 4 0 0 0-4 4c0 2 2 4 4 6 2-2 4-4 4-6a4 4 0 0 0-4-4z"/>
-        <path d="M12 12v10"/>
-        <path d="M8 16l4-4 4 4"/>
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
       </svg>
     ),
-    label: 'AI Control Plane',
-    title: 'AI that catches what managers miss.',
-    desc: 'Every exception gets reviewed automatically. Managers attest nightly. Unresolved items carry forward until they\'re closed.',
+    title: 'Route it.',
+    desc: 'Every exception goes to the person responsible. No all-hands emails. No guessing who owns it.',
   },
   {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2"/>
-        <path d="M8 21h8"/><path d="M12 17v4"/>
-        <path d="M7 8h2"/><path d="M15 8h2"/><path d="M7 12h10"/>
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
       </svg>
     ),
-    label: 'Multi-Venue',
-    title: 'Same standards. Ten locations.',
-    desc: 'Corporate sets the rails. Each venue tunes the thresholds. Nobody opts out.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
-      </svg>
-    ),
-    label: 'Full Stack',
-    title: 'Revenue to purchasing. One system.',
-    desc: 'Sales, labor, inventory, procurement, reservations, and guest experience — connected and enforced end to end.',
+    title: 'Close it.',
+    desc: 'Open issues stay active until resolved. Nothing disappears into a report.',
   },
 ];
 
@@ -125,9 +114,9 @@ function ContactForm() {
           <label className="text-[0.65rem] font-semibold tracking-[0.12em] uppercase" style={{ color: '#8B7E6F' }} htmlFor="venues">Venues</label>
           <select id="venues" name="venues" className="text-sm rounded-md px-3.5 py-2.5 outline-none transition-colors cursor-pointer" style={{ color: '#1C1917', background: '#FAF8F5', border: '1px solid #E8E2DA' }} required defaultValue="" onFocus={e => e.target.style.borderColor = '#D4622B'} onBlur={e => e.target.style.borderColor = '#E8E2DA'}>
             <option value="" disabled>Select</option>
-            <option value="1-3">1 – 3</option>
-            <option value="4-10">4 – 10</option>
-            <option value="11-25">11 – 25</option>
+            <option value="1-3">1 &ndash; 3</option>
+            <option value="4-10">4 &ndash; 10</option>
+            <option value="11-25">11 &ndash; 25</option>
             <option value="25+">25+</option>
           </select>
         </div>
@@ -152,7 +141,7 @@ function ContactForm() {
         className="w-full text-[0.75rem] font-bold tracking-[0.08em] uppercase text-white py-3.5 px-8 rounded-md transition-all duration-200 hover:-translate-y-px disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
         style={{ background: '#D4622B' }}
       >
-        {status === 'sending' ? 'Sending...' : 'Request Information'}
+        {status === 'sending' ? 'Sending...' : 'Request Access'}
       </button>
       {status === 'error' && (
         <p className="text-center text-sm mt-3" style={{ color: '#DC2626' }}>
@@ -184,241 +173,232 @@ function useReveal() {
 
 // ── Main Page ────────────────────────────────────────────────────
 export default function MarketingPage() {
+  const proofReveal = useReveal();
   const featuresReveal = useReveal();
   const formReveal = useReveal();
 
   return (
-    <div style={{ background: '#FFFEFB' }}>
-      {/* ── Top Bar ─────────────────────────────────────────────── */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 sm:px-12 py-4"
-        style={{
-          background: 'rgba(28,25,23,0.97)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <KMark size={14} color="#D4622B" />
-          <span className="text-lg tracking-[0.02em]" style={{ color: '#F5F1EB', fontWeight: 600 }}>
-            Keva<span style={{ color: 'rgba(245,241,235,0.55)', fontWeight: 400, letterSpacing: '0.04em' }}>OS</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="hidden sm:inline-block text-[0.65rem] font-medium tracking-[0.08em] uppercase transition-colors"
-            style={{ color: 'rgba(245,241,235,0.5)' }}
-          >
-            Beta Login
-          </Link>
-          <a
-            href="#request"
-            className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase px-4 py-2 rounded-md transition-all duration-200"
-            style={{
-              color: '#D4622B',
-              border: '1px solid rgba(212,98,43,0.4)',
-            }}
-          >
-            Request Info
-          </a>
-        </div>
-      </nav>
+    <>
+      <Head>
+        <title>KevaOS &mdash; The AI-Enforced Control Plane for Hospitality</title>
+        <meta name="description" content="KevaOS is the operating system for multi-unit restaurant groups. Enforce standards, catch margin leaks, and hold every venue accountable — automatically." />
+      </Head>
 
-      {/* ── Hero (Dark Espresso) ──────────────────────────────────── */}
-      <section
-        className="relative flex flex-col justify-center items-center text-center min-h-screen px-6 pt-32 pb-20"
-        style={{ background: '#1C1917' }}
-      >
-        {/* Warm radial glow */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] w-[800px] h-[800px] pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(212,98,43,0.08) 0%, transparent 60%)' }}
-        />
-
-        {/* Badge */}
-        <div
-          className="relative inline-flex items-center gap-2.5 text-[0.6rem] font-semibold tracking-[0.2em] uppercase mb-10 rounded-full animate-[hero-in_0.65s_ease_0.1s_forwards] opacity-0"
-          style={{ color: '#D4622B', border: '1px solid rgba(212,98,43,0.3)', padding: '0.5rem 1.2rem', background: 'rgba(212,98,43,0.08)' }}
+      <div style={{ background: '#FFFEFB' }}>
+        {/* ── Top Bar ─────────────────────────────────────────────── */}
+        <nav
+          className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 sm:px-12 py-4"
+          style={{
+            background: 'rgba(28,25,23,0.97)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+          }}
         >
-          <span className="w-[6px] h-[6px] rounded-full animate-pulse" style={{ background: '#D4622B' }} />
-          Coming Soon
-        </div>
-
-        {/* Title with K mark */}
-        <div className="relative flex flex-col items-center gap-2 mb-7 animate-[hero-in_0.65s_ease_0.2s_forwards] opacity-0">
-          <KMark size={44} color="#D4622B" />
-          <h1 className="text-[clamp(3rem,8vw,5.5rem)] tracking-[0.02em] leading-none" style={{ color: '#F5F1EB', fontWeight: 600 }}>
-            Keva<span style={{ color: '#78716C', fontWeight: 400, letterSpacing: '0.04em' }}>OS</span>
-          </h1>
-        </div>
-
-        {/* Tagline */}
-        <p className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase mb-6 animate-[hero-in_0.65s_ease_0.3s_forwards] opacity-0" style={{ color: '#D4622B' }}>
-          The Operating System for Restaurant Groups
-        </p>
-
-        {/* Lead */}
-        <p
-          className="relative text-[clamp(1rem,1.4vw,1.2rem)] max-w-[36rem] mb-10 leading-relaxed animate-[hero-in_0.65s_ease_0.4s_forwards] opacity-0"
-          style={{ color: '#B5ADA1' }}
-        >
-          From revenue leaks to hidden cost overruns &mdash; we surface what the naked eye can&apos;t see and turn every location into its most profitable version.
-        </p>
-
-        {/* Signal loop */}
-        <div className="relative flex items-center justify-center flex-wrap gap-0 mb-12 animate-[hero-in_0.65s_ease_0.55s_forwards] opacity-0">
-          {LOOP_STEPS.map((step, i) => (
-            <div key={step} className="flex items-center">
-              {i > 0 && (
-                <span className="hidden sm:inline px-1.5 text-[0.7rem]" style={{ color: 'rgba(245,241,235,0.12)' }}>
-                  &rarr;
-                </span>
-              )}
-              <span
-                className="text-[0.6rem] font-medium tracking-[0.05em] whitespace-nowrap"
-                style={{
-                  background: '#292524',
-                  border: '1px solid rgba(245,241,235,0.08)',
-                  padding: '0.5rem 1rem',
-                  color: '#8B7E6F',
-                  animation: `loopScan 4s ease-in-out ${i * 0.6}s infinite`,
-                }}
-              >
-                {step}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <a
-          href="#request"
-          className="relative inline-flex items-center gap-2.5 text-[0.75rem] font-bold tracking-[0.1em] uppercase transition-all duration-200 hover:-translate-y-px group animate-[hero-in_0.65s_ease_0.7s_forwards] opacity-0 rounded-md"
-          style={{ color: '#FFFEFB', background: '#D4622B', padding: '1rem 2.5rem' }}
-        >
-          Request Early Access
-          <span className="transition-transform duration-200 group-hover:translate-x-1">&rarr;</span>
-        </a>
-
-        {/* Scroll hint */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 animate-[scroll-float_2.5s_ease-in-out_infinite]" style={{ color: 'rgba(245,241,235,0.15)' }}>
-          <span className="text-[0.5rem] tracking-[0.2em] uppercase">Scroll</span>
-          <div className="w-px h-5" style={{ background: 'linear-gradient(to bottom, rgba(245,241,235,0.15), transparent)' }} />
-        </div>
-
-        {/* Bottom edge — warm transition */}
-        <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: '#D4622B' }} />
-      </section>
-
-      {/* ── Features (Warm Ivory) ─────────────────────────────────── */}
-      <section
-        ref={featuresReveal.ref}
-        className={`max-w-5xl mx-auto px-6 py-24 transition-all duration-700 ${featuresReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-      >
-        <div className="text-center mb-14">
-          <span className="text-[0.6rem] font-semibold tracking-[0.25em] uppercase mb-4 block" style={{ color: '#D4622B' }}>
-            What&apos;s Coming
-          </span>
-          <h2 className="text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-tight" style={{ color: '#1C1917' }}>
-            Not another dashboard.<br />The engine that runs the building.
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {FEATURES.map((f, i) => (
-            <div
-              key={f.label}
-              className="p-7 rounded-lg transition-all duration-500"
-              style={{
-                background: '#FFFEFB',
-                border: '1px solid #E8E2DA',
-                boxShadow: '0 1px 3px rgba(28,25,23,0.04)',
-                transitionDelay: `${i * 80}ms`,
-                opacity: featuresReveal.visible ? 1 : 0,
-                transform: featuresReveal.visible ? 'none' : 'translateY(12px)',
-              }}
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: '#FDF5EF', color: '#D4622B' }}>
-                  {f.icon}
-                </div>
-                <div>
-                  <span className="text-[0.55rem] font-semibold tracking-[0.2em] uppercase mb-2 block" style={{ color: '#D4622B' }}>
-                    {f.label}
-                  </span>
-                  <h3 className="text-base font-bold mb-1.5" style={{ color: '#1C1917' }}>{f.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: '#8B7E6F' }}>{f.desc}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Divider ─────────────────────────────────────────────── */}
-      <hr className="border-none h-px max-w-[640px] mx-auto" style={{ background: '#E8E2DA' }} />
-
-      {/* ── Contact / Request ───────────────────────────────────── */}
-      <section
-        ref={formReveal.ref}
-        id="request"
-        className={`max-w-[560px] mx-auto px-6 py-24 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-      >
-        <div className="text-center mb-10">
-          <span className="text-[0.6rem] font-semibold tracking-[0.25em] uppercase mb-4 block" style={{ color: '#D4622B' }}>
-            Get Started
-          </span>
-          <h2 className="text-[clamp(1.4rem,2.5vw,1.8rem)] font-bold tracking-tight mb-3" style={{ color: '#1C1917' }}>
-            Tell us about your operation.
-          </h2>
-          <p className="text-sm" style={{ color: '#8B7E6F' }}>
-            Currently live with multi-venue restaurant groups. Selectively onboarding new operators.
-          </p>
-        </div>
-
-        <div className="rounded-lg p-8" style={{ background: '#FFFEFB', border: '1px solid #E8E2DA', boxShadow: '0 4px 12px rgba(28,25,23,0.06)' }}>
-          <ContactForm />
-        </div>
-      </section>
-
-      {/* ── Footer (Dark) ─────────────────────────────────────────── */}
-      <footer className="py-10 px-6 text-center" style={{ background: '#1C1917', borderTop: '1px solid #D4622B' }}>
-        <div className="flex items-center justify-center gap-6 mb-4">
           <div className="flex items-center gap-2">
-            <KMark size={12} color="#D4622B" />
-            <span className="text-[0.6rem] tracking-[0.2em] uppercase" style={{ color: '#8B7E6F' }}>
-              KevaOS &copy; {new Date().getFullYear()}
+            <KMark size={14} color="#D4622B" />
+            <span className="text-lg tracking-[0.02em]" style={{ color: '#F5F1EB', fontWeight: 600 }}>
+              Keva<span style={{ color: 'rgba(245,241,235,0.55)', fontWeight: 400, letterSpacing: '0.04em' }}>OS</span>
             </span>
           </div>
-          <Link
-            href="/login"
-            className="text-[0.6rem] tracking-[0.15em] uppercase transition-colors"
-            style={{ color: '#D4622B' }}
-          >
-            Beta Login &rarr;
-          </Link>
-        </div>
-        <p className="text-[0.55rem] tracking-[0.15em]" style={{ color: '#44403C' }}>
-          The Binyan Group
-        </p>
-      </footer>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="hidden sm:inline-block text-[0.65rem] font-medium tracking-[0.08em] uppercase transition-colors"
+              style={{ color: 'rgba(245,241,235,0.5)' }}
+            >
+              Beta Login
+            </Link>
+            <a
+              href="#request"
+              className="text-[0.65rem] font-semibold tracking-[0.08em] uppercase px-4 py-2 rounded-md transition-all duration-200"
+              style={{
+                color: '#D4622B',
+                border: '1px solid rgba(212,98,43,0.4)',
+              }}
+            >
+              Request Access
+            </a>
+          </div>
+        </nav>
 
-      {/* ── Keyframes ───────────────────────────────────────────── */}
-      <style>{`
-        @keyframes hero-in {
-          from { opacity: 0; transform: translateY(14px); }
-          to { opacity: 1; transform: none; }
-        }
-        @keyframes scroll-float {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(5px); }
-        }
-        @keyframes loopScan {
-          0%, 75%, 100% { border-color: rgba(245,241,235,0.08); color: #8B7E6F; }
-          12%, 30% { border-color: #D4622B; color: #D4622B; }
-        }
-      `}</style>
-    </div>
+        {/* ── Hero (Dark Espresso) ──────────────────────────────────── */}
+        <section
+          className="relative flex flex-col justify-center items-center text-center min-h-screen px-6 pt-32 pb-20"
+          style={{ background: '#1C1917' }}
+        >
+          {/* Warm radial glow */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] w-[800px] h-[800px] pointer-events-none"
+            style={{ background: 'radial-gradient(circle, rgba(212,98,43,0.08) 0%, transparent 60%)' }}
+          />
+
+          {/* Badge */}
+          <div
+            className="relative inline-flex items-center gap-2.5 text-[0.6rem] font-semibold tracking-[0.2em] uppercase mb-10 rounded-full animate-[hero-in_0.65s_ease_0.1s_forwards] opacity-0"
+            style={{ color: '#D4622B', border: '1px solid rgba(212,98,43,0.3)', padding: '0.5rem 1.2rem', background: 'rgba(212,98,43,0.08)' }}
+          >
+            <span className="w-[6px] h-[6px] rounded-full animate-pulse" style={{ background: '#D4622B' }} />
+            Now onboarding select multi-unit operators
+          </div>
+
+          {/* Title with K mark */}
+          <div className="relative flex flex-col items-center gap-2 mb-7 animate-[hero-in_0.65s_ease_0.2s_forwards] opacity-0">
+            <KMark size={44} color="#D4622B" />
+            <h1 className="text-[clamp(3rem,8vw,5.5rem)] tracking-[0.02em] leading-none" style={{ color: '#F5F1EB', fontWeight: 600 }}>
+              Nothing slips.
+            </h1>
+          </div>
+
+          {/* Subhead */}
+          <p
+            className="relative text-[clamp(1rem,1.4vw,1.2rem)] max-w-[38rem] mb-12 leading-relaxed animate-[hero-in_0.65s_ease_0.35s_forwards] opacity-0"
+            style={{ color: '#B5ADA1' }}
+          >
+            KevaOS is the control plane for restaurant groups &mdash; catching what your managers miss and enforcing the fix across every location, every night.
+          </p>
+
+          {/* CTA */}
+          <a
+            href="#request"
+            className="relative inline-flex items-center gap-2.5 text-[0.75rem] font-bold tracking-[0.1em] uppercase transition-all duration-200 hover:-translate-y-px group animate-[hero-in_0.65s_ease_0.5s_forwards] opacity-0 rounded-md"
+            style={{ color: '#FFFEFB', background: '#D4622B', padding: '1rem 2.5rem' }}
+          >
+            Request Access
+            <span className="transition-transform duration-200 group-hover:translate-x-1">&rarr;</span>
+          </a>
+
+          {/* Scroll hint */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1.5 animate-[scroll-float_2.5s_ease-in-out_infinite]" style={{ color: 'rgba(245,241,235,0.15)' }}>
+            <span className="text-[0.5rem] tracking-[0.2em] uppercase">Scroll</span>
+            <div className="w-px h-5" style={{ background: 'linear-gradient(to bottom, rgba(245,241,235,0.15), transparent)' }} />
+          </div>
+
+          {/* Bottom edge */}
+          <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: '#D4622B' }} />
+        </section>
+
+        {/* ── Proof Strip ─────────────────────────────────────────── */}
+        <section
+          ref={proofReveal.ref}
+          className={`py-16 transition-all duration-700 ${proofReveal.visible ? 'opacity-100' : 'opacity-0'}`}
+          style={{ background: '#FAF8F5' }}
+        >
+          <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-0 px-6">
+            {PROOF_STEPS.map((step, i) => (
+              <div key={step} className="flex items-center">
+                {i > 0 && (
+                  <span className="hidden sm:inline px-4 text-lg" style={{ color: '#E8E2DA' }}>
+                    &rarr;
+                  </span>
+                )}
+                <span
+                  className="text-[0.8rem] font-semibold tracking-[0.06em]"
+                  style={{
+                    color: '#1C1917',
+                    opacity: proofReveal.visible ? 1 : 0,
+                    transform: proofReveal.visible ? 'none' : 'translateY(8px)',
+                    transition: `all 0.5s ease ${i * 150}ms`,
+                  }}
+                >
+                  {step}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Features ────────────────────────────────────────────── */}
+        <section
+          ref={featuresReveal.ref}
+          className={`max-w-5xl mx-auto px-6 py-24 transition-all duration-700 ${featuresReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        >
+          <div className="text-center mb-14">
+            <h2 className="text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-tight mb-3" style={{ color: '#1C1917' }}>
+              Not another dashboard.
+            </h2>
+            <p className="text-[clamp(1rem,1.6vw,1.15rem)]" style={{ color: '#8B7E6F' }}>
+              Software that makes the operation hold its shape.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {FEATURES.map((f, i) => (
+              <div
+                key={f.title}
+                className="p-7 rounded-lg transition-all duration-500"
+                style={{
+                  background: '#FFFEFB',
+                  border: '1px solid #E8E2DA',
+                  boxShadow: '0 1px 3px rgba(28,25,23,0.04)',
+                  transitionDelay: `${i * 100}ms`,
+                  opacity: featuresReveal.visible ? 1 : 0,
+                  transform: featuresReveal.visible ? 'none' : 'translateY(12px)',
+                }}
+              >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-5" style={{ background: '#FDF5EF', color: '#D4622B' }}>
+                  {f.icon}
+                </div>
+                <h3 className="text-lg font-bold mb-2" style={{ color: '#1C1917' }}>{f.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: '#8B7E6F' }}>{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Divider ─────────────────────────────────────────────── */}
+        <hr className="border-none h-px max-w-[640px] mx-auto" style={{ background: '#E8E2DA' }} />
+
+        {/* ── Contact / Request ───────────────────────────────────── */}
+        <section
+          ref={formReveal.ref}
+          id="request"
+          className={`max-w-[560px] mx-auto px-6 py-24 transition-all duration-700 ${formReveal.visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+        >
+          <div className="text-center mb-10">
+            <p className="text-[clamp(1rem,1.6vw,1.15rem)] leading-relaxed" style={{ color: '#8B7E6F' }}>
+              For operators who want tighter control without adding more meetings, more reports, or more noise.
+            </p>
+          </div>
+
+          <div className="rounded-lg p-8" style={{ background: '#FFFEFB', border: '1px solid #E8E2DA', boxShadow: '0 4px 12px rgba(28,25,23,0.06)' }}>
+            <ContactForm />
+          </div>
+        </section>
+
+        {/* ── Footer (Dark) ─────────────────────────────────────────── */}
+        <footer className="py-10 px-6 text-center" style={{ background: '#1C1917', borderTop: '1px solid #D4622B' }}>
+          <div className="flex items-center justify-center gap-6 mb-4">
+            <div className="flex items-center gap-2">
+              <KMark size={12} color="#D4622B" />
+              <span className="text-[0.6rem] tracking-[0.2em] uppercase" style={{ color: '#8B7E6F' }}>
+                KevaOS &copy; {new Date().getFullYear()}
+              </span>
+            </div>
+            <Link
+              href="/login"
+              className="text-[0.6rem] tracking-[0.15em] uppercase transition-colors"
+              style={{ color: '#D4622B' }}
+            >
+              Beta Login &rarr;
+            </Link>
+          </div>
+          <p className="text-[0.55rem] tracking-[0.15em]" style={{ color: '#44403C' }}>
+            The Binyan Group
+          </p>
+        </footer>
+
+        {/* ── Keyframes ───────────────────────────────────────────── */}
+        <style>{`
+          @keyframes hero-in {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: none; }
+          }
+          @keyframes scroll-float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(5px); }
+          }
+        `}</style>
+      </div>
+    </>
   );
 }
