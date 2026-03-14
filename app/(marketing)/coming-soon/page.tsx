@@ -254,7 +254,7 @@ export default function MarketingPage() {
             className="relative text-[clamp(1rem,1.4vw,1.2rem)] max-w-[38rem] mb-12 leading-relaxed animate-[hero-in_0.65s_ease_0.35s_forwards] opacity-0"
             style={{ color: '#B5ADA1' }}
           >
-            KevaOS is the control plane for restaurant groups &mdash; catching what your managers miss and enforcing the fix across every location, every night.
+            KevaOS runs enforcement for restaurant groups &mdash; catching what your managers miss and closing the gap across every location, every night.
           </p>
 
           {/* CTA */}
