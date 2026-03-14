@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues } from '@/lib/tenant';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { rateLimit } from '@/lib/rate-limit';
 import {
   getReservationsForVenueDate,
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
   return guard(async () => {
     rateLimit(request, ':reservations');
     const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const { venueIds } = await getUserOrgAndVenues(user.id);
 
     const venueId = request.nextUrl.searchParams.get('venue_id');
     const date = request.nextUrl.searchParams.get('date');
@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
     if (!venueId || !date) {
       return NextResponse.json({ error: 'venue_id and date are required' }, { status: 400 });
     }
+    assertVenueAccess(venueId, venueIds);
 
     let reservations = await getReservationsForVenueDate(venueId, date);
 
@@ -128,7 +129,7 @@ export async function POST(request: NextRequest) {
   return guard(async () => {
     rateLimit(request, ':reservations');
     const user = await requireUser();
-    const { orgId, role } = await getUserOrgAndVenues(user.id);
+    const { orgId, venueIds } = await getUserOrgAndVenues(user.id);
 
     const body = await request.json();
     const {
@@ -149,6 +150,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    assertVenueAccess(venue_id, venueIds);
 
     // Enforce pacing limits (unless it's a sync from external channel)
     const isSyncChannel = ['sevenrooms', 'resy', 'opentable'].includes(channel);

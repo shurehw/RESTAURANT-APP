@@ -421,7 +421,7 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
           <div className="flex items-center gap-4 flex-wrap">
             {/* Venue label */}
             {venueName && (
-              <span className="text-sm font-semibold text-opsos-sage-700 border border-opsos-sage-300 rounded px-2 py-1 bg-opsos-sage-50">
+              <span className="text-sm font-semibold text-keva-sage-700 border border-keva-sage-300 rounded px-2 py-1 bg-keva-sage-50">
                 {venueName}
               </span>
             )}
@@ -675,7 +675,7 @@ export function ScheduleCalendar({ schedule, venueId, venueName, weekStart, fore
                         className={`text-xs p-2 rounded cursor-pointer transition-colors border ${
                           shift.is_modified
                             ? 'bg-amber-50 border-amber-300 hover:bg-amber-100 border-l-4 border-l-amber-500'
-                            : 'bg-opsos-sage-100 border-opsos-sage-300 hover:bg-opsos-sage-200'
+                            : 'bg-keva-sage-100 border-keva-sage-300 hover:bg-keva-sage-200'
                         }`}
                       >
                         <div className="font-medium text-gray-900">

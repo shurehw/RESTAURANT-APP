@@ -263,7 +263,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   };
 
   /**
-   * Infer OpsOS item category enum from description.
+   * Infer KevaOS item category enum from description.
    * IMPORTANT: items.category is an enum (food/liquor/wine/beer/etc). If we default to "food"
    * for wine/spirits, the UI will look wrong and GL mapping gets messier.
    */
@@ -916,7 +916,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="flex-1 px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                className="flex-1 px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
               />
               <Button
                 size="sm"
@@ -930,7 +930,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
 
             {/* AI Suggestions Header */}
             {suggestions.length > 0 && (
-              <div className="flex items-center gap-2 text-xs font-medium text-opsos-sage-700 mb-1">
+              <div className="flex items-center gap-2 text-xs font-medium text-keva-sage-700 mb-1">
                 <Sparkles className="w-3 h-3 text-brass" />
                 <span>AI Suggested Matches</span>
               </div>
@@ -1233,7 +1233,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                       type="text"
                       value={newItemName}
                       onChange={(e) => setNewItemName(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                       placeholder="Normalized item name"
                     />
                   </div>
@@ -1247,7 +1247,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                       value={newItemSKU}
                       onChange={(e) => setNewItemSKU(e.target.value)}
                       placeholder="Auto-generated on save"
-                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     />
                   </div>
 
@@ -1259,7 +1259,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     <select
                       value={newItemUOM}
                       onChange={(e) => setNewItemUOM(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     >
                       <optgroup label="Common Units">
                         <option value="unit">Each/Bottle/Piece</option>
@@ -1329,7 +1329,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                     <select
                       value={glAccountId}
                       onChange={(e) => setGlAccountId(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     >
                       <option value="">Select GL Account...</option>
                       {/* AI Suggestions First */}
@@ -1372,7 +1372,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                       <select
                         value={newItemCategory}
                         onChange={(e) => setNewItemCategory(e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                        className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                       >
                         <optgroup label="Alcoholic Beverages">
                           <option value="liquor">Liquor</option>
@@ -1411,7 +1411,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                         <select
                           value={newItemSubcategory}
                           onChange={(e) => setNewItemSubcategory(e.target.value)}
-                          className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                          className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                         >
                           <option value="">Select subcategory...</option>
                           <option value="meat_protein">Meat & Protein</option>
@@ -1433,7 +1433,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
                             newItemCategory === 'beer' ? 'e.g. Lager, IPA, Stout' :
                             'e.g. Specific type'
                           }
-                          className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                          className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                         />
                       )}
                     </div>

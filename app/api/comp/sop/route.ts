@@ -152,7 +152,7 @@ function generateSOPMarkdown(
 
 **Version:** ${settings.version}
 **Effective Date:** ${date}
-**Powered by:** OpSOS Enforcement Engine
+**Powered by:** KevaOS Enforcement Engine
 
 ---
 

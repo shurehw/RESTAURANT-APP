@@ -1,6 +1,6 @@
-# Getting Started with OpsOS
+# Getting Started with KevaOS
 
-This guide will walk you through setting up OpsOS locally and deploying to production.
+This guide will walk you through setting up KevaOS locally and deploying to production.
 
 ## Prerequisites
 
@@ -204,7 +204,7 @@ vercel --prod
 
 ## Authentication Setup (TODO)
 
-OpsOS currently uses Supabase RLS policies but requires JWT claims for proper role-based access.
+KevaOS currently uses Supabase RLS policies but requires JWT claims for proper role-based access.
 
 ### Configure Supabase Auth
 

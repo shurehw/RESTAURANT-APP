@@ -1,4 +1,4 @@
-# OpsOS Design System - Implementation Guide
+# KevaOS Design System - Implementation Guide
 
 Complete hand-off documentation for engineering implementation.
 
@@ -67,7 +67,7 @@ export default function RootLayout({ children }) {
 ✅ Already updated in `tailwind.config.ts`
 
 Includes:
-- OpsOS brand colors (slate, fog, brass, sage)
+- KevaOS brand colors (slate, fog, brass, sage)
 - Typography scale (h1-h6)
 - Custom transitions
 - Font family variables
@@ -76,11 +76,11 @@ Includes:
 
 ✅ Already updated in `app/globals.css`
 
-Color variables now match OpsOS palette:
-- `--opsos-slate: #1B1D1F`
-- `--opsos-fog: #F5F5F4`
-- `--opsos-brass: #C4A46B`
-- `--opsos-sage: #92A69C`
+Color variables now match KevaOS palette:
+- `--keva-slate: #1B1D1F`
+- `--keva-fog: #F5F5F4`
+- `--keva-brass: #C4A46B`
+- `--keva-sage: #92A69C`
 
 ---
 
@@ -90,30 +90,30 @@ Color variables now match OpsOS palette:
 
 ```tsx
 // Primary text
-<h1 className="text-opsos-slate-800">Heading</h1>
+<h1 className="text-keva-slate-800">Heading</h1>
 
 // Background
-<div className="bg-opsos-fog-100">Content</div>
+<div className="bg-keva-fog-100">Content</div>
 
 // Accent button
-<button className="bg-opsos-brass-500 hover:bg-opsos-brass-600">
+<button className="bg-keva-brass-500 hover:bg-keva-brass-600">
   Click me
 </button>
 
 // Success state
-<span className="text-opsos-sage-600">Approved</span>
+<span className="text-keva-sage-600">Approved</span>
 ```
 
 ### Typography
 
 ```tsx
 // Heading with proper scale
-<h1 className="text-h1 font-bold text-opsos-slate-800">
+<h1 className="text-h1 font-bold text-keva-slate-800">
   Page Title
 </h1>
 
 // Body text
-<p className="text-base text-opsos-slate-600 leading-relaxed">
+<p className="text-base text-keva-slate-600 leading-relaxed">
   Body content with proper line height
 </p>
 
@@ -152,13 +152,13 @@ Color variables now match OpsOS palette:
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opsos-brass-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
+  'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-keva-brass-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none',
   {
     variants: {
       variant: {
-        primary: 'bg-opsos-brass-500 text-opsos-slate-800 hover:bg-opsos-brass-600 shadow-sm',
-        secondary: 'bg-transparent border border-opsos-slate-300 text-opsos-slate-700 hover:bg-opsos-fog-200',
-        ghost: 'bg-transparent text-opsos-slate-600 hover:bg-opsos-fog-200 hover:text-opsos-slate-800',
+        primary: 'bg-keva-brass-500 text-keva-slate-800 hover:bg-keva-brass-600 shadow-sm',
+        secondary: 'bg-transparent border border-keva-slate-300 text-keva-slate-700 hover:bg-keva-fog-200',
+        ghost: 'bg-transparent text-keva-slate-600 hover:bg-keva-fog-200 hover:text-keva-slate-800',
       },
       size: {
         sm: 'px-3 py-1.5 text-sm',
@@ -202,7 +202,7 @@ export function Card({ className, ...props }) {
   return (
     <div
       className={cn(
-        'bg-white border border-opsos-slate-200 rounded-md p-6 shadow-sm hover:shadow-md transition-shadow duration-200',
+        'bg-white border border-keva-slate-200 rounded-md p-6 shadow-sm hover:shadow-md transition-shadow duration-200',
         className
       )}
       {...props}
@@ -223,7 +223,7 @@ export function CardTitle({ className, ...props }) {
   return (
     <h3
       className={cn(
-        'text-lg font-semibold leading-none tracking-tight text-opsos-slate-800',
+        'text-lg font-semibold leading-none tracking-tight text-keva-slate-800',
         className
       )}
       {...props}
@@ -234,7 +234,7 @@ export function CardTitle({ className, ...props }) {
 export function CardDescription({ className, ...props }) {
   return (
     <p
-      className={cn('text-sm text-opsos-slate-600', className)}
+      className={cn('text-sm text-keva-slate-600', className)}
       {...props}
     />
   );
@@ -248,7 +248,7 @@ Usage:
     <CardTitle>Total Invoices</CardTitle>
     <CardDescription>Last 30 days</CardDescription>
   </CardHeader>
-  <div className="text-3xl font-bold text-opsos-slate-800">247</div>
+  <div className="text-3xl font-bold text-keva-slate-800">247</div>
 </Card>
 ```
 
@@ -261,9 +261,9 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-opsos-slate-100 text-opsos-slate-700',
-        pending: 'bg-opsos-brass-100 text-opsos-brass-800',
-        approved: 'bg-opsos-sage-100 text-opsos-sage-800',
+        default: 'bg-keva-slate-100 text-keva-slate-700',
+        pending: 'bg-keva-brass-100 text-keva-brass-800',
+        approved: 'bg-keva-sage-100 text-keva-sage-800',
         error: 'bg-red-100 text-red-800',
       },
     },
@@ -302,10 +302,10 @@ export default function PageName() {
       {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-h1 font-bold text-opsos-slate-800 mb-2">
+          <h1 className="text-h1 font-bold text-keva-slate-800 mb-2">
             Page Title
           </h1>
-          <p className="text-opsos-slate-600">
+          <p className="text-keva-slate-600">
             Supporting description
           </p>
         </div>
@@ -336,10 +336,10 @@ export default function PageName() {
 // components/layout/sidebar.tsx
 export function Sidebar() {
   return (
-    <aside className="w-64 h-screen bg-white border-r border-opsos-slate-200">
+    <aside className="w-64 h-screen bg-white border-r border-keva-slate-200">
       {/* Logo */}
-      <div className="h-16 flex items-center gap-3 px-6 border-b border-opsos-slate-200">
-        <img src="/opsos-logo.png" alt="OpsOS" className="h-8" />
+      <div className="h-16 flex items-center gap-3 px-6 border-b border-keva-slate-200">
+        <img src="/keva-logo.png" alt="KevaOS" className="h-8" />
       </div>
 
       {/* Navigation */}
@@ -363,8 +363,8 @@ function NavLink({ href, icon, children, active = false }) {
       className={cn(
         'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150',
         active
-          ? 'bg-opsos-brass-50 text-opsos-brass-900'
-          : 'text-opsos-slate-600 hover:bg-opsos-fog-100 hover:text-opsos-slate-900'
+          ? 'bg-keva-brass-50 text-keva-brass-900'
+          : 'text-keva-slate-600 hover:bg-keva-fog-100 hover:text-keva-slate-900'
       )}
     >
       <span className="w-5 h-5">{icon}</span>
@@ -381,16 +381,16 @@ function NavLink({ href, icon, children, active = false }) {
 ### Color Contrast
 
 ✅ All text meets WCAG AA standards:
-- `opsos-slate-800` on white: 13.4:1 ✓
-- `opsos-slate-600` on white: 8.1:1 ✓
-- `opsos-brass-800` on `brass-100`: 7.2:1 ✓
-- `opsos-sage-800` on `sage-100`: 8.5:1 ✓
+- `keva-slate-800` on white: 13.4:1 ✓
+- `keva-slate-600` on white: 8.1:1 ✓
+- `keva-brass-800` on `brass-100`: 7.2:1 ✓
+- `keva-sage-800` on `sage-100`: 8.5:1 ✓
 
 ### Focus States
 
 ```tsx
 // Always include visible focus rings
-className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-opsos-brass-500 focus-visible:ring-offset-2"
+className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-keva-brass-500 focus-visible:ring-offset-2"
 ```
 
 ### Screen Reader Support
@@ -439,7 +439,7 @@ className="transition-all duration-slow" // 250ms
 
 ```tsx
 // Use custom easing for all animations
-className="transition-all duration-200 ease-opsos"
+className="transition-all duration-200 ease-keva"
 // cubic-bezier(0.4, 0, 0.2, 1)
 ```
 
@@ -513,17 +513,17 @@ Use Tailwind's default breakpoints:
 ### ✅ Do This Instead
 
 ```tsx
-// Use OpsOS palette
-<div className="bg-opsos-brass-500">
+// Use KevaOS palette
+<div className="bg-keva-brass-500">
 
 // Use design system spacing
 <div className="p-6">
 
 // Include smooth transitions
-<button className="hover:bg-opsos-fog-200 transition-colors duration-fast">
+<button className="hover:bg-keva-fog-200 transition-colors duration-fast">
 
 // Always show focus
-<button className="focus-visible:ring-2 focus-visible:ring-opsos-brass-500">
+<button className="focus-visible:ring-2 focus-visible:ring-keva-brass-500">
 ```
 
 ---
@@ -533,7 +533,7 @@ Use Tailwind's default breakpoints:
 - **Design Tokens**: `design-system/tokens.json`
 - **Component Specs**: `design-system/COMPONENTS.md`
 - **Full Design System**: `design-system/DESIGN_SYSTEM.md`
-- **Logo Assets**: `public/opsos-logo.png`
+- **Logo Assets**: `public/keva-logo.png`
 - **Color Palette**: Slate (#1B1D1F), Fog (#F5F5F4), Brass (#C4A46B), Sage (#92A69C)
 
 ---
@@ -542,7 +542,7 @@ Use Tailwind's default breakpoints:
 
 ### What's Ready
 ✅ Complete design token system
-✅ Tailwind configuration with OpsOS colors
+✅ Tailwind configuration with KevaOS colors
 ✅ Base component specifications
 ✅ Accessibility guidelines
 ✅ Animation standards
@@ -566,5 +566,5 @@ Use Tailwind's default breakpoints:
 
 ---
 
-**OpsOS Design System v1.0**
+**KevaOS Design System v1.0**
 *Run on clarity.*

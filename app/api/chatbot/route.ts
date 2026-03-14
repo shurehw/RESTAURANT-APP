@@ -130,7 +130,7 @@ function buildSystemPrompt(
   const calendarLabel = calendarType === 'standard' ? 'standard monthly' : calendarType;
   const eventsSection = getUpcomingEvents(now);
 
-  return `You are a senior restaurant operations analyst for OpsOS, a restaurant management platform.
+  return `You are a senior restaurant operations analyst for KevaOS, a restaurant management platform.
 
 Your job is to answer questions about restaurant operations using real POS (point-of-sale) data. You have access to tools that query the restaurant's TipSee POS database directly.
 

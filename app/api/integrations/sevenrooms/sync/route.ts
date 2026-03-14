@@ -9,7 +9,7 @@ import { pushShiftSettings } from '@/lib/integrations/sevenrooms';
 /**
  * POST /api/integrations/sevenrooms/sync
  *
- * Attempt to push OpSOS pacing overrides to SevenRooms.
+ * Attempt to push KevaOS pacing overrides to SevenRooms.
  * Body: { venue_id }
  */
 export async function POST(request: NextRequest) {

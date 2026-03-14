@@ -1,6 +1,6 @@
-# OpSOS Action Center — Unified Enforcement System
+# KevaOS Action Center — Unified Enforcement System
 
-The Action Center is the **enforcement delivery layer** for all OpSOS systems. It ingests violations from any source (comps, sales pace, greetings, staffing) and routes them to appropriate enforcement actions.
+The Action Center is the **enforcement delivery layer** for all KevaOS systems. It ingests violations from any source (comps, sales pace, greetings, staffing) and routes them to appropriate enforcement actions.
 
 ## Architecture
 

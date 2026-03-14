@@ -117,7 +117,7 @@ export function ChatInterface() {
             }`}
           >
             {message.role === 'assistant' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+              <div className="flex-shrink-0 w-8 h-8 rounded-md bg-keva-slate-800 flex items-center justify-center">
                 <Terminal className="w-4 h-4 text-brass" />
               </div>
             )}
@@ -125,7 +125,7 @@ export function ChatInterface() {
             <div
               className={`rounded-lg px-4 py-3 ${
                 message.role === 'user'
-                  ? 'max-w-[70%] bg-opsos-sage-600 text-white'
+                  ? 'max-w-[70%] bg-keva-sage-600 text-white'
                   : 'max-w-[85%] bg-muted text-foreground'
               }`}
             >
@@ -137,7 +137,7 @@ export function ChatInterface() {
             </div>
 
             {message.role === 'user' && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-opsos-sage-600 flex items-center justify-center">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-keva-sage-600 flex items-center justify-center">
                 <User className="w-5 h-5 text-white" />
               </div>
             )}
@@ -146,7 +146,7 @@ export function ChatInterface() {
 
         {loading && (
           <div className="flex gap-3 justify-start">
-            <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+            <div className="flex-shrink-0 w-8 h-8 rounded-md bg-keva-slate-800 flex items-center justify-center">
               <Terminal className="w-4 h-4 text-brass" />
             </div>
             <div className="bg-muted rounded-lg px-4 py-3">

@@ -157,7 +157,7 @@ export function OperationalStandardsManager({ organizations }: Props) {
             <Alert>
               <InfoIcon className="h-4 w-4" />
               <AlertDescription>
-                <strong>OpsOS Layer 1 Bounds:</strong> These are non-negotiable enforcement boundaries.
+                <strong>KevaOS Layer 1 Bounds:</strong> These are non-negotiable enforcement boundaries.
                 Your calibration must stay within these ranges.
               </AlertDescription>
             </Alert>

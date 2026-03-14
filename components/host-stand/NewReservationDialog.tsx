@@ -105,7 +105,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
               <input
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4622B]"
                 placeholder="First"
                 required
                 autoFocus
@@ -116,7 +116,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
               <input
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+                className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4622B]"
                 placeholder="Last"
               />
             </div>
@@ -133,7 +133,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
                   onClick={() => setPartySize(n)}
                   className={`h-10 rounded-lg text-sm font-medium transition-colors ${
                     partySize === n
-                      ? 'bg-[#FF5A1F] text-white'
+                      ? 'bg-[#D4622B] text-white'
                       : 'bg-[#1a1a1a] text-gray-300 border border-gray-700 hover:border-gray-500'
                   }`}
                 >
@@ -149,7 +149,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
             <select
               value={arrivalTime}
               onChange={(e) => setArrivalTime(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F] appearance-none"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4622B] appearance-none"
             >
               {TIME_SLOTS.map((slot) => (
                 <option key={slot} value={slot}>{formatSlot(slot)}</option>
@@ -163,7 +163,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4622B]"
               placeholder="(555) 123-4567"
               type="tel"
             />
@@ -175,7 +175,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
             <input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#FF5A1F]"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#D4622B]"
               placeholder="Birthday, seating preference, allergies..."
             />
           </div>
@@ -191,7 +191,7 @@ export function NewReservationDialog({ venueId, date, onClose, onCreated }: NewR
             <button
               type="submit"
               disabled={loading || !firstName || !arrivalTime}
-              className="flex-1 h-12 bg-[#FF5A1F] hover:bg-[#E04D18] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="flex-1 h-12 bg-[#D4622B] hover:bg-[#A3461F] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
               {loading ? 'Booking...' : 'Book Reservation'}
             </button>

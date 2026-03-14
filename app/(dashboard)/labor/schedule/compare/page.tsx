@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Schedule Compare Page
- * Compare the current OpsOS-generated schedule against previous weeks.
+ * Compare the current KevaOS-generated schedule against previous weeks.
  */
 
 import { createClient } from '@/lib/supabase/server';

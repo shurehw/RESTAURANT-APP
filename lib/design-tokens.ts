@@ -1,41 +1,42 @@
 /**
- * OpsOS Design Tokens
- * Visual Identity: Premium Tech Aesthetic
- * Character: Clean, technical, purposeful
+ * KevaOS Design Tokens
+ * Visual Identity: Warm Hospitality Aesthetic
+ * Character: Earthy, purposeful, premium
  */
 
 export const designTokens = {
-  // Colors - Premium tech palette
+  // Colors — Warm hospitality palette (matches deck)
   colors: {
     // Brand
-    primary: '#0A0A0A',
-    secondary: '#64748B',
+    primary: '#1C1917',
+    secondary: '#8B7E6F',
+    olive: '#5C6B4F',
 
-    // OpsOS Signature Accent
-    ledgerGold: '#FF5A1F',
-    ledgerGoldDark: '#EA4C0C',
+    // KevaOS Signature Accent
+    ledgerGold: '#D4622B',
+    ledgerGoldDark: '#7C2D12',
 
     // Backgrounds
-    paperWhite: '#FFFFFF',
-    paperGray: '#FAFAFA',
+    paperWhite: '#FFFEFB',
+    paperGray: '#FAF8F5',
 
     // Functional
-    success: '#10B981',
-    warning: '#F59E0B',
+    success: '#5C6B4F',
+    warning: '#D4622B',
     critical: '#DC2626',
-    info: '#3B82F6',
+    info: '#8B7E6F',
 
-    // Neutrals (cool)
-    gray50: '#FAFAFA',
-    gray100: '#F5F5F5',
-    gray200: '#E5E5E5',
-    gray300: '#D4D4D4',
-    gray400: '#A3A3A3',
-    gray500: '#737373',
-    gray600: '#525252',
-    gray700: '#404040',
-    gray800: '#262626',
-    gray900: '#171717',
+    // Neutrals (warm stone scale)
+    gray50: '#FAF8F5',
+    gray100: '#F5F1EB',
+    gray200: '#E8E2DA',
+    gray300: '#D5CCC1',
+    gray400: '#B5ADA1',
+    gray500: '#8B7E6F',
+    gray600: '#6B6156',
+    gray700: '#44403C',
+    gray800: '#292524',
+    gray900: '#1C1917',
   },
 
   // Typography - Clean tech fonts
@@ -103,7 +104,7 @@ export const designTokens = {
   shadows: {
     none: 'none',
     inset: 'inset 0 0 0 1px rgba(0, 0, 0, 0.08)',
-    insetAccent: 'inset 0 0 0 1px rgba(255, 90, 31, 0.2)',
+    insetAccent: 'inset 0 0 0 1px rgba(212, 98, 43, 0.2)',
     subtle: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
   },
 
@@ -114,9 +115,9 @@ export const designTokens = {
       thick: '2px',
     },
     color: {
-      default: '#E5E5E5',
-      accent: '#FF5A1F',
-      emphasis: '#0A0A0A',
+      default: '#E8E2DA',
+      accent: '#D4622B',
+      emphasis: '#1C1917',
     },
   },
 
@@ -162,7 +163,7 @@ export type DesignTokens = typeof designTokens;
 // CSS Custom Properties generator
 export function generateCSSVariables() {
   return `
-    /* OpsOS Design Tokens */
+    /* KevaOS Design Tokens */
     :root {
       /* Colors */
       --color-primary: ${designTokens.colors.primary};

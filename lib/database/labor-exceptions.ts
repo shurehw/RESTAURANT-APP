@@ -1,7 +1,7 @@
 /**
  * Labor Exception Detection
  *
- * Implements OpsOS Labor Efficiency Enforcement Spec (Integrated v1.0)
+ * Implements KevaOS Labor Efficiency Enforcement Spec (Integrated v1.0)
  *
  * CORE PRINCIPLE:
  * Metrics are NEVER evaluated in isolation.
@@ -363,7 +363,7 @@ function daysBetween(date1: string, date2: string): number {
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
- * Validate that labor standards respect OpsOS bounds (Layer 1)
+ * Validate that labor standards respect KevaOS bounds (Layer 1)
  *
  * INVARIANT RULES:
  * - Targets are configurable

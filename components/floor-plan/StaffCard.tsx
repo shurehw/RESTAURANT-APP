@@ -30,7 +30,7 @@ export function StaffCard({ employeeId, name, position, assignedSection }: Staff
       className={`
         flex items-center justify-between gap-2 px-3 py-2 rounded-md border cursor-grab
         ${isDragging ? 'opacity-70 shadow-md bg-white' : 'bg-white hover:bg-gray-50'}
-        ${assignedSection ? 'border-opsos-sage-300' : 'border-gray-200'}
+        ${assignedSection ? 'border-keva-sage-300' : 'border-gray-200'}
       `}
       {...listeners}
       {...attributes}

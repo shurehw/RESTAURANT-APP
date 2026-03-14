@@ -1,4 +1,4 @@
-# 🚀 OpsOS Quick Start Guide
+# 🚀 KevaOS Quick Start Guide
 
 ## ✅ What's Done
 
@@ -17,7 +17,7 @@ Since Docker is not installed, use **Supabase Cloud** (free tier, no credit card
 2. Sign in (GitHub/Google/Email)
 3. Click **"New Project"**
 4. Fill in:
-   - **Name**: `opsos-dev`
+   - **Name**: `keva-dev`
    - **Database Password**: (create a strong password - save it!)
    - **Region**: Choose closest to you
    - **Pricing Plan**: Free
@@ -88,7 +88,7 @@ You should see:
 ### Step 6: Verify It Works! 🎉
 
 1. Open **http://localhost:3000** in your browser
-2. You should see the **OpsOS Dashboard**
+2. You should see the **KevaOS Dashboard**
 3. Navigate to different pages:
    - **Dashboard** - Shows 2 venues (Delilah LA, Nice Guy LA)
    - **Invoices** - Empty list (ready for uploads)
@@ -137,7 +137,7 @@ You should see:
 
 ## 🎯 What's Next?
 
-Now that OpsOS is running, you can:
+Now that KevaOS is running, you can:
 
 ### Immediate
 

@@ -124,7 +124,7 @@ export function EnforcementScorecard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-opsos-brass-600" />
+            <ShieldCheck className="w-7 h-7 text-keva-brass-600" />
             Portfolio Enforcement Scorecard
           </h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -259,7 +259,7 @@ export function EnforcementScorecard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4 text-opsos-sage-600" />
+              <Users className="w-4 h-4 text-keva-sage-600" />
               Venue Breakdown
             </CardTitle>
           </CardHeader>
@@ -404,14 +404,14 @@ function MetricCard({
     success: 'border-l-emerald-500 bg-emerald-50/30',
     warning: 'border-l-amber-500 bg-amber-50/30',
     critical: 'border-l-red-500 bg-red-50/30',
-    neutral: 'border-l-opsos-brass-400 bg-white',
+    neutral: 'border-l-keva-brass-400 bg-white',
   };
 
   const iconColors = {
     success: 'text-emerald-600',
     warning: 'text-amber-600',
     critical: 'text-red-600',
-    neutral: 'text-opsos-brass-600',
+    neutral: 'text-keva-brass-600',
   };
 
   return (
@@ -475,16 +475,16 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 p-4 rounded-md border border-gray-200 bg-white hover:bg-gray-50 hover:border-opsos-brass-300 transition-colors group"
+      className="flex items-center gap-3 p-4 rounded-md border border-gray-200 bg-white hover:bg-gray-50 hover:border-keva-brass-300 transition-colors group"
     >
-      <span className="text-opsos-sage-600 group-hover:text-opsos-brass-600 transition-colors">
+      <span className="text-keva-sage-600 group-hover:text-keva-brass-600 transition-colors">
         {icon}
       </span>
       <div className="flex-1">
         <div className="text-sm font-medium text-gray-900">{label}</div>
         <div className="text-xs text-gray-500">{description}</div>
       </div>
-      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-opsos-brass-500 transition-colors" />
+      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-keva-brass-500 transition-colors" />
     </Link>
   );
 }
@@ -519,7 +519,7 @@ function ScorecardError({ message }: { message: string }) {
       </p>
       <Link
         href="/reports/nightly"
-        className="text-sm text-opsos-brass-600 hover:underline"
+        className="text-sm text-keva-brass-600 hover:underline"
       >
         Go to Nightly Report instead
       </Link>
@@ -530,7 +530,7 @@ function ScorecardError({ message }: { message: string }) {
 function ScorecardEmpty() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
-      <ShieldCheck className="w-12 h-12 text-opsos-sage-400 mb-4" />
+      <ShieldCheck className="w-12 h-12 text-keva-sage-400 mb-4" />
       <h2 className="text-lg font-semibold text-gray-700 mb-2">
         No enforcement data yet
       </h2>
@@ -540,7 +540,7 @@ function ScorecardEmpty() {
       </p>
       <Link
         href="/reports/nightly"
-        className="text-sm text-opsos-brass-600 hover:underline"
+        className="text-sm text-keva-brass-600 hover:underline"
       >
         View Nightly Report
       </Link>

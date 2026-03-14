@@ -1,4 +1,4 @@
-# OpsOS Intelligence Layer - Test Suite
+# KevaOS Intelligence Layer - Test Suite
 
 ## Overview
 

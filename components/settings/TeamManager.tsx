@@ -246,7 +246,7 @@ export default function TeamManager() {
       <Card className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <Users className="w-6 h-6 text-opsos-sage-600" />
+            <Users className="w-6 h-6 text-keva-sage-600" />
             <div>
               <h2 className="text-xl font-semibold">Team Members</h2>
               <p className="text-sm text-gray-600 mt-0.5">
@@ -257,7 +257,7 @@ export default function TeamManager() {
           <Button
             onClick={() => setInviteDialogOpen(true)}
             size="sm"
-            className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+            className="bg-keva-sage-600 hover:bg-keva-sage-700"
           >
             <UserPlus className="w-4 h-4 mr-1" />
             Invite Member
@@ -301,7 +301,7 @@ export default function TeamManager() {
                       <button
                         onClick={() => handleToggleActive(member)}
                         className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                          member.is_active ? 'bg-opsos-sage-600' : 'bg-gray-200'
+                          member.is_active ? 'bg-keva-sage-600' : 'bg-gray-200'
                         }`}
                       >
                         <span
@@ -344,7 +344,7 @@ export default function TeamManager() {
       {invites.length > 0 && (
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
-            <Mail className="w-5 h-5 text-opsos-sage-600" />
+            <Mail className="w-5 h-5 text-keva-sage-600" />
             <h3 className="text-lg font-semibold">Pending Invitations</h3>
           </div>
           <div className="border rounded-md overflow-hidden">
@@ -597,7 +597,7 @@ function InviteMemberDialog({
           <Button
             onClick={handleSubmit}
             disabled={!email.trim() || saving}
-            className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+            className="bg-keva-sage-600 hover:bg-keva-sage-700"
           >
             {saving ? 'Sending...' : 'Send Invitation'}
           </Button>
@@ -718,7 +718,7 @@ function EditMemberDialog({
                 venue_ids: allVenues ? null : selectedVenueIds,
               })
             }
-            className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+            className="bg-keva-sage-600 hover:bg-keva-sage-700"
           >
             Save Changes
           </Button>

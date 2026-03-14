@@ -2,7 +2,7 @@ import { STATE_COLORS, STATE_LABELS } from './constants';
 
 export function TableStatusLegend() {
   return (
-    <div className="flex items-center gap-4 px-4 py-2 bg-[#0A0A0A]/80 rounded-lg">
+    <div className="flex items-center gap-4 px-4 py-2 bg-[#1C1917]/80 rounded-lg">
       {Object.entries(STATE_COLORS).map(([state, color]) => (
         <div key={state} className="flex items-center gap-1.5">
           <div

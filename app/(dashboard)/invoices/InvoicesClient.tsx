@@ -610,7 +610,7 @@ function MatchConfidenceBadge({
       </Badge>
       {autoApproved && (
         <span title="Auto-approved">
-          <Zap className="w-3 h-3 text-opsos-brass-500" />
+          <Zap className="w-3 h-3 text-keva-brass-500" />
         </span>
       )}
     </div>
@@ -625,7 +625,7 @@ function VarianceBadge({
   variancePct: number | null;
 }) {
   if (!severity || severity === "none") {
-    return <span className="text-xs text-opsos-sage-600">✓ None</span>;
+    return <span className="text-xs text-keva-sage-600">✓ None</span>;
   }
 
   const colorMap: Record<string, string> = {

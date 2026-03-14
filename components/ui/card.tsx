@@ -1,5 +1,5 @@
 /**
- * OpsOS Card Component
+ * KevaOS Card Component
  * Fog background with subtle brass border shadow
  */
 

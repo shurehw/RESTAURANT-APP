@@ -95,20 +95,20 @@ export function RecommendationBanner({ venueId, date, onApplied }: Recommendatio
   const totalRevenue = recommendations.reduce((s, r) => s + (r.expected_impact.revenue_delta || 0), 0);
 
   return (
-    <Card className="mb-4 border-opsos-sage-200 bg-opsos-sage-50/30">
+    <Card className="mb-4 border-keva-sage-200 bg-keva-sage-50/30">
       {/* Header */}
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full px-4 py-3 flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-opsos-sage-600" />
+          <Sparkles className="w-4 h-4 text-keva-sage-600" />
           <span className="font-semibold text-sm">AI Pacing Suggestions</span>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-opsos-sage-500 text-opsos-sage-700">
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-keva-sage-500 text-keva-sage-700">
             {recommendations.length} suggestion{recommendations.length > 1 ? 's' : ''}
           </Badge>
           {totalImpact > 0 && (
-            <span className="text-xs text-opsos-sage-600 flex items-center gap-1">
+            <span className="text-xs text-keva-sage-600 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               +{totalImpact} covers
               {totalRevenue > 0 && ` · +$${totalRevenue.toLocaleString()}`}
@@ -127,7 +127,7 @@ export function RecommendationBanner({ venueId, date, onApplied }: Recommendatio
 
       {/* Expanded */}
       {expanded && (
-        <div className="px-4 pb-4 border-t border-opsos-sage-100 pt-3 space-y-3">
+        <div className="px-4 pb-4 border-t border-keva-sage-100 pt-3 space-y-3">
           {recommendations.map(rec => (
             <div key={rec.id} className="bg-white rounded-lg p-3 border border-border space-y-2">
               {/* Rec header */}
@@ -159,7 +159,7 @@ export function RecommendationBanner({ venueId, date, onApplied }: Recommendatio
                     autoFocus
                   />
                 ) : (
-                  <span className="font-semibold text-opsos-sage-700">{rec.recommended_value.value}</span>
+                  <span className="font-semibold text-keva-sage-700">{rec.recommended_value.value}</span>
                 )}
                 {rec.expected_impact.extra_covers ? (
                   <span className="text-xs text-emerald-600 ml-2">
@@ -180,7 +180,7 @@ export function RecommendationBanner({ venueId, date, onApplied }: Recommendatio
               <div className="flex items-center gap-1.5 pt-1">
                 <Button
                   size="sm"
-                  className={`h-7 text-xs ${rec.rec_type === 'channel' ? 'bg-violet-600 hover:bg-violet-700' : 'bg-opsos-sage-600 hover:bg-opsos-sage-700'}`}
+                  className={`h-7 text-xs ${rec.rec_type === 'channel' ? 'bg-violet-600 hover:bg-violet-700' : 'bg-keva-sage-600 hover:bg-keva-sage-700'}`}
                   disabled={actioning === rec.id}
                   onClick={() => handleAction(
                     rec.id,

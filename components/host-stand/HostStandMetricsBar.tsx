@@ -18,7 +18,7 @@ export function HostStandMetricsBar({
   totalRevenue,
 }: HostStandMetricsBarProps) {
   return (
-    <div className="flex items-center justify-around px-6 py-3 bg-[#0A0A0A] border-t border-gray-800">
+    <div className="flex items-center justify-around px-6 py-3 bg-[#1C1917] border-t border-gray-800">
       <Metric label="Covers" value={totalCovers} />
       <Divider />
       <Metric label="Available" value={`${available}/${totalTables}`} />
@@ -45,7 +45,7 @@ function Metric({
     <div className="text-center">
       <div
         className={`text-xl font-bold tabular-nums ${
-          highlight ? 'text-[#FF5A1F]' : 'text-white'
+          highlight ? 'text-[#D4622B]' : 'text-white'
         }`}
       >
         {value}

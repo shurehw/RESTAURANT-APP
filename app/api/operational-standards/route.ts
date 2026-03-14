@@ -295,25 +295,25 @@ function validateUpdates(updates: any, LABOR_BOUNDS: any): string | null {
 
   if (updates.target_labor_pct !== undefined) {
     if (updates.target_labor_pct < LABOR_BOUNDS.LABOR_PCT_MIN || updates.target_labor_pct > LABOR_BOUNDS.LABOR_PCT_MAX) {
-      return `target_labor_pct must be between ${LABOR_BOUNDS.LABOR_PCT_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_MAX}% (OpsOS Layer 1 bounds)`;
+      return `target_labor_pct must be between ${LABOR_BOUNDS.LABOR_PCT_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_MAX}% (KevaOS Layer 1 bounds)`;
     }
   }
 
   if (updates.labor_pct_tolerance !== undefined) {
     if (updates.labor_pct_tolerance < LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN || updates.labor_pct_tolerance > LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX) {
-      return `labor_pct_tolerance must be between ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX}% (OpsOS Layer 1 bounds)`;
+      return `labor_pct_tolerance must be between ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MIN}% and ${LABOR_BOUNDS.LABOR_PCT_TOLERANCE_MAX}% (KevaOS Layer 1 bounds)`;
     }
   }
 
   if (updates.splh_floor !== undefined) {
     if (updates.splh_floor < LABOR_BOUNDS.SPLH_MIN || updates.splh_floor > LABOR_BOUNDS.SPLH_MAX) {
-      return `splh_floor must be between $${LABOR_BOUNDS.SPLH_MIN} and $${LABOR_BOUNDS.SPLH_MAX} (OpsOS Layer 1 bounds)`;
+      return `splh_floor must be between $${LABOR_BOUNDS.SPLH_MIN} and $${LABOR_BOUNDS.SPLH_MAX} (KevaOS Layer 1 bounds)`;
     }
   }
 
   if (updates.cplh_target !== undefined) {
     if (updates.cplh_target < LABOR_BOUNDS.CPLH_MIN || updates.cplh_target > LABOR_BOUNDS.CPLH_MAX) {
-      return `cplh_target must be between ${LABOR_BOUNDS.CPLH_MIN} and ${LABOR_BOUNDS.CPLH_MAX} (OpsOS Layer 1 bounds)`;
+      return `cplh_target must be between ${LABOR_BOUNDS.CPLH_MIN} and ${LABOR_BOUNDS.CPLH_MAX} (KevaOS Layer 1 bounds)`;
     }
   }
 

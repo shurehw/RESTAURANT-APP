@@ -1,5 +1,5 @@
 /**
- * OpsOS Dashboard Layout
+ * KevaOS Dashboard Layout
  * Sidebar + topbar with brass accent line
  */
 
@@ -123,7 +123,7 @@ export default async function DashboardLayout({
         {/* Skip to main content — keyboard/screen-reader shortcut */}
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-brass focus:text-opsos-slate-800 focus:rounded-md focus:font-semibold focus:text-sm"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-4 focus:left-4 focus:px-4 focus:py-2 focus:bg-brass focus:text-keva-slate-800 focus:rounded-md focus:font-semibold focus:text-sm"
         >
           Skip to main content
         </a>

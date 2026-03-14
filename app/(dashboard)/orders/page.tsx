@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * OpsOS Orders Page
+ * KevaOS Orders Page
  */
 
 import { createClient } from "@/lib/supabase/server";

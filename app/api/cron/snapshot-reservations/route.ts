@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
   let snapshotCount = 0;
   let errorCount = 0;
 
-  for (const [opsosVenueId, srVenueId] of venueEntries) {
+  for (const [kevaVenueId, srVenueId] of venueEntries) {
     for (const date of dates) {
       try {
         const reservations = await fetchReservationsForVenueDate(srVenueId, date);
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         await (supabase as any)
           .from('reservation_snapshots')
           .insert({
-            venue_id: opsosVenueId,
+            venue_id: kevaVenueId,
             business_date: date,
             confirmed_covers: confirmed,
             pending_covers: pending,
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         snapshotCount++;
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Unknown';
-        console.error(`[snapshot-rez] ${opsosVenueId} ${date}: ${msg}`);
+        console.error(`[snapshot-rez] ${kevaVenueId} ${date}: ${msg}`);
         errorCount++;
       }
     }

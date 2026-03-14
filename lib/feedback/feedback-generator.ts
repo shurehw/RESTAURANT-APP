@@ -1,7 +1,7 @@
 /**
  * Feedback Generator - Creates feedback objects from signals
  *
- * This is the "Phase 4: Feedback Object Generation" from the OpsOS flow.
+ * This is the "Phase 4: Feedback Object Generation" from the KevaOS flow.
  * Signals → Classification → Suppression → Feedback Objects
  */
 

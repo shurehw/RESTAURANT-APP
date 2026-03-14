@@ -151,7 +151,7 @@ export function ItemBulkImport() {
       {/* File Upload */}
       <div className="mb-6">
         <label htmlFor="excel-upload" className="block mb-2 cursor-pointer">
-          <div className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-opsos-sage-300 rounded-md hover:border-brass hover:bg-brass/5 transition-colors">
+          <div className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-keva-sage-300 rounded-md hover:border-brass hover:bg-brass/5 transition-colors">
             <Upload className="w-5 h-5 text-muted-foreground" />
             <span className="text-sm font-medium">
               {file ? file.name : 'Click to choose Excel file (.xlsx)'}
@@ -180,10 +180,10 @@ export function ItemBulkImport() {
       {parsedData.length > 0 && !importResults && (
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-ledger-black mb-2">Preview (first 10 items)</h3>
-          <div className="border border-opsos-sage-200 rounded-md max-h-96 overflow-y-auto">
+          <div className="border border-keva-sage-200 rounded-md max-h-96 overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="bg-opsos-sage-50 sticky top-0">
-                <tr className="border-b border-opsos-sage-200">
+              <thead className="bg-keva-sage-50 sticky top-0">
+                <tr className="border-b border-keva-sage-200">
                   <th className="text-left p-2 font-semibold">Item</th>
                   <th className="text-left p-2 font-semibold">Pack Sizes</th>
                   <th className="text-left p-2 font-semibold">Category</th>
@@ -192,7 +192,7 @@ export function ItemBulkImport() {
               </thead>
               <tbody>
                 {Array.from(consolidatedItems.entries()).slice(0, 10).map(([name, rows], idx) => (
-                  <tr key={idx} className="border-b border-opsos-sage-100 hover:bg-opsos-sage-50/50">
+                  <tr key={idx} className="border-b border-keva-sage-100 hover:bg-keva-sage-50/50">
                     <td className="p-2 font-mono text-ledger-black">{name}</td>
                     <td className="p-2">
                       <div className="flex flex-wrap gap-1">

@@ -41,7 +41,7 @@ import { CompCard } from '@/components/pulse/CompCard';
 import { PeriodGaugeCard, PeriodCategoryMixCard } from '@/components/pulse/PeriodGaugeCard';
 import { PeriodDayChart } from '@/components/pulse/PeriodDayChart';
 import { PeriodDayTable } from '@/components/pulse/PeriodDayTable';
-import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
+import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
 import { PeriodWeekBreakdown } from '@/components/reports/PeriodWeekBreakdown';
 import type { PtdWeekRow, YtdPeriodRow } from '@/lib/types/pulse';
 import { YtdPeriodBreakdown } from '@/components/reports/YtdPeriodBreakdown';
@@ -487,7 +487,7 @@ function GaugeCard({
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-500 bg-opsos-brass"
+                className="h-full rounded-full transition-all duration-500 bg-keva-brass"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -534,7 +534,7 @@ function CategoryMixCard({
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <UtensilsCrossed className="h-3.5 w-3.5 text-opsos-brass" />
+              <UtensilsCrossed className="h-3.5 w-3.5 text-keva-brass" />
               <span>Food</span>
             </div>
             <div className="text-right">
@@ -544,7 +544,7 @@ function CategoryMixCard({
           </div>
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
-              <Wine className="h-3.5 w-3.5 text-opsos-sage" />
+              <Wine className="h-3.5 w-3.5 text-keva-sage" />
               <span>Beverage</span>
             </div>
             <div className="text-right">
@@ -556,8 +556,8 @@ function CategoryMixCard({
 
         {total > 0 && (
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-            <div className="bg-opsos-brass transition-all" style={{ width: `${foodPct}%` }} />
-            <div className="bg-opsos-sage transition-all" style={{ width: `${bevPct}%` }} />
+            <div className="bg-keva-brass transition-all" style={{ width: `${foodPct}%` }} />
+            <div className="bg-keva-sage transition-all" style={{ width: `${bevPct}%` }} />
           </div>
         )}
 
@@ -766,12 +766,12 @@ function ServiceChart({
             yAxisId="revenue"
             type="monotone"
             dataKey="revenue"
-            stroke="#FF5A1F"
+            stroke="#D4622B"
             strokeWidth={2.5}
-            fill="#FF5A1F"
+            fill="#D4622B"
             fillOpacity={0.08}
             dot={false}
-            activeDot={{ r: 4, fill: '#FF5A1F' }}
+            activeDot={{ r: 4, fill: '#D4622B' }}
           />
           {hasLabor && (
             <Line
@@ -790,12 +790,12 @@ function ServiceChart({
 
       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
         <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 bg-opsos-brass rounded" />
+          <div className="w-4 h-0.5 bg-keva-brass rounded" />
           <span>Revenue</span>
         </div>
         {hasLabor && (
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 border-t-2 border-dashed border-opsos-sage-400" />
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-keva-sage-400" />
             <span>Labor</span>
           </div>
         )}
@@ -807,7 +807,7 @@ function ServiceChart({
         )}
         {sdlwRevenue != null && sdlwRevenue > 0 && (
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 border-t-2 border-dashed border-opsos-sage" />
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-keva-sage" />
             <span>SDLW EOD</span>
           </div>
         )}
@@ -1531,7 +1531,7 @@ export default function LivePulsePage() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <OpsOSLogo size="sm" />
+            <KevaOSLogo size="sm" />
             <span className="text-muted-foreground/40 text-lg font-light">/</span>
             <h1 className="text-2xl font-bold tracking-tight">Live Pulse</h1>
           </div>

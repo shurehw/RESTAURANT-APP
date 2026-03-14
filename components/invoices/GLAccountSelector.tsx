@@ -116,7 +116,7 @@ export function GLAccountSelector({
     const colors = {
       high: 'bg-sage/10 text-sage border-sage/20',
       medium: 'bg-brass/10 text-brass border-brass/20',
-      low: 'bg-opsos-sage-200 text-opsos-sage-700 border-opsos-sage-300',
+      low: 'bg-keva-sage-200 text-keva-sage-700 border-keva-sage-300',
     };
 
     return (
@@ -190,7 +190,7 @@ export function GLAccountSelector({
               className={`w-full text-left p-3 rounded-lg border-2 transition-all hover:border-brass ${
                 selectedId === account.id
                   ? 'border-sage bg-sage/5'
-                  : 'border-opsos-sage-200 bg-white'
+                  : 'border-keva-sage-200 bg-white'
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -241,7 +241,7 @@ export function GLAccountSelector({
               className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                 selectedId === account.id
                   ? 'bg-sage/10 text-sage font-medium'
-                  : 'hover:bg-opsos-sage-100'
+                  : 'hover:bg-keva-sage-100'
               }`}
             >
               <span className="font-mono">{account.external_code}</span>

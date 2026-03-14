@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface SeatWalkinDialogProps {
   venueId: string;
@@ -28,6 +28,11 @@ export function SeatWalkinDialog({
   >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchRecommendations(partySize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueId, date, tableId]);
 
   // Fetch table recommendations when party size changes (only if no table pre-selected)
   const fetchRecommendations = async (size: number) => {
@@ -79,6 +84,34 @@ export function SeatWalkinDialog({
     setError(null);
 
     try {
+      let reservationId: string | undefined;
+      const trimmedName = guestName.trim();
+      if (trimmedName) {
+        const [firstName, ...lastParts] = trimmedName.split(/\s+/);
+        const lastName = lastParts.join(' ');
+        const now = new Date();
+        const arrivalTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+        const rezRes = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            venue_id: venueId,
+            first_name: firstName || 'Walk-in',
+            last_name: lastName || undefined,
+            party_size: partySize,
+            business_date: date,
+            arrival_time: arrivalTime,
+            channel: 'walkin',
+          }),
+        });
+        const rezData = await rezRes.json().catch(() => ({}));
+        if (!rezRes.ok || !rezData?.reservation?.id) {
+          throw new Error(rezData?.error || 'Failed to create walk-in guest record');
+        }
+        reservationId = rezData.reservation.id;
+      }
+
       const res = await fetch('/api/floor-plan/live/transition', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,6 +120,7 @@ export function SeatWalkinDialog({
           table_id: selectedTableId,
           date,
           action: 'seat',
+          reservation_id: reservationId,
           party_size: partySize,
           expected_duration: duration,
         }),
@@ -94,7 +128,27 @@ export function SeatWalkinDialog({
 
       if (!res.ok) {
         const data = await res.json();
+        if (reservationId) {
+          await fetch(`/api/reservations/${reservationId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'cancelled' }),
+          }).catch(() => {});
+        }
         throw new Error(data.error || 'Failed to seat party');
+      }
+
+      if (reservationId) {
+        await fetch(`/api/reservations/${reservationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'arrived' }),
+        }).catch(() => {});
+        await fetch(`/api/reservations/${reservationId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'seated' }),
+        }).catch(() => {});
       }
 
       onSeated();
@@ -134,7 +188,7 @@ export function SeatWalkinDialog({
                   onClick={() => handlePartySizeChange(n)}
                   className={`flex-1 h-12 rounded-lg text-base font-medium transition-colors ${
                     partySize === n
-                      ? 'bg-[#FF5A1F] text-white'
+                      ? 'bg-[#D4622B] text-white'
                       : 'bg-[#1a1a1a] text-gray-300 border border-gray-700'
                   }`}
                 >
@@ -149,7 +203,7 @@ export function SeatWalkinDialog({
             <input
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#FF5A1F]"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#D4622B]"
               placeholder="Walk-in guest"
             />
           </div>
@@ -166,7 +220,7 @@ export function SeatWalkinDialog({
                     onClick={() => setSelectedTableId(r.table_id)}
                     className={`px-4 h-12 rounded-lg text-base font-medium transition-colors ${
                       selectedTableId === r.table_id
-                        ? 'bg-[#FF5A1F] text-white'
+                        ? 'bg-[#D4622B] text-white'
                         : 'bg-[#1a1a1a] text-gray-300 border border-gray-700'
                     }`}
                   >
@@ -187,7 +241,7 @@ export function SeatWalkinDialog({
                   onClick={() => setDuration(m)}
                   className={`flex-1 h-10 rounded-lg text-sm font-medium transition-colors ${
                     duration === m
-                      ? 'bg-[#FF5A1F] text-white'
+                      ? 'bg-[#D4622B] text-white'
                       : 'bg-[#1a1a1a] text-gray-300 border border-gray-700'
                   }`}
                 >
@@ -208,7 +262,7 @@ export function SeatWalkinDialog({
             <button
               type="submit"
               disabled={loading || !selectedTableId}
-              className="flex-1 h-12 bg-[#FF5A1F] hover:bg-[#E04D18] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="flex-1 h-12 bg-[#D4622B] hover:bg-[#A3461F] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
               {loading ? 'Seating...' : 'Seat Party'}
             </button>

@@ -105,11 +105,11 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-opsos-sage-200 sticky top-0 bg-white">
+        <div className="flex items-center justify-between p-6 border-b border-keva-sage-200 sticky top-0 bg-white">
           <h2 className="text-lg font-semibold text-ledger-black">Edit Product</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-opsos-sage-100 rounded-md transition-colors"
+            className="p-1 hover:bg-keva-sage-100 rounded-md transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -151,7 +151,7 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
               <select
                 value={editedProduct.category}
                 onChange={(e) => setEditedProduct({ ...editedProduct, category: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
               >
                 <optgroup label="Alcoholic Beverages">
                   <option value="liquor">Liquor</option>
@@ -205,7 +205,7 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
             <select
               value={editedProduct.base_uom}
               onChange={(e) => setEditedProduct({ ...editedProduct, base_uom: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+              className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
             >
               <optgroup label="Volume (US)">
                 <option value="oz">Ounce (oz)</option>
@@ -250,7 +250,7 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 p-6 border-t border-opsos-sage-200 sticky bottom-0 bg-white">
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-keva-sage-200 sticky bottom-0 bg-white">
           <Button
             variant="outline"
             onClick={onClose}

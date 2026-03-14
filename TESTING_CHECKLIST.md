@@ -1,4 +1,4 @@
-# OpsOS - Complete Testing Checklist
+# KevaOS - Complete Testing Checklist
 
 ## 🎯 How to Test Everything Top to Bottom
 

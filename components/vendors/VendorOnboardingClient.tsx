@@ -48,7 +48,7 @@ export function VendorOnboardingClient({ organizationId, organizationName }: Ven
   // Show form if vendor found or new vendor
   if (vendor || isNewVendor) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-opsos-sage-50 to-brass/5">
+      <div className="min-h-screen bg-gradient-to-br from-keva-sage-50 to-brass/5">
         {/* Header */}
         <div className="bg-white border-b border-border">
           <div className="max-w-4xl mx-auto px-6 py-6">
@@ -68,8 +68,8 @@ export function VendorOnboardingClient({ organizationId, organizationName }: Ven
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs font-medium text-brass">POWERED BY OpsOS</p>
-                <p className="text-sm font-semibold text-opsos-sage">{organizationName}</p>
+                <p className="text-xs font-medium text-brass">POWERED BY KevaOS</p>
+                <p className="text-sm font-semibold text-keva-sage">{organizationName}</p>
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function VendorOnboardingClient({ organizationId, organizationName }: Ven
 
         {/* Footer */}
         <div className="max-w-4xl mx-auto px-6 py-8 text-center text-sm text-muted-foreground">
-          <p>Powered by OpsOS Restaurant Intelligence Platform</p>
+          <p>Powered by KevaOS Restaurant Intelligence Platform</p>
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ export function VendorOnboardingClient({ organizationId, organizationName }: Ven
 
   // Show lookup form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-opsos-sage-50 to-brass/5 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-keva-sage-50 to-brass/5 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         {/* Logo/Icon */}
         <div className="w-16 h-16 bg-brass rounded-lg flex items-center justify-center mx-auto mb-6">
@@ -106,9 +106,9 @@ export function VendorOnboardingClient({ organizationId, organizationName }: Ven
         <div className="text-center mb-8">
           <div className="mb-4">
             <p className="text-xs font-medium text-brass mb-1">POWERED BY</p>
-            <h2 className="text-lg font-bold">OpsOS</h2>
+            <h2 className="text-lg font-bold">KevaOS</h2>
             <p className="text-xs text-muted-foreground mt-2">for</p>
-            <h3 className="text-xl font-bold text-opsos-sage">{organizationName}</h3>
+            <h3 className="text-xl font-bold text-keva-sage">{organizationName}</h3>
           </div>
           <h1 className="text-2xl font-bold mb-2 mt-6">Vendor Profile Setup</h1>
           <p className="text-sm text-muted-foreground">

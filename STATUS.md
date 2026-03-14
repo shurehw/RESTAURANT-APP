@@ -1,7 +1,7 @@
-# ✅ OpsOS Setup Status
+# ✅ KevaOS Setup Status
 
 **Date:** November 8, 2025
-**Project:** Restaurant Back-Office Platform (OpsOS)
+**Project:** Restaurant Back-Office Platform (KevaOS)
 **Location:** `c:\Users\JacobShure\RESTAURANT APP`
 
 ---

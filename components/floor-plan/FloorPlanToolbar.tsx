@@ -66,7 +66,7 @@ export function FloorPlanToolbar({
         variant={snapEnabled ? 'default' : 'outline'}
         size="sm"
         onClick={onToggleSnap}
-        className={snapEnabled ? 'bg-opsos-sage-600 hover:bg-opsos-sage-700' : ''}
+        className={snapEnabled ? 'bg-keva-sage-600 hover:bg-keva-sage-700' : ''}
         title="Snap to grid"
       >
         <Grid3X3 className="w-4 h-4 mr-1" />
@@ -87,7 +87,7 @@ export function FloorPlanToolbar({
         size="sm"
         onClick={onSave}
         disabled={!hasChanges || saving}
-        className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+        className="bg-keva-sage-600 hover:bg-keva-sage-700"
       >
         <Save className="w-4 h-4 mr-1" />
         {saving ? 'Saving...' : 'Save Layout'}

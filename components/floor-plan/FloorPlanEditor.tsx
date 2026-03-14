@@ -565,7 +565,7 @@ export function FloorPlanEditor({ venues, initialVenueId }: FloorPlanEditorProps
             <button
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 isLayout
-                  ? 'border-opsos-sage-600 text-opsos-sage-700'
+                  ? 'border-keva-sage-600 text-keva-sage-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setMode('layout')}
@@ -576,7 +576,7 @@ export function FloorPlanEditor({ venues, initialVenueId }: FloorPlanEditorProps
             <button
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                 !isLayout
-                  ? 'border-opsos-sage-600 text-opsos-sage-700'
+                  ? 'border-keva-sage-600 text-keva-sage-700'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
               onClick={() => setMode('staff')}

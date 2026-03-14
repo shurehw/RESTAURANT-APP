@@ -184,7 +184,7 @@ export function ScheduleTemplatesModal({
             onClick={() => setActiveTab('apply')}
             className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'apply'
-                ? 'border-b-2 border-opsos-sage-600 text-opsos-sage-600'
+                ? 'border-b-2 border-keva-sage-600 text-keva-sage-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -195,7 +195,7 @@ export function ScheduleTemplatesModal({
             onClick={() => setActiveTab('save')}
             className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'save'
-                ? 'border-b-2 border-opsos-sage-600 text-opsos-sage-600'
+                ? 'border-b-2 border-keva-sage-600 text-keva-sage-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -251,7 +251,7 @@ export function ScheduleTemplatesModal({
                     </div>
                     <Button
                       onClick={() => handleApplyTemplate(template.id)}
-                      className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+                      className="bg-keva-sage-600 hover:bg-keva-sage-700"
                     >
                       Apply
                     </Button>
@@ -310,7 +310,7 @@ export function ScheduleTemplatesModal({
             <Button
               onClick={handleSaveTemplate}
               disabled={!templateName.trim() || saving}
-              className="w-full bg-opsos-sage-600 hover:bg-opsos-sage-700"
+              className="w-full bg-keva-sage-600 hover:bg-keva-sage-700"
             >
               {saving ? 'Saving...' : 'Save Current Schedule as Template'}
             </Button>

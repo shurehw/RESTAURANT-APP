@@ -119,7 +119,7 @@ export default function OrganizationSettingsPage() {
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+              className="bg-keva-sage-600 hover:bg-keva-sage-700"
             >
               <Save className="w-4 h-4 mr-2" />
               {saving ? 'Saving...' : 'Save Changes'}
@@ -132,7 +132,7 @@ export default function OrganizationSettingsPage() {
         {/* Labor Settings */}
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
-            <Settings className="w-6 h-6 text-opsos-sage-600" />
+            <Settings className="w-6 h-6 text-keva-sage-600" />
             <h2 className="text-xl font-semibold">Labor Settings</h2>
           </div>
 
@@ -182,7 +182,7 @@ export default function OrganizationSettingsPage() {
         {/* Notification Settings */}
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-6">
-            <Bell className="w-6 h-6 text-opsos-sage-600" />
+            <Bell className="w-6 h-6 text-keva-sage-600" />
             <h2 className="text-xl font-semibold">Notification Settings</h2>
           </div>
 
@@ -263,8 +263,8 @@ function SettingToggle({
       </div>
       <button
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-opsos-sage-500 focus:ring-offset-2 ${
-          checked ? 'bg-opsos-sage-600' : 'bg-gray-200'
+        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-keva-sage-500 focus:ring-offset-2 ${
+          checked ? 'bg-keva-sage-600' : 'bg-gray-200'
         }`}
       >
         <span

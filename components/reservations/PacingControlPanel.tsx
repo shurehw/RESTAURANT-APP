@@ -157,7 +157,7 @@ export function PacingControlPanel({ venueId, outlook, onSaved }: PacingControlP
       });
       const result = await res.json();
       if (result.status === 'unsupported') {
-        setMessage({ type: 'info', text: 'SR write API not available — overrides are OpSOS-authoritative' });
+        setMessage({ type: 'info', text: 'SR write API not available — overrides are KevaOS-authoritative' });
       } else if (result.status === 'success') {
         setMessage({ type: 'success', text: 'Settings pushed to SevenRooms' });
       } else {
@@ -193,7 +193,7 @@ export function PacingControlPanel({ venueId, outlook, onSaved }: PacingControlP
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-opsos-sage-600" />
+          <SlidersHorizontal className="w-4 h-4 text-keva-sage-600" />
           <span className="font-semibold text-sm">Adjust Pacing</span>
           {!expanded && (
             <span className="text-xs text-muted-foreground ml-2">{summaryText}</span>
@@ -366,7 +366,7 @@ export function PacingControlPanel({ venueId, outlook, onSaved }: PacingControlP
                   size="sm"
                   onClick={handleSave}
                   disabled={saving || !hasChanges}
-                  className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+                  className="bg-keva-sage-600 hover:bg-keva-sage-700"
                 >
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : <Save className="w-3.5 h-3.5 mr-1.5" />}
                   Save Overrides

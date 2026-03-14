@@ -137,8 +137,8 @@ export function PeriodCategoryMixCard({
 
         {total > 0 && (
           <div className="h-3 rounded-full bg-muted overflow-hidden flex">
-            <div className="bg-opsos-brass transition-all" style={{ width: `${foodPct}%` }} />
-            <div className="bg-opsos-sage transition-all" style={{ width: `${bevPct}%` }} />
+            <div className="bg-keva-brass transition-all" style={{ width: `${foodPct}%` }} />
+            <div className="bg-keva-sage transition-all" style={{ width: `${bevPct}%` }} />
             {otherSales > 0 && (
               <div className="bg-muted-foreground/30 transition-all" style={{ width: `${otherPct}%` }} />
             )}

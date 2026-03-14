@@ -79,7 +79,7 @@ export async function POST(
       await resend.emails.send({
         from: FROM_EMAIL,
         to: invite.email,
-        subject: `Reminder: You're invited to join ${org?.name || 'OpSOS'}`,
+        subject: `Reminder: You're invited to join ${org?.name || 'KevaOS'}`,
         html,
       });
     } catch (emailError) {

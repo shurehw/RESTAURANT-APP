@@ -7,7 +7,7 @@
 import { Suspense } from 'react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import Link from 'next/link';
-import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
+import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
 import { Shield, Lock, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -19,14 +19,13 @@ export default function LoginPage() {
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}
     >
-      <div className="max-w-md w-full space-y-8 bg-white border border-opsos-slate-200 overflow-hidden">
+      <div className="max-w-md w-full space-y-8 bg-white border border-keva-slate-200 overflow-hidden">
         {/* Accent rule */}
         <div className="h-0.5 bg-brass" />
 
         <div className="px-8 pt-4 pb-0 space-y-8">
           <div className="flex flex-col items-center">
-            <OpsOSLogo size="xl" className="mb-4" />
-            <p className="text-sm text-center text-muted-foreground">Pulse</p>
+            <KevaOSLogo size="xl" className="mb-4" />
           </div>
 
           <Suspense>

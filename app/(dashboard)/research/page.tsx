@@ -155,13 +155,13 @@ export default function ResearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search restaurants, locations, market data..."
-              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opsos-sage-500 focus:border-transparent text-base"
+              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-keva-sage-500 focus:border-transparent text-base"
             />
           </div>
           <Button
             type="submit"
             disabled={searching || !query.trim()}
-            className="bg-opsos-sage-600 hover:bg-opsos-sage-700 px-6"
+            className="bg-keva-sage-600 hover:bg-keva-sage-700 px-6"
           >
             {searching ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -178,7 +178,7 @@ export default function ResearchPage() {
           onClick={() => setActiveTab('search')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'search'
-              ? 'border-opsos-sage-600 text-opsos-sage-700'
+              ? 'border-keva-sage-600 text-keva-sage-700'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -194,7 +194,7 @@ export default function ResearchPage() {
           onClick={() => setActiveTab('saved')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'saved'
-              ? 'border-opsos-sage-600 text-opsos-sage-700'
+              ? 'border-keva-sage-600 text-keva-sage-700'
               : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -285,8 +285,8 @@ function ResultCard({
               disabled={isSaved}
               className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
                 isSaved
-                  ? 'text-opsos-sage-600 bg-opsos-sage-50'
-                  : 'text-gray-400 hover:text-opsos-sage-600 hover:bg-gray-50'
+                  ? 'text-keva-sage-600 bg-keva-sage-50'
+                  : 'text-gray-400 hover:text-keva-sage-600 hover:bg-gray-50'
               }`}
               title={isSaved ? 'Saved' : 'Save to bookmarks'}
             >

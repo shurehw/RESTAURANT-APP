@@ -115,23 +115,23 @@ export function POSImportForm() {
       {result && (
         <div className={`mt-6 p-4 rounded-lg border ${
           result.success
-            ? 'bg-opsos-sage-50 border-opsos-sage-200'
-            : 'bg-opsos-error-50 border-opsos-error-200'
+            ? 'bg-keva-sage-50 border-keva-sage-200'
+            : 'bg-keva-error-50 border-keva-error-200'
         }`}>
           <div className="flex items-start gap-3">
             {result.success ? (
-              <CheckCircle className="w-5 h-5 text-opsos-sage-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-keva-sage-600 flex-shrink-0 mt-0.5" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-opsos-error-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-keva-error-600 flex-shrink-0 mt-0.5" />
             )}
             <div className="flex-1">
               <p className={`font-semibold ${
-                result.success ? 'text-opsos-sage-800' : 'text-opsos-error-800'
+                result.success ? 'text-keva-sage-800' : 'text-keva-error-800'
               }`}>
                 {result.message}
               </p>
               {result.errors && result.errors.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm text-opsos-error-700">
+                <ul className="mt-2 space-y-1 text-sm text-keva-error-700">
                   {result.errors.map((error, i) => (
                     <li key={i}>• {error}</li>
                   ))}

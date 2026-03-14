@@ -2,7 +2,7 @@
  * Nightly Report Email Cron
  *
  * Sends nightly report emails to subscribed users.
- * Runs after sync (3 AM) and enforce (5:30 AM) complete.
+ * Runs at 14:00 UTC (7 AM PT) after ETL (11 UTC), sync-tipsee (12 UTC), and enforce (12:30 UTC).
  *
  * GET /api/cron/nightly-report?date=YYYY-MM-DD (optional override)
  *

@@ -1,6 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#0A0A0A"/>
-  <text x="32" y="42" text-anchor="middle" font-family="monospace" font-size="22" fill="#E8E4DD">
-    <tspan font-weight="700">Ops</tspan><tspan font-weight="400" opacity="0.5">OS</tspan>
-  </text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 58" width="52" height="58">
+  <rect x="0" y="0" width="12" height="58" rx="2" fill="#D4622B"/>
+  <polygon points="12,18 52,0 52,12 12,30" fill="#D4622B"/>
+  <polygon points="12,34 52,46 52,58 12,40" fill="#D4622B"/>
 </svg>

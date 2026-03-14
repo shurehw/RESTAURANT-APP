@@ -96,7 +96,7 @@ export function IntegrationsManager() {
       {/* ── SevenRooms ── */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Plug className="w-6 h-6 text-opsos-sage-600" />
+          <Plug className="w-6 h-6 text-keva-sage-600" />
           <div>
             <h2 className="text-xl font-semibold">SevenRooms Integration</h2>
             <p className="text-sm text-muted-foreground">
@@ -150,7 +150,7 @@ function VenueCard({
   return (
     <Card
       className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-        isSelected ? 'ring-2 ring-opsos-sage-500 bg-gray-50' : ''
+        isSelected ? 'ring-2 ring-keva-sage-500 bg-gray-50' : ''
       }`}
       onClick={onClick}
     >
@@ -319,7 +319,7 @@ function VenueDetail({
             size="sm"
             onClick={handleSave}
             disabled={saving}
-            className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+            className="bg-keva-sage-600 hover:bg-keva-sage-700"
           >
             <Save className="w-4 h-4 mr-1" />
             {saving ? 'Saving...' : 'Save Overrides'}
@@ -400,11 +400,11 @@ function VenueDetail({
           )}
         </div>
 
-        {/* Right: OpSOS Overrides */}
+        {/* Right: KevaOS Overrides */}
         <div className="space-y-4">
           <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            OpSOS Overrides
+            KevaOS Overrides
           </h4>
 
           <div className="space-y-3">
@@ -615,7 +615,7 @@ function MercantileIntegrationSection() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link2 className="w-6 h-6 text-opsos-sage-600" />
+          <Link2 className="w-6 h-6 text-keva-sage-600" />
           <div>
             <h2 className="text-xl font-semibold">Mercantile Desk</h2>
             <p className="text-sm text-muted-foreground">
@@ -679,7 +679,7 @@ function MercantileIntegrationSection() {
               </div>
             )}
             <p className="text-xs text-gray-500 mt-1">
-              Enter this key in Mercantile Desk &gt; Admin &gt; Integrations &gt; OpsOS API Key
+              Enter this key in Mercantile Desk &gt; Admin &gt; Integrations &gt; KevaOS API Key
             </p>
           </div>
         )}
@@ -696,7 +696,7 @@ function MercantileIntegrationSection() {
             <button
               onClick={() => update(setCatalogSync, !catalogSync)}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                catalogSync ? 'bg-opsos-sage-600' : 'bg-gray-200'
+                catalogSync ? 'bg-keva-sage-600' : 'bg-gray-200'
               }`}
             >
               <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
@@ -715,7 +715,7 @@ function MercantileIntegrationSection() {
             <button
               onClick={() => update(setEnforceOnly, !enforceOnly)}
               className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                enforceOnly ? 'bg-opsos-sage-600' : 'bg-gray-200'
+                enforceOnly ? 'bg-keva-sage-600' : 'bg-gray-200'
               }`}
             >
               <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
@@ -738,7 +738,7 @@ function MercantileIntegrationSection() {
           <Button
             onClick={handleSave}
             disabled={saving || (!hasChanges && !!integration)}
-            className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+            className="bg-keva-sage-600 hover:bg-keva-sage-700"
           >
             <Save className="w-4 h-4 mr-2" />
             {saving ? 'Saving...' : integration ? 'Update' : 'Connect'}

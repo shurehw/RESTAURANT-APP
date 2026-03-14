@@ -86,9 +86,9 @@ export function WeightsImportForm() {
       <div>
         <label
           htmlFor="csv-upload"
-          className="block w-full p-8 border-2 border-dashed border-opsos-sage-300 rounded-md hover:border-brass hover:bg-brass/5 transition-colors cursor-pointer text-center"
+          className="block w-full p-8 border-2 border-dashed border-keva-sage-300 rounded-md hover:border-brass hover:bg-brass/5 transition-colors cursor-pointer text-center"
         >
-          <Upload className="w-8 h-8 mx-auto mb-2 text-opsos-sage-500" />
+          <Upload className="w-8 h-8 mx-auto mb-2 text-keva-sage-500" />
           <div className="text-sm font-medium mb-1">
             {file ? file.name : 'Click to select CSV file'}
           </div>
@@ -122,16 +122,16 @@ export function WeightsImportForm() {
         <div
           className={`p-4 rounded-md ${
             result.success && result.imported! > 0
-              ? 'bg-opsos-sage-50 border border-opsos-sage-300'
-              : 'bg-opsos-error-50 border border-opsos-error-300'
+              ? 'bg-keva-sage-50 border border-keva-sage-300'
+              : 'bg-keva-error-50 border border-keva-error-300'
           }`}
         >
           {result.success && result.imported! > 0 ? (
             <div className="flex items-start gap-2">
-              <CheckCircle className="w-5 h-5 text-opsos-sage-600 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-keva-sage-600 mt-0.5" />
               <div>
-                <div className="font-medium text-opsos-sage-800">Import Successful</div>
-                <div className="text-sm text-opsos-sage-700">
+                <div className="font-medium text-keva-sage-800">Import Successful</div>
+                <div className="text-sm text-keva-sage-700">
                   {result.imported} product weights imported
                   {result.failed! > 0 && `, ${result.failed} failed`}
                 </div>
@@ -139,10 +139,10 @@ export function WeightsImportForm() {
             </div>
           ) : (
             <div className="flex items-start gap-2">
-              <XCircle className="w-5 h-5 text-opsos-error-600 mt-0.5" />
+              <XCircle className="w-5 h-5 text-keva-error-600 mt-0.5" />
               <div>
-                <div className="font-medium text-opsos-error-800">Import Failed</div>
-                <div className="text-sm text-opsos-error-700 space-y-1 mt-2">
+                <div className="font-medium text-keva-error-800">Import Failed</div>
+                <div className="text-sm text-keva-error-700 space-y-1 mt-2">
                   {result.errors?.map((error, i) => (
                     <div key={i}>• {error}</div>
                   ))}

@@ -228,7 +228,7 @@ Before going live in R365:
 
 ## 📞 Support Resources
 
-**OpSOS Support:**
+**KevaOS Support:**
 - Review the detailed setup guide: `docs/R365_UOM_SETUP_GUIDE.md`
 - Check conversion examples in: `R365_UOM_CONVERSION_GUIDE.md`
 
@@ -240,4 +240,4 @@ Before going live in R365:
 ---
 
 **Generated:** 2026-02-10
-**System:** OpSOS - Operational Standard Operating System
+**System:** KevaOS

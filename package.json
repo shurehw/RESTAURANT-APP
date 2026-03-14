@@ -1,5 +1,5 @@
 {
-  "name": "opsos",
+  "name": "kevaos",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -21,6 +21,8 @@
     "test:e2e": "npx playwright test",
     "test:e2e:swarm": "npx playwright test --project=dashboard --grep \"@swarm\"",
     "test:e2e:swarm:all": "npx playwright test --project=dashboard --project=manager --project=vendor --grep \"@swarm\"",
+    "test:e2e:swarm:deep": "npx playwright test --workers=1 --project=dashboard --grep \"@swarm-deep\"",
+    "test:e2e:swarm:deep:all": "npx playwright test --workers=1 --project=dashboard --project=manager --project=vendor --grep \"@swarm-deep\"",
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:host": "npx playwright test --project=host-stand",
     "test:e2e:dash": "npx playwright test --project=dashboard"

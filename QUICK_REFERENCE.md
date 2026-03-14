@@ -1,4 +1,4 @@
-# OpsOS Quick Reference
+# KevaOS Quick Reference
 
 ## 🚀 Instant Commands
 

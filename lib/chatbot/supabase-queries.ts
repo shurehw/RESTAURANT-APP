@@ -1,6 +1,6 @@
 /**
- * Supabase-based queries for the OpsOS chatbot.
- * These query internal OpsOS tables (budgets, forecasts, invoices, inventory, exceptions)
+ * Supabase-based queries for the KevaOS chatbot.
+ * These query internal KevaOS tables (budgets, forecasts, invoices, inventory, exceptions)
  * that complement the TipSee POS queries in queries.ts.
  * Also includes real-time Pulse queries (live pace, period comparisons).
  */

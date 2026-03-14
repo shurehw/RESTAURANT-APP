@@ -201,7 +201,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
             setCategoryFilter(e.target.value);
             setCurrentPage(1);
           }}
-          className="px-3 py-2 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+          className="px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
         >
           <option value="all">All Categories</option>
           {categories.map(cat => (
@@ -211,7 +211,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="border-opsos-sage-300">
+            <Button variant="outline" size="sm" className="border-keva-sage-300">
               <Settings2 className="w-4 h-4 mr-2" />
               Columns
             </Button>
@@ -256,7 +256,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
           variant={showR365Fields ? "brass" : "outline"}
           size="sm"
           onClick={() => setShowR365Fields(!showR365Fields)}
-          className={showR365Fields ? "" : "border-opsos-sage-300"}
+          className={showR365Fields ? "" : "border-keva-sage-300"}
         >
           R365 Fields
         </Button>
@@ -265,7 +265,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
           variant="outline"
           size="sm"
           onClick={handleExport}
-          className="border-opsos-sage-300"
+          className="border-keva-sage-300"
         >
           <Download className="w-4 h-4 mr-2" />
           Export to R365
@@ -277,13 +277,13 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
       </div>
 
       {/* Table */}
-      <div className="border border-opsos-sage-200 rounded-md overflow-hidden">
+      <div className="border border-keva-sage-200 rounded-md overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
               {visibleColumns.name && (
                 <TableHead
-                  className="cursor-pointer hover:bg-opsos-sage-50"
+                  className="cursor-pointer hover:bg-keva-sage-50"
                   onClick={() => handleSort('name')}
                 >
                   Product Name {sortColumn === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -291,7 +291,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
               )}
               {visibleColumns.sku && (
                 <TableHead
-                  className="cursor-pointer hover:bg-opsos-sage-50"
+                  className="cursor-pointer hover:bg-keva-sage-50"
                   onClick={() => handleSort('sku')}
                 >
                   SKU {sortColumn === 'sku' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -299,7 +299,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
               )}
               {visibleColumns.category && (
                 <TableHead
-                  className="cursor-pointer hover:bg-opsos-sage-50"
+                  className="cursor-pointer hover:bg-keva-sage-50"
                   onClick={() => handleSort('category')}
                 >
                   Category {sortColumn === 'category' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -307,7 +307,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
               )}
               {visibleColumns.base_uom && (
                 <TableHead
-                  className="cursor-pointer hover:bg-opsos-sage-50"
+                  className="cursor-pointer hover:bg-keva-sage-50"
                   onClick={() => handleSort('base_uom')}
                 >
                   Recipe Unit {sortColumn === 'base_uom' && (sortDirection === 'asc' ? '↑' : '↓')}
@@ -332,7 +332,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
               currentProducts.map((product) => (
                 <TableRow
                   key={product.id}
-                  className="cursor-pointer hover:bg-opsos-sage-50"
+                  className="cursor-pointer hover:bg-keva-sage-50"
                   onClick={() => setSelectedProduct(product)}
                 >
                   {visibleColumns.name && (
@@ -400,7 +400,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between p-4 border border-opsos-sage-200 rounded-md bg-white">
+        <div className="flex items-center justify-between p-4 border border-keva-sage-200 rounded-md bg-white">
           <div className="text-sm font-medium text-ledger-black">
             Showing {startIndex + 1}-{Math.min(endIndex, filteredProducts.length)} of {filteredProducts.length}
           </div>
@@ -411,7 +411,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
               size="sm"
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="border-opsos-sage-300"
+              className="border-keva-sage-300"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
@@ -437,7 +437,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
                     variant={currentPage === pageNum ? "brass" : "outline"}
                     size="sm"
                     onClick={() => setCurrentPage(pageNum)}
-                    className={currentPage === pageNum ? "w-9 h-9" : "w-9 h-9 border-opsos-sage-300"}
+                    className={currentPage === pageNum ? "w-9 h-9" : "w-9 h-9 border-keva-sage-300"}
                   >
                     {pageNum}
                   </Button>
@@ -450,7 +450,7 @@ export function ProductsTable({ initialProducts, totalCount, orgId }: ProductsTa
               size="sm"
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="border-opsos-sage-300"
+              className="border-keva-sage-300"
             >
               Next
               <ChevronRight className="w-4 h-4" />

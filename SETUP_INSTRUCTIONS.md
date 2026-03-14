@@ -1,4 +1,4 @@
-# OpsOS Setup Instructions
+# KevaOS Setup Instructions
 
 ## ✅ Step 1: Dependencies Installed
 
@@ -146,7 +146,7 @@ Once you've completed the setup:
 
 2. **Check Application**
    - Visit http://localhost:3000
-   - You should see the OpsOS dashboard
+   - You should see the KevaOS dashboard
    - Navigate to `/budget` to see the sample declining budget chart
 
 ## 🐛 Troubleshooting

@@ -1,15 +1,14 @@
 /**
  * lib/ai/nightly-summarizer.ts
- * Generates short AI summaries per venue for the nightly report email.
- * Batches all venues into a single Claude call for efficiency.
+ * Provides per-venue summaries for the nightly report email.
+ *
+ * Primary: closing_narrative from nightly_attestations (already AI-generated at attestation time).
+ * Fallback: generates a summary from KPI data via Claude for venues without attestation.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { getServiceClient } from '@/lib/supabase/service';
 import type { VenueReport } from '@/lib/email/nightly-report-template';
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 interface VenueSummaryResult {
   venueId: string;
@@ -17,18 +16,46 @@ interface VenueSummaryResult {
 }
 
 /**
- * Generate a 1-2 sentence AI summary for each venue based on its nightly data.
- * Returns a Map of venueId → summary string.
+ * Fetch closing_narrative from submitted nightly_attestations.
  */
-export async function generateVenueSummaries(
+async function fetchAttestationNarratives(
+  venueIds: string[],
+  businessDate: string
+): Promise<Map<string, string>> {
+  const supabase = getServiceClient();
+  const map = new Map<string, string>();
+
+  const { data, error } = await (supabase as any)
+    .from('nightly_attestations')
+    .select('venue_id, closing_narrative')
+    .in('venue_id', venueIds)
+    .eq('business_date', businessDate)
+    .eq('status', 'submitted')
+    .not('closing_narrative', 'is', null);
+
+  if (error || !data) return map;
+
+  for (const row of data) {
+    if (row.closing_narrative?.trim()) {
+      map.set(row.venue_id, row.closing_narrative.trim());
+    }
+  }
+
+  return map;
+}
+
+/**
+ * AI fallback for venues without an attestation narrative.
+ */
+async function generateFallbackSummaries(
   venues: VenueReport[],
   businessDate: string
 ): Promise<Map<string, string>> {
   const summaryMap = new Map<string, string>();
-
   if (venues.length === 0) return summaryMap;
 
-  // Build venue data for the prompt
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
   const venueData = venues.map((v) => {
     const s = v.report.summary;
     const avgCheck = s.total_checks > 0 ? s.net_sales / s.total_checks : 0;
@@ -83,10 +110,7 @@ Rules:
     });
 
     const textContent = message.content.find((block) => block.type === 'text');
-    if (!textContent || textContent.type !== 'text') {
-      console.error('[nightly-summarizer] No text response from AI');
-      return summaryMap;
-    }
+    if (!textContent || textContent.type !== 'text') return summaryMap;
 
     let raw = textContent.text.trim();
     if (raw.startsWith('```')) {
@@ -94,13 +118,45 @@ Rules:
     }
 
     const results: VenueSummaryResult[] = JSON.parse(raw);
-
     for (const r of results) {
       summaryMap.set(r.venueId, r.summary);
     }
   } catch (err: any) {
-    console.error('[nightly-summarizer] Failed to generate summaries:', err.message);
-    // Non-critical — email sends without summaries
+    console.error('[nightly-summarizer] Fallback generation failed:', err.message);
+  }
+
+  return summaryMap;
+}
+
+/**
+ * Get per-venue summaries for the nightly report email.
+ * Uses attestation closing_narrative first, falls back to AI generation.
+ */
+export async function generateVenueSummaries(
+  venues: VenueReport[],
+  businessDate: string
+): Promise<Map<string, string>> {
+  const summaryMap = new Map<string, string>();
+  if (venues.length === 0) return summaryMap;
+
+  // 1. Pull closing_narrative from attestations
+  const venueIds = venues.map((v) => v.venueId);
+  const attestNarratives = await fetchAttestationNarratives(venueIds, businessDate);
+  for (const [venueId, narrative] of attestNarratives) {
+    summaryMap.set(venueId, narrative);
+  }
+
+  console.log(
+    `[nightly-summarizer] ${attestNarratives.size}/${venues.length} venues have attestation narratives`
+  );
+
+  // 2. AI fallback for venues without attestation
+  const missing = venues.filter((v) => !summaryMap.has(v.venueId));
+  if (missing.length > 0) {
+    const fallback = await generateFallbackSummaries(missing, businessDate);
+    for (const [venueId, summary] of fallback) {
+      summaryMap.set(venueId, summary);
+    }
   }
 
   return summaryMap;

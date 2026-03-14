@@ -212,7 +212,7 @@ function buildPrompt(input: PacingOptimizerInput): string {
 
   if (hasNativeRules) {
     const nativeRuleSummary = buildNativeRuleSummary(input.nativeAccessRules!);
-    configSection = `## CURRENT ACCESS RULES (OpSOS-Native — Directly Modifiable)
+    configSection = `## CURRENT ACCESS RULES (KevaOS-Native — Directly Modifiable)
 ${nativeRuleSummary}
 Note: Rules marked "AI managed: YES" can be adjusted directly by your recommendations.
 Rules marked "AI managed: no" require manual review before changes are applied.`;
@@ -226,7 +226,7 @@ Rules marked "AI managed: no" require manual review before changes are applied.`
 
     configSection = `## CURRENT CONFIGURATION
 - Shift: ${primaryShift?.name ?? 'Unknown'}
-- Covers per interval: ${effectiveCovers} (SR default: ${srCovers ?? 'N/A'}, OpSOS override: ${overrideCovers ?? 'none'})
+- Covers per interval: ${effectiveCovers} (SR default: ${srCovers ?? 'N/A'}, KevaOS override: ${overrideCovers ?? 'none'})
 - Interval: ${srInterval ?? 30} minutes
 - Turn times: ${Object.entries(srTurns).map(([k, v]) => `${k === '-1' ? 'default' : k + 'p'}=${v}m`).join(', ') || 'not set'}`;
   }

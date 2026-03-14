@@ -1,5 +1,5 @@
 /**
- * Secure tool executor for the OpsOS chatbot.
+ * Secure tool executor for the KevaOS chatbot.
  * Maps tool calls to query functions, injects locationUuids server-side,
  * and validates date ranges.
  */

@@ -1,7 +1,7 @@
 # Restaurant Proforma - Product Spin-Out Plan
 
 **Date**: 2026-02-14
-**Objective**: Extract proforma functionality from OpsOS into a standalone product
+**Objective**: Extract proforma functionality from KevaOS into a standalone product
 **Strategy**: Complete separation (new repo, new database, new brand, independent product)
 
 ---
@@ -79,7 +79,7 @@ restaurant-proforma/
 5. Set up organizations/users schema
 
 **Database Schema**:
-- Copy all 15 proforma migrations from OpsOS
+- Copy all 15 proforma migrations from KevaOS
 - Add auth schema: `organizations`, `organization_users`, `user_profiles`
 - Run migrations in order
 - Seed proforma categories
@@ -99,15 +99,15 @@ restaurant-proforma/
 - Vercel deployment: `restaurant-proforma.vercel.app`
 
 **Visual Identity**:
-- New logo (financial/modeling theme vs OpsOS enforcement theme)
-- Color palette: Professional blues/greens (vs OpsOS red/orange enforcement colors)
+- New logo (financial/modeling theme vs KevaOS enforcement theme)
+- Color palette: Professional blues/greens (vs KevaOS red/orange enforcement colors)
 - Tagline: "Financial modeling for restaurant concepts" or "Build bulletproof restaurant proformas"
 
 ---
 
 ## Phase 2: Code Migration (Days 2-3)
 
-### 2.1 Files to Copy from OpsOS
+### 2.1 Files to Copy from KevaOS
 
 **Database Layer** (15 migrations):
 ```
@@ -175,10 +175,10 @@ setup-proforma-settings.sql → setup-settings.sql
 - `@/lib/proforma/` → `@/lib/`
 - All Supabase client imports point to new project credentials
 
-**Remove OpsOS Dependencies**:
+**Remove KevaOS Dependencies**:
 - Remove venue-specific logic if not needed
 - Remove org-level RLS if using different multi-tenancy model
-- Remove references to OpsOS-specific tables (e.g., `general_locations` if not migrated)
+- Remove references to KevaOS-specific tables (e.g., `general_locations` if not migrated)
 
 **Simplify Navigation**:
 - New sidebar with only: Projects, Settings, Profile
@@ -191,9 +191,9 @@ setup-proforma-settings.sql → setup-settings.sql
 - Email/password signup
 - Google SSO
 - Magic link login
-- Same patterns as OpsOS but independent user base
+- Same patterns as KevaOS but independent user base
 
-**Option B: Shared SSO with OpsOS**
+**Option B: Shared SSO with KevaOS**
 - Single sign-on across both products
 - Requires auth federation/JWT sharing
 - More complex but better UX for customers who buy both
@@ -206,7 +206,7 @@ setup-proforma-settings.sql → setup-settings.sql
 
 ### 3.1 Export Existing Proforma Projects (if any)
 
-**From OpsOS Supabase**:
+**From KevaOS Supabase**:
 ```sql
 -- Export all proforma projects and related data
 COPY (
@@ -237,7 +237,7 @@ COPY proforma_scenarios FROM '/tmp/proforma_scenarios.csv' CSV HEADER;
 - Simplest
 
 **Option B: User Migration**
-- Export OpsOS users who have proforma projects
+- Export KevaOS users who have proforma projects
 - Create accounts in new system
 - Send invitation emails with migration notice
 
@@ -245,9 +245,9 @@ COPY proforma_scenarios FROM '/tmp/proforma_scenarios.csv' CSV HEADER;
 
 ---
 
-## Phase 4: OpsOS Cleanup (Day 4)
+## Phase 4: KevaOS Cleanup (Day 4)
 
-### 4.1 Remove Proforma Code from OpsOS
+### 4.1 Remove Proforma Code from KevaOS
 
 **Delete Files** (~84 files):
 ```bash
@@ -292,11 +292,11 @@ DROP TABLE IF EXISTS proforma_revenue_service_periods CASCADE;
 -- Drop all 20+ proforma tables
 ```
 
-**Recommendation**: Keep proforma tables in OpsOS database but remove all UI/API code. Tables are harmless if unused.
+**Recommendation**: Keep proforma tables in KevaOS database but remove all UI/API code. Tables are harmless if unused.
 
 ### 4.2 Update Documentation
 
-**Remove from OpsOS Docs**:
+**Remove from KevaOS Docs**:
 - Any mention of proforma in README
 - Remove proforma screenshots/references from audit docs
 
@@ -413,16 +413,16 @@ Before I start execution, confirm these choices:
 ### 2. Repository Location
 - [ ] Create new GitHub repo under your account
 - [ ] Create new GitHub org for the product
-- [ ] Keep in same repo as OpsOS but separate app folder (monorepo)
+- [ ] Keep in same repo as KevaOS but separate app folder (monorepo)
 
 ### 3. Data Migration
 - [ ] Fresh start (no data migration needed)
-- [ ] Export and migrate existing proforma projects from OpsOS
-- [ ] Keep proforma data in OpsOS database but allow new product to query it (shared DB)
+- [ ] Export and migrate existing proforma projects from KevaOS
+- [ ] Keep proforma data in KevaOS database but allow new product to query it (shared DB)
 
 ### 4. Authentication
 - [ ] Independent auth (new users sign up separately)
-- [ ] Shared SSO with OpsOS (single sign-on)
+- [ ] Shared SSO with KevaOS (single sign-on)
 - [ ] Both (independent by default, SSO for enterprise customers)
 
 ### 5. Pricing Model
@@ -437,8 +437,8 @@ Before I start execution, confirm these choices:
 - [ ] Plan now, execute later (just prepare migration plan)
 - [ ] Phased approach (move code first, launch marketing later)
 
-### 7. OpsOS Database Cleanup
-- [ ] Delete all proforma tables from OpsOS (clean slate)
+### 7. KevaOS Database Cleanup
+- [ ] Delete all proforma tables from KevaOS (clean slate)
 - [ ] Keep proforma tables but remove UI/API (preserve historical data)
 - [ ] Archive to separate schema (e.g., `proforma_archive.*`)
 
@@ -451,7 +451,7 @@ Before I start execution, confirm these choices:
 | **Phase 1**: New project setup | 0.5 day | New repo, Supabase project, domain config |
 | **Phase 2**: Code migration | 1.5 days | All components/APIs/migrations copied and adapted |
 | **Phase 3**: Data migration (if needed) | 0.5 day | User/project data exported and imported |
-| **Phase 4**: OpsOS cleanup | 0.5 day | All proforma code removed, nav updated |
+| **Phase 4**: KevaOS cleanup | 0.5 day | All proforma code removed, nav updated |
 | **Phase 5**: New product launch prep | 1 day | Landing page, docs, pricing page |
 | **Phase 6**: Deployment | 0.5 day | Vercel config, DNS, monitoring |
 | **Phase 7**: Testing & QA | 1 day | End-to-end testing, security review |
@@ -465,11 +465,11 @@ Once you confirm the decision points above, I will:
 
 1. **Create new repository structure** with Next.js boilerplate
 2. **Set up new Supabase project** and run migrations
-3. **Copy and adapt all 84 files** from OpsOS to new product
+3. **Copy and adapt all 84 files** from KevaOS to new product
 4. **Build landing page and auth flows**
 5. **Configure Vercel deployment**
-6. **Remove all proforma code from OpsOS**
-7. **Update OpsOS sidebar and documentation**
+6. **Remove all proforma code from KevaOS**
+7. **Update KevaOS sidebar and documentation**
 8. **Provide testing checklist and launch plan**
 
 Ready to execute when you give the word.

@@ -200,7 +200,7 @@ export function TableDialog({
             <Button
               onClick={handleSave}
               disabled={!tableNumber.trim()}
-              className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+              className="bg-keva-sage-600 hover:bg-keva-sage-700"
             >
               {table ? 'Save' : 'Add'}
             </Button>

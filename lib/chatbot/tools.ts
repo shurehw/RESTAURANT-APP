@@ -1,5 +1,5 @@
 /**
- * Anthropic tool definitions for the OpsOS chatbot.
+ * Anthropic tool definitions for the KevaOS chatbot.
  * Each tool maps 1:1 to a query function in queries.ts.
  */
 

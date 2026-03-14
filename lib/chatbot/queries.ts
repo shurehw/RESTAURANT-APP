@@ -1,5 +1,5 @@
 /**
- * Pre-built parameterized queries for the OpsOS chatbot.
+ * Pre-built parameterized queries for the KevaOS chatbot.
  * Every query requires locationUuids (injected server-side) and date params.
  *
  * Supports three data sources:

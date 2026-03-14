@@ -82,7 +82,7 @@ export function InventoryCountForm() {
               type="date"
               value={countDate}
               onChange={(e) => setCountDate(e.target.value)}
-              className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+              className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
             />
           </div>
 
@@ -92,7 +92,7 @@ export function InventoryCountForm() {
               id="count-type"
               value={countType}
               onChange={(e) => setCountType(e.target.value as any)}
-              className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+              className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
             >
               <option value="full">Full Count (End of Month)</option>
               <option value="partial">Partial Count (Category/Area)</option>
@@ -101,7 +101,7 @@ export function InventoryCountForm() {
           </div>
 
           <div className="flex items-end">
-            <div className="w-full p-3 bg-opsos-sage-50 border border-opsos-sage-200 rounded-md">
+            <div className="w-full p-3 bg-keva-sage-50 border border-keva-sage-200 rounded-md">
               <div className="text-xs text-muted-foreground mb-1">Total Value</div>
               <div className="font-mono font-bold text-lg">${totalValue.toFixed(2)}</div>
             </div>
@@ -158,7 +158,7 @@ export function InventoryCountForm() {
                         step="0.01"
                         value={line.quantity}
                         onChange={(e) => handleUpdateQuantity(line.id, parseFloat(e.target.value) || 0)}
-                        className="w-full px-2 py-1 border border-opsos-sage-300 rounded-md text-right font-mono"
+                        className="w-full px-2 py-1 border border-keva-sage-300 rounded-md text-right font-mono"
                       />
                     </td>
                     <td className="py-3 text-muted-foreground">{line.uom}</td>
@@ -168,7 +168,7 @@ export function InventoryCountForm() {
                         step="0.01"
                         value={line.unitCost}
                         onChange={(e) => handleUpdateCost(line.id, parseFloat(e.target.value) || 0)}
-                        className="w-full px-2 py-1 border border-opsos-sage-300 rounded-md text-right font-mono"
+                        className="w-full px-2 py-1 border border-keva-sage-300 rounded-md text-right font-mono"
                         placeholder="0.00"
                       />
                     </td>
@@ -231,7 +231,7 @@ export function InventoryCountForm() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name or SKU..."
-                  className="w-full pl-10 pr-4 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full pl-10 pr-4 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                   autoFocus
                 />
               </div>

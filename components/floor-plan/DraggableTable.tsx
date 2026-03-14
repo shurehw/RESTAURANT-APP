@@ -18,6 +18,7 @@ interface DraggableTableProps {
   onDoubleClick: (table: VenueTable) => void;
   onResize?: (tableId: string, dw: number, dh: number, dx: number, dy: number) => void;
   readOnly?: boolean;
+  dragHover?: boolean;
 }
 
 export function DraggableTable({
@@ -32,16 +33,20 @@ export function DraggableTable({
   onDoubleClick,
   onResize,
   readOnly,
+  dragHover,
 }: DraggableTableProps) {
+  // Editor mode only: tables are draggable for repositioning
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `table-${table.id}`,
     data: { type: 'table', table },
+    disabled: !!readOnly,
   });
 
   const isFixture = table.table_number.startsWith('BAR-CTR');
   const showProgressRing = readOnly && meta?.seatedAt && ['seated', 'occupied', 'check_dropped'].includes(meta.status);
   const showVipShimmer = readOnly && meta?.isVip && !isFixture;
   const showArrivalAlert = readOnly && meta?.isArrived && !isFixture;
+  const canDrop = dragHover && ['available', 'reserved'].includes(meta?.status || 'available');
 
   const style: React.CSSProperties = {
     position: 'absolute',
@@ -71,17 +76,21 @@ export function DraggableTable({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={readOnly ? undefined : setNodeRef}
       style={style}
       className="select-none"
+      data-table-id={readOnly ? table.id : undefined}
+      data-table-status={readOnly ? (meta?.status || 'available') : undefined}
     >
       {/* Drag surface */}
       <div
         className={`
           w-full h-full
           ${isDragging ? 'opacity-80 scale-105' : ''}
-          ${isSelected ? 'ring-[1.5px] ring-white/60 ring-offset-1 ring-offset-transparent rounded-full' : ''}
-          ${isHighlighted ? 'ring-[1.5px] ring-white/40 ring-offset-1 ring-offset-transparent rounded-full' : ''}
+          ${canDrop ? 'ring-2 ring-[#D4622B] ring-offset-1 ring-offset-transparent rounded-full scale-110' : ''}
+          ${isSelected && !canDrop ? 'ring-[1.5px] ring-white/60 ring-offset-1 ring-offset-transparent rounded-full' : ''}
+          ${isHighlighted && !canDrop ? 'ring-[1.5px] ring-white/40 ring-offset-1 ring-offset-transparent rounded-full' : ''}
+          transition-transform duration-150
         `}
         {...(readOnly ? {} : listeners)}
         {...(readOnly ? {} : attributes)}
@@ -202,7 +211,7 @@ function ResizeCorner({
 
   return (
     <div
-      className="absolute w-2.5 h-2.5 bg-opsos-brass-400 border border-opsos-brass-600 rounded-sm z-50 hover:bg-opsos-brass-300"
+      className="absolute w-2.5 h-2.5 bg-keva-brass-400 border border-keva-brass-600 rounded-sm z-50 hover:bg-keva-brass-300"
       style={positionStyles}
       onPointerDown={handlePointerDown}
     />

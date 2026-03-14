@@ -302,7 +302,7 @@ export function OrderDetailClient({
                                 min="0"
                                 max={line.remaining_qty}
                                 step="0.01"
-                                className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md"
+                                className="w-full px-3 py-2 border border-keva-sage-300 rounded-md"
                                 value={receiveQuantities[line.id] || ""}
                                 onChange={(e) =>
                                   setReceiveQuantities({

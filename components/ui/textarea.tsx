@@ -1,5 +1,5 @@
 /**
- * OpsOS Textarea Component
+ * KevaOS Textarea Component
  * Sage focus ring, brass placeholder accent
  */
 

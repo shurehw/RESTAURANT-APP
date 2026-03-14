@@ -166,7 +166,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
               {mappedLines.length} of {allLines.length} items mapped
             </div>
           </div>
-          <div className="w-full bg-opsos-sage-100 rounded-full h-2">
+          <div className="w-full bg-keva-sage-100 rounded-full h-2">
             <div
               className="bg-brass h-2 rounded-full transition-all duration-300"
               style={{ width: `${mappingProgress}%` }}
@@ -203,8 +203,8 @@ export default async function InvoiceReviewPage({ params }: Props) {
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-opsos-slate-100 flex items-center justify-center">
-              <XCircle className="w-5 h-5 text-opsos-slate-600" />
+            <div className="w-10 h-10 rounded-lg bg-keva-slate-100 flex items-center justify-center">
+              <XCircle className="w-5 h-5 text-keva-slate-600" />
             </div>
             <div>
               <div className="text-2xl font-bold">{allLines.length}</div>

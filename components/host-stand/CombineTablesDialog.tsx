@@ -106,7 +106,7 @@ export function CombineTablesDialog({
                   onClick={() => toggleTable(t.table_id)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm transition-colors ${
                     isSelected
-                      ? 'bg-[#FF5A1F]/10 border-[#FF5A1F]/40 text-white'
+                      ? 'bg-[#D4622B]/10 border-[#D4622B]/40 text-white'
                       : 'bg-[#1a1a1a] border-gray-700 text-gray-300 hover:border-gray-500'
                   }`}
                 >
@@ -134,7 +134,7 @@ export function CombineTablesDialog({
           <button
             onClick={handleConfirm}
             disabled={loading || selectedIds.size === 0}
-            className="flex-1 h-12 bg-[#FF5A1F] hover:bg-[#E04D18] text-white rounded-lg font-semibold disabled:opacity-50"
+            className="flex-1 h-12 bg-[#D4622B] hover:bg-[#A3461F] text-white rounded-lg font-semibold disabled:opacity-50"
           >
             {loading ? 'Combining...' : `Combine (${selectedIds.size + 1} tables)`}
           </button>

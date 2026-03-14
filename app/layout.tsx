@@ -1,5 +1,5 @@
 /**
- * OpsOS Root Layout
+ * KevaOS Root Layout
  * Loads fonts and provides basic HTML structure
  */
 
@@ -29,18 +29,18 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#FF5A1F" },
+    { media: "(prefers-color-scheme: dark)", color: "#D4622B" },
   ],
 };
 
 export const metadata: Metadata = {
   title: {
-    default: "OpsOS - Restaurant Operations Platform",
-    template: "%s | OpsOS",
+    default: "KevaOS - Restaurant Operations Platform",
+    template: "%s | KevaOS",
   },
   description:
     "Hospitality back-office platform integrating finance, inventory, recipes, budgets, and intelligence.",
-  metadataBase: new URL("https://opsos-restaurant-app.vercel.app"),
+  metadataBase: new URL("https://kevaos-restaurant-app.vercel.app"),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -59,10 +59,10 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "OpsOS - Restaurant Operations Platform",
+    title: "KevaOS - Restaurant Operations Platform",
     description:
       "Hospitality back-office platform integrating finance, inventory, recipes, budgets, and intelligence.",
-    siteName: "OpsOS",
+    siteName: "KevaOS",
     type: "website",
   },
   robots: {

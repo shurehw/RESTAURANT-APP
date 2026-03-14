@@ -1,5 +1,5 @@
 /**
- * OpsOS Input Component
+ * KevaOS Input Component
  * Sage focus ring, brass placeholder accent
  */
 

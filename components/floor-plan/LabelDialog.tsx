@@ -107,7 +107,7 @@ export function LabelDialog({
                 <button
                   key={c.value}
                   className={`w-8 h-8 rounded-full border-2 ${
-                    color === c.value ? 'border-opsos-brass-500 ring-2 ring-opsos-brass-300' : 'border-gray-300'
+                    color === c.value ? 'border-keva-brass-500 ring-2 ring-keva-brass-300' : 'border-gray-300'
                   }`}
                   style={{ backgroundColor: c.value }}
                   onClick={() => setColor(c.value)}
@@ -152,7 +152,7 @@ export function LabelDialog({
             <Button
               onClick={handleSave}
               disabled={!text.trim()}
-              className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+              className="bg-keva-sage-600 hover:bg-keva-sage-700"
             >
               {label ? 'Save' : 'Add'}
             </Button>

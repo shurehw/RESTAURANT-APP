@@ -2,7 +2,7 @@
 
 /**
  * Ledger Stripe Component
- * Signature OpsOS visual motif: 1px accent rule under section headers
+ * Signature KevaOS visual motif: 1px accent rule under section headers
  * Creates clean, operational aesthetic
  */
 

@@ -62,6 +62,76 @@ function num(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
 }
 
+/**
+ * Format an attestation closing_narrative into structured HTML.
+ * Detects section headers (e.g. "REVENUE & COMPS", "LABOR", "ACTION ITEMS")
+ * and bullet markers (•) to produce a readable layout.
+ */
+function formatNarrative(raw: string): string {
+  // Strip the leading header line if present (e.g. "NIGHTLY OPERATING REPORT Delilah Dallas — ...")
+  let text = raw.replace(/^NIGHTLY OPERATING REPORT[^\n]*\n?/i, '').trim();
+
+  // Strip the KPI header line (Revenue: $X Covers: Y ...)
+  text = text.replace(/^Revenue:\s*\$[\d,.]+.*?---\s*/i, '').trim();
+
+  // Known section headers
+  const sectionPattern = /\b(REVENUE\s*&\s*COMPS|LABOR|GUEST|KITCHEN|COACHING|ENTERTAINMENT|CULINARY|ACTION\s*ITEMS|INCIDENTS?)\b/g;
+
+  // Split into sections by detecting uppercase headers
+  const parts: { heading?: string; body: string }[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = sectionPattern.exec(text)) !== null) {
+    // Push text before this section
+    const before = text.slice(lastIdx, match.index).trim();
+    if (before && parts.length > 0) {
+      parts[parts.length - 1].body = before;
+    } else if (before) {
+      parts.push({ body: before });
+    }
+    parts.push({ heading: match[1], body: '' });
+    lastIdx = match.index + match[0].length;
+  }
+  // Remaining text
+  const remaining = text.slice(lastIdx).trim();
+  if (remaining && parts.length > 0) {
+    parts[parts.length - 1].body = remaining;
+  } else if (remaining) {
+    parts.push({ body: remaining });
+  }
+
+  // If no sections detected, just clean up the text
+  if (parts.length === 0) {
+    return text.replace(/•/g, '<br/>&#8226;').replace(/\n/g, '<br/>');
+  }
+
+  // Render sections
+  return parts
+    .map((p) => {
+      let body = p.body.trim();
+
+      // Format bullet points (• markers)
+      if (body.includes('•')) {
+        const bullets = body.split('•').filter(Boolean);
+        body = '<ul style="margin: 4px 0 0 0; padding-left: 16px; list-style: disc;">' +
+          bullets.map((b) => `<li style="margin-bottom: 2px; font-size: 11px; color: ${COLORS.textMuted};">${b.trim()}</li>`).join('') +
+          '</ul>';
+      } else {
+        body = `<span style="font-size: 11px; color: ${COLORS.textMuted};">${body}</span>`;
+      }
+
+      if (p.heading) {
+        return `<div style="margin-top: 6px;">
+          <span style="font-size: 10px; font-weight: 600; color: ${COLORS.dark}; text-transform: uppercase; letter-spacing: 0.5px;">${p.heading}</span><br/>
+          ${body}
+        </div>`;
+      }
+      return `<div style="margin-top: 4px;">${body}</div>`;
+    })
+    .join('');
+}
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-US', {
@@ -75,17 +145,17 @@ function formatDate(dateStr: string): string {
 // ── Styles ───────────────────────────────────────────────────────
 
 const COLORS = {
-  bg: '#f8f9fa',
-  white: '#ffffff',
-  dark: '#0A0A0A',
-  accent: '#FF5A1F',
-  accentLight: '#FFF7ED',
-  text: '#333333',
-  textMuted: '#666666',
-  border: '#e5e7eb',
-  headerBg: '#0A0A0A',
+  bg: '#FAF8F5',
+  white: '#FFFEFB',
+  dark: '#1C1917',
+  accent: '#D4622B',
+  accentLight: '#FDF5EF',
+  text: '#1C1917',
+  textMuted: '#8B7E6F',
+  border: '#E8E2DA',
+  headerBg: '#1C1917',
   headerText: '#ffffff',
-  positive: '#16a34a',
+  positive: '#5C6B4F',
   negative: '#dc2626',
 };
 
@@ -434,10 +504,11 @@ function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<stri
       const avgCheck = s.total_checks > 0 ? s.net_sales / s.total_checks : 0;
       const compPct = s.net_sales > 0 ? (s.total_comps / (s.net_sales + s.total_comps)) * 100 : 0;
       const summary = aiSummaries?.get(v.venueId);
+      const isLongNarrative = summary && summary.length > 200;
       const summaryRow = summary
         ? `<tr>
-            <td colspan="${COL_COUNT}" style="padding: 4px 12px 12px; font-size: 12px; color: ${COLORS.textMuted}; font-style: italic; border-bottom: 1px solid ${COLORS.border};">
-              ${summary}
+            <td colspan="${COL_COUNT}" style="padding: ${isLongNarrative ? '8px 12px 14px' : '4px 12px 12px'}; ${isLongNarrative ? '' : 'font-size: 12px; color: ' + COLORS.textMuted + '; font-style: italic;'} border-bottom: 1px solid ${COLORS.border};">
+              ${isLongNarrative ? formatNarrative(summary) : summary}
             </td>
           </tr>`
         : '';
@@ -554,7 +625,7 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
             <td style="background-color: ${COLORS.white}; padding: 0 32px 24px;" align="center">
               <a href="${appUrl}/reports/nightly"
                  style="display: inline-block; padding: 12px 32px; background-color: ${COLORS.accent}; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
-                View Full Report in OpSOS
+                View Full Report in KevaOS
               </a>
             </td>
           </tr>
@@ -563,7 +634,7 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
           <tr>
             <td style="background-color: ${COLORS.bg}; padding: 16px 32px; border-radius: 0 0 8px 8px; text-align: center;">
               <p style="font-size: 12px; color: ${COLORS.textMuted}; margin: 0;">
-                This automated report was generated by OpSOS.
+                This automated report was generated by KevaOS.
                 To manage your subscription, visit
                 <a href="${appUrl}/admin/settings" style="color: ${COLORS.accent};">Organization Settings</a>.
               </p>

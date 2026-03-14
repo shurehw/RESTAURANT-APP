@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * OpsOS Vendors Page
+ * KevaOS Vendors Page
  */
 
 import { createAdminClient } from "@/lib/supabase/server";

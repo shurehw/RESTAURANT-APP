@@ -20,7 +20,7 @@ export function SectionDropZone({ section, assignedStaff, onRemoveStaff }: Secti
       ref={setNodeRef}
       className={`
         rounded-lg border-2 border-dashed p-3 transition-colors
-        ${isOver ? 'border-opsos-brass-400 bg-opsos-brass-50' : 'border-gray-200 bg-gray-50'}
+        ${isOver ? 'border-keva-brass-400 bg-keva-brass-50' : 'border-gray-200 bg-gray-50'}
       `}
     >
       <div className="flex items-center gap-2 mb-2">

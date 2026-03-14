@@ -1,5 +1,5 @@
 /**
- * OpsOS Table Component
+ * KevaOS Table Component
  * Alternate row shading (fog/white), brass header underline
  */
 

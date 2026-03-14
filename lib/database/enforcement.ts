@@ -1,5 +1,5 @@
 /**
- * OpSOS Enforcement Engine - Unified Action Center
+ * KevaOS Enforcement Engine - Unified Action Center
  *
  * Data access layer for violations, actions, and blocks.
  * Ingests violations from any source and routes to appropriate enforcement actions.

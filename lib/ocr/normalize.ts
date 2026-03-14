@@ -1,6 +1,6 @@
 /**
  * lib/ocr/normalize.ts
- * Normalizes raw OCR JSON into OpsOS invoice schema.
+ * Normalizes raw OCR JSON into KevaOS invoice schema.
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';

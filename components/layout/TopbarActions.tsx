@@ -37,11 +37,11 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
     <div className="flex items-center gap-3">
       {/* Venue Selector (multi-venue) or Venue Label (single-venue) */}
       {showVenueSelector ? (
-        <div className="flex items-center gap-2 px-3 py-1.5 border border-opsos-sage-300 rounded-md bg-white hover:bg-opsos-sage-50 transition-colors">
-          <Building2 className="w-4 h-4 text-opsos-sage-600" />
+        <div className="flex items-center gap-2 px-3 py-1.5 border border-keva-sage-300 rounded-md bg-white hover:bg-keva-sage-50 transition-colors">
+          <Building2 className="w-4 h-4 text-keva-sage-600" />
           <select
             aria-label="Select venue"
-            className="text-sm bg-transparent border-none focus:outline-none text-opsos-sage-800 cursor-pointer"
+            className="text-sm bg-transparent border-none focus:outline-none text-keva-sage-800 cursor-pointer"
             value={selectedVenue?.id || ''}
             onChange={(e) => {
               if (e.target.value === 'all') {
@@ -70,8 +70,8 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
           </select>
         </div>
       ) : venues.length === 1 ? (
-        <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-opsos-sage-700 font-medium">
-          <Building2 className="w-4 h-4 text-opsos-sage-500" />
+        <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-keva-sage-700 font-medium">
+          <Building2 className="w-4 h-4 text-keva-sage-500" />
           {venues[0].name}
         </div>
       ) : null}

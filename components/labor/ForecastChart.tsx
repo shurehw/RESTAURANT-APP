@@ -35,7 +35,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
         {/* Legend */}
         <div className="flex items-center gap-6 mb-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-opsos-sage-600 rounded"></div>
+            <div className="w-4 h-4 bg-keva-sage-600 rounded"></div>
             <span>Covers</span>
           </div>
           <div className="flex items-center gap-2">
@@ -43,7 +43,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
             <span>Revenue</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-opsos-sage-300"></div>
+            <div className="w-4 h-1 bg-keva-sage-300"></div>
             <span className="text-xs text-muted-foreground">Confidence Interval</span>
           </div>
         </div>
@@ -71,7 +71,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
                   <div key={index} className="flex-1 relative group">
                     {/* Confidence interval */}
                     <div
-                      className="absolute left-1/2 -translate-x-1/2 w-1 bg-opsos-sage-200"
+                      className="absolute left-1/2 -translate-x-1/2 w-1 bg-keva-sage-200"
                       style={{
                         bottom: `${lowerHeight}%`,
                         height: `${upperHeight - lowerHeight}%`
@@ -80,7 +80,7 @@ export function ForecastChart({ forecasts }: ForecastChartProps) {
 
                     {/* Covers bar */}
                     <div
-                      className="absolute left-0 w-[45%] bg-opsos-sage-600 rounded-t hover:bg-opsos-sage-700 transition-colors"
+                      className="absolute left-0 w-[45%] bg-keva-sage-600 rounded-t hover:bg-keva-sage-700 transition-colors"
                       style={{ height: `${coversHeight}%` }}
                       title={`${forecast.covers_predicted} covers`}
                     />

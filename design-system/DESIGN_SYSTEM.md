@@ -1,4 +1,4 @@
-# OpsOS Design System
+# KevaOS Design System
 **Run on clarity.**
 
 A modern, minimal UI system inspired by vintage ledgers and built for hospitality operations.
@@ -14,7 +14,7 @@ A modern, minimal UI system inspired by vintage ledgers and built for hospitalit
 
 ### Logo
 - **Mark**: Concentric-ring "O" icon representing data cycles
-- **Wordmark**: "OpsOS" in slate gray
+- **Wordmark**: "KevaOS" in slate gray
 - **Tagline**: "Run on clarity." (secondary: "Every plate. Every penny. Every process.")
 
 ---
@@ -348,7 +348,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        opsos: {
+        keva: {
           slate: {...},
           fog: {...},
           brass: {...},
@@ -367,10 +367,10 @@ module.exports = {
 ### CSS Variables
 ```css
 :root {
-  --opsos-slate: #1B1D1F;
-  --opsos-fog: #F5F5F4;
-  --opsos-brass: #C4A46B;
-  --opsos-sage: #92A69C;
+  --keva-slate: #1B1D1F;
+  --keva-fog: #F5F5F4;
+  --keva-brass: #C4A46B;
+  --keva-sage: #92A69C;
 
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -390,5 +390,5 @@ All components follow shadcn/ui conventions:
 
 ---
 
-**OpsOS Design System v1.0**
+**KevaOS Design System v1.0**
 *Run on clarity.*

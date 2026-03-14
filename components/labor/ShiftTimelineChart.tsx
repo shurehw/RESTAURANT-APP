@@ -567,8 +567,8 @@ export function ShiftTimelineChart({ shifts, weekDays, onShiftClick }: ShiftTime
                 >
                   <defs>
                     <linearGradient id="hcGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--opsos-brass)" stopOpacity="0.2" />
-                      <stop offset="100%" stopColor="var(--opsos-brass)" stopOpacity="0.03" />
+                      <stop offset="0%" stopColor="var(--keva-brass)" stopOpacity="0.2" />
+                      <stop offset="100%" stopColor="var(--keva-brass)" stopOpacity="0.03" />
                     </linearGradient>
                   </defs>
                   {areaPath && <path d={areaPath} fill="url(#hcGrad)" />}
@@ -576,7 +576,7 @@ export function ShiftTimelineChart({ shifts, weekDays, onShiftClick }: ShiftTime
                     <path
                       d={linePath}
                       fill="none"
-                      stroke="var(--opsos-brass)"
+                      stroke="var(--keva-brass)"
                       strokeWidth="2"
                       strokeLinejoin="round"
                     />

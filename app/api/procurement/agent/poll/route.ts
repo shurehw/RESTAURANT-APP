@@ -283,7 +283,7 @@ async function processVenue(
           type: 'po_approval_needed',
           severity: 'warning',
           title: `${posPendingApproval} Purchase Order${posPendingApproval > 1 ? 's' : ''} Awaiting Approval`,
-          body: `Procurement agent generated ${posPendingApproval} PO${posPendingApproval > 1 ? 's' : ''} for ${venueName} totaling $${totalEstimatedCost.toFixed(2)}. Review and approve in OpSOS.`,
+          body: `Procurement agent generated ${posPendingApproval} PO${posPendingApproval > 1 ? 's' : ''} for ${venueName} totaling $${totalEstimatedCost.toFixed(2)}. Review and approve in KevaOS.`,
           actionUrl: '/admin/procurement',
           sourceTable: 'procurement_agent_runs',
           sourceId: runId,

@@ -2126,7 +2126,7 @@ export default function NightlyReportPage() {
                   }
 
                   return (
-                    <table className="table-opsos">
+                    <table className="table-keva">
                       <thead>
                         <tr>
                           <th>Server</th>
@@ -2243,7 +2243,7 @@ export default function NightlyReportPage() {
                   const otherItems = menuItems.filter(i => classifyItem(i) === 'Other').slice(0, 5);
 
                     return (
-                      <table className="table-opsos">
+                      <table className="table-keva">
                         <thead>
                           <tr>
                             <th>Item</th>
@@ -2374,7 +2374,7 @@ export default function NightlyReportPage() {
                                   <span className="text-lg font-semibold text-error">{compPct}%</span>
                                 </div>
                               </div>
-                              <table className="table-opsos">
+                              <table className="table-keva">
                                 <thead>
                                   <tr>
                                     <th>Reason</th>
@@ -2548,7 +2548,7 @@ export default function NightlyReportPage() {
                   </TabsContent>
                   <TabsContent value="vips" className="mt-0">
                     {(report?.peopleWeKnow?.length ?? 0) > 0 ? (
-                      <table className="table-opsos">
+                      <table className="table-keva">
                         <thead>
                           <tr>
                             <th>Guest</th>

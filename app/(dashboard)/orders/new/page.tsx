@@ -47,7 +47,7 @@ export default async function NewOrderPage() {
           <div>
             <label className="block text-sm font-medium mb-2">Vendor</label>
             <select
-              className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+              className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
               required
             >
               <option value="">Select vendor...</option>
@@ -63,7 +63,7 @@ export default async function NewOrderPage() {
           <div>
             <label className="block text-sm font-medium mb-2">Venue</label>
             <select
-              className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+              className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
               required
             >
               <option value="">Select venue...</option>
@@ -80,7 +80,7 @@ export default async function NewOrderPage() {
             <label className="block text-sm font-medium mb-2">Delivery Date</label>
             <input
               type="date"
-              className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+              className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
               required
             />
           </div>

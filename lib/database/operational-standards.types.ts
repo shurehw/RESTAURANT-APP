@@ -3,10 +3,10 @@
  *
  * ENFORCEMENT PRINCIPLE:
  * Companies calibrate sensitivity, not accountability.
- * OpsOS defines what must be reviewed.
+ * KevaOS defines what must be reviewed.
  *
  * Layer 1: Fixed rails (hardcoded, non-negotiable)
- * Layer 2: Company calibration (bounded by OpsOS ranges)
+ * Layer 2: Company calibration (bounded by KevaOS ranges)
  * Layer 3: Venue targets (derived, not authored)
  */
 
@@ -25,14 +25,14 @@ export interface CompStandards {
   approved_reasons: ApprovedCompReason[];
 
   // Thresholds (Layer 2: Bounded calibration)
-  high_value_comp_threshold: number;       // OpsOS bounds: $100-500
-  high_comp_pct_threshold: number;         // OpsOS bounds: 30-70%
-  daily_comp_pct_warning: number;          // OpsOS bounds: 1-4%
-  daily_comp_pct_critical: number;         // OpsOS bounds: 2-5%
+  high_value_comp_threshold: number;       // KevaOS bounds: $100-500
+  high_comp_pct_threshold: number;         // KevaOS bounds: 30-70%
+  daily_comp_pct_warning: number;          // KevaOS bounds: 1-4%
+  daily_comp_pct_critical: number;         // KevaOS bounds: 2-5%
 
   // Authority levels
-  server_max_comp_amount: number;          // OpsOS bounds: $25-100
-  manager_min_for_high_value: number;      // OpsOS bounds: $100-500
+  server_max_comp_amount: number;          // KevaOS bounds: $25-100
+  manager_min_for_high_value: number;      // KevaOS bounds: $100-500
   manager_roles: string[];
 
   // AI configuration
@@ -65,14 +65,14 @@ export interface LaborStandards {
 
   /**
    * Target labor percentage
-   * OpsOS bounds: 18-28%
+   * KevaOS bounds: 18-28%
    * Layer 1: Absolute escalation >30% (non-negotiable)
    */
   target_labor_pct: number;
 
   /**
    * Labor % tolerance band
-   * OpsOS bounds: ±1.5% to ±2.0%
+   * KevaOS bounds: ±1.5% to ±2.0%
    * Actual > (target + tolerance) → Exception
    */
   labor_pct_tolerance: number;
@@ -81,7 +81,7 @@ export interface LaborStandards {
 
   /**
    * Sales Per Labor Hour floor
-   * OpsOS bounds: $55-120
+   * KevaOS bounds: $55-120
    * SPLH < floor → Exception
    * SPLH < (floor × 0.85) → Critical Exception
    */
@@ -91,7 +91,7 @@ export interface LaborStandards {
 
   /**
    * Covers Per Labor Hour target
-   * OpsOS bounds: 2.0-6.0
+   * KevaOS bounds: 2.0-6.0
    * Default guidance:
    * - Fine dining: 2.0-2.8
    * - Upscale casual: 2.5-3.5
@@ -141,7 +141,7 @@ export interface LaborStandards {
 }
 
 /**
- * OpsOS Labor Bounds (Layer 1: LOCKED)
+ * KevaOS Labor Bounds (Layer 1: LOCKED)
  * These constants enforce non-negotiable limits
  */
 export const LABOR_BOUNDS = {

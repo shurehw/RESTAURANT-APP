@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * OpsOS Reports Page
+ * KevaOS Reports Page
  */
 
 import { createClient } from "@/lib/supabase/server";
@@ -89,15 +89,15 @@ export default async function ReportsPage() {
         {/* Sales Reports */}
         <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-opsos-slate-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-opsos-slate-700" />
+            <div className="w-12 h-12 rounded-lg bg-keva-slate-100 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-keva-slate-700" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-1">Sales Reports</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Sales data, forecasting
               </p>
-              <Button variant="ghost" size="sm" className="text-opsos-slate-700 hover:text-opsos-slate-900">
+              <Button variant="ghost" size="sm" className="text-keva-slate-700 hover:text-keva-slate-900">
                 View Reports →
               </Button>
             </div>
@@ -143,15 +143,15 @@ export default async function ReportsPage() {
         {/* Menu Analysis */}
         <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-opsos-slate-100 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-opsos-slate-700" />
+            <div className="w-12 h-12 rounded-lg bg-keva-slate-100 flex items-center justify-center">
+              <TrendingUp className="w-6 h-6 text-keva-slate-700" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg mb-1">Menu Analysis</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Recipe profitability, PMIX
               </p>
-              <Button variant="ghost" size="sm" className="text-opsos-slate-700 hover:text-opsos-slate-900">
+              <Button variant="ghost" size="sm" className="text-keva-slate-700 hover:text-keva-slate-900">
                 View Reports →
               </Button>
             </div>

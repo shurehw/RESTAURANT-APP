@@ -190,14 +190,14 @@ export default function MapItemsPage() {
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Mapped</div>
-            <div className="text-2xl font-bold font-mono text-opsos-sage-600">
+            <div className="text-2xl font-bold font-mono text-keva-sage-600">
               {coverage.mapped_items}
             </div>
           </Card>
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Unmapped</div>
             <div className={`text-2xl font-bold font-mono ${
-              coverage.unmapped_items > 0 ? 'text-opsos-error' : 'text-opsos-sage-600'
+              coverage.unmapped_items > 0 ? 'text-keva-error' : 'text-keva-sage-600'
             }`}>
               {coverage.unmapped_items}
             </div>
@@ -205,9 +205,9 @@ export default function MapItemsPage() {
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Sales Coverage</div>
             <div className={`text-2xl font-bold font-mono ${
-              coverage.sales_coverage_pct >= 80 ? 'text-opsos-sage-600' :
+              coverage.sales_coverage_pct >= 80 ? 'text-keva-sage-600' :
               coverage.sales_coverage_pct >= 50 ? 'text-brass' :
-              'text-opsos-error'
+              'text-keva-error'
             }`}>
               {coverage.sales_coverage_pct}%
             </div>
@@ -292,7 +292,7 @@ export default function MapItemsPage() {
                   </td>
                   <td className="p-3 text-center">
                     {m.recipe_id ? (
-                      <Check className="w-4 h-4 text-opsos-sage-600 inline" />
+                      <Check className="w-4 h-4 text-keva-sage-600 inline" />
                     ) : (
                       <X className="w-4 h-4 text-muted-foreground/40 inline" />
                     )}

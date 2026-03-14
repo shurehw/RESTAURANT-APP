@@ -1,5 +1,5 @@
 /**
- * OpsOS Products Page
+ * KevaOS Products Page
  */
 
 // Force dynamic rendering - don't cache this page
@@ -147,7 +147,7 @@ export default async function ProductsPage() {
           <div className="mt-2">
             <Link
               href="/products/competitor-pricing"
-              className="text-sm text-opsos-sage-700 hover:text-opsos-sage-800 underline"
+              className="text-sm text-keva-sage-700 hover:text-keva-sage-800 underline"
             >
               Open custom catalog competitor pricing
             </Link>

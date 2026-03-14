@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * OpsOS Invoices Page
+ * KevaOS Invoices Page
  * Table with approve/export actions, brass accents
  */
 

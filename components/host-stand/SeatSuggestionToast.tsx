@@ -48,7 +48,7 @@ export function SeatSuggestionToast({ suggestion, onAccept, onDismiss }: SeatSug
       {/* Progress bar */}
       <div className="h-0.5 bg-gray-800">
         <div
-          className="h-full bg-[#FF5A1F] transition-all duration-1000"
+          className="h-full bg-[#D4622B] transition-all duration-1000"
           style={{ width: `${progress * 100}%` }}
         />
       </div>
@@ -57,11 +57,11 @@ export function SeatSuggestionToast({ suggestion, onAccept, onDismiss }: SeatSug
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-[#FF5A1F] uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-[#D4622B] uppercase tracking-wider">
               AI Suggestion
             </span>
             {suggestion.is_vip && (
-              <span className="text-[9px] font-bold text-[#FF5A1F] bg-[#FF5A1F]/10 px-1 py-0.5 rounded">
+              <span className="text-[9px] font-bold text-[#D4622B] bg-[#D4622B]/10 px-1 py-0.5 rounded">
                 VIP
               </span>
             )}
@@ -90,7 +90,7 @@ export function SeatSuggestionToast({ suggestion, onAccept, onDismiss }: SeatSug
         >
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-            style={{ background: suggestion.section_color || '#FF5A1F' }}
+            style={{ background: suggestion.section_color || '#D4622B' }}
           >
             {suggestion.table_number}
           </div>
@@ -106,7 +106,7 @@ export function SeatSuggestionToast({ suggestion, onAccept, onDismiss }: SeatSug
         <div className="flex gap-2">
           <button
             onClick={() => onAccept(suggestion)}
-            className="flex-1 h-10 bg-[#FF5A1F] hover:bg-[#E04D18] text-white text-sm font-semibold rounded-lg transition-colors"
+            className="flex-1 h-10 bg-[#D4622B] hover:bg-[#A3461F] text-white text-sm font-semibold rounded-lg transition-colors"
           >
             Seat Here
           </button>

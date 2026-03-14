@@ -32,7 +32,7 @@ const SR_COURSE_TABLE_TRANSITIONS: Record<string, TableState | null> = {
   'BUS_TABLE': 'check_dropped', // guests done, bussing table
 };
 
-// SR status → OpSOS status
+// SR status → KevaOS status
 const SR_STATUS_MAP: Record<string, ReservationStatus> = {
   PENDING: 'pending',
   CONFIRMED: 'confirmed',

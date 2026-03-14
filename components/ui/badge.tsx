@@ -1,5 +1,5 @@
 /**
- * OpsOS Badge Component
+ * KevaOS Badge Component
  * Sage (success), Brass (highlight), Error (muted red)
  */
 

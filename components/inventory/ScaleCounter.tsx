@@ -124,12 +124,12 @@ export function ScaleCounter({ venueId, countSessionId, onCountRecorded }: Scale
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bluetooth className="w-5 h-5 text-opsos-sage-600" />
+            <Bluetooth className="w-5 h-5 text-keva-sage-600" />
             <div>
               <div className="font-medium">Bluetooth Scale</div>
               <div className="text-sm text-muted-foreground">
                 {isConnected ? (
-                  <span className="text-opsos-sage-600">Connected</span>
+                  <span className="text-keva-sage-600">Connected</span>
                 ) : (
                   <span>Not connected</span>
                 )}
@@ -163,7 +163,7 @@ export function ScaleCounter({ venueId, countSessionId, onCountRecorded }: Scale
         </div>
 
         {scaleError && (
-          <div className="mt-3 p-3 bg-opsos-error-50 border border-opsos-error-200 rounded-md text-sm text-opsos-error-700">
+          <div className="mt-3 p-3 bg-keva-error-50 border border-keva-error-200 rounded-md text-sm text-keva-error-700">
             <AlertCircle className="w-4 h-4 inline mr-2" />
             {scaleError}
           </div>
@@ -172,10 +172,10 @@ export function ScaleCounter({ venueId, countSessionId, onCountRecorded }: Scale
 
       {/* Current Weight Display */}
       {isConnected && (
-        <Card className="p-6 bg-opsos-sage-50 border-opsos-sage-300">
+        <Card className="p-6 bg-keva-sage-50 border-keva-sage-300">
           <div className="text-center">
-            <Scale className="w-8 h-8 mx-auto mb-2 text-opsos-sage-600" />
-            <div className="text-4xl font-bold font-mono text-opsos-sage-800">
+            <Scale className="w-8 h-8 mx-auto mb-2 text-keva-sage-600" />
+            <div className="text-4xl font-bold font-mono text-keva-sage-800">
               {currentWeight !== null ? `${currentWeight.toFixed(1)}g` : '---'}
             </div>
             <div className="text-sm text-muted-foreground mt-1">Live Weight</div>
@@ -193,7 +193,7 @@ export function ScaleCounter({ venueId, countSessionId, onCountRecorded }: Scale
               placeholder="Enter SKU ID or search..."
               value={selectedSku || ''}
               onChange={(e) => setSelectedSku(e.target.value)}
-              className="flex-1 px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+              className="flex-1 px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
             />
             <Button variant="outline" size="sm">
               <Search className="w-4 h-4" />
@@ -257,7 +257,7 @@ export function ScaleCounter({ venueId, countSessionId, onCountRecorded }: Scale
 
       {/* Error Display */}
       {error && (
-        <div className="p-3 bg-opsos-error-50 border border-opsos-error-200 rounded-md text-sm text-opsos-error-700">
+        <div className="p-3 bg-keva-error-50 border border-keva-error-200 rounded-md text-sm text-keva-error-700">
           <AlertCircle className="w-4 h-4 inline mr-2" />
           {error}
         </div>
@@ -265,11 +265,11 @@ export function ScaleCounter({ venueId, countSessionId, onCountRecorded }: Scale
 
       {/* Last Reading */}
       {lastReading && (
-        <Card className="p-4 bg-opsos-sage-50 border-opsos-sage-300">
+        <Card className="p-4 bg-keva-sage-50 border-keva-sage-300">
           <div className="flex items-start gap-3">
-            <Check className="w-5 h-5 text-opsos-sage-600 mt-0.5" />
+            <Check className="w-5 h-5 text-keva-sage-600 mt-0.5" />
             <div className="flex-1">
-              <div className="font-medium text-opsos-sage-800 mb-2">Reading Recorded</div>
+              <div className="font-medium text-keva-sage-800 mb-2">Reading Recorded</div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                   <span className="text-muted-foreground">Fill:</span>{' '}

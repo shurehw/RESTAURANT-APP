@@ -6,6 +6,7 @@
 
 import { getServiceClient } from '@/lib/supabase/service';
 import { getIngredientNeeds } from './ingredient-forecast';
+import type { ApprovalTier, EntityCode } from '@/lib/ai/procurement-agent-policy';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -16,6 +17,17 @@ export interface AutoPOSettings {
   auto_po_requires_approval: boolean;
   auto_po_min_order_value: number;
   auto_po_consolidate_vendors: boolean;
+}
+
+/**
+ * Optional context from the procurement agent.
+ * When provided, POs are tagged with agent metadata for routing and approval.
+ */
+export interface AgentContext {
+  agentRunId: string;
+  entityRouting: Map<string, EntityCode>; // item_id → entity_code
+  determineApprovalTier: (totalAmount: number) => { tier: ApprovalTier; auto_execute: boolean };
+  shouldAutoExecute: (tier: ApprovalTier, autoExecuteAllowed: boolean) => boolean;
 }
 
 export interface OrderLineItem {
@@ -44,7 +56,8 @@ export interface GenerationResult {
 export async function generateAutoPurchaseOrders(
   venueId: string,
   triggeredBy: 'cron' | 'manual' | 'par_alert' = 'manual',
-  createdBy?: string
+  createdBy?: string,
+  agentContext?: AgentContext
 ): Promise<GenerationResult> {
   const supabase = getServiceClient();
 
@@ -188,6 +201,27 @@ export async function generateAutoPurchaseOrders(
 
     const vendorId = lines[0].vendor_id;
 
+    // Determine agent metadata if context is provided
+    let agentApprovalTier: ApprovalTier | undefined;
+    let agentAutoExecute = false;
+    let agentEntityCode: string | undefined;
+
+    if (agentContext) {
+      const tierResult = agentContext.determineApprovalTier(totalValue);
+      agentApprovalTier = tierResult.tier;
+      agentAutoExecute = agentContext.shouldAutoExecute(tierResult.tier, tierResult.auto_execute);
+      // Use entity code from first line item's classification
+      agentEntityCode = agentContext.entityRouting.get(lines[0].item_id) || undefined;
+    }
+
+    // Agent-driven status: auto-execute skips approval
+    const poStatus = agentAutoExecute
+      ? 'pending'
+      : (settings.auto_po_requires_approval ? 'draft' : 'pending');
+    const requiresApproval = agentAutoExecute
+      ? false
+      : settings.auto_po_requires_approval;
+
     // Create PO
     const { data: po, error: poError } = await (supabase as any)
       .from('purchase_orders')
@@ -197,12 +231,18 @@ export async function generateAutoPurchaseOrders(
         order_date: new Date().toISOString().split('T')[0],
         delivery_date: new Date(Date.now() + (Math.max(...lines.map(() => 7)) * 86400000))
           .toISOString().split('T')[0],
-        status: settings.auto_po_requires_approval ? 'draft' : 'pending',
+        status: poStatus,
         total_amount: 0, // will be calculated by trigger
         generation_type: generationType,
         auto_generation_run_id: run?.id,
-        requires_approval: settings.auto_po_requires_approval,
+        requires_approval: requiresApproval,
         created_by: createdBy,
+        // Agent metadata
+        ...(agentContext ? {
+          agent_run_id: agentContext.agentRunId,
+          approval_tier: agentApprovalTier,
+          entity_code: agentEntityCode,
+        } : {}),
       })
       .select('id')
       .single();

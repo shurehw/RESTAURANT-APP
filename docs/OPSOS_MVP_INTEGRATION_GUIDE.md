@@ -1,4 +1,4 @@
-# OpsOS MVP Integration Guide
+# KevaOS MVP Integration Guide
 
 **Date:** November 10, 2025
 **Status:** Phase 1 Complete - Ready for Testing
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document describes the complete integration of the OpsOS Intelligence Layer with the existing MVP invoice processing system. The system now provides:
+This document describes the complete integration of the KevaOS Intelligence Layer with the existing MVP invoice processing system. The system now provides:
 
 1. **Invoice Processing** (MVP Core) - Upload → Parse → Map → Approve
 2. **Recipe→Inventory→COGS** - Real-time cost tracking
@@ -23,7 +23,7 @@ This document describes the complete integration of the OpsOS Intelligence Layer
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     OpsOS Platform                           │
+│                     KevaOS Platform                           │
 ├─────────────────────────────────────────────────────────────┤
 │                                                               │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │

@@ -142,7 +142,7 @@ async function sendToSubscriber(params: {
 
   // Send via Resend
   const { error } = await resend.emails.send({
-    from: `OpSOS Reports <${FROM_EMAIL}>`,
+    from: `KevaOS Reports <${FROM_EMAIL}>`,
     to: subscriber.email,
     subject,
     html,

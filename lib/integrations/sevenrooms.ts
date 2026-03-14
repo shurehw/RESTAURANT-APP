@@ -15,7 +15,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 // ══════════════════════════════════════════════════════════════════════════
 // VENUE MAPPING
-// OpSOS venue_id → SevenRooms venue_id
+// KevaOS venue_id → SevenRooms venue_id
 //
 // SR venue IDs confirmed from TipSee full_reservations.venue_id and
 // the H.wood codebase. These are stable identifiers, not secrets.
@@ -45,13 +45,13 @@ export const SEVENROOMS_VENUE_MAP: Record<string, string> = {
   'a2f9d28d-8dde-4b57-8013-2c94602fe078': 'ahNzfnNldmVucm9vbXMtc2VjdXJlchwLEg9uaWdodGxvb3BfVmVudWUYgICwjq347ggM',
   // Didi Events
   'c6776476-44c5-454b-9765-29f3737e3776': 'ahNzfnNldmVucm9vbXMtc2VjdXJlchwLEg9uaWdodGxvb3BfVmVudWUYgICwmejqsgoM',
-  // Bootsy Bellows (no OpSOS venue UUID yet — add when onboarded)
+  // Bootsy Bellows (no KevaOS venue UUID yet — add when onboarded)
   // SR: ahNzfnNldmVucm9vbXMtc2VjdXJlchcLEg9uaWdodGxvb3BfVmVudWUY-Nt3DA
 };
 
 // ══════════════════════════════════════════════════════════════════════════
 // WIDGET SLUG MAP
-// OpSOS venue_id → SevenRooms widget slug (used by public widget API)
+// KevaOS venue_id → SevenRooms widget slug (used by public widget API)
 //
 // The public widget API (api-yoa/availability/widget/range) uses venue slugs
 // and requires NO authentication. It returns richer data than the authenticated
@@ -79,19 +79,19 @@ export const SEVENROOMS_SLUG_MAP: Record<string, string> = {
   // SR slug: 'bootsybellows'
 };
 
-// Module-level cache: OpSOS venue_id → resolved SR venue_id (survives warm invocations)
+// Module-level cache: KevaOS venue_id → resolved SR venue_id (survives warm invocations)
 const srVenueIdCache = new Map<string, string>();
 
 /**
  * Expose cache setter so callers (e.g. API routes) can seed it after
  * auto-discovering a venue's SR ID via TipSee.
  */
-export function cacheSrVenueId(opsosVenueId: string, srVenueId: string): void {
-  srVenueIdCache.set(opsosVenueId, srVenueId);
+export function cacheSrVenueId(kevaVenueId: string, srVenueId: string): void {
+  srVenueIdCache.set(kevaVenueId, srVenueId);
 }
 
 /**
- * Resolve the SevenRooms venue_id for an OpSOS venue.
+ * Resolve the SevenRooms venue_id for an KevaOS venue.
  *
  * Priority:
  *   1. SEVENROOMS_VENUE_MAP static entries (env var configured)
@@ -101,14 +101,14 @@ export function cacheSrVenueId(opsosVenueId: string, srVenueId: string): void {
  * Callers can enrich with TipSee-based auto-discovery via fetchSrVenueIdFromTipsee.
  */
 export function resolveSevenRoomsVenueId(
-  opsosVenueId: string,
+  kevaVenueId: string,
 ): string {
   // 1. Static map (non-empty env var)
-  const staticId = SEVENROOMS_VENUE_MAP[opsosVenueId] ?? '';
+  const staticId = SEVENROOMS_VENUE_MAP[kevaVenueId] ?? '';
   if (staticId) return staticId;
 
   // 2. Runtime cache (includes '' for venues confirmed to have no SR access)
-  return srVenueIdCache.get(opsosVenueId) ?? '';
+  return srVenueIdCache.get(kevaVenueId) ?? '';
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -374,7 +374,7 @@ export interface SevenRoomsVenue {
 
 /**
  * List all venues in a SevenRooms venue group.
- * Use this to discover venue IDs for mapping OpSOS venues to SR.
+ * Use this to discover venue IDs for mapping KevaOS venues to SR.
  */
 export async function fetchVenuesInGroup(
   venueGroupId: string,
@@ -663,14 +663,14 @@ export async function fetchWidgetAccessRules(
 }
 
 /**
- * Fetch widget access rules for an OpSOS venue by UUID.
+ * Fetch widget access rules for an KevaOS venue by UUID.
  * Resolves the slug from SEVENROOMS_SLUG_MAP and formats the date for the widget API.
  */
 export async function fetchWidgetAccessRulesForVenue(
-  opsosVenueId: string,
+  kevaVenueId: string,
   isoDate: string,
 ): Promise<WidgetShiftData[]> {
-  const slug = SEVENROOMS_SLUG_MAP[opsosVenueId];
+  const slug = SEVENROOMS_SLUG_MAP[kevaVenueId];
   if (!slug) return [];
 
   // Widget API expects MM-DD-YYYY format

@@ -1,4 +1,4 @@
-# How to Install OpSOS Pulse on Your Phone
+# How to Install KevaOS Pulse on Your Phone
 
 Pulse gives you **real-time sales tracking** right from your home screen — no app store needed.
 

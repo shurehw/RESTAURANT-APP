@@ -51,8 +51,8 @@ interface ForecastTableProps {
 
 /** Confidence tier from within-10% hit rate */
 function confidenceTier(pct: number): { label: string; color: string; bg: string } {
-  if (pct >= 60) return { label: 'Strong', color: 'text-opsos-sage-600', bg: 'bg-sage/10' };
-  if (pct >= 40) return { label: 'Good', color: 'text-opsos-sage-600', bg: 'bg-sage/10' };
+  if (pct >= 60) return { label: 'Strong', color: 'text-keva-sage-600', bg: 'bg-sage/10' };
+  if (pct >= 40) return { label: 'Good', color: 'text-keva-sage-600', bg: 'bg-sage/10' };
   if (pct >= 25) return { label: 'Fair', color: 'text-brass', bg: 'bg-brass/10' };
   return { label: 'Low', color: 'text-muted-foreground', bg: 'bg-muted' };
 }

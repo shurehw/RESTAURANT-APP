@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config(); // fallback
 
-const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4018';
 
 export default defineConfig({
   testDir: './e2e',
@@ -33,7 +33,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/dashboard.json',
       },
       dependencies: ['setup'],
-      testMatch: /(dashboard|swarm)\.spec\.ts/,
+      testMatch: /(dashboard|swarm(?:-deep)?)\.spec\.ts/,
     },
     {
       name: 'manager',
@@ -42,7 +42,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/manager.json',
       },
       dependencies: ['setup'],
-      testMatch: /swarm\.spec\.ts/,
+      testMatch: /swarm(?:-deep)?\.spec\.ts/,
     },
     {
       name: 'vendor',
@@ -51,7 +51,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/vendor.json',
       },
       dependencies: ['setup'],
-      testMatch: /swarm\.spec\.ts/,
+      testMatch: /swarm(?:-deep)?\.spec\.ts/,
     },
 
     // Host stand tests (iPad landscape)
@@ -71,9 +71,9 @@ export default defineConfig({
 
   // Start dev server automatically if not already running
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev -- -p 4018 --webpack',
     url: BASE_URL,
-    reuseExistingServer: true,
-    timeout: 30_000,
+    reuseExistingServer: false,
+    timeout: 120_000,
   },
 });

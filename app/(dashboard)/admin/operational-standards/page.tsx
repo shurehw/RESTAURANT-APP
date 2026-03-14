@@ -34,11 +34,11 @@ export default async function AdminOperationalStandardsPage() {
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-900 font-medium">
             🔒 <strong>Enforcement Principle:</strong> Companies calibrate sensitivity, not accountability.
-            OpsOS defines what must be reviewed.
+            KevaOS defines what must be reviewed.
           </p>
           <ul className="mt-2 text-sm text-blue-800 space-y-1 ml-6 list-disc">
             <li><strong>Layer 1:</strong> Fixed rails (non-negotiable bounds)</li>
-            <li><strong>Layer 2:</strong> Company calibration (bounded by OpsOS ranges)</li>
+            <li><strong>Layer 2:</strong> Company calibration (bounded by KevaOS ranges)</li>
             <li><strong>Layer 3:</strong> Venue targets (derived, not authored)</li>
           </ul>
         </div>

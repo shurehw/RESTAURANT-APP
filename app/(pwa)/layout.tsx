@@ -7,7 +7,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { VenueProvider } from '@/components/providers/VenueProvider';
 import { FloatingChatWidget, CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
-import { OpsOSLogo } from '@/components/ui/OpsOSLogo';
+import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
 
 export const metadata = {
   title: 'Pulse',
@@ -32,7 +32,7 @@ export default async function PwaLayout({
       <div className="min-h-screen bg-background flex flex-col" style={{ paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
         {/* Thin PWA header */}
         <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center justify-between sticky top-0 z-50">
-          <OpsOSLogo size="sm" />
+          <KevaOSLogo size="sm" />
           <CommandTrigger />
         </header>
 

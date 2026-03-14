@@ -305,8 +305,8 @@ export default function AdminPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-opsos-sage-100 rounded-lg flex items-center justify-center">
-                        <Building2 className="w-6 h-6 text-opsos-sage-600" />
+                      <div className="w-12 h-12 bg-keva-sage-100 rounded-lg flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-keva-sage-600" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">{org.name}</h3>
@@ -449,8 +449,8 @@ export default function AdminPage() {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-opsos-sage-100 rounded-lg flex items-center justify-center">
-                        <MapPin className="w-6 h-6 text-opsos-sage-600" />
+                      <div className="w-12 h-12 bg-keva-sage-100 rounded-lg flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-keva-sage-600" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">{venue.name}</h3>

@@ -1,10 +1,10 @@
-## OpsOS: Investor Positioning
+## KevaOS: Investor Positioning
 
 ### What This Is (and Isn't)
 
-OpsOS is not SaaS analytics, not workflow tooling, and not an AI assistant.
+KevaOS is not SaaS analytics, not workflow tooling, and not an AI assistant.
 
-OpsOS is **operational governance infrastructure**.
+KevaOS is **operational governance infrastructure**.
 
 It enforces how restaurants respond to variance — every night, across labor, comps, refunds, and execution — with permanent accountability and auditability.
 
@@ -27,7 +27,7 @@ AI does not commoditize:
 * governance
 * behavior change
 
-OpsOS uses AI **subordinately**:
+KevaOS uses AI **subordinately**:
 
 * to review explanations
 * to detect patterns
@@ -35,20 +35,20 @@ OpsOS uses AI **subordinately**:
 
 AI never closes exceptions, overrides enforcement, or rewrites history.
 
-OpsOS enforces. AI assists.
+KevaOS enforces. AI assists.
 
 ---
 
 ### Why This Is Defensible
 
-OpsOS creates lock-in by:
+KevaOS creates lock-in by:
 
 * owning the nightly operating record
 * enforcing irreversible workflows
 * embedding accountability into habit
 * becoming the system used to resolve disputes
 
-Once OpsOS is embedded, removing it removes control.
+Once KevaOS is embedded, removing it removes control.
 
 ---
 
@@ -56,7 +56,7 @@ Once OpsOS is embedded, removing it removes control.
 
 Allowing customers to author workflows destroys enforcement.
 
-OpsOS provides:
+KevaOS provides:
 
 * fixed operating standards
 * tunable sensitivity
@@ -70,13 +70,13 @@ This preserves discipline while allowing adoption across different operators.
 
 ### Why Outcome-Based Pricing Works Here
 
-OpsOS directly enforces:
+KevaOS directly enforces:
 
 * labor variance reduction
 * comp and refund control
 * elimination of repeat mistakes
 
-Because OpsOS controls:
+Because KevaOS controls:
 
 * baselines
 * exception logs
@@ -112,4 +112,4 @@ This focus enables scale through discipline, not breadth.
 Restaurants do not fail from lack of insight.
 They fail from lack of enforced follow-through.
 
-OpsOS exists to close that gap.
+KevaOS exists to close that gap.

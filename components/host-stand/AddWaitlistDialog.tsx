@@ -71,7 +71,7 @@ export function AddWaitlistDialog({ venueId, date, onClose, onAdded }: AddWaitli
             <input
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#FF5A1F]"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#D4622B]"
               placeholder="Name"
               required
               autoFocus
@@ -88,7 +88,7 @@ export function AddWaitlistDialog({ venueId, date, onClose, onAdded }: AddWaitli
                   onClick={() => setPartySize(n)}
                   className={`flex-1 h-12 rounded-lg text-base font-medium transition-colors ${
                     partySize === n
-                      ? 'bg-[#FF5A1F] text-white'
+                      ? 'bg-[#D4622B] text-white'
                       : 'bg-[#1a1a1a] text-gray-300 border border-gray-700'
                   }`}
                 >
@@ -103,7 +103,7 @@ export function AddWaitlistDialog({ venueId, date, onClose, onAdded }: AddWaitli
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#FF5A1F]"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#D4622B]"
               placeholder="(555) 123-4567"
               type="tel"
             />
@@ -114,7 +114,7 @@ export function AddWaitlistDialog({ venueId, date, onClose, onAdded }: AddWaitli
             <input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#FF5A1F]"
+              className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#D4622B]"
               placeholder="Seating preference, occasion..."
             />
           </div>
@@ -130,7 +130,7 @@ export function AddWaitlistDialog({ venueId, date, onClose, onAdded }: AddWaitli
             <button
               type="submit"
               disabled={loading || !guestName}
-              className="flex-1 h-12 bg-[#FF5A1F] hover:bg-[#E04D18] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
+              className="flex-1 h-12 bg-[#D4622B] hover:bg-[#A3461F] text-white rounded-lg font-semibold transition-colors disabled:opacity-50"
             >
               {loading ? 'Adding...' : 'Add'}
             </button>

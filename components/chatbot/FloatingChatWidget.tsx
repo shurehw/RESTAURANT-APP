@@ -18,7 +18,7 @@ const INITIAL_MESSAGE: Message = {
 };
 
 /** Dispatch this to toggle the command panel from anywhere */
-const TOGGLE_EVENT = 'opsos:toggle-command';
+const TOGGLE_EVENT = 'keva:toggle-command';
 
 export function toggleCommandPanel() {
   window.dispatchEvent(new CustomEvent(TOGGLE_EVENT));
@@ -131,11 +131,11 @@ export function FloatingChatWidget() {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-md bg-keva-slate-800 flex items-center justify-center">
                 <Terminal className="w-5 h-5 text-brass" />
               </div>
               <div>
-                <h2 className="font-semibold text-sm tracking-tight">OpsOS Command</h2>
+                <h2 className="font-semibold text-sm tracking-tight">KevaOS Command</h2>
                 <p className="text-xs text-muted-foreground">Query portfolio data, generate insights, initiate actions.</p>
               </div>
             </div>
@@ -162,11 +162,11 @@ export function FloatingChatWidget() {
             {messages.map((message, idx) => (
               <div key={idx} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-md bg-keva-slate-800 flex items-center justify-center">
                     <Terminal className="w-4 h-4 text-brass" />
                   </div>
                 )}
-                <div className={`rounded-lg px-4 py-3 ${message.role === 'user' ? 'max-w-[70%] bg-opsos-sage-600 text-white' : 'max-w-[85%] bg-muted text-foreground'}`}>
+                <div className={`rounded-lg px-4 py-3 ${message.role === 'user' ? 'max-w-[70%] bg-keva-sage-600 text-white' : 'max-w-[85%] bg-muted text-foreground'}`}>
                   {message.role === 'assistant' ? (
                     <ChatMarkdown content={message.content} className="text-sm" />
                   ) : (
@@ -174,7 +174,7 @@ export function FloatingChatWidget() {
                   )}
                 </div>
                 {message.role === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-sage-600 flex items-center justify-center">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-md bg-keva-sage-600 flex items-center justify-center">
                     <User className="w-4 h-4 text-white" />
                   </div>
                 )}
@@ -183,7 +183,7 @@ export function FloatingChatWidget() {
 
             {loading && (
               <div className="flex gap-3 justify-start">
-                <div className="flex-shrink-0 w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-md bg-keva-slate-800 flex items-center justify-center">
                   <Terminal className="w-4 h-4 text-brass" />
                 </div>
                 <div className="bg-muted rounded-lg px-4 py-3">
@@ -224,11 +224,11 @@ export function FloatingChatWidget() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border sm:rounded-t-lg">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-md bg-keva-slate-800 flex items-center justify-center">
             <Terminal className="w-4 h-4 text-brass" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm tracking-tight">OpsOS Command</h3>
+            <h3 className="font-semibold text-sm tracking-tight">KevaOS Command</h3>
             <p className="text-[11px] text-muted-foreground">Query data, insights, actions.</p>
           </div>
         </div>
@@ -252,11 +252,11 @@ export function FloatingChatWidget() {
         {messages.map((message, idx) => (
           <div key={idx} className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {message.role === 'assistant' && (
-              <div className="flex-shrink-0 w-6 h-6 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+              <div className="flex-shrink-0 w-6 h-6 rounded-md bg-keva-slate-800 flex items-center justify-center">
                 <Terminal className="w-3.5 h-3.5 text-brass" />
               </div>
             )}
-            <div className={`rounded-lg px-3 py-2 text-sm ${message.role === 'user' ? 'max-w-[75%] bg-opsos-sage-600 text-white' : 'max-w-[90%] bg-muted text-foreground'}`}>
+            <div className={`rounded-lg px-3 py-2 text-sm ${message.role === 'user' ? 'max-w-[75%] bg-keva-sage-600 text-white' : 'max-w-[90%] bg-muted text-foreground'}`}>
               {message.role === 'assistant' ? (
                 <ChatMarkdown content={message.content} className="text-sm" />
               ) : (
@@ -264,7 +264,7 @@ export function FloatingChatWidget() {
               )}
             </div>
             {message.role === 'user' && (
-              <div className="flex-shrink-0 w-6 h-6 rounded-md bg-opsos-sage-600 flex items-center justify-center">
+              <div className="flex-shrink-0 w-6 h-6 rounded-md bg-keva-sage-600 flex items-center justify-center">
                 <User className="w-3.5 h-3.5 text-white" />
               </div>
             )}
@@ -273,7 +273,7 @@ export function FloatingChatWidget() {
 
         {loading && (
           <div className="flex gap-2 justify-start">
-            <div className="flex-shrink-0 w-6 h-6 rounded-md bg-opsos-slate-800 flex items-center justify-center">
+            <div className="flex-shrink-0 w-6 h-6 rounded-md bg-keva-slate-800 flex items-center justify-center">
               <Terminal className="w-3.5 h-3.5 text-brass" />
             </div>
             <div className="bg-muted rounded-lg px-3 py-2">
@@ -310,7 +310,7 @@ export function CommandTrigger() {
   return (
     <button
       onClick={toggleCommandPanel}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-opsos-brass/30 bg-opsos-brass/5 hover:bg-opsos-brass/10 text-foreground hover:border-opsos-brass/50 transition-colors shadow-sm"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-keva-brass/30 bg-keva-brass/5 hover:bg-keva-brass/10 text-foreground hover:border-keva-brass/50 transition-colors shadow-sm"
       title="Command (Ctrl+K)"
     >
       <Command className="w-4 h-4" />

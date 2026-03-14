@@ -1,6 +1,6 @@
 /**
- * OpsOS Global Styles
- * Premium tech aesthetic — white backgrounds, black text, orange accents
+ * KevaOS Global Styles
+ * Warm hospitality aesthetic — ivory backgrounds, espresso text, copper accents
  */
 
 @tailwind base;
@@ -8,32 +8,34 @@
 @tailwind utilities;
 
 @layer base {
-  /* OpsOS Design Tokens — Premium Tech */
+  /* KevaOS Design Tokens — Warm Hospitality */
   :root {
-    /* Brand Colors */
-    --opsos-slate: #0A0A0A;
-    --opsos-fog: #FAFAFA;
-    --opsos-brass: #FF5A1F;
-    --opsos-sage: #64748B;
-    --opsos-error: #DC2626;
+    /* Brand Colors (matches deck palette) */
+    --keva-slate: #1C1917;
+    --keva-fog: #FAF8F5;
+    --keva-brass: #D4622B;
+    --keva-sage: #8B7E6F;
+    --keva-olive: #5C6B4F;
+    --keva-error: #DC2626;
 
-    /* Accent Glow (replaces ledger-gold) */
-    --accent-glow: #FF5A1F;
-    --accent-glow-dark: #EA4C0C;
-    --ledger-gold: var(--opsos-brass);
+    /* Accent Glow */
+    --accent-glow: #D4622B;
+    --accent-glow-dark: #7C2D12;
+    --ledger-gold: var(--keva-brass);
     --ledger-gold-dark: var(--accent-glow-dark);
 
-    /* Clean Backgrounds */
-    --paper-white: #FFFFFF;
-    --paper-gray: #FAFAFA;
+    /* Backgrounds */
+    --paper-white: #FFFEFB;
+    --paper-gray: #FAF8F5;
 
     /* Derived tokens */
-    --opsos-slate-light: #F5F5F5;
-    --opsos-slate-dark: #050505;
-    --opsos-brass-light: #FFF7ED;
-    --opsos-brass-dark: #C2410C;
-    --opsos-sage-light: #F8FAFC;
-    --opsos-sage-dark: #334155;
+    --keva-slate-light: #F5F1EB;
+    --keva-slate-dark: #292524;
+    --keva-brass-light: #FCEADB;
+    --keva-brass-dark: #7C2D12;
+    --keva-brass-tint: #FDF5EF;
+    --keva-sage-light: #F5F1EB;
+    --keva-sage-dark: #44403C;
 
     /* Design System Tokens */
     --radius-sharp: 6px;
@@ -42,63 +44,63 @@
     --transition-snap: 100ms linear;
     --transition-fast: 80ms linear;
     --grid-dot-size: 1px;
-    --grid-dot-color: rgba(0, 0, 0, 0.03);
+    --grid-dot-color: rgba(28, 25, 23, 0.03);
     --icon-stroke: 1.5px;
 
-    /* Shadcn compatibility */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 4%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 4%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 4%;
-    --primary: 0 0% 4%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 16 100% 56%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 16 100% 56%;
-    --accent-foreground: 0 0% 100%;
+    /* Shadcn compatibility (HSL values match deck palette) */
+    --background: 36 38% 97%;
+    --foreground: 20 6% 10%;
+    --card: 40 50% 100%;
+    --card-foreground: 20 6% 10%;
+    --popover: 40 50% 100%;
+    --popover-foreground: 20 6% 10%;
+    --primary: 20 6% 10%;
+    --primary-foreground: 36 38% 97%;
+    --secondary: 17 67% 50%;
+    --secondary-foreground: 40 50% 100%;
+    --muted: 30 15% 94%;
+    --muted-foreground: 28 11% 49%;
+    --accent: 17 67% 50%;
+    --accent-foreground: 40 50% 100%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 90%;
-    --input: 0 0% 85%;
-    --ring: 16 100% 56%;
+    --destructive-foreground: 40 50% 100%;
+    --border: 30 18% 88%;
+    --input: 30 15% 82%;
+    --ring: 17 67% 50%;
     --radius: 0.5rem;
-    --chart-1: 16 100% 56%;
-    --chart-2: 215 16% 47%;
-    --chart-3: 0 0% 4%;
-    --chart-4: 16 100% 70%;
-    --chart-5: 215 16% 70%;
+    --chart-1: 17 67% 50%;
+    --chart-2: 28 11% 49%;
+    --chart-3: 20 6% 10%;
+    --chart-4: 17 67% 65%;
+    --chart-5: 28 11% 65%;
   }
 
   /* Dark Mode */
   [data-theme='dark'] {
-    --opsos-slate: #F5F5F5;
-    --opsos-fog: #0A0A0A;
-    --opsos-brass: #FB923C;
-    --opsos-sage: #94A3B8;
+    --keva-slate: #F5F1EB;
+    --keva-fog: #1C1917;
+    --keva-brass: #E8844A;
+    --keva-sage: #B5ADA1;
 
-    --background: 0 0% 4%;
-    --foreground: 0 0% 96%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 96%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 96%;
-    --primary: 0 0% 96%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 16 96% 62%;
-    --secondary-foreground: 0 0% 4%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 16 96% 62%;
-    --accent-foreground: 0 0% 4%;
+    --background: 20 6% 10%;
+    --foreground: 30 15% 94%;
+    --card: 20 5% 14%;
+    --card-foreground: 30 15% 94%;
+    --popover: 20 5% 14%;
+    --popover-foreground: 30 15% 94%;
+    --primary: 30 15% 94%;
+    --primary-foreground: 20 6% 10%;
+    --secondary: 17 75% 60%;
+    --secondary-foreground: 20 6% 10%;
+    --muted: 20 5% 18%;
+    --muted-foreground: 28 10% 65%;
+    --accent: 17 75% 60%;
+    --accent-foreground: 20 6% 10%;
     --destructive: 0 84% 55%;
-    --destructive-foreground: 0 0% 96%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 16 96% 62%;
+    --destructive-foreground: 30 15% 94%;
+    --border: 20 5% 22%;
+    --input: 20 5% 22%;
+    --ring: 17 75% 60%;
   }
 
   * {
@@ -110,7 +112,7 @@
     background-color: var(--paper-white);
   }
 
-  /* Typography defaults — headings use monospace tech font */
+  /* Typography defaults */
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading text-foreground;
   }
@@ -147,7 +149,7 @@
 }
 
 @layer components {
-  /* OpsOS Utility Classes */
+  /* KevaOS Utility Classes */
 
   /* Accent Border */
   .border-brass-accent {
@@ -165,12 +167,12 @@
 
   /* Secondary Badge */
   .badge-sage {
-    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-opsos-sage-50 text-opsos-sage-800;
+    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-keva-sage-50 text-keva-sage-800;
   }
 
   /* Accent Badge */
   .badge-brass {
-    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-opsos-brass-50 text-opsos-brass-800;
+    @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium bg-keva-brass-50 text-keva-brass-800;
   }
 
   /* Error Badge */
@@ -179,27 +181,27 @@
   }
 
   /* Data Table Styles */
-  .table-opsos {
+  .table-keva {
     @apply w-full border-collapse;
   }
 
-  .table-opsos thead {
+  .table-keva thead {
     @apply bg-muted border-b-2 border-brass;
   }
 
-  .table-opsos th {
+  .table-keva th {
     @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
   }
 
-  .table-opsos td {
+  .table-keva td {
     @apply px-4 py-3 text-sm font-mono tabular-nums;
   }
 
-  .table-opsos tbody tr {
+  .table-keva tbody tr {
     @apply border-b border-border hover:bg-muted transition-colors duration-fast;
   }
 
-  .table-opsos tbody tr:nth-child(even) {
+  .table-keva tbody tr:nth-child(even) {
     @apply bg-muted opacity-50;
   }
 
@@ -293,7 +295,7 @@
 
   /* Sidebar Nav */
   .nav-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-fast text-opsos-fog-100;
+    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-fast text-keva-fog-100;
   }
 
   .nav-link.active {
@@ -301,7 +303,7 @@
   }
 
   .nav-link:not(.active) {
-    @apply hover:bg-opsos-sage-700 hover:text-white;
+    @apply hover:bg-keva-sage-700 hover:text-white;
   }
 }
 
@@ -337,17 +339,17 @@
 
   /* Accent Gradient */
   .bg-brass-gradient {
-    background: linear-gradient(135deg, var(--opsos-brass) 0%, var(--opsos-brass-dark) 100%);
+    background: linear-gradient(135deg, var(--keva-brass) 0%, var(--keva-brass-dark) 100%);
   }
 
   /* Secondary Gradient */
   .bg-sage-gradient {
-    background: linear-gradient(135deg, var(--opsos-sage) 0%, var(--opsos-sage-dark) 100%);
+    background: linear-gradient(135deg, var(--keva-sage) 0%, var(--keva-sage-dark) 100%);
   }
 
   /* Accent Glow */
   .glow-accent {
-    box-shadow: 0 0 20px rgba(255, 90, 31, 0.15), 0 0 40px rgba(255, 90, 31, 0.05);
+    box-shadow: 0 0 20px rgba(212, 98, 43, 0.15), 0 0 40px rgba(212, 98, 43, 0.05);
   }
 }
 

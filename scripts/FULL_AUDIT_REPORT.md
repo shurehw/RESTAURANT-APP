@@ -1,4 +1,4 @@
-# OpsOS Full Product Audit
+# KevaOS Full Product Audit
 
 **Target**: `https://opsos-restaurant-app.vercel.app`
 **Date**: 2026-02-14
@@ -146,9 +146,9 @@ None found. All 26 sidebar links resolve to functional pages.
 #### 60-Second Comprehension Test
 | Question | Answer in <60s? | Notes |
 |----------|-----------------|-------|
-| What is OpsOS? | YES | Login says "Restaurant Operations." Sidebar categories make it clear. |
+| What is KevaOS? | YES | Login says "Restaurant Operations." Sidebar categories make it clear. |
 | What makes it different? | PARTIAL | Control Plane / Preshift / Attestations hint at enforcement, but no comparison or positioning visible in-product |
-| Why should I care? | NO | No KPI summary, no "here's what OpsOS caught last week" on the home page (home times out) |
+| Why should I care? | NO | No KPI summary, no "here's what KevaOS caught last week" on the home page (home times out) |
 | What does it replace? | NO | No onboarding flow, no integration status page |
 | How does it integrate? | NO | No visible POS connection status, no API health indicators |
 
@@ -165,7 +165,7 @@ None found. All 26 sidebar links resolve to functional pages.
 #### 60-Second Comprehension Test
 | Question | Answer in <60s? | Notes |
 |----------|-----------------|-------|
-| What is OpsOS? | YES | Clearly a restaurant ops platform |
+| What is KevaOS? | YES | Clearly a restaurant ops platform |
 | What makes it different? | NO | Enforcement language exists in Operational Standards but is buried 4 clicks deep |
 | Why should I care? | NO | Home page times out. No executive dashboard. No P&L impact summary. |
 | What does it replace? | NO | Unclear what current tools it displaces (R365? Margin Edge? Spreadsheets?) |
@@ -275,9 +275,9 @@ NOT IN CURRENT STATE. The product has impressive breadth (32 functional pages ac
 
 ## J) Executive Summary (Brutal, Concise)
 
-**OpsOS has built an impressive breadth of functionality** — 30+ working pages spanning COGS management, demand forecasting, labor scheduling, compliance tracking, procurement settings, and AI-assisted operations. The enforcement architecture (carry-forward, attestation gates, configurable thresholds) is genuinely differentiated. The data is real. The scheduling module alone (147 shifts, CPLH tracking, labor % computation) demonstrates serious backend capability.
+**KevaOS has built an impressive breadth of functionality** — 30+ working pages spanning COGS management, demand forecasting, labor scheduling, compliance tracking, procurement settings, and AI-assisted operations. The enforcement architecture (carry-forward, attestation gates, configurable thresholds) is genuinely differentiated. The data is real. The scheduling module alone (147 shifts, CPLH tracking, labor % computation) demonstrates serious backend capability.
 
-**But the product sells itself as a dashboard, not an enforcement engine.** The home page doesn't load. The sidebar leads with COGS tables. The enforcement story is buried in admin pages. A CFO evaluating this would see "another restaurant dashboard" before discovering the control plane architecture that makes OpsOS different.
+**But the product sells itself as a dashboard, not an enforcement engine.** The home page doesn't load. The sidebar leads with COGS tables. The enforcement story is buried in admin pages. A CFO evaluating this would see "another restaurant dashboard" before discovering the control plane architecture that makes KevaOS different.
 
 **Critical gaps for enterprise sales:**
 - No mobile (100% viewport failure rate)

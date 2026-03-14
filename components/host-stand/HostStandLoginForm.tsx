@@ -71,7 +71,7 @@ export function HostStandLoginForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F]"
+          className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B]"
           placeholder="host@venue.com"
           required
           autoComplete="email"
@@ -87,7 +87,7 @@ export function HostStandLoginForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F]"
+          className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B]"
           placeholder="••••••••"
           required
           autoComplete="current-password"
@@ -96,7 +96,7 @@ export function HostStandLoginForm() {
 
       <Button
         type="submit"
-        className="w-full h-14 text-lg font-semibold bg-[#FF5A1F] hover:bg-[#E04D18] text-white"
+        className="w-full h-14 text-lg font-semibold bg-[#D4622B] hover:bg-[#A3461F] text-white"
         disabled={loading}
       >
         {loading ? 'Signing in...' : 'Sign In'}

@@ -43,10 +43,10 @@ export function ItemsTable({ items, onUpdate }: ItemsTableProps) {
 
   return (
     <>
-      <div className="border border-opsos-sage-200 rounded-md overflow-hidden">
+      <div className="border border-keva-sage-200 rounded-md overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-opsos-sage-50">
-            <tr className="border-b border-opsos-sage-200">
+          <thead className="bg-keva-sage-50">
+            <tr className="border-b border-keva-sage-200">
               <th className="text-left p-3 font-semibold">Item Name</th>
               <th className="text-left p-3 font-semibold">Category</th>
               <th className="text-left p-3 font-semibold">Unit</th>
@@ -65,7 +65,7 @@ export function ItemsTable({ items, onUpdate }: ItemsTableProps) {
                   <tr
                     key={item.id}
                     onClick={() => openItem(item.id)}
-                    className="border-b border-opsos-sage-100 hover:bg-opsos-sage-50/50 cursor-pointer transition-colors"
+                    className="border-b border-keva-sage-100 hover:bg-keva-sage-50/50 cursor-pointer transition-colors"
                   >
                     <td className="p-3">
                       <div className="font-medium text-ledger-black">{item.name}</div>

@@ -140,7 +140,7 @@ export function NotificationsDropdown() {
         aria-label="Notifications"
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className="relative p-2 text-opsos-sage-600 hover:text-opsos-sage-800 hover:bg-opsos-sage-50 rounded-md transition-colors duration-fast"
+        className="relative p-2 text-keva-sage-600 hover:text-keva-sage-800 hover:bg-keva-sage-50 rounded-md transition-colors duration-fast"
       >
         <Bell className="w-5 h-5" aria-hidden="true" />
         {unreadCount > 0 && (
@@ -159,11 +159,11 @@ export function NotificationsDropdown() {
           />
 
           {/* Dropdown Panel */}
-          <div className="absolute right-0 mt-2 w-80 bg-white border border-opsos-sage-200 rounded-lg shadow-lg z-20 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-80 bg-white border border-keva-sage-200 rounded-lg shadow-lg z-20 overflow-hidden">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-opsos-sage-200 bg-opsos-sage-50">
+            <div className="px-4 py-3 border-b border-keva-sage-200 bg-keva-sage-50">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm text-opsos-sage-900">
+                <h3 className="font-semibold text-sm text-keva-sage-900">
                   Notifications
                 </h3>
                 <div className="flex items-center gap-2">
@@ -193,7 +193,7 @@ export function NotificationsDropdown() {
                   <button
                     key={notification.id}
                     onClick={() => handleClick(notification)}
-                    className={`w-full text-left px-4 py-3 border-b border-opsos-sage-100 hover:bg-opsos-sage-50 cursor-pointer transition-colors ${
+                    className={`w-full text-left px-4 py-3 border-b border-keva-sage-100 hover:bg-keva-sage-50 cursor-pointer transition-colors ${
                       !notification.is_read ? 'bg-brass/5' : ''
                     }`}
                   >
@@ -201,7 +201,7 @@ export function NotificationsDropdown() {
                       <div className="mt-0.5">{getIcon(notification.severity)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className={`text-sm font-medium text-opsos-sage-900 ${!notification.is_read ? 'font-semibold' : ''}`}>
+                          <p className={`text-sm font-medium text-keva-sage-900 ${!notification.is_read ? 'font-semibold' : ''}`}>
                             {notification.title}
                           </p>
                           {!notification.is_read && (
@@ -209,11 +209,11 @@ export function NotificationsDropdown() {
                           )}
                         </div>
                         {notification.body && (
-                          <p className="text-xs text-opsos-sage-600 mt-0.5 line-clamp-2">
+                          <p className="text-xs text-keva-sage-600 mt-0.5 line-clamp-2">
                             {notification.body}
                           </p>
                         )}
-                        <p className="text-xs text-opsos-sage-500 mt-1">
+                        <p className="text-xs text-keva-sage-500 mt-1">
                           {formatTime(notification.created_at)}
                         </p>
                       </div>
@@ -222,8 +222,8 @@ export function NotificationsDropdown() {
                 ))
               ) : (
                 <div className="px-4 py-8 text-center">
-                  <Bell className="w-8 h-8 text-opsos-sage-300 mx-auto mb-2" />
-                  <p className="text-sm text-opsos-sage-600">
+                  <Bell className="w-8 h-8 text-keva-sage-300 mx-auto mb-2" />
+                  <p className="text-sm text-keva-sage-600">
                     No notifications
                   </p>
                 </div>

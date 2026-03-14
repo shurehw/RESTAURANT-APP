@@ -167,7 +167,7 @@ export function CompetitorPricingPanel() {
             onClick={() => setActiveTab('manual')}
             className={`px-3 py-2 text-sm rounded-md border ${
               activeTab === 'manual'
-                ? 'bg-opsos-sage-600 text-white border-opsos-sage-600'
+                ? 'bg-keva-sage-600 text-white border-keva-sage-600'
                 : 'bg-white text-gray-700 border-gray-300'
             }`}
           >
@@ -177,7 +177,7 @@ export function CompetitorPricingPanel() {
             onClick={() => setActiveTab('scraped')}
             className={`px-3 py-2 text-sm rounded-md border ${
               activeTab === 'scraped'
-                ? 'bg-opsos-sage-600 text-white border-opsos-sage-600'
+                ? 'bg-keva-sage-600 text-white border-keva-sage-600'
                 : 'bg-white text-gray-700 border-gray-300'
             }`}
           >

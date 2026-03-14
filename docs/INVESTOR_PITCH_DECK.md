@@ -1,4 +1,4 @@
-# OpsOS — Investor Pitch Deck
+# KevaOS — Investor Pitch Deck
 
 > Daily Operational Control for Multi-Unit Restaurants
 > Confidential
@@ -7,7 +7,7 @@
 
 ## SLIDE 1 — Title
 
-**OpsOS**
+**KevaOS**
 
 The operating system that enforces daily operations — so the same problems don't happen twice.
 
@@ -29,25 +29,25 @@ The issue isn't visibility. It's accountability.
 
 ---
 
-## SLIDE 3 — What OpsOS Is
+## SLIDE 3 — What KevaOS Is
 
 ### A daily operational control system.
 
-OpsOS ingests what already happened — sales, labor, purchasing — and forces ownership of deviations through required feedback, attestations, and verification.
+KevaOS ingests what already happened — sales, labor, purchasing — and forces ownership of deviations through required feedback, attestations, and verification.
 
-OpsOS doesn't show managers what happened. It tells them what they must respond to — and proves whether behavior actually changed.
+KevaOS doesn't show managers what happened. It tells them what they must respond to — and proves whether behavior actually changed.
 
 **What makes it different:**
 
-| Most tools stop at insight | OpsOS goes to intervention |
+| Most tools stop at insight | KevaOS goes to intervention |
 |---|---|
 | Dashboards | Feedback |
 | Reports | Required responses |
 | Planning | Commitments |
 | Analytics | Verification |
 
-If a problem repeats, OpsOS escalates it automatically.
-If it's resolved, OpsOS proves it.
+If a problem repeats, KevaOS escalates it automatically.
+If it's resolved, KevaOS proves it.
 
 That's the difference between software and a system.
 
@@ -55,7 +55,7 @@ That's the difference between software and a system.
 
 ## SLIDE 4 — How It Works
 
-### Every day, OpsOS runs the same closed loop.
+### Every day, KevaOS runs the same closed loop.
 
 ```
 INGEST → DETECT → TRANSLATE → REQUIRE → CARRY FORWARD → VERIFY
@@ -114,7 +114,7 @@ Supports multiple POS systems (Toast, Square, Simphony) — auto-detects per ven
 
 ### AI powers the system. Humans own the decisions.
 
-OpsOS uses AI to make the loop faster and smarter — but never to replace the accountability it creates.
+KevaOS uses AI to make the loop faster and smarter — but never to replace the accountability it creates.
 
 | AI Capability | What It Does | What It Doesn't Do |
 |---|---|---|
@@ -126,7 +126,7 @@ OpsOS uses AI to make the loop faster and smarter — but never to replace the a
 
 AI settings are configurable per organization — model, sensitivity, thresholds.
 
-**Why this matters:** As AI commoditizes dashboards and analytics, the enforcement layer remains defensible. AI makes OpsOS smarter. It doesn't replace the system.
+**Why this matters:** As AI commoditizes dashboards and analytics, the enforcement layer remains defensible. AI makes KevaOS smarter. It doesn't replace the system.
 
 ---
 
@@ -158,24 +158,24 @@ Camera vision opens an **entirely new enforcement surface** that no competitor h
 
 ---
 
-## SLIDE 9 — What OpsOS Replaces (and Doesn't)
+## SLIDE 9 — What KevaOS Replaces (and Doesn't)
 
-### OpsOS is the control plane. Not another point solution.
+### KevaOS is the control plane. Not another point solution.
 
-**OpsOS replaces:**
+**KevaOS replaces:**
 - Scheduling tools that plan but don't enforce
 - Food cost tools that report but don't change behavior
 - Nightly reports no one acts on
 - Weekly meetings about last week's problems
 - Spreadsheets tracking who said what
 
-**OpsOS does not replace:**
+**KevaOS does not replace:**
 - POS systems (Toast, Square, Simphony)
 - Payroll and time clocks
 - Accounting software (R365, QuickBooks)
 - Inventory management hardware
 
-OpsOS sits **above** these systems as the operational control layer. It ingests their data, detects deviations, and forces follow-through that the underlying tools never will.
+KevaOS sits **above** these systems as the operational control layer. It ingests their data, detects deviations, and forces follow-through that the underlying tools never will.
 
 ---
 
@@ -191,7 +191,7 @@ OpsOS sits **above** these systems as the operational control layer. It ingests 
 | **Operators** | Fewer repeat issues. Problems close instead of recurring. |
 | **Investors** | Real accountability without additional management headcount. |
 
-If your portfolio is growing and your ops team isn't scaling with it, OpsOS is the layer that closes the gap.
+If your portfolio is growing and your ops team isn't scaling with it, KevaOS is the layer that closes the gap.
 
 **Why multi-unit:**
 - Single-unit restaurants can survive on gut feel
@@ -216,10 +216,10 @@ If your portfolio is growing and your ops team isn't scaling with it, OpsOS is t
 | **Comp enforcement** | $25K – $75K (unapproved comp elimination) |
 | **Total margin improvement** | **$600K – $1.3M/year** |
 
-OpsOS doesn't just provide visibility into savings. It creates the mechanism that makes them stick.
+KevaOS doesn't just provide visibility into savings. It creates the mechanism that makes them stick.
 
 **Customer ROI:**
-- OpsOS cost: ~$75K–$150K/yr for a 5-venue group
+- KevaOS cost: ~$75K–$150K/yr for a 5-venue group
 - Verified savings: $600K–$1.3M/yr
 - **ROI: 4–10x**
 - Payback period: < 90 days
@@ -243,13 +243,13 @@ OpsOS doesn't just provide visibility into savings. It creates the mechanism tha
 - CAC payback: < 12 months
 - LTV/CAC: > 5x
 
-**Why savings participation matters:** It aligns incentives completely. We only win when they save. And because OpsOS creates the audit trail, savings are verifiable — not estimated.
+**Why savings participation matters:** It aligns incentives completely. We only win when they save. And because KevaOS creates the audit trail, savings are verifiable — not estimated.
 
 ---
 
 ## SLIDE 13 — Competitive Landscape
 
-### Most tools stop at insight. OpsOS is the only system that goes to intervention.
+### Most tools stop at insight. KevaOS is the only system that goes to intervention.
 
 | Category | Examples | What They Do | What They Don't |
 |---|---|---|---|
@@ -259,7 +259,7 @@ OpsOS doesn't just provide visibility into savings. It creates the mechanism tha
 | **Labor** | 7shifts, Lineup.ai | Schedule + forecast | Verify behavior changed |
 | **BI/Dashboards** | Avero, Plate IQ | Visualize data | Close the accountability loop |
 
-**OpsOS is the only platform that:**
+**KevaOS is the only platform that:**
 1. Detects the deviation
 2. Requires the response
 3. Carries it forward if unresolved
@@ -274,7 +274,7 @@ No one else does step 2, 3, or 4. That's the entire value.
 ### Four reinforcing moats.
 
 **1. Behavioral Lock-In**
-OpsOS becomes the nightly operating record. Removing it means losing the accountability infrastructure — not just a dashboard. Managers build habits. Operators build processes. The system becomes organizational muscle memory.
+KevaOS becomes the nightly operating record. Removing it means losing the accountability infrastructure — not just a dashboard. Managers build habits. Operators build processes. The system becomes organizational muscle memory.
 
 **2. Data Compounding**
 Every night of attestation data improves exception detection. Cross-venue patterns emerge. Historical audit trails become irreplaceable institutional knowledge. More data creates better enforcement creates more value.
@@ -343,7 +343,7 @@ Custom polygon detection pipeline via Claude Vision. Scene change optimization. 
 
 **Jacob Shrue — Founder & CEO**
 - Operator at h.wood Group — one of the most recognized hospitality groups in the US
-- Built OpsOS to solve his own operational pain across multiple high-volume venues
+- Built KevaOS to solve his own operational pain across multiple high-volume venues
 - Deep domain expertise: nightlife, fine dining, multi-venue operations
 
 *"I built this because I was tired of hearing about problems the next day that should have been caught in real time."*
@@ -381,18 +381,18 @@ Custom polygon detection pipeline via Claude Vision. Scene change optimization. 
 
 ## SLIDE 19 — The Outcome
 
-### With OpsOS, managers spend less time explaining and more time fixing.
+### With KevaOS, managers spend less time explaining and more time fixing.
 
 Issues close instead of recurring.
 Leadership sees fewer surprises.
 Operations become predictable.
 
-OpsOS doesn't make operations perfect.
+KevaOS doesn't make operations perfect.
 **It makes them correctable.**
 
 ---
 
-**OpsOS**
+**KevaOS**
 Daily Operational Control
 Confidential
 
@@ -404,7 +404,7 @@ Confidential
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│                    OpsOS PLATFORM                        │
+│                    KevaOS PLATFORM                        │
 │                                                          │
 │  DATA SOURCES          CONTROL ENGINE       ENFORCEMENT  │
 │  ┌──────────┐         ┌──────────────┐    ┌───────────┐ │

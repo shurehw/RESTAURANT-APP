@@ -82,10 +82,10 @@ export function PackConfigurationManager({
           {packConfigs.map((config, index) => (
             <div
               key={index}
-              className="border border-opsos-sage-300 rounded-md p-3 bg-white"
+              className="border border-keva-sage-300 rounded-md p-3 bg-white"
             >
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-semibold text-opsos-sage-700">
+                <div className="text-xs font-semibold text-keva-sage-700">
                   Pack #{index + 1}
                 </div>
                 <Button
@@ -108,7 +108,7 @@ export function PackConfigurationManager({
                   <select
                     value={config.pack_type}
                     onChange={(e) => updatePackConfig(index, 'pack_type', e.target.value)}
-                    className="w-full px-2 py-1.5 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                    className="w-full px-2 py-1.5 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                   >
                     <optgroup label="Common">
                       <option value="case">Case</option>
@@ -141,7 +141,7 @@ export function PackConfigurationManager({
                     step="1"
                     value={config.units_per_pack}
                     onChange={(e) => updatePackConfig(index, 'units_per_pack', parseFloat(e.target.value) || 1)}
-                    className="w-full px-2 py-1.5 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                    className="w-full px-2 py-1.5 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                   />
                 </div>
 
@@ -157,12 +157,12 @@ export function PackConfigurationManager({
                       step="any"
                       value={config.unit_size}
                       onChange={(e) => updatePackConfig(index, 'unit_size', parseFloat(e.target.value) || 1)}
-                      className="w-16 px-2 py-1.5 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-16 px-2 py-1.5 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     />
                     <select
                       value={config.unit_size_uom}
                       onChange={(e) => updatePackConfig(index, 'unit_size_uom', e.target.value)}
-                      className="flex-1 px-2 py-1.5 text-sm border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="flex-1 px-2 py-1.5 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     >
                       <optgroup label="Volume">
                         <option value="oz">Oz (fl)</option>

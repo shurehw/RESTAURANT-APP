@@ -63,7 +63,7 @@ export default async function LaborRequirementsPage() {
         </div>
         <div className="text-sm text-gray-600">
           <div className="font-medium">Labor Target</div>
-          <div className="text-opsos-brass-600 font-bold">
+          <div className="text-keva-brass-600 font-bold">
             {laborTargets?.target_labor_percentage || 27.5}%
           </div>
         </div>

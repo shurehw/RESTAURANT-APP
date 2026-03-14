@@ -254,6 +254,14 @@ async function processVenue(venueId: string): Promise<{
     await upsertLaborDayFact(venueId, businessDate, labor, summary.net_sales, summary.total_covers);
   }
 
+  // Mid-service staffing monitor (non-blocking — never fails the sales snapshot)
+  try {
+    const { runMidServiceMonitor } = await import('@/app/api/labor/monitor/route');
+    await runMidServiceMonitor(venueId);
+  } catch (err: any) {
+    console.warn(`[sales-poll] Mid-service monitor failed for ${venueId}:`, err?.message);
+  }
+
   return {
     snapshot_stored: true,
     net_sales: summary.net_sales,

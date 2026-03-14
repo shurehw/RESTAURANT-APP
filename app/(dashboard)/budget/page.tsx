@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * OpsOS Budget Page
+ * KevaOS Budget Page
  * Declining-budget chart using Recharts with brass line
  */
 

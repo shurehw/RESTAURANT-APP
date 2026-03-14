@@ -1,10 +1,10 @@
-# OpsOS: Restaurant Back-Office Platform
+# KevaOS: Restaurant Back-Office Platform
 
 Multi-venue hospitality back-office platform integrating Toast, Square, and Restaurant365 (R365). Built with **Next.js 14 (App Router)**, **Supabase** (Postgres + Auth + Storage), and **TypeScript**.
 
 ## 📋 Overview
 
-**OpsOS** unifies operations across multiple restaurant concepts with different POS systems into a single canonical data model:
+**KevaOS** unifies operations across multiple restaurant concepts with different POS systems into a single canonical data model:
 
 - **Invoice AP**: OCR ingestion → vendor/item mapping → approval workflow → R365 export
 - **Item Master**: Unified SKU catalog (food, beverage, packaging) with vendor price tiers & lead times
@@ -35,7 +35,7 @@ Multi-venue hospitality back-office platform integrating Toast, Square, and Rest
 
 ```bash
 git clone <your-repo>
-cd opsos
+cd keva
 npm install
 ```
 
@@ -163,7 +163,7 @@ Open [http://localhost:3000](http://localhost:3000)
 ## 📂 Project Structure
 
 ```
-opsos/
+keva/
 ├── app/
 │   ├── globals.css
 │   ├── layout.tsx

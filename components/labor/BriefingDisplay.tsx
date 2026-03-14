@@ -50,7 +50,7 @@ export function BriefingDisplay({ data }: { data: BriefingData }) {
   return (
     <div className="space-y-6">
       {/* Summary Card */}
-      <Card className="p-6 bg-gradient-to-br from-opsos-sage-50 to-white border-opsos-sage-200">
+      <Card className="p-6 bg-gradient-to-br from-keva-sage-50 to-white border-keva-sage-200">
         <div className="flex items-start justify-between mb-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">

@@ -16,18 +16,18 @@ export interface InviteEmailParams {
   expiresInDays: number;
 }
 
-// ── Colors (matches site brand: opsos-slate + brass) ─────────────
+// ── Colors (matches site brand: keva-slate + brass) ─────────────
 
 const COLORS = {
-  bg: '#f8f9fa',
-  headerBg: '#0A0A0A',
+  bg: '#FAF8F5',
+  headerBg: '#1C1917',
   headerText: '#ffffff',
-  brass: '#FF5A1F',
-  brassDark: '#EA4C0C',
-  text: '#333333',
-  textMuted: '#666666',
-  border: '#e5e7eb',
-  cardBg: '#ffffff',
+  brass: '#D4622B',
+  brassDark: '#7C2D12',
+  text: '#1C1917',
+  textMuted: '#8B7E6F',
+  border: '#E8E2DA',
+  cardBg: '#FFFEFB',
 };
 
 // ── Render ───────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ export function renderInviteEmail(params: InviteEmailParams): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>You're invited to join ${escapeHtml(orgName)} on OpSOS</title>
+  <title>You're invited to join ${escapeHtml(orgName)} on KevaOS</title>
 </head>
 <body style="margin:0;padding:0;background-color:${COLORS.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
 
@@ -56,10 +56,10 @@ export function renderInviteEmail(params: InviteEmailParams): string {
           <tr>
             <td style="background-color:${COLORS.headerBg};padding:32px 40px;text-align:center;">
               <div style="font-size:24px;font-weight:700;color:${COLORS.headerText};letter-spacing:-0.5px;">
-                OpSOS
+                KevaOS
               </div>
               <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-top:4px;">
-                Operational Standard Operating System
+                The AI-Enforced Control Plane for Hospitality
               </div>
             </td>
           </tr>
@@ -76,7 +76,7 @@ export function renderInviteEmail(params: InviteEmailParams): string {
                 <strong style="color:${COLORS.text}">${escapeHtml(inviterName)}</strong>
                 has invited you to join
                 <strong style="color:${COLORS.text}">${escapeHtml(orgName)}</strong>
-                on OpSOS.
+                on KevaOS.
               </p>
 
               <!-- Role Badge -->
@@ -112,7 +112,7 @@ export function renderInviteEmail(params: InviteEmailParams): string {
                       Install on Your Phone
                     </h2>
                     <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${COLORS.textMuted};">
-                      Add OpSOS to your home screen for instant access — no app store needed.
+                      Add KevaOS to your home screen for instant access — no app store needed.
                     </p>
 
                     <table role="presentation" cellpadding="0" cellspacing="0" width="100%">

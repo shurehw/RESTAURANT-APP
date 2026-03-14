@@ -7,7 +7,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
-// Map R365 GLType to OpsOS section
+// Map R365 GLType to KevaOS section
 function mapGLTypeToSection(glType: string, parentAccount: string, accountNumber: string): string {
   // Construction costs = PreOpening
   if (accountNumber.startsWith('8') || parentAccount === 'Construction Costs') {

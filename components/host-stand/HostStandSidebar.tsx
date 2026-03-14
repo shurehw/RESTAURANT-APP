@@ -142,7 +142,7 @@ function RezRow({
             {r.guest_name || 'Guest'}
           </span>
           {r.is_vip && (
-            <span className="text-[10px] font-bold text-[#FF5A1F] bg-[#FF5A1F]/10 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-bold text-[#D4622B] bg-[#D4622B]/10 px-1.5 py-0.5 rounded">
               VIP
             </span>
           )}
@@ -436,7 +436,7 @@ export function HostStandSidebar({
           </button>
           <button
             onClick={onSeatWalkin}
-            className="w-full h-12 bg-[#FF5A1F] hover:bg-[#E04D18] text-white text-sm font-semibold rounded-lg transition-colors"
+            className="w-full h-12 bg-[#D4622B] hover:bg-[#A3461F] text-white text-sm font-semibold rounded-lg transition-colors"
           >
             Seat Walk-in
           </button>

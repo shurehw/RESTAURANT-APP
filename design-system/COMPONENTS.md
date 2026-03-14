@@ -1,4 +1,4 @@
-# OpsOS Component Specifications
+# KevaOS Component Specifications
 
 Detailed component designs with Tailwind-ready code snippets.
 
@@ -356,7 +356,7 @@ Detailed component designs with Tailwind-ready code snippets.
 <aside className="w-64 h-screen bg-white border-r border-slate-200">
   {/* Logo */}
   <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-200">
-    <img src="/opsos-logo.png" alt="OpsOS" className="h-8" />
+    <img src="/keva-logo.png" alt="KevaOS" className="h-8" />
   </div>
 
   {/* Nav Items */}

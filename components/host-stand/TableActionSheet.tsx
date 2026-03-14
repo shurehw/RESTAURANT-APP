@@ -79,7 +79,13 @@ export function TableActionSheet({
   onClose,
   onNoteAdded,
 }: TableActionSheetProps) {
-  const actions = STATE_ACTIONS[table.status] || [];
+  const actions = [...(STATE_ACTIONS[table.status] || [])];
+  if (table.status === 'available' && !table.combo_id) {
+    actions.push({ label: 'Combine Tables', action: 'combine_tables' });
+  }
+  if (table.combo_id && table.is_combo_primary) {
+    actions.push({ label: 'Release Combo', action: 'release_combo', variant: 'danger' });
+  }
   const seatedMinutes = table.seated_at
     ? Math.round((Date.now() - new Date(table.seated_at).getTime()) / 60000)
     : null;
@@ -133,7 +139,7 @@ export function TableActionSheet({
                 onClick={() => onAction(a.action)}
                 className={`w-full h-14 rounded-lg text-base font-semibold transition-colors ${
                   a.variant === 'primary'
-                    ? 'bg-[#FF5A1F] hover:bg-[#E04D18] text-white'
+                    ? 'bg-[#D4622B] hover:bg-[#A3461F] text-white'
                     : a.variant === 'danger'
                       ? 'bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-800'
                       : 'bg-[#1a1a1a] hover:bg-[#222] text-white border border-gray-700'
@@ -312,7 +318,7 @@ function NotesPanel({
           onClick={() => setNoteType('service')}
           className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
             noteType === 'service'
-              ? 'bg-[#FF5A1F] text-white'
+              ? 'bg-[#D4622B] text-white'
               : 'text-gray-400 hover:text-white'
           }`}
         >
@@ -344,7 +350,7 @@ function NotesPanel({
       <textarea
         value={noteText}
         onChange={(e) => setNoteText(e.target.value)}
-        className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-[#FF5A1F]"
+        className="w-full bg-[#1a1a1a] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 resize-none focus:outline-none focus:border-[#D4622B]"
         placeholder={
           noteType === 'guest'
             ? 'Allergies, preferences, VIP details...'
@@ -360,7 +366,7 @@ function NotesPanel({
         className={`w-full h-10 mt-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 ${
           noteType === 'guest'
             ? 'bg-blue-600 hover:bg-blue-700 text-white'
-            : 'bg-[#FF5A1F] hover:bg-[#E04D18] text-white'
+            : 'bg-[#D4622B] hover:bg-[#A3461F] text-white'
         }`}
       >
         {loading

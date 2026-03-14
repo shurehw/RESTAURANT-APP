@@ -1,4 +1,4 @@
-# OpsOS Complete System Documentation
+# KevaOS Complete System Documentation
 
 **Version:** 1.0.0
 **Date:** November 10, 2025
@@ -25,9 +25,9 @@
 
 ## Executive Summary
 
-### What is OpsOS?
+### What is KevaOS?
 
-OpsOS (Operations OS) is a restaurant operations management system designed to unify:
+KevaOS is a restaurant operations management system designed to unify:
 - **Invoice processing** + vendor item mapping
 - **Inventory** + recipe costing
 - **Forecasting** + labor scheduling
@@ -93,7 +93,7 @@ OpsOS (Operations OS) is a restaurant operations management system designed to u
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         OpsOS Platform                           │
+│                         KevaOS Platform                           │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │

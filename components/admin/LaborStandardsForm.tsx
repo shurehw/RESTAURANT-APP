@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { InfoIcon, Save } from 'lucide-react';
 
-// OpsOS Layer 0 Bounds (fetched from database, super admin configurable)
+// KevaOS Layer 0 Bounds (fetched from database, super admin configurable)
 interface LaborBounds {
   LABOR_PCT_MIN: number;
   LABOR_PCT_MAX: number;

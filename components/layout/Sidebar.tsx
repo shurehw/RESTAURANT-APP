@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { LogoutButton } from './LogoutButton';
+import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
 
 interface SidebarProps {
   user: User;
@@ -15,7 +16,7 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <aside className="w-64 border-r bg-card">
       <div className="flex h-16 items-center px-6 border-b">
-        <h1 className="text-xl font-bold">OpsOS</h1>
+        <KevaOSLogo size="md" />
       </div>
 
       <nav className="p-4 space-y-1">

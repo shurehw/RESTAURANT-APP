@@ -140,8 +140,8 @@ export default function DatabaseSettingsPage() {
             <div className="text-sm text-blue-900">
               <p className="font-medium mb-1">Custom Database Connection</p>
               <p>
-                By default, OpsOS uses Supabase for data storage. Enterprise customers can configure
-                their own PostgreSQL database. Your database must use the OpsOS schema.
+                By default, KevaOS uses Supabase for data storage. Enterprise customers can configure
+                their own PostgreSQL database. Your database must use the KevaOS schema.
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function DatabaseSettingsPage() {
               type="text"
               value={form.db_name}
               onChange={(e) => setForm({ ...form, db_name: e.target.value })}
-              placeholder="opsos_production"
+              placeholder="keva_production"
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             />
           </div>

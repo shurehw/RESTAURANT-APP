@@ -1,4 +1,4 @@
-# OpSOS Audit Fixes - Shipping Summary
+# KevaOS Audit Fixes - Shipping Summary
 
 **Date:** 2026-02-14
 **Session Goal:** Address top audit findings to eliminate enterprise sales blockers
@@ -103,7 +103,7 @@ Shows actual error instead of misleading access message.
 **Visual:**
 ```
 ┌────────────────────────────────────────┐
-│  OpsOS                                  │
+│  KevaOS                                  │
 │  Restaurant Operations                  │
 │                                         │
 │  [Login Form]                           │

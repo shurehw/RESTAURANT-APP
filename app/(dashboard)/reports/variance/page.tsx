@@ -68,14 +68,14 @@ export default async function VarianceReportPage() {
 
       {/* Coverage banner */}
       {totalItems > 0 && unmappedItems > 0 && (
-        <Card className="p-4 mb-6 bg-opsos-error-50 border-opsos-error-200">
+        <Card className="p-4 mb-6 bg-keva-error-50 border-keva-error-200">
           <div className="flex items-start gap-3">
-            <div className="text-opsos-error-600 font-semibold text-lg">!</div>
+            <div className="text-keva-error-600 font-semibold text-lg">!</div>
             <div>
-              <h4 className="font-semibold text-opsos-error-800">
+              <h4 className="font-semibold text-keva-error-800">
                 {unmappedItems} of {totalItems} menu items unmapped
               </h4>
-              <p className="text-sm text-opsos-error-700">
+              <p className="text-sm text-keva-error-700">
                 {salesCoveragePct}% of sales revenue is covered by mapped items.
                 Map remaining items for more accurate theoretical COGS.
               </p>
@@ -85,14 +85,14 @@ export default async function VarianceReportPage() {
       )}
 
       {totalItems > 0 && unmappedItems === 0 && (
-        <Card className="p-4 mb-6 bg-opsos-sage-50 border-opsos-sage-200">
+        <Card className="p-4 mb-6 bg-keva-sage-50 border-keva-sage-200">
           <div className="flex items-start gap-3">
-            <div className="text-opsos-sage-600 font-semibold text-lg">&#10003;</div>
+            <div className="text-keva-sage-600 font-semibold text-lg">&#10003;</div>
             <div>
-              <h4 className="font-semibold text-opsos-sage-800">
+              <h4 className="font-semibold text-keva-sage-800">
                 All {totalItems} menu items mapped
               </h4>
-              <p className="text-sm text-opsos-sage-700">
+              <p className="text-sm text-keva-sage-700">
                 100% sales coverage. Theoretical COGS is fully computed.
               </p>
             </div>
@@ -109,7 +109,7 @@ export default async function VarianceReportPage() {
 
         <Card className="p-6">
           <div className="text-sm text-muted-foreground mb-1">Theoretical Cost %</div>
-          <div className="text-2xl font-bold font-mono text-opsos-sage-600">
+          <div className="text-2xl font-bold font-mono text-keva-sage-600">
             {avgTheoreticalPct.toFixed(1)}%
           </div>
           <div className="text-xs text-muted-foreground mt-1">
@@ -120,9 +120,9 @@ export default async function VarianceReportPage() {
         <Card className="p-6">
           <div className="text-sm text-muted-foreground mb-1">Actual Cost %</div>
           <div className={`text-2xl font-bold font-mono ${
-            avgActualPct <= 35 ? 'text-opsos-sage-600' :
+            avgActualPct <= 35 ? 'text-keva-sage-600' :
             avgActualPct <= 40 ? 'text-brass' :
-            'text-opsos-error'
+            'text-keva-error'
           }`}>
             {avgActualPct.toFixed(1)}%
           </div>
@@ -134,7 +134,7 @@ export default async function VarianceReportPage() {
         <Card className="p-6">
           <div className="text-sm text-muted-foreground mb-1">Variance</div>
           <div className={`text-2xl font-bold font-mono ${
-            varianceDollars < 0 ? 'text-opsos-sage-600' : 'text-opsos-error'
+            varianceDollars < 0 ? 'text-keva-sage-600' : 'text-keva-error'
           }`}>
             {varianceDollars >= 0 ? '+' : ''}{variancePct.toFixed(1)}%
           </div>
@@ -197,25 +197,25 @@ export default async function VarianceReportPage() {
                       <td className="py-3 text-right font-mono">
                         ${(row.actual_cost || 0).toFixed(0)}
                       </td>
-                      <td className="py-3 text-right font-mono text-opsos-sage-600">
+                      <td className="py-3 text-right font-mono text-keva-sage-600">
                         {(row.theoretical_food_cost_pct || 0).toFixed(1)}%
                       </td>
                       <td className={`py-3 text-right font-mono ${
-                        (row.actual_food_cost_pct || 0) <= 35 ? 'text-opsos-sage-600' :
+                        (row.actual_food_cost_pct || 0) <= 35 ? 'text-keva-sage-600' :
                         (row.actual_food_cost_pct || 0) <= 40 ? 'text-brass' :
-                        'text-opsos-error'
+                        'text-keva-error'
                       }`}>
                         {(row.actual_food_cost_pct || 0).toFixed(1)}%
                       </td>
                       <td className="py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {variance >= 0 ? (
-                            <TrendingUp className="w-4 h-4 text-opsos-error" />
+                            <TrendingUp className="w-4 h-4 text-keva-error" />
                           ) : (
-                            <TrendingDown className="w-4 h-4 text-opsos-sage-600" />
+                            <TrendingDown className="w-4 h-4 text-keva-sage-600" />
                           )}
                           <span className={`font-mono ${
-                            variance >= 0 ? 'text-opsos-error' : 'text-opsos-sage-600'
+                            variance >= 0 ? 'text-keva-error' : 'text-keva-sage-600'
                           }`}>
                             {variance >= 0 ? '+' : ''}{variancePct.toFixed(1)}%
                           </span>

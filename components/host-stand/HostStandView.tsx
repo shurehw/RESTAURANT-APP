@@ -1004,7 +1004,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         : 'No network';
 
   return (
-    <div className="flex flex-col h-screen bg-[#0A0A0A] overflow-hidden">
+    <div className="flex flex-col h-screen bg-[#1C1917] overflow-hidden">
       <HostStandHeader
         venueName={venueName}
         hostName={hostName}
@@ -1087,7 +1087,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         {/* Drag overlay — shows what's being dragged */}
         <DragOverlay dropAnimation={null} style={{ pointerEvents: 'none' }}>
           {activeDragData && (
-            <div className="px-3 py-2 bg-[#FF5A1F] text-white text-sm font-semibold rounded-lg shadow-xl whitespace-nowrap">
+            <div className="px-3 py-2 bg-[#D4622B] text-white text-sm font-semibold rounded-lg shadow-xl whitespace-nowrap">
               {activeDragData.guest_name || 'Guest'} · {activeDragData.party_size}
             </div>
           )}

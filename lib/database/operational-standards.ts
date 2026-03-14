@@ -6,7 +6,7 @@
  *
  * ENFORCEMENT PRINCIPLE:
  * Companies calibrate sensitivity, not accountability.
- * OpsOS defines what must be reviewed.
+ * KevaOS defines what must be reviewed.
  */
 
 import { getServiceClient } from '@/lib/supabase/service';

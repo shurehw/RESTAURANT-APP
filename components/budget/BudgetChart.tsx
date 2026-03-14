@@ -1,5 +1,5 @@
 /**
- * OpsOS Budget Chart Component
+ * KevaOS Budget Chart Component
  * Declining budget visualization with Recharts
  */
 
@@ -69,17 +69,17 @@ export function BudgetChart({ data }: BudgetChartProps) {
         <Line
           type="monotone"
           dataKey="actual"
-          stroke="var(--opsos-brass)"
+          stroke="var(--keva-brass)"
           strokeWidth={3}
-          dot={{ r: 4, fill: "var(--opsos-brass)" }}
+          dot={{ r: 4, fill: "var(--keva-brass)" }}
           name="Actual Spend"
         />
         <Line
           type="monotone"
           dataKey="remaining"
-          stroke="var(--opsos-sage)"
+          stroke="var(--keva-sage)"
           strokeWidth={2}
-          dot={{ r: 3, fill: "var(--opsos-sage)" }}
+          dot={{ r: 3, fill: "var(--keva-sage)" }}
           name="Remaining"
         />
       </LineChart>

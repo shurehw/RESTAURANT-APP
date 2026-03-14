@@ -82,7 +82,7 @@ export default function AcceptInviteForm({ token }: { token: string }) {
         <p className="text-gray-600">{error}</p>
         <a
           href="/login"
-          className="inline-block mt-4 text-sm text-opsos-sage-600 hover:underline"
+          className="inline-block mt-4 text-sm text-keva-sage-600 hover:underline"
         >
           Go to login
         </a>
@@ -96,7 +96,7 @@ export default function AcceptInviteForm({ token }: { token: string }) {
     <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
       {/* Header */}
       <div className="text-center mb-8">
-        <div className="text-2xl font-bold text-gray-900 mb-1">OpSOS</div>
+        <div className="text-2xl font-bold text-gray-900 mb-1">KevaOS</div>
         <h1 className="text-xl font-semibold text-gray-800 mt-4">
           Join {inviteInfo.org_name}
         </h1>
@@ -147,7 +147,7 @@ export default function AcceptInviteForm({ token }: { token: string }) {
         <Button
           type="submit"
           disabled={submitting || !fullName.trim() || password.length < 6}
-          className="w-full bg-opsos-sage-600 hover:bg-opsos-sage-700"
+          className="w-full bg-keva-sage-600 hover:bg-keva-sage-700"
         >
           {submitting ? 'Creating account...' : 'Accept Invitation'}
         </Button>
@@ -155,7 +155,7 @@ export default function AcceptInviteForm({ token }: { token: string }) {
 
       <p className="text-center text-xs text-gray-400 mt-6">
         Already have an account?{' '}
-        <a href="/login" className="text-opsos-sage-600 hover:underline">
+        <a href="/login" className="text-keva-sage-600 hover:underline">
           Log in
         </a>
       </p>

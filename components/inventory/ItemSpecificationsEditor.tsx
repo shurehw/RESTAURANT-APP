@@ -184,7 +184,7 @@ export default function ItemSpecificationsEditor({
                 />
                 <button
                   onClick={() => removeCustomField(i)}
-                  className="p-1.5 text-muted-foreground hover:text-opsos-error"
+                  className="p-1.5 text-muted-foreground hover:text-keva-error"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>

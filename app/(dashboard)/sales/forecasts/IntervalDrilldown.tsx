@@ -125,8 +125,8 @@ export function IntervalDrilldown({ venueId, businessDate, dayType, openHour = 1
                 <div
                   className={`w-full rounded-t transition-colors ${
                     isLowConfidence
-                      ? 'bg-opsos-sage-300 hover:bg-opsos-sage-400'
-                      : 'bg-opsos-sage-600 hover:bg-opsos-sage-700'
+                      ? 'bg-keva-sage-300 hover:bg-keva-sage-400'
+                      : 'bg-keva-sage-600 hover:bg-keva-sage-700'
                   }`}
                   style={{ height: `${Math.max(height, 2)}%` }}
                 />

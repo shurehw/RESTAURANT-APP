@@ -186,7 +186,7 @@ export function SectionManager({
                   size="sm"
                   onClick={handleSave}
                   disabled={!name.trim()}
-                  className="bg-opsos-sage-600 hover:bg-opsos-sage-700"
+                  className="bg-keva-sage-600 hover:bg-keva-sage-700"
                 >
                   {editingId ? 'Update' : 'Add'}
                 </Button>

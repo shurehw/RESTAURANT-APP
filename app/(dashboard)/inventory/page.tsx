@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * OpsOS Inventory Counts Page
+ * KevaOS Inventory Counts Page
  */
 
 import { createClient } from "@/lib/supabase/server";

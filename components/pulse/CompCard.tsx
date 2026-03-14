@@ -110,7 +110,7 @@ export function CompCard({ comps, loading }: { comps: CompData | null; loading?:
               <div className="h-2 rounded-full bg-muted overflow-hidden flex mt-1.5">
                 {comps.by_reason.slice(0, 5).map((r, i) => {
                   const pct = (r.total / comps.total) * 100;
-                  const colors = ['bg-opsos-brass', 'bg-opsos-brass-300', 'bg-opsos-sage', 'bg-opsos-sage-300', 'bg-opsos-slate-300'];
+                  const colors = ['bg-keva-brass', 'bg-keva-brass-300', 'bg-keva-sage', 'bg-keva-sage-300', 'bg-keva-slate-300'];
                   return pct > 0 ? (
                     <div key={i} className={`${colors[i]} h-full transition-all`} style={{ width: `${pct}%` }} />
                   ) : null;

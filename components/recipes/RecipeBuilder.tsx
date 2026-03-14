@@ -222,7 +222,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Béarnaise Sauce"
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                 />
               </div>
 
@@ -231,7 +231,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                 <select
                   value={recipeType}
                   onChange={(e) => setRecipeType(e.target.value as any)}
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                 >
                   <option value="prepared_item">Prepared Item (Sub-Recipe)</option>
                   <option value="menu_item">Menu Item (Final Dish)</option>
@@ -243,7 +243,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                 <select
                   value={itemCategory}
                   onChange={(e) => setItemCategory(e.target.value as ItemCategory)}
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                 >
                   <option value="food">Food (Target: 28%)</option>
                   <option value="beverage">Non-Alcoholic Beverage (Target: 20%)</option>
@@ -261,7 +261,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
                   placeholder="e.g., Appetizer, Entree, Cocktail, Beer"
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                 />
               </div>
 
@@ -272,7 +272,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                   step="0.01"
                   value={yieldQty}
                   onChange={(e) => setYieldQty(parseFloat(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                 />
               </div>
 
@@ -283,7 +283,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                   value={yieldUom}
                   onChange={(e) => setYieldUom(e.target.value)}
                   placeholder="e.g., portion, oz, cup"
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                 />
               </div>
 
@@ -293,7 +293,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                   type="number"
                   value={laborMinutes}
                   onChange={(e) => setLaborMinutes(parseInt(e.target.value) || 0)}
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                 />
               </div>
 
@@ -307,7 +307,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                       value={menuPrice}
                       onChange={(e) => setMenuPrice(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     />
                   </div>
 
@@ -318,7 +318,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                       value={posSku}
                       onChange={(e) => setPosSku(e.target.value)}
                       placeholder="e.g., 1234 or STEAK-8OZ"
-                      className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                      className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                     />
                   </div>
                 </>
@@ -421,9 +421,9 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                       {itemCategory === 'food' ? 'Food Cost %' : 'Pour Cost %'}
                     </span>
                     <span className={`font-mono font-bold text-xl ${
-                      foodCostPct <= targetFoodCostPct ? 'text-opsos-sage-600' :
+                      foodCostPct <= targetFoodCostPct ? 'text-keva-sage-600' :
                       foodCostPct <= targetFoodCostPct + 7 ? 'text-brass' :
-                      'text-opsos-error'
+                      'text-keva-error'
                     }`}>
                       {foodCostPct.toFixed(1)}%
                     </span>
@@ -438,7 +438,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
 
               <div className="pt-4 border-t space-y-2">
                 {error && (
-                  <div className="p-3 bg-opsos-error-50 border border-opsos-error-200 rounded-md text-sm text-opsos-error-700">
+                  <div className="p-3 bg-keva-error-50 border border-keva-error-200 rounded-md text-sm text-keva-error-700">
                     {error}
                   </div>
                 )}
@@ -490,7 +490,7 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 placeholder="Search for ingredients or sub-recipes..."
-                className="w-full pl-10 pr-4 py-2 border border-opsos-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
+                className="w-full pl-10 pr-4 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
                 autoFocus
               />
             </div>

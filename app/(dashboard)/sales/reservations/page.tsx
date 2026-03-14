@@ -511,7 +511,7 @@ export default function ReservationsPage() {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <Card className="p-4">
                 <div className="flex items-center gap-3">
-                  <CalendarCheck className="w-8 h-8 text-opsos-sage-600 shrink-0" />
+                  <CalendarCheck className="w-8 h-8 text-keva-sage-600 shrink-0" />
                   <div>
                     <div className="text-sm text-muted-foreground">Seated</div>
                     <div className="text-2xl font-bold">
@@ -551,7 +551,7 @@ export default function ReservationsPage() {
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <Card className="p-4">
                   <div className="flex items-center gap-3">
-                    <Eye className="w-8 h-8 text-opsos-sage-600 shrink-0" />
+                    <Eye className="w-8 h-8 text-keva-sage-600 shrink-0" />
                     <div>
                       <div className="text-sm text-muted-foreground">Book Status</div>
                       <div className="text-2xl font-bold">{outlook.summary.totalCovers}</div>
@@ -584,7 +584,7 @@ export default function ReservationsPage() {
 
                 <Card className="p-4">
                   <div className="flex items-center gap-3">
-                    <BarChart3 className="w-8 h-8 text-opsos-sage-600 shrink-0" />
+                    <BarChart3 className="w-8 h-8 text-keva-sage-600 shrink-0" />
                     <div>
                       <div className="text-sm text-muted-foreground">Tables Available</div>
                       <div className="text-2xl font-bold">
@@ -713,7 +713,7 @@ export default function ReservationsPage() {
                 <Card className="mb-4">
                   <div className="px-4 pt-4 pb-2">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
-                      <Gauge className="w-4 h-4 text-opsos-sage-600" />
+                      <Gauge className="w-4 h-4 text-keva-sage-600" />
                       Channel Allocation
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">Live</Badge>
                     </h3>
@@ -880,7 +880,7 @@ export default function ReservationsPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <Card className="p-4">
                   <div className="flex items-center gap-3">
-                    <Clock className="w-8 h-8 text-opsos-sage-600 shrink-0" />
+                    <Clock className="w-8 h-8 text-keva-sage-600 shrink-0" />
                     <div>
                       <div className="text-sm text-muted-foreground">Avg Turn Time</div>
                       <div className="text-2xl font-bold">{fmtDuration(stats.overall.avgTurnMinutes)}</div>

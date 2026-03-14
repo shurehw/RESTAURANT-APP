@@ -2,7 +2,7 @@
 
 /**
  * Schedule Comparison Component
- * Compare the current (OpsOS-generated) week side-by-side with up to 4 previous weeks.
+ * Compare the current (KevaOS-generated) week side-by-side with up to 4 previous weeks.
  * Shows: total heads, hours, cost, labor %, position breakdown, and day-by-day staffing.
  */
 
@@ -188,7 +188,7 @@ export function ScheduleCompare({ venueId, venueName, currentWeekStart }: Props)
           <div className="flex items-center gap-3 flex-wrap">
             {/* Venue label */}
             {venueName && (
-              <span className="text-sm font-semibold text-opsos-sage-700 border border-opsos-sage-300 rounded px-2 py-1 bg-opsos-sage-50">
+              <span className="text-sm font-semibold text-keva-sage-700 border border-keva-sage-300 rounded px-2 py-1 bg-keva-sage-50">
                 {venueName}
               </span>
             )}

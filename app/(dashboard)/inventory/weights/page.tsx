@@ -44,9 +44,9 @@ export default async function ProductWeightsPage() {
           <div className="text-sm text-muted-foreground mb-1">Total SKUs</div>
           <div className="text-2xl font-bold">{stats.total}</div>
         </Card>
-        <Card className="p-4 border-opsos-sage-300 bg-opsos-sage-50">
+        <Card className="p-4 border-keva-sage-300 bg-keva-sage-50">
           <div className="text-sm text-muted-foreground mb-1">Verified</div>
-          <div className="text-2xl font-bold text-opsos-sage-700">{stats.verified}</div>
+          <div className="text-2xl font-bold text-keva-sage-700">{stats.verified}</div>
         </Card>
         <Card className="p-4 border-brass/30 bg-brass/5">
           <div className="text-sm text-muted-foreground mb-1">Measured</div>
@@ -56,9 +56,9 @@ export default async function ProductWeightsPage() {
           <div className="text-sm text-muted-foreground mb-1">Needs Verify</div>
           <div className="text-2xl font-bold text-yellow-700">{stats.needsVerification}</div>
         </Card>
-        <Card className="p-4 border-opsos-error-200 bg-opsos-error-50">
+        <Card className="p-4 border-keva-error-200 bg-keva-error-50">
           <div className="text-sm text-muted-foreground mb-1">Missing</div>
-          <div className="text-2xl font-bold text-opsos-error-700">{stats.missing}</div>
+          <div className="text-2xl font-bold text-keva-error-700">{stats.missing}</div>
         </Card>
       </div>
 
@@ -139,7 +139,7 @@ export default async function ProductWeightsPage() {
                         </Badge>
                       )}
                       {weight.status === 'missing' && (
-                        <Badge variant="outline" className="text-xs border-opsos-error-300 text-opsos-error-700">
+                        <Badge variant="outline" className="text-xs border-keva-error-300 text-keva-error-700">
                           Missing
                         </Badge>
                       )}

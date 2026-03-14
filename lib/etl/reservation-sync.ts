@@ -1,9 +1,9 @@
 /**
  * lib/etl/reservation-sync.ts
- * SevenRooms → OpSOS reservation sync pipeline.
+ * SevenRooms → KevaOS reservation sync pipeline.
  *
  * Adapts the existing SR API client to populate the native reservations table.
- * SR becomes a booking inlet; OpSOS is the system of record.
+ * SR becomes a booking inlet; KevaOS is the system of record.
  */
 
 import {
@@ -77,20 +77,20 @@ export interface SyncResult {
  * Sync reservations from SevenRooms for a venue/date into the native table.
  */
 export async function syncReservationsFromSR(
-  opsosVenueId: string,
+  kevaVenueId: string,
   orgId: string,
   date: string,
 ): Promise<SyncResult> {
   const t0 = Date.now();
   const result: SyncResult = {
-    venueId: opsosVenueId,
+    venueId: kevaVenueId,
     date,
     synced: 0,
     errors: [],
     duration_ms: 0,
   };
 
-  const srVenueId = resolveSevenRoomsVenueId(opsosVenueId);
+  const srVenueId = resolveSevenRoomsVenueId(kevaVenueId);
   if (!srVenueId) {
     result.errors.push('No SR venue ID mapped');
     result.duration_ms = Date.now() - t0;
@@ -108,7 +108,7 @@ export async function syncReservationsFromSR(
 
   for (const sr of srRezs) {
     try {
-      const rez = await upsertReservation(orgId, opsosVenueId, {
+      const rez = await upsertReservation(orgId, kevaVenueId, {
         first_name: sr.first_name || '',
         last_name: sr.last_name || '',
         party_size: sr.max_guests || 2,

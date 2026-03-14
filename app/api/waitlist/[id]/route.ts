@@ -9,8 +9,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
-import { getUserOrgAndVenues } from '@/lib/tenant';
+import { getUserOrgAndVenues, assertVenueAccess } from '@/lib/tenant';
 import { updateWaitlistEntry } from '@/lib/database/floor-management';
+import { getServiceClient } from '@/lib/supabase/service';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function PATCH(
 ) {
   return guard(async () => {
     const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const { venueIds } = await getUserOrgAndVenues(user.id);
 
     const { id } = await params;
     const body = await request.json();
@@ -34,6 +35,18 @@ export async function PATCH(
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
     }
+
+    const supabase = getServiceClient();
+    const { data: existingEntry } = await (supabase as any)
+      .from('waitlist_entries')
+      .select('id, venue_id')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!existingEntry) {
+      return NextResponse.json({ error: 'Waitlist entry not found' }, { status: 404 });
+    }
+    assertVenueAccess(existingEntry.venue_id, venueIds);
 
     const entry = await updateWaitlistEntry(id, updates);
     return NextResponse.json({ success: true, entry });

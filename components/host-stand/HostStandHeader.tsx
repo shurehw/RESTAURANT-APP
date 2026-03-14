@@ -69,9 +69,9 @@ export function HostStandHeader({
         : 'Offline';
 
   return (
-    <header className="flex items-center justify-between px-6 py-3 bg-[#0A0A0A] border-b border-gray-800">
+    <header className="flex items-center justify-between px-6 py-3 bg-[#1C1917] border-b border-gray-800">
       <div className="flex items-center gap-4">
-        <span className="text-[#FF5A1F] font-bold text-lg tracking-tight">OpSOS</span>
+        <span className="text-[#D4622B] font-bold text-lg tracking-tight">KevaOS</span>
         <span className="text-white font-semibold text-lg">{venueName}</span>
       </div>
       <div className="flex items-center gap-6">

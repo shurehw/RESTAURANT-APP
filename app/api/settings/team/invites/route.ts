@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       await resend.emails.send({
         from: FROM_EMAIL,
         to: validated.email,
-        subject: `You're invited to join ${org?.name || 'OpSOS'}`,
+        subject: `You're invited to join ${org?.name || 'KevaOS'}`,
         html,
       });
       emailSent = true;

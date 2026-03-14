@@ -46,7 +46,7 @@ export function DisciplineScores({ venueScores, managerScores }: DisciplineScore
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2 font-medium">
-                <Building2 className="w-4 h-4 text-opsos-sage-600" />
+                <Building2 className="w-4 h-4 text-keva-sage-600" />
                 Unit Discipline — Lowest Venues
               </CardTitle>
             </CardHeader>
@@ -70,7 +70,7 @@ export function DisciplineScores({ venueScores, managerScores }: DisciplineScore
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2 font-medium">
-                <User className="w-4 h-4 text-opsos-sage-600" />
+                <User className="w-4 h-4 text-keva-sage-600" />
                 Manager Reliability — Lowest Scores
               </CardTitle>
             </CardHeader>

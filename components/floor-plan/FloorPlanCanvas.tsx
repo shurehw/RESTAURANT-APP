@@ -36,6 +36,7 @@ interface FloorPlanCanvasProps {
   onResize?: (tableId: string, dw: number, dh: number, dx: number, dy: number) => void;
   onDoubleClickLabel?: (label: VenueLabel) => void;
   readOnly?: boolean;
+  dragHoverTableId?: string | null;
 }
 
 export function FloorPlanCanvas({
@@ -56,12 +57,14 @@ export function FloorPlanCanvas({
   onResize,
   onDoubleClickLabel,
   readOnly,
+  dragHoverTableId,
 }: FloorPlanCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { setNodeRef } = useDroppable({
     id: 'canvas',
     data: { type: 'canvas' },
+    disabled: !!readOnly,
   });
 
   const handleCanvasClick = useCallback(() => {
@@ -152,6 +155,7 @@ export function FloorPlanCanvas({
               onDoubleClick={onDoubleClickTable}
               onResize={onResize}
               readOnly={readOnly}
+              dragHover={dragHoverTableId === table.id}
             />
             {label && (
               <div

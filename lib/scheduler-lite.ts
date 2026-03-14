@@ -87,6 +87,7 @@ type BevIntensityMap = Map<number, number>;
 const PEAK_PCT = 0.22;
 const FOH_MIN_SHIFT_HOURS = 4.0;
 const BOH_MIN_SHIFT_HOURS = 4.0;
+const STAFFING_HYSTERESIS_INTERVALS = 2;
 
 /**
  * Position configs with CPLH defaults and category.
@@ -413,7 +414,7 @@ function buildTemplatesFromVenueHours(
 
       // Closer start: when covers need >1 staff (minus 30min buffer), or 1h after doors
       let closerStart: number;
-      const needTwo = curve.find(p => p.staffNeeded >= 2 && p.time > barStart);
+      const needTwo = findFirstSustainedThreshold(curve, 2, barStart);
       if (needTwo) {
         closerStart = Math.max(barStart + 2, needTwo.time - 0.5);
         closerStart = Math.min(closerStart, barEnd - minHours);
@@ -424,14 +425,9 @@ function buildTemplatesFromVenueHours(
 
       // Opener end (FIFO): when demand drops back to 1 staff from the tail
       let openerEnd: number;
-      let foundDrop = false;
-      for (let i = curve.length - 1; i >= 0; i--) {
-        if (curve[i].staffNeeded >= 2 && curve[i].time > closerStart) {
-          openerEnd = curve[i].time + 0.5; // 30min handoff after last need
-          foundDrop = true;
-          break;
-        }
-      }
+      const lastNeedTwo = findLastSustainedThreshold(curve, 2, closerStart);
+      const foundDrop = Boolean(lastNeedTwo);
+      if (lastNeedTwo) openerEnd = lastNeedTwo.time + 0.5; // 30min handoff after sustained need
       if (!foundDrop) openerEnd = closerEnd; // no curve → stay through close
       openerEnd = Math.max(openerEnd!, closerStart + 0.5);  // at least 30 min overlap
       openerEnd = Math.max(openerEnd, barStart + minHours);  // minimum shift length
@@ -485,7 +481,7 @@ function buildTemplatesFromVenueHours(
 
     // Closer start: when covers need >1 staff (minus 30min buffer), or 1h after doors
     let closerStart: number;
-    const needTwo = curve.find(p => p.staffNeeded >= 2 && p.time > fohStart);
+    const needTwo = findFirstSustainedThreshold(curve, 2, fohStart);
     if (needTwo) {
       closerStart = Math.max(fohStart + 2, needTwo.time - 0.5);
       closerStart = Math.min(closerStart, fohEnd - minHours);
@@ -496,14 +492,9 @@ function buildTemplatesFromVenueHours(
 
     // Opener end (FIFO): when demand drops back to 1 from the tail
     let openerEnd: number;
-    let foundDrop = false;
-    for (let i = curve.length - 1; i >= 0; i--) {
-      if (curve[i].staffNeeded >= 2 && curve[i].time > closerStart) {
-        openerEnd = curve[i].time + 0.5;
-        foundDrop = true;
-        break;
-      }
-    }
+    const lastNeedTwo = findLastSustainedThreshold(curve, 2, closerStart);
+    const foundDrop = Boolean(lastNeedTwo);
+    if (lastNeedTwo) openerEnd = lastNeedTwo.time + 0.5;
     if (!foundDrop) openerEnd = closerEnd;
     openerEnd = Math.max(openerEnd!, closerStart + 0.5);
     openerEnd = Math.max(openerEnd, fohStart + minHours);
@@ -523,7 +514,7 @@ function buildTemplatesFromVenueHours(
 
   // Wave 2 (mid) start: when covers need ≥2 staff (minus 30min buffer)
   let wave2Start: number;
-  const needTwo3w = curve.find(p => p.staffNeeded >= 2 && p.time > fohStart);
+  const needTwo3w = findFirstSustainedThreshold(curve, 2, fohStart);
   if (needTwo3w) {
     wave2Start = Math.max(fohStart + 1, needTwo3w.time - 0.5);
     wave2Start = Math.min(wave2Start, fohEnd - minHours * 2);
@@ -533,7 +524,7 @@ function buildTemplatesFromVenueHours(
 
   // Wave 3 (closer) start: when covers need ≥3 staff (minus 30min buffer)
   let wave3Start: number;
-  const needThree = curve.find(p => p.staffNeeded >= 3 && p.time > wave2Start);
+  const needThree = findFirstSustainedThreshold(curve, 3, wave2Start);
   if (needThree) {
     wave3Start = Math.max(wave2Start + 2, needThree.time - 0.5);
     wave3Start = Math.min(wave3Start, fohEnd - minHours);
@@ -544,24 +535,16 @@ function buildTemplatesFromVenueHours(
   // FIFO end times from staffing curve
   // Opener leaves when demand drops to 2 staff (mid + closer can handle it)
   let earlyEnd: number = fohStart + minHours;
-  for (let i = curve.length - 1; i >= 0; i--) {
-    if (curve[i].staffNeeded >= 3 && curve[i].time > wave2Start) {
-      earlyEnd = curve[i].time + 0.5;
-      break;
-    }
-  }
+  const lastNeedThree = findLastSustainedThreshold(curve, 3, wave2Start);
+  if (lastNeedThree) earlyEnd = lastNeedThree.time + 0.5;
   earlyEnd = Math.max(earlyEnd, fohStart + minHours);
   earlyEnd = Math.max(earlyEnd, wave2Start + 0.5);
   earlyEnd = Math.min(earlyEnd, fohEnd);
 
   // Mid leaves when demand drops to 1 staff (closer can handle it)
   let midEnd: number = wave2Start + minHours;
-  for (let i = curve.length - 1; i >= 0; i--) {
-    if (curve[i].staffNeeded >= 2 && curve[i].time > wave3Start) {
-      midEnd = curve[i].time + 0.5;
-      break;
-    }
-  }
+  const lastNeedTwoForMid = findLastSustainedThreshold(curve, 2, wave3Start);
+  if (lastNeedTwoForMid) midEnd = lastNeedTwoForMid.time + 0.5;
   midEnd = Math.max(midEnd, wave2Start + minHours);
   midEnd = Math.max(midEnd, wave3Start + 0.5);
   midEnd = Math.min(midEnd, fohEnd);
@@ -668,6 +651,55 @@ function buildStaffingCurve(
     result.push({ time: decHour, staffNeeded: Math.ceil(activeCovers / cplh) });
   }
   return result;
+}
+
+/**
+ * Find the first interval where staffing need stays at/above threshold
+ * for N consecutive intervals (hysteresis to avoid one-slot spikes).
+ */
+function findFirstSustainedThreshold(
+  curve: { time: number; staffNeeded: number }[],
+  threshold: number,
+  minTime: number,
+  consecutive: number = STAFFING_HYSTERESIS_INTERVALS,
+): { time: number; staffNeeded: number } | undefined {
+  if (!curve.length) return undefined;
+  let run = 0;
+  for (const point of curve) {
+    if (point.time <= minTime) continue;
+    if (point.staffNeeded >= threshold) {
+      run++;
+      if (run >= consecutive) return point; // confirmation point
+    } else {
+      run = 0;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Find the last interval where staffing need is still sustained at/above threshold
+ * for N consecutive intervals, scanning backwards (hysteresis for release timing).
+ */
+function findLastSustainedThreshold(
+  curve: { time: number; staffNeeded: number }[],
+  threshold: number,
+  minTime: number,
+  consecutive: number = STAFFING_HYSTERESIS_INTERVALS,
+): { time: number; staffNeeded: number } | undefined {
+  if (!curve.length) return undefined;
+  let run = 0;
+  for (let i = curve.length - 1; i >= 0; i--) {
+    const point = curve[i];
+    if (point.time <= minTime) continue;
+    if (point.staffNeeded >= threshold) {
+      run++;
+      if (run >= consecutive) return point;
+    } else {
+      run = 0;
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -894,6 +926,7 @@ function distributeWaves(
   minClosers?: number,      // admin-set floor for breakdown crew
 ): { template: ShiftTemplate; count: number }[] {
   if (peakStaff === 0 || !templates || templates.length === 0) return [];
+  const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 
   if (fixed) {
     return templates.map(t => ({ template: t, count: 1 }));
@@ -919,8 +952,10 @@ function distributeWaves(
     const fraction = openerFraction ?? 0.4;
     const minOpen = minOpeners ?? 1;
     const minClose = minClosers ?? 1;
-    const earlyCount = Math.max(minOpen, Math.round(peakStaff * fraction));
-    const lateCount  = Math.max(minClose, peakStaff - earlyCount);
+    let earlyCount = Math.max(minOpen, Math.round(peakStaff * fraction));
+    // Keep allocation conserved to peakStaff; minima are best-effort when infeasible.
+    earlyCount = clamp(earlyCount, 0, Math.max(0, peakStaff - minClose));
+    const lateCount = Math.max(0, peakStaff - earlyCount);
     const result: { template: ShiftTemplate; count: number }[] = [];
     if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
     if (lateCount  > 0) result.push({ template: templates[1], count: lateCount });
@@ -947,9 +982,15 @@ function distributeWaves(
   }
   // Demand-driven opener fraction, mid gets the bulk, closer gets remainder
   const firstFrac = openerFraction ?? 0.25;
-  const earlyCount = Math.max(1, Math.round(peakStaff * firstFrac));
-  const lateCount  = Math.max(1, Math.round(peakStaff * 0.25));
-  const mainCount  = Math.max(1, peakStaff - earlyCount - lateCount);
+  let earlyCount = clamp(Math.round(peakStaff * firstFrac), 1, peakStaff - 2);
+  let lateCount = clamp(Math.round(peakStaff * 0.25), 1, peakStaff - earlyCount - 1);
+  let mainCount = peakStaff - earlyCount - lateCount;
+  if (mainCount < 1) {
+    // Rebalance by pulling from the larger side while preserving min=1.
+    if (earlyCount >= lateCount && earlyCount > 1) earlyCount--;
+    else if (lateCount > 1) lateCount--;
+    mainCount = peakStaff - earlyCount - lateCount;
+  }
   const result: { template: ShiftTemplate; count: number }[] = [];
   if (earlyCount > 0) result.push({ template: templates[0], count: earlyCount });
   if (mainCount  > 0) result.push({ template: templates[1], count: mainCount });
@@ -1339,11 +1380,9 @@ export async function generateScheduleTS(
               // Closer 1 = arrives 30min before curve says 2+ closers needed, etc.
               if (waveAssigned > 0) {
                 const neededThreshold = waveAssigned + 1;
-                for (const point of curve) {
-                  if (point.staffNeeded >= neededThreshold && point.time > sDec) {
-                    startDec = Math.max(sDec, point.time - 0.5); // 30min early buffer
-                    break;
-                  }
+                const startPoint = findFirstSustainedThreshold(curve, neededThreshold, sDec);
+                if (startPoint) {
+                  startDec = Math.max(sDec, startPoint.time - 0.5); // 30min early buffer
                 }
               }
 
@@ -1355,11 +1394,9 @@ export async function generateScheduleTS(
                 // This closer can leave when remaining closers can handle demand
                 const releaseThreshold = wave.count - reverseIdx; // e.g. 5 closers, first one leaves when 4 can handle it
                 // Walk curve backwards from close to find when demand drops
-                for (let i = curve.length - 1; i >= 0; i--) {
-                  if (curve[i].staffNeeded >= releaseThreshold && curve[i].time > startDec + minShift) {
-                    endDec = curve[i].time + 0.5; // stay 30min past to hand off
-                    break;
-                  }
+                const releasePoint = findLastSustainedThreshold(curve, releaseThreshold, startDec + minShift);
+                if (releasePoint) {
+                  endDec = releasePoint.time + 0.5; // stay 30min past to hand off
                 }
                 if (endDec > eDec) endDec = eDec; // never past venue close + buffer
               }
@@ -1494,3 +1531,11 @@ export async function generateScheduleTS(
 
   return { scheduleId, shiftCount: shifts.length, totalHours, totalCost, unfilledPositions: unfilled };
 }
+
+// Test-only exports for deterministic scheduler logic checks.
+export const __test__ = {
+  buildStaffingCurve,
+  findFirstSustainedThreshold,
+  findLastSustainedThreshold,
+  distributeWaves,
+};

@@ -244,10 +244,10 @@ export function ScheduleOverridePanel({ venueId }: Props) {
         className="w-full flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <Settings className="h-5 w-5 text-[#FF5A1F]" />
+          <Settings className="h-5 w-5 text-[#D4622B]" />
           <span className="font-semibold text-white">Position Overrides</span>
           {useOverrides && hasAnyValues && (
-            <Badge className="bg-[#FF5A1F]/20 text-[#FF5A1F] border-[#FF5A1F]/30 text-xs">
+            <Badge className="bg-[#D4622B]/20 text-[#D4622B] border-[#D4622B]/30 text-xs">
               Active
             </Badge>
           )}
@@ -268,8 +268,8 @@ export function ScheduleOverridePanel({ venueId }: Props) {
             >
               {useOverrides ? (
                 <>
-                  <ToggleRight className="h-5 w-5 text-[#FF5A1F]" />
-                  <span className="text-[#FF5A1F]">Overrides ON</span>
+                  <ToggleRight className="h-5 w-5 text-[#D4622B]" />
+                  <span className="text-[#D4622B]">Overrides ON</span>
                 </>
               ) : (
                 <>
@@ -308,7 +308,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                   return (
                     <tr
                       key={override.position_name}
-                      className={`border-b border-slate-700/50 ${override.is_dirty ? 'bg-[#FF5A1F]/10' : ''} ${hasValues ? 'bg-slate-700/20' : ''}`}
+                      className={`border-b border-slate-700/50 ${override.is_dirty ? 'bg-[#D4622B]/10' : ''} ${hasValues ? 'bg-slate-700/20' : ''}`}
                     >
                       <td className="py-2 px-2">
                         <span className={`font-medium ${catColor}`}>{override.position_name}</span>
@@ -321,7 +321,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           type="time"
                           value={override.shift_start}
                           onChange={e => updateField(idx, 'shift_start', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F] focus:outline-none [color-scheme:dark]"
+                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B] focus:outline-none [color-scheme:dark]"
                         />
                       </td>
                       <td className="py-1.5 px-1">
@@ -329,7 +329,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           type="time"
                           value={override.shift_end}
                           onChange={e => updateField(idx, 'shift_end', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F] focus:outline-none [color-scheme:dark]"
+                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B] focus:outline-none [color-scheme:dark]"
                         />
                       </td>
                       <td className="py-1.5 px-1">
@@ -340,7 +340,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           placeholder={pos.defaultCplh ? String(pos.defaultCplh) : 'fixed'}
                           value={override.cplh_override}
                           onChange={e => updateField(idx, 'cplh_override', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
+                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
                         />
                       </td>
                       <td className="py-1.5 px-1">
@@ -351,7 +351,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           placeholder={String(pos.minStaff)}
                           value={override.min_staff}
                           onChange={e => updateField(idx, 'min_staff', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
+                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
                         />
                       </td>
                       <td className="py-1.5 px-1">
@@ -362,7 +362,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           placeholder={String(pos.maxStaff)}
                           value={override.max_staff}
                           onChange={e => updateField(idx, 'max_staff', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
+                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
                         />
                       </td>
                       <td className="py-1.5 px-1">
@@ -374,7 +374,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                           placeholder="0"
                           value={override.bar_guest_pct}
                           onChange={e => updateField(idx, 'bar_guest_pct', e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#FF5A1F] focus:ring-1 focus:ring-[#FF5A1F] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
+                          className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-white text-center text-xs focus:border-[#D4622B] focus:ring-1 focus:ring-[#D4622B] focus:outline-none placeholder:text-slate-600 [color-scheme:dark]"
                         />
                       </td>
                       <td className="py-1.5 px-1 text-center">
@@ -414,7 +414,7 @@ export function ScheduleOverridePanel({ venueId }: Props) {
                 size="sm"
                 onClick={handleSave}
                 disabled={saving || !hasDirty}
-                className="bg-[#FF5A1F] hover:bg-[#FF5A1F]/80 text-white text-xs"
+                className="bg-[#D4622B] hover:bg-[#D4622B]/80 text-white text-xs"
               >
                 <Save className="h-3 w-3 mr-1" />
                 {saving ? 'Saving...' : 'Save Overrides'}

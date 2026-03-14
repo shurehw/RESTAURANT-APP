@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export default function VendorOnboardingSuccessPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-opsos-sage-50 to-brass/5 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-keva-sage-50 to-brass/5 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
         {/* Success Icon */}
         <div className="w-20 h-20 bg-sage-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -29,7 +29,7 @@ export default function VendorOnboardingSuccessPage() {
         {/* Additional Info */}
         <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Building2 className="w-4 h-4" />
-          <span>Powered by OpsOS Restaurant Intelligence Platform</span>
+          <span>Powered by KevaOS Restaurant Intelligence Platform</span>
         </div>
       </div>
     </div>

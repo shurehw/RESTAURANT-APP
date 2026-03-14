@@ -39,7 +39,7 @@ import type {
 } from '@/lib/entertainment/types';
 import { DAYS_OF_WEEK, TIME_SLOTS, ENTERTAINMENT_TYPES } from '@/lib/entertainment/types';
 
-// Map OpsOS venue names to entertainment venue IDs
+// Map KevaOS venue names to entertainment venue IDs
 const VENUE_TO_ENTERTAINMENT_MAP: Record<string, string> = {
   'The Nice Guy': 'tng',
   'Delilah': 'delilah-la',

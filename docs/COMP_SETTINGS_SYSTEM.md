@@ -1,4 +1,4 @@
-# Comp Settings System - OpSOS Enforcement Engine
+# Comp Settings System - KevaOS Enforcement Engine
 
 ## Overview
 
@@ -17,7 +17,7 @@ The Comp Settings System provides tunable enforcement rails for comp policy comp
 
 ## Integration Flow
 
-The comp settings system integrates seamlessly with OpSOS exception detection and AI review:
+The comp settings system integrates seamlessly with KevaOS exception detection and AI review:
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -501,4 +501,4 @@ const review = await reviewComps(historicalData, settings);
 
 ---
 
-**Questions?** Contact the OpSOS team or see [COMPLETE_SYSTEM_DOCUMENTATION.md](./COMPLETE_SYSTEM_DOCUMENTATION.md)
+**Questions?** Contact the KevaOS team or see [COMPLETE_SYSTEM_DOCUMENTATION.md](./COMPLETE_SYSTEM_DOCUMENTATION.md)

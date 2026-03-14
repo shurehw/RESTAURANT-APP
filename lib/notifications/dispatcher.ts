@@ -20,7 +20,10 @@ export type NotificationType =
   | 'attestation_late'
   | 'escalation'
   | 'feedback_critical'
-  | 'verification_failed';
+  | 'verification_failed'
+  | 'po_approval_needed'
+  | 'po_auto_executed'
+  | 'procurement_anomaly';
 
 export interface SendNotificationParams {
   orgId: string;
@@ -130,7 +133,7 @@ async function sendSlackNotification(params: {
       elements: [
         {
           type: 'button',
-          text: { type: 'plain_text', text: 'View in OpSOS' },
+          text: { type: 'plain_text', text: 'View in KevaOS' },
           url: params.actionUrl,
           style: params.severity === 'critical' ? 'danger' : 'primary',
         },

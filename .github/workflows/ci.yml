@@ -60,7 +60,7 @@ jobs:
       - name: Run swarm (dashboard/manager/vendor)
         run: npm run test:e2e:swarm:all
         env:
-          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_BASE_URL: http://127.0.0.1:4018
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           E2E_DASHBOARD_EMAIL: ${{ secrets.E2E_DASHBOARD_EMAIL }}

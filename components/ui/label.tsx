@@ -1,5 +1,5 @@
 /**
- * OpsOS Label Component
+ * KevaOS Label Component
  */
 
 import * as React from "react"

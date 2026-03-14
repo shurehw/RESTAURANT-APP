@@ -1,6 +1,6 @@
 /**
- * OpsOS Tailwind Configuration
- * A modern, minimal UI system inspired by vintage ledgers and built for hospitality operations.
+ * KevaOS Tailwind Configuration
+ * Warm hospitality design system — espresso, ivory, copper, taupe
  */
 
 import type { Config } from "tailwindcss";
@@ -15,130 +15,150 @@ export default {
   theme: {
     extend: {
       colors: {
-        // OpsOS Brand Palette — Vintage Ledger
-        opsos: {
+        // KevaOS Brand Palette — Warm Hospitality (matches deck)
+        keva: {
           slate: {
-            "DEFAULT": "#1B1D1F",
-            "50": "#F8F9F9",
-            "100": "#E9EAEB",
-            "200": "#D2D5D7",
-            "300": "#B6BCC0",
-            "400": "#98A1A6",
-            "500": "#7B848A",
-            "600": "#63696E",
-            "700": "#4F5458",
-            "800": "#393E41",
-            "900": "#1B1D1F"
+            "DEFAULT": "#1C1917",
+            "50": "#FAF8F5",
+            "100": "#F5F1EB",
+            "200": "#E8E2DA",
+            "300": "#D5CCC1",
+            "400": "#B5ADA1",
+            "500": "#8B7E6F",
+            "600": "#6B6156",
+            "700": "#44403C",
+            "800": "#292524",
+            "900": "#1C1917"
           },
           fog: {
-            "DEFAULT": "#F5F5F4",
-            "50": "#FFFFFF",
-            "100": "#F5F5F4",
-            "200": "#E7E7E6",
-            "300": "#D8D8D7",
-            "400": "#C9C9C8"
+            "DEFAULT": "#FAF8F5",
+            "50": "#FFFEFB",
+            "100": "#FAF8F5",
+            "200": "#F5F1EB",
+            "300": "#E8E2DA",
+            "400": "#D5CCC1"
           },
           brass: {
-            "DEFAULT": "#C4A46B",
-            "50": "#FDF9F2",
-            "100": "#F9F2E3",
-            "200": "#F2E5C7",
-            "300": "#EAD7A9",
-            "400": "#DFC98B",
-            "500": "#C4A46B",
-            "600": "#A98E5A",
-            "700": "#8C764A",
-            "800": "#6F5C3A",
-            "900": "#52442A"
+            "DEFAULT": "#D4622B",
+            "50": "#FDF5EF",
+            "100": "#FCEADB",
+            "200": "#F8D0B3",
+            "300": "#F0AD7D",
+            "400": "#E8844A",
+            "500": "#D4622B",
+            "600": "#B84D1F",
+            "700": "#993D18",
+            "800": "#7C2D12",
+            "900": "#5C1F0A"
           },
           sage: {
-            "DEFAULT": "#92A69C",
-            "50": "#F3F5F4",
-            "100": "#E8ECE9",
-            "200": "#D1D8D4",
-            "300": "#BAC5BE",
-            "400": "#A2B1A8",
-            "500": "#92A69C",
-            "600": "#7F8F86",
-            "700": "#6A776F",
-            "800": "#555F59",
-            "900": "#404743"
+            "DEFAULT": "#8B7E6F",
+            "50": "#FAF8F5",
+            "100": "#F5F1EB",
+            "200": "#E8E2DA",
+            "300": "#D5CCC1",
+            "400": "#B5ADA1",
+            "500": "#8B7E6F",
+            "600": "#6B6156",
+            "700": "#44403C",
+            "800": "#292524",
+            "900": "#1C1917"
+          },
+          olive: {
+            "DEFAULT": "#5C6B4F",
+            "50": "#F4F6F2",
+            "100": "#E5EAE0",
+            "200": "#C9D3C0",
+            "300": "#A8B89A",
+            "400": "#849A73",
+            "500": "#5C6B4F",
+            "600": "#4A5640",
+            "700": "#394132",
+            "800": "#2A3025",
+            "900": "#1C201A"
           },
           error: {
-            "DEFAULT": "#C76864",
-            // Add shades for error if needed
+            "DEFAULT": "#DC2626",
+            "50": "#FEF2F2",
+            "100": "#FEE2E2",
+            "200": "#FECACA",
+            "300": "#FCA5A5",
+            "500": "#DC2626",
+            "700": "#B91C1C",
+            "900": "#7F1D1D",
           },
         },
 
-        // Simple OpsOS tokens (for backwards compatibility)
-        slate: "var(--opsos-slate)",
-        fog: "var(--opsos-fog)",
-        brass: "var(--opsos-brass)",
-        sage: "var(--opsos-sage)",
-        error: "var(--opsos-error)",
+        // Simple KevaOS tokens (for backwards compatibility)
+        slate: "var(--keva-slate)",
+        fog: "var(--keva-fog)",
+        brass: "var(--keva-brass)",
+        sage: "var(--keva-sage)",
+        olive: "var(--keva-olive)",
+        error: "var(--keva-error)",
 
         // Shadcn theme mappings
-        background: "var(--opsos-fog)",
-        foreground: "var(--opsos-slate)",
+        background: "var(--keva-fog)",
+        foreground: "var(--keva-slate)",
 
         card: {
-          DEFAULT: "var(--opsos-fog)",
-          foreground: "var(--opsos-slate)",
+          DEFAULT: "var(--keva-fog)",
+          foreground: "var(--keva-slate)",
         },
 
         popover: {
-          DEFAULT: "var(--opsos-fog)",
-          foreground: "var(--opsos-slate)",
+          DEFAULT: "var(--keva-fog)",
+          foreground: "var(--keva-slate)",
         },
 
         primary: {
-          DEFAULT: "var(--opsos-slate)",
-          foreground: "var(--opsos-fog)",
+          DEFAULT: "var(--keva-slate)",
+          foreground: "var(--keva-fog)",
         },
 
         secondary: {
-          DEFAULT: "var(--opsos-brass)",
-          foreground: "var(--opsos-slate)",
+          DEFAULT: "var(--keva-brass)",
+          foreground: "var(--keva-slate)",
         },
 
         muted: {
-          DEFAULT: "hsl(from var(--opsos-slate) h s 95%)",
-          foreground: "hsl(from var(--opsos-slate) h s 45%)",
+          DEFAULT: "hsl(from var(--keva-slate) h s 95%)",
+          foreground: "hsl(from var(--keva-slate) h s 45%)",
         },
 
         accent: {
-          DEFAULT: "var(--opsos-brass)",
-          foreground: "var(--opsos-slate)",
+          DEFAULT: "var(--keva-brass)",
+          foreground: "var(--keva-slate)",
         },
 
         destructive: {
-          DEFAULT: "var(--opsos-error)",
-          foreground: "var(--opsos-fog)",
+          DEFAULT: "var(--keva-error)",
+          foreground: "var(--keva-fog)",
         },
 
-        border: "hsl(from var(--opsos-slate) h s 90%)",
-        input: "hsl(from var(--opsos-slate) h s 85%)",
-        ring: "var(--opsos-brass)",
+        border: "hsl(from var(--keva-slate) h s 90%)",
+        input: "hsl(from var(--keva-slate) h s 85%)",
+        ring: "var(--keva-brass)",
 
-        success: "var(--opsos-sage)",
+        success: "var(--keva-olive)",
 
         chart: {
-          "1": "var(--opsos-brass)",
-          "2": "var(--opsos-sage)",
-          "3": "var(--opsos-slate)",
-          "4": "hsl(from var(--opsos-brass) h s 70%)",
-          "5": "hsl(from var(--opsos-sage) h s 70%)",
+          "1": "var(--keva-brass)",
+          "2": "var(--keva-sage)",
+          "3": "var(--keva-slate)",
+          "4": "var(--keva-olive)",
+          "5": "hsl(from var(--keva-brass) h s 70%)",
         },
       },
 
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        mono: ["var(--font-ibm-plex-mono)", "monospace"],
-        heading: ["var(--font-inter)", "sans-serif"],
+        sans: ["var(--font-space-grotesk)", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "monospace"],
+        heading: ["var(--font-space-grotesk)", "sans-serif"],
       },
 
       fontSize: {
-        // OpsOS Typography Scale
+        // KevaOS Typography Scale
         "display": ["3rem", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
         "h1": ["2.5rem", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }],
         "h2": ["2rem", { lineHeight: "1.25", letterSpacing: "-0.01em", fontWeight: "700" }],
@@ -160,16 +180,16 @@ export default {
       },
 
       boxShadow: {
-        sm: "0 1px 2px 0 rgba(27, 29, 31, 0.05)",
-        DEFAULT: "0 1px 3px 0 rgba(27, 29, 31, 0.1), 0 1px 2px -1px rgba(27, 29, 31, 0.1)",
-        md: "0 4px 6px -1px rgba(27, 29, 31, 0.1), 0 2px 4px -2px rgba(27, 29, 31, 0.1)",
-        lg: "0 10px 15px -3px rgba(27, 29, 31, 0.1), 0 4px 6px -4px rgba(27, 29, 31, 0.1)",
-        xl: "0 20px 25px -5px rgba(27, 29, 31, 0.1), 0 8px 10px -6px rgba(27, 29, 31, 0.1)",
-        inner: "inset 0 2px 4px 0 rgba(27, 29, 31, 0.05)",
+        sm: "0 1px 2px 0 rgba(28, 25, 23, 0.05)",
+        DEFAULT: "0 1px 3px 0 rgba(28, 25, 23, 0.1), 0 1px 2px -1px rgba(28, 25, 23, 0.1)",
+        md: "0 4px 6px -1px rgba(28, 25, 23, 0.1), 0 2px 4px -2px rgba(28, 25, 23, 0.1)",
+        lg: "0 10px 15px -3px rgba(28, 25, 23, 0.1), 0 4px 6px -4px rgba(28, 25, 23, 0.1)",
+        xl: "0 20px 25px -5px rgba(28, 25, 23, 0.1), 0 8px 10px -6px rgba(28, 25, 23, 0.1)",
+        inner: "inset 0 2px 4px 0 rgba(28, 25, 23, 0.05)",
 
-        // OpsOS accent shadows
-        "brass-sm": "0 1px 2px 0 rgba(255, 90, 31, 0.15)",
-        "brass-md": "0 4px 6px -1px rgba(255, 90, 31, 0.2)",
+        // KevaOS accent shadows (warm copper glow)
+        "brass-sm": "0 1px 2px 0 rgba(212, 98, 43, 0.15)",
+        "brass-md": "0 4px 6px -1px rgba(212, 98, 43, 0.2)",
       },
 
       spacing: {
@@ -185,7 +205,7 @@ export default {
       },
 
       transitionTimingFunction: {
-        "opsos": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "keva": "cubic-bezier(0.4, 0, 0.2, 1)",
       },
 
       keyframes: {
@@ -208,10 +228,10 @@ export default {
       },
 
       animation: {
-        "fade-in": "fade-in 200ms ease-opsos",
-        "slide-in-right": "slide-in-right 250ms ease-opsos",
-        "slide-in-left": "slide-in-left 250ms ease-opsos",
-        "zoom-in": "zoom-in 200ms ease-opsos",
+        "fade-in": "fade-in 200ms ease-keva",
+        "slide-in-right": "slide-in-right 250ms ease-keva",
+        "slide-in-left": "slide-in-left 250ms ease-keva",
+        "zoom-in": "zoom-in 200ms ease-keva",
       },
     },
   },

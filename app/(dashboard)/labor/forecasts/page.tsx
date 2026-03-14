@@ -111,7 +111,7 @@ export default async function ForecastsPage({
       <div className="grid grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <Users className="w-8 h-8 text-opsos-sage-600" />
+            <Users className="w-8 h-8 text-keva-sage-600" />
             <div>
               <div className="text-sm text-muted-foreground">Total Covers</div>
               <div className="text-2xl font-bold">{totalCovers.toLocaleString()}</div>
@@ -133,7 +133,7 @@ export default async function ForecastsPage({
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <TrendingUp className="w-8 h-8 text-opsos-sage-600" />
+            <TrendingUp className="w-8 h-8 text-keva-sage-600" />
             <div>
               <div className="text-sm text-muted-foreground">Avg Check</div>
               <div className="text-2xl font-bold">${avgCheck.toFixed(2)}</div>
@@ -214,7 +214,7 @@ export default async function ForecastsPage({
                       </td>
                       <td className="py-3 text-sm text-right">
                         <span className={`font-medium ${
-                          forecast.confidence_level >= 0.85 ? 'text-opsos-sage-600' :
+                          forecast.confidence_level >= 0.85 ? 'text-keva-sage-600' :
                           forecast.confidence_level >= 0.70 ? 'text-brass' :
                           'text-muted-foreground'
                         }`}>

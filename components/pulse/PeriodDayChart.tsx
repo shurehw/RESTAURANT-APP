@@ -98,23 +98,23 @@ export function PeriodDayChart({ days }: { days: PeriodDayRow[] }) {
           <Area
             type="monotone"
             dataKey="Current"
-            stroke="#FF5A1F"
+            stroke="#D4622B"
             strokeWidth={2.5}
-            fill="#FF5A1F"
+            fill="#D4622B"
             fillOpacity={0.08}
-            dot={{ r: 4, fill: '#FF5A1F', strokeWidth: 0 }}
-            activeDot={{ r: 5, fill: '#FF5A1F' }}
+            dot={{ r: 4, fill: '#D4622B', strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: '#D4622B' }}
           />
         </ComposedChart>
       </ResponsiveContainer>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 bg-opsos-brass rounded" />
+            <div className="w-4 h-0.5 bg-keva-brass rounded" />
             <span>Current</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-0.5 border-t-2 border-dashed border-opsos-sage-400" />
+            <div className="w-4 h-0.5 border-t-2 border-dashed border-keva-sage-400" />
             <span>Prior</span>
           </div>
         </div>

@@ -13,7 +13,7 @@
  *   5. Record result (pass/fail/insufficient_data)
  *   6. On fail: create a new escalated successor feedback object
  *
- * "If it's resolved, OpsOS proves it. If a problem repeats, OpsOS escalates."
+ * "If it's resolved, KevaOS proves it. If a problem repeats, KevaOS escalates."
  */
 
 import { getServiceClient } from '@/lib/supabase/service';

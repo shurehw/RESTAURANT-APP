@@ -273,7 +273,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
               <div>
                 <label className="block text-sm font-medium mb-2">Vendor</label>
                 <select
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                   value={vendorId}
                   onChange={(e) => setVendorId(e.target.value)}
                   required
@@ -291,7 +291,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
               <div>
                 <label className="block text-sm font-medium mb-2">Venue</label>
                 <select
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                   value={venueId}
                   onChange={(e) => setVenueId(e.target.value)}
                   required
@@ -310,7 +310,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
                 <label className="block text-sm font-medium mb-2">Delivery Date</label>
                 <input
                   type="date"
-                  className="w-full px-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                  className="w-full px-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
                   required
@@ -401,13 +401,13 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
 
                 {/* Item Search */}
                 {showItemSearch && (
-                  <div className="mb-4 p-4 border rounded-lg bg-opsos-sage-50">
+                  <div className="mb-4 p-4 border rounded-lg bg-keva-sage-50">
                     <div className="relative mb-2">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <input
                         type="text"
                         placeholder="Search items by name or SKU..."
-                        className="w-full pl-10 pr-3 py-2 border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                        className="w-full pl-10 pr-3 py-2 border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                         value={searchTerm}
                         onChange={handleSearchChange}
                         autoFocus
@@ -425,7 +425,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
                             key={item.id}
                             type="button"
                             onClick={() => addItem(item)}
-                            className="w-full text-left px-3 py-2 hover:bg-opsos-sage-50 border-b last:border-b-0 flex justify-between items-start"
+                            className="w-full text-left px-3 py-2 hover:bg-keva-sage-50 border-b last:border-b-0 flex justify-between items-start"
                           >
                             <div>
                               <div className="font-medium">{item.name}</div>
@@ -487,7 +487,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
                               type="number"
                               min="0"
                               step="0.01"
-                              className="w-full px-2 py-1 text-sm border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                              className="w-full px-2 py-1 text-sm border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                               value={item.quantity}
                               onChange={(e) =>
                                 updateItemQuantity(
@@ -505,7 +505,7 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
                               type="number"
                               min="0"
                               step="0.01"
-                              className="w-full px-2 py-1 text-sm border border-opsos-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
+                              className="w-full px-2 py-1 text-sm border border-keva-sage-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-brass"
                               value={item.unit_price}
                               onChange={(e) =>
                                 updateItemPrice(
