@@ -1,24 +1,37 @@
 {
-  "rewrites": [
+  "redirects": [
     {
-      "source": "/",
+      "source": "/:path*",
       "has": [
         {
           "type": "host",
           "value": "prime-cost.com"
         }
       ],
-      "destination": "/coming-soon.html"
+      "destination": "https://kevaos.ai/:path*",
+      "permanent": true
     },
     {
-      "source": "/",
+      "source": "/:path*",
       "has": [
         {
           "type": "host",
           "value": "www.prime-cost.com"
         }
       ],
-      "destination": "/coming-soon.html"
+      "destination": "https://kevaos.ai/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "opsos-restaurant-app.vercel.app"
+        }
+      ],
+      "destination": "https://kevaos.ai/:path*",
+      "permanent": true
     }
   ],
   "crons": [
@@ -80,31 +93,31 @@
     },
     {
       "path": "/api/cron/sync-tipsee?venue=aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?venue=f7a049ac-cf43-42b6-9083-b35d1848b24f",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?venue=42b1f4ed-d49a-4ed1-bf0f-75787f08a20f",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?venue=69db05dd-aabc-4d9a-a11f-fdc09d4e3123",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?venue=5c4a4913-bca0-426f-8b51-54e175ea609f",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?venue=f1e2158b-e567-4a1c-8750-2e826bdf1a2b",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?venue=9cff9179-c87f-40f1-924b-d8df2edaeb06",
-      "schedule": "0 3 * * *"
+      "schedule": "0 12 * * *"
     },
     {
       "path": "/api/cron/sync-tipsee?date=today",
@@ -116,11 +129,11 @@
     },
     {
       "path": "/api/cron/enforce",
-      "schedule": "30 5 * * *"
+      "schedule": "30 12 * * *"
     },
     {
       "path": "/api/etl/sync?action=yesterday",
-      "schedule": "0 4 * * *"
+      "schedule": "0 11 * * *"
     },
     {
       "path": "/api/etl/sync?action=reviews",

@@ -3,7 +3,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Routes that don't require authentication
-const publicRoutes = ['/login', '/signup', '/vendor-onboarding', '/vendor/login', '/host-stand/login', '/coming-soon', '/api/landing', '/share', '/api/share', '/accept-invite'];
+const publicRoutes = [
+  '/login',
+  '/signup',
+  '/vendor-onboarding',
+  '/vendor/login',
+  '/host-stand/login',
+  '/coming-soon',
+  '/api/landing',
+  '/share',
+  '/api/share',
+  '/accept-invite',
+  '/sw.js',
+  '/manifest.json',
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,12 +27,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Marketing domain — serve landing page on root only for unauthenticated visitors
-  if (hostname.includes('prime-cost.com') && pathname === '/') {
+  // Non-primary domains → redirect everything to kevaos.ai
+  if (
+    (hostname.includes('prime-cost.com') || hostname.includes('opsos-restaurant-app.vercel.app')) &&
+    !hostname.includes('kevaos.ai')
+  ) {
+    return NextResponse.redirect(new URL(`https://kevaos.ai${pathname}`, request.url), 301);
+  }
+
+  // Marketing domain — serve coming-soon page on root for unauthenticated visitors
+  if (hostname.includes('kevaos.ai') && pathname === '/') {
     const hasSession = request.cookies.getAll().some(c => c.name.includes('-auth-token'));
     const hasLegacy = request.cookies.get('user_id');
     if (!hasSession && !hasLegacy) {
-      return NextResponse.rewrite(new URL('/coming-soon.html', request.url));
+      return NextResponse.rewrite(new URL('/coming-soon', request.url));
     }
   }
 
