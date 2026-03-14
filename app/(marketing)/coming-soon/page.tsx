@@ -16,7 +16,7 @@ function KMark({ size = 32, color = '#D4622B' }: { size?: number; color?: string
 }
 
 // ── Loop Steps ───────────────────────────────────────────────────
-const LOOP_STEPS = ['Ingest', 'Detect', 'Translate', 'Require', 'Carry Forward', 'Verify'];
+const LOOP_STEPS = ['Revenue', 'Costs', 'Labor', 'Purchasing', 'Guests', 'Compliance'];
 
 // ── Feature Cards ────────────────────────────────────────────────
 const FEATURES = [
@@ -27,8 +27,8 @@ const FEATURES = [
       </svg>
     ),
     label: 'Enforcement Engine',
-    title: 'Rules are always on.',
-    desc: 'Comp policies, labor standards, and operational SOPs enforced continuously — not reviewed after the fact.',
+    title: 'Nothing slips.',
+    desc: 'Comp policies, labor targets, and SOPs enforced in real time — not discovered in a Monday morning spreadsheet.',
   },
   {
     icon: (
@@ -39,8 +39,8 @@ const FEATURES = [
       </svg>
     ),
     label: 'AI Control Plane',
-    title: 'Intelligence, not dashboards.',
-    desc: 'AI reviews every exception in real time. Managers attest nightly. The system carries forward what wasn\'t resolved.',
+    title: 'AI that catches what managers miss.',
+    desc: 'Every exception gets reviewed automatically. Managers attest nightly. Unresolved items carry forward until they\'re closed.',
   },
   {
     icon: (
@@ -51,18 +51,18 @@ const FEATURES = [
       </svg>
     ),
     label: 'Multi-Venue',
-    title: 'One standard, every location.',
-    desc: 'Calibrated thresholds per venue within fixed corporate standards. Tunable rails — not optional rules.',
+    title: 'Same standards. Ten locations.',
+    desc: 'Corporate sets the rails. Each venue tunes the thresholds. Nobody opts out.',
   },
   {
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
       </svg>
     ),
-    label: 'Signal Loop',
-    title: 'Data becomes action.',
-    desc: 'POS sales, reservations, labor, procurement, and guest signals feed a continuous loop that closes itself.',
+    label: 'Full Stack',
+    title: 'Revenue to purchasing. One system.',
+    desc: 'Sales, labor, inventory, procurement, reservations, and guest experience — connected and enforced end to end.',
   },
 ];
 
@@ -255,7 +255,7 @@ export default function MarketingPage() {
 
         {/* Tagline */}
         <p className="text-[0.7rem] font-semibold tracking-[0.15em] uppercase mb-6 animate-[hero-in_0.65s_ease_0.3s_forwards] opacity-0" style={{ color: '#D4622B' }}>
-          The AI-Enforced Control Plane for Hospitality
+          The Operating System for Restaurant Groups
         </p>
 
         {/* Lead */}
@@ -263,7 +263,7 @@ export default function MarketingPage() {
           className="relative text-[clamp(1rem,1.4vw,1.2rem)] max-w-[36rem] mb-10 leading-relaxed animate-[hero-in_0.65s_ease_0.4s_forwards] opacity-0"
           style={{ color: '#B5ADA1' }}
         >
-          The operating system that enforces daily restaurant operations &mdash; so the same problems don&apos;t happen twice.
+          From revenue leaks to hidden cost overruns &mdash; we surface what the naked eye can&apos;t see and turn every location into its most profitable version.
         </p>
 
         {/* Signal loop */}
@@ -321,7 +321,7 @@ export default function MarketingPage() {
             What&apos;s Coming
           </span>
           <h2 className="text-[clamp(1.5rem,3vw,2.2rem)] font-bold tracking-tight" style={{ color: '#1C1917' }}>
-            Not another dashboard.<br />An enforcement engine.
+            Not another dashboard.<br />The engine that runs the building.
           </h2>
         </div>
 
