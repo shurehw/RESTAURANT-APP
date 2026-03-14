@@ -10,9 +10,19 @@ interface HostStandHeaderProps {
   businessDate: string;
   onDateNav: (delta: number) => void;
   onDateSet: (date: string) => void;
+  connectionStatus?: 'live' | 'degraded' | 'offline';
+  connectionLabel?: string;
 }
 
-export function HostStandHeader({ venueName, hostName, businessDate, onDateNav, onDateSet }: HostStandHeaderProps) {
+export function HostStandHeader({
+  venueName,
+  hostName,
+  businessDate,
+  onDateNav,
+  onDateSet,
+  connectionStatus = 'live',
+  connectionLabel,
+}: HostStandHeaderProps) {
   const router = useRouter();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const [time, setTime] = useState('');
@@ -45,6 +55,19 @@ export function HostStandHeader({ venueName, hostName, businessDate, onDateNav, 
     day: 'numeric',
   });
 
+  const statusStyle =
+    connectionStatus === 'live'
+      ? 'text-emerald-300 border-emerald-700 bg-emerald-900/30'
+      : connectionStatus === 'degraded'
+        ? 'text-amber-300 border-amber-700 bg-amber-900/30'
+        : 'text-red-300 border-red-700 bg-red-900/30';
+  const statusText =
+    connectionStatus === 'live'
+      ? 'Live'
+      : connectionStatus === 'degraded'
+        ? 'Delayed'
+        : 'Offline';
+
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-[#0A0A0A] border-b border-gray-800">
       <div className="flex items-center gap-4">
@@ -52,6 +75,9 @@ export function HostStandHeader({ venueName, hostName, businessDate, onDateNav, 
         <span className="text-white font-semibold text-lg">{venueName}</span>
       </div>
       <div className="flex items-center gap-6">
+        <span className={`text-xs px-2 py-1 rounded border ${statusStyle}`}>
+          {statusText}{connectionLabel ? ` - ${connectionLabel}` : ''}
+        </span>
         <div className="flex items-center gap-1">
           <button
             onClick={() => onDateNav(-1)}

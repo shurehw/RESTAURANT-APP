@@ -35,6 +35,10 @@ interface HostStandSidebarProps {
   onMarkArrived?: (rezId: string) => Promise<void>;
   onMarkNoShow?: (rezId: string) => Promise<void>;
   onCancelReservation?: (rezId: string) => Promise<void>;
+  onSeatWaitlist?: (entry: WaitlistEntry) => Promise<void>;
+  onNoShowWaitlist?: (entryId: string) => Promise<void>;
+  onRemoveWaitlist?: (entryId: string) => Promise<void>;
+  onAdjustWaitQuote?: (entryId: string, nextQuotedWait: number) => Promise<void>;
 }
 
 /** Format "HH:MM:SS" or "HH:MM" → "8:00 PM" */
@@ -77,7 +81,17 @@ function SectionHeader({
 }
 
 /** Draggable wrapper for upcoming reservation rows */
-function DraggableRezRow({ r }: { r: ReservationEntry }) {
+function DraggableRezRow({
+  r,
+  onMarkArrived,
+  onMarkNoShow,
+  onCancelReservation,
+}: {
+  r: ReservationEntry;
+  onMarkArrived?: (rezId: string) => Promise<void>;
+  onMarkNoShow?: (rezId: string) => Promise<void>;
+  onCancelReservation?: (rezId: string) => Promise<void>;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `rez-${r.id}`,
     data: { type: 'reservation', reservation: r },
@@ -89,13 +103,34 @@ function DraggableRezRow({ r }: { r: ReservationEntry }) {
       {...attributes}
       style={{ opacity: isDragging ? 0.4 : 1, cursor: 'grab', touchAction: 'none' }}
     >
-      <RezRow r={r} />
+      <RezRow
+        r={r}
+        onMarkArrived={onMarkArrived}
+        onMarkNoShow={onMarkNoShow}
+        onCancelReservation={onCancelReservation}
+      />
     </div>
   );
 }
 
 /** Reusable reservation row */
-function RezRow({ r, statusColor }: { r: ReservationEntry; statusColor?: string }) {
+function RezRow({
+  r,
+  statusColor,
+  onMarkArrived,
+  onMarkNoShow,
+  onCancelReservation,
+}: {
+  r: ReservationEntry;
+  statusColor?: string;
+  onMarkArrived?: (rezId: string) => Promise<void>;
+  onMarkNoShow?: (rezId: string) => Promise<void>;
+  onCancelReservation?: (rezId: string) => Promise<void>;
+}) {
+  const canMarkArrived = !!onMarkArrived && (r.status === 'pending' || r.status === 'confirmed');
+  const canMarkNoShow = !!onMarkNoShow && ['pending', 'confirmed', 'arrived'].includes(r.status);
+  const canCancel = !!onCancelReservation && ['pending', 'confirmed', 'arrived'].includes(r.status);
+
   return (
     <div className="flex items-center justify-between p-3 bg-[#1a1a1a] rounded-lg">
       <div className="min-w-0 flex-1">
@@ -120,6 +155,49 @@ function RezRow({ r, statusColor }: { r: ReservationEntry; statusColor?: string 
         {r.notes && (
           <p className="text-xs text-gray-500 truncate mt-0.5">{r.notes}</p>
         )}
+        {(canMarkArrived || canMarkNoShow || canCancel) && (
+          <div className="flex gap-1.5 mt-2">
+            {canMarkArrived && (
+              <button
+                className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/40 border border-emerald-700 text-emerald-300"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void onMarkArrived?.(r.id);
+                }}
+              >
+                ARRIVED
+              </button>
+            )}
+            {canMarkNoShow && (
+              <button
+                className="text-[10px] px-2 py-0.5 rounded bg-red-900/30 border border-red-800 text-red-300"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void onMarkNoShow?.(r.id);
+                }}
+              >
+                NO SHOW
+              </button>
+            )}
+            {canCancel && (
+              <button
+                className="text-[10px] px-2 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-300"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  void onCancelReservation?.(r.id);
+                }}
+              >
+                CANCEL
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="text-right ml-3 shrink-0">
         <div className="text-sm font-medium text-gray-300">{formatTime(r.arrival_time)}</div>
@@ -138,6 +216,14 @@ export function HostStandSidebar({
   waitlist,
   onAddWaitlist,
   onSeatWalkin,
+  onNewReservation,
+  onMarkArrived,
+  onMarkNoShow,
+  onCancelReservation,
+  onSeatWaitlist,
+  onNoShowWaitlist,
+  onRemoveWaitlist,
+  onAdjustWaitQuote,
 }: HostStandSidebarProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     upcoming: true,
@@ -167,7 +253,13 @@ export function HostStandSidebar({
           ) : (
             <div className="space-y-2 pb-2">
               {upcoming.map((r) => (
-                <DraggableRezRow key={r.id} r={r} />
+                <DraggableRezRow
+                  key={r.id}
+                  r={r}
+                  onMarkArrived={onMarkArrived}
+                  onMarkNoShow={onMarkNoShow}
+                  onCancelReservation={onCancelReservation}
+                />
               ))}
             </div>
           )
@@ -257,16 +349,66 @@ export function HostStandSidebar({
                 const waitMinutes = Math.round(
                   (Date.now() - new Date(w.added_at).getTime()) / 60000,
                 );
+                const shownQuote = w.quoted_wait ?? waitMinutes;
                 return (
                   <div
                     key={w.id}
                     className="flex items-center justify-between p-2 bg-[#1a1a1a] rounded-lg"
                   >
-                    <div>
-                      <span className="text-sm text-white">{w.guest_name}</span>
-                      <span className="text-xs text-gray-500 ml-2">{w.party_size} covers</span>
+                    <div className="min-w-0 flex-1">
+                      <div>
+                        <span className="text-sm text-white">{w.guest_name}</span>
+                        <span className="text-xs text-gray-500 ml-2">{w.party_size} covers</span>
+                      </div>
+                      <div className="flex gap-1.5 mt-1.5">
+                        {!!onSeatWaitlist && (
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/30 border border-emerald-700 text-emerald-300"
+                            onClick={() => void onSeatWaitlist(w)}
+                          >
+                            SEAT
+                          </button>
+                        )}
+                        {!!onNoShowWaitlist && (
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded bg-red-900/30 border border-red-800 text-red-300"
+                            onClick={() => void onNoShowWaitlist(w.id)}
+                          >
+                            NO SHOW
+                          </button>
+                        )}
+                        {!!onRemoveWaitlist && (
+                          <button
+                            className="text-[10px] px-2 py-0.5 rounded bg-gray-800 border border-gray-600 text-gray-300"
+                            onClick={() => void onRemoveWaitlist(w.id)}
+                          >
+                            REMOVE
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-xs text-gray-400 tabular-nums">{waitMinutes}m</span>
+                    <div className="text-right ml-2 shrink-0">
+                      <div className="text-xs text-gray-400 tabular-nums">{waitMinutes}m waiting</div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        Quote {shownQuote}m
+                      </div>
+                      {!!onAdjustWaitQuote && (
+                        <div className="flex gap-1 justify-end mt-1">
+                          <button
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-300"
+                            onClick={() => void onAdjustWaitQuote(w.id, Math.max(0, shownQuote - 5))}
+                          >
+                            -5
+                          </button>
+                          <button
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-gray-700 text-gray-300"
+                            onClick={() => void onAdjustWaitQuote(w.id, shownQuote + 5)}
+                          >
+                            +5
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -278,6 +420,14 @@ export function HostStandSidebar({
       {/* Action buttons — always visible at bottom */}
       <div className="shrink-0 p-4 mt-auto">
         <div className="space-y-2">
+          {onNewReservation && (
+            <button
+              onClick={onNewReservation}
+              className="w-full h-12 bg-[#1a1a1a] hover:bg-[#222] text-white text-sm font-medium rounded-lg border border-gray-700 transition-colors"
+            >
+              New Reservation
+            </button>
+          )}
           <button
             onClick={onAddWaitlist}
             className="w-full h-12 bg-[#1a1a1a] hover:bg-[#222] text-white text-sm font-medium rounded-lg border border-gray-700 transition-colors"

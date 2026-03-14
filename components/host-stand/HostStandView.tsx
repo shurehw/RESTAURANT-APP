@@ -164,6 +164,33 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
   const [showCombineDialog, setShowCombineDialog] = useState(false);
   const [seatWalkinTableId, setSeatWalkinTableId] = useState<string | undefined>();
   const [seatWalkinTableNumber, setSeatWalkinTableNumber] = useState<string | undefined>();
+  const [pendingWaitlistSeat, setPendingWaitlistSeat] = useState<WaitlistEntry | null>(null);
+  const [lastLiveUpdateAt, setLastLiveUpdateAt] = useState<number>(Date.now());
+  const [isOffline, setIsOffline] = useState<boolean>(false);
+  const [syncFailures, setSyncFailures] = useState(0);
+  const [alert, setAlert] = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
+  const alertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showAlert = useCallback((type: 'error' | 'success' | 'info', message: string) => {
+    setAlert({ type, message });
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+    alertTimerRef.current = setTimeout(() => setAlert(null), 4500);
+  }, []);
+
+  useEffect(() => () => {
+    if (alertTimerRef.current) clearTimeout(alertTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    const update = () => setIsOffline(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, []);
 
   // ── Data Fetching ──────────────────────────────────────────────
 
@@ -203,10 +230,12 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         const waitlistData = await waitlistRes.json();
         setWaitlist(waitlistData.entries || []);
       }
+
+      setLastLiveUpdateAt(Date.now());
     } catch {
-      // Silently handle — will retry on next poll
+      showAlert('error', 'Live floor refresh failed. Retrying.');
     }
-  }, [venueId, businessDate]);
+  }, [venueId, businessDate, showAlert]);
 
   // Initial load + 60s fallback poll (Realtime handles the fast path)
   useEffect(() => {
@@ -227,12 +256,16 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'table_status', filter: `venue_id=eq.${venueId}` },
-        () => { fetchLiveData(); },
+        () => {
+          fetchLiveData();
+        },
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'table_combos', filter: `venue_id=eq.${venueId}` },
-        () => { fetchCombos(); },
+        () => {
+          fetchCombos();
+        },
       )
       .subscribe();
 
@@ -268,17 +301,25 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
 
   const syncReservations = useCallback(async () => {
     try {
-      await fetch('/api/floor-plan/live/sync', {
+      const res = await fetch('/api/floor-plan/live/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ venue_id: venueId, date: businessDate }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSyncFailures((prev) => prev + 1);
+        showAlert('error', data.error || 'Reservation sync failed');
+        return;
+      }
+      setSyncFailures(0);
       // After sync, refresh live data to pick up changes
       fetchLiveData();
     } catch {
-      // Silently handle — will retry on next poll
+      setSyncFailures((prev) => prev + 1);
+      showAlert('error', 'Reservation sync failed');
     }
-  }, [venueId, businessDate, fetchLiveData]);
+  }, [venueId, businessDate, fetchLiveData, showAlert]);
 
   useEffect(() => {
     syncReservations(); // Initial sync on mount
@@ -477,12 +518,79 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
     ? liveTables.find((t) => t.table_id === selectedTableId)
     : null;
 
-  const handleTableSelect = useCallback((id: string) => {
-    setSelectedTableId(id);
+  const tableById = useCallback((tableId: string) => liveTables.find((t) => t.table_id === tableId) || null, [liveTables]);
+
+  const updateWaitlist = useCallback(async (entryId: string, updates: Record<string, unknown>) => {
+    const res = await fetch(`/api/waitlist/${entryId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to update waitlist');
+    }
   }, []);
+
+  const postTransition = useCallback(async (
+    body: Record<string, unknown>,
+    contextLabel: string,
+  ) => {
+    const res = await fetch('/api/floor-plan/live/transition', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return;
+    const data = await res.json().catch(() => ({}));
+    const fromStatus = data?.from_status ? ` (${data.from_status} -> ${data.to_status || '?'})` : '';
+    if (res.status === 409) {
+      throw new Error(`${contextLabel} conflict: ${data.error || 'state changed'}${fromStatus}`);
+    }
+    throw new Error(data.error || `${contextLabel} failed`);
+  }, []);
+
+  const seatWaitlistAtTable = useCallback(async (entry: WaitlistEntry, tableId: string) => {
+    const table = tableById(tableId);
+    if (!table) {
+      showAlert('error', 'Target table no longer exists');
+      return;
+    }
+    if (!['available', 'reserved'].includes(table.status)) {
+      showAlert('error', `Table ${table.table_number} is ${table.status}. Choose an open table.`);
+      return;
+    }
+    await postTransition({
+      venue_id: venueId,
+      table_id: table.table_id,
+      date: businessDate,
+      action: 'seat',
+      party_size: entry.party_size,
+      expected_duration: 90,
+    }, 'Seat waitlist');
+    await updateWaitlist(entry.id, {
+      status: 'seated',
+      seated_at: new Date().toISOString(),
+    });
+    setPendingWaitlistSeat(null);
+    setSelectedTableId(null);
+    await fetchLiveData();
+    showAlert('success', `${entry.guest_name} seated at ${table.table_number}`);
+  }, [tableById, showAlert, postTransition, venueId, businessDate, updateWaitlist, fetchLiveData]);
+
+  const handleTableSelect = useCallback((id: string) => {
+    if (pendingWaitlistSeat) {
+      void seatWaitlistAtTable(pendingWaitlistSeat, id).catch((err) => {
+        showAlert('error', err instanceof Error ? err.message : 'Failed to seat waitlist party');
+      });
+      return;
+    }
+    setSelectedTableId(id);
+  }, [pendingWaitlistSeat, seatWaitlistAtTable, showAlert]);
 
   const handleDeselectAll = useCallback(() => {
     setSelectedTableId(null);
+    setPendingWaitlistSeat(null);
   }, []);
 
   const handleTableAction = async (action: string) => {
@@ -504,14 +612,20 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
     if (action === 'release_combo') {
       const combo = tableComboMap.get(selectedTable.table_id);
       if (combo) {
-        await fetch('/api/floor-plan/live/combos', {
+        const res = await fetch('/api/floor-plan/live/combos', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ combo_id: combo.id }),
-        }).catch(() => {});
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          showAlert('error', data.error || 'Failed to release combo');
+          return;
+        }
         setSelectedTableId(null);
         await fetchCombos();
         fetchLiveData();
+        showAlert('success', 'Combined table released');
       }
       return;
     }
@@ -548,16 +662,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         body.expected_duration = 90;
       }
 
-      const res = await fetch('/api/floor-plan/live/transition', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        console.error('[host-stand] Transition failed:', data.error);
-      }
+      await postTransition(body, `Table ${selectedTable.table_number}`);
 
       // For seat/clear on a combo primary, propagate to all secondary tables
       const combo = tableComboMap.get(selectedTable.table_id);
@@ -566,20 +671,30 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         : [];
 
       if (secondaryIds.length > 0 && (action === 'seat' || action === 'clear')) {
-        await Promise.all(secondaryIds.map((tableId) =>
-          fetch('/api/floor-plan/live/transition', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ venue_id: venueId, table_id: tableId, date: businessDate, action: apiAction }),
-          }).catch(() => {})
-        ));
+        await Promise.all(secondaryIds.map((tableId) => postTransition({
+          venue_id: venueId,
+          table_id: tableId,
+          date: businessDate,
+          action: apiAction,
+          ...(action === 'seat'
+            ? {
+                reservation_id: selectedTable.reservation_id || undefined,
+                party_size: selectedTable.party_size || 2,
+                expected_duration: 90,
+              }
+            : {}),
+        }, `Combo table ${tableId}`)));
         // Release combo when clearing
         if (action === 'clear' && combo) {
-          await fetch('/api/floor-plan/live/combos', {
+          const res = await fetch('/api/floor-plan/live/combos', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ combo_id: combo.id }),
-          }).catch(() => {});
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlert('error', data.error || 'Failed to release combo');
+          }
           fetchCombos();
         }
       }
@@ -595,6 +710,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
 
       setSelectedTableId(null);
       await fetchLiveData();
+      showAlert('success', `${selectedTable.table_number} updated`);
 
       // After a table clears, fire suggestion for any arrived party already waiting
       if (action === 'clear') {
@@ -602,6 +718,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       }
     } catch (err) {
       console.error('[host-stand] Transition error:', err);
+      showAlert('error', err instanceof Error ? err.message : 'Transition failed');
     }
   };
 
@@ -613,75 +730,191 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
 
   const handleMarkArrived = async (rezId: string) => {
     try {
-      await fetch(`/api/reservations/${rezId}`, {
+      const res = await fetch(`/api/reservations/${rezId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'arrived' }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to mark arrived');
+      }
       fetchLiveData();
     } catch {
-      // Silently ignore — next poll will pick up state
+      showAlert('error', 'Failed to mark arrived');
     }
   };
 
   const handleMarkNoShow = async (rezId: string) => {
     try {
-      await fetch(`/api/reservations/${rezId}`, {
+      const res = await fetch(`/api/reservations/${rezId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'no_show' }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to mark no-show');
+      }
       fetchLiveData();
-    } catch {}
+    } catch {
+      showAlert('error', 'Failed to mark no-show');
+    }
   };
 
   const handleCancelReservation = async (rezId: string) => {
     try {
-      await fetch(`/api/reservations/${rezId}`, {
+      const res = await fetch(`/api/reservations/${rezId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'cancelled' }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to cancel reservation');
+      }
       fetchLiveData();
-    } catch {}
+    } catch {
+      showAlert('error', 'Failed to cancel reservation');
+    }
+  };
+
+  const handleSeatWaitlist = async (entry: WaitlistEntry) => {
+    if (selectedTable && ['available', 'reserved'].includes(selectedTable.status)) {
+      try {
+        await seatWaitlistAtTable(entry, selectedTable.table_id);
+      } catch (err) {
+        showAlert('error', err instanceof Error ? err.message : 'Failed to seat waitlist party');
+      }
+      return;
+    }
+    setPendingWaitlistSeat(entry);
+    setSelectedTableId(null);
+    showAlert('info', `Select an available table to seat ${entry.guest_name}`);
+  };
+
+  const handleNoShowWaitlist = async (entryId: string) => {
+    try {
+      await updateWaitlist(entryId, { status: 'no_show' });
+      await fetchLiveData();
+      showAlert('success', 'Waitlist entry marked no-show');
+    } catch (err) {
+      showAlert('error', err instanceof Error ? err.message : 'Failed to update waitlist');
+    }
+  };
+
+  const handleRemoveWaitlist = async (entryId: string) => {
+    try {
+      await updateWaitlist(entryId, { status: 'cancelled' });
+      await fetchLiveData();
+      showAlert('success', 'Waitlist entry removed');
+    } catch (err) {
+      showAlert('error', err instanceof Error ? err.message : 'Failed to update waitlist');
+    }
+  };
+
+  const handleAdjustWaitQuote = async (entryId: string, nextQuotedWait: number) => {
+    try {
+      await updateWaitlist(entryId, { quoted_wait: nextQuotedWait });
+      await fetchLiveData();
+    } catch (err) {
+      showAlert('error', err instanceof Error ? err.message : 'Failed to update quote');
+    }
   };
 
   // ── Drag-to-seat ───────────────────────────────────────────────
 
+  /** Find table element under a screen coordinate, ignoring the drag overlay */
+  const findTableAtPoint = useCallback((x: number, y: number): string | null => {
+    const els = document.elementsFromPoint(x, y);
+    for (const el of els) {
+      const tableId = (el as HTMLElement).dataset?.tableId;
+      if (tableId) return tableId;
+    }
+    return null;
+  }, []);
+
   const [activeDragData, setActiveDragData] = useState<{ guest_name: string; party_size: number } | null>(null);
+  const activeDragRez = useRef<UpcomingReservation | null>(null);
+  const pointerPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dragHoverTableId, setDragHoverTableId] = useState<string | null>(null);
+
+  // Track pointer position natively during drag for drop-target detection
+  useEffect(() => {
+    if (!activeDragData) return;
+    const onMove = (e: PointerEvent) => {
+      pointerPos.current = { x: e.clientX, y: e.clientY };
+      // Hit-test for hover highlight — find table element under pointer
+      const id = findTableAtPoint(e.clientX, e.clientY);
+      setDragHoverTableId(id);
+    };
+    window.addEventListener('pointermove', onMove);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      setDragHoverTableId(null);
+    };
+  }, [activeDragData]);
 
   const handleDragStart = (event: DragStartEvent) => {
+    // Seed pointer position at drag start in case pointermove never fires.
+    const activator = event.activatorEvent as MouseEvent | PointerEvent | TouchEvent | undefined;
+    if (activator) {
+      if ('clientX' in activator && 'clientY' in activator) {
+        pointerPos.current = { x: activator.clientX, y: activator.clientY };
+      } else if ('touches' in activator && activator.touches.length > 0) {
+        pointerPos.current = {
+          x: activator.touches[0].clientX,
+          y: activator.touches[0].clientY,
+        };
+      }
+    }
+
     if (event.active.data.current?.type === 'reservation') {
       const rez = event.active.data.current.reservation as UpcomingReservation;
+      activeDragRez.current = rez;
       setActiveDragData({ guest_name: rez.guest_name, party_size: rez.party_size });
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = async (_event: DragEndEvent) => {
     setActiveDragData(null);
-    const { active, over } = event;
-    if (!over || !active) return;
-    if (active.data.current?.type !== 'reservation' || over.data.current?.type !== 'table') return;
+    const rez = activeDragRez.current;
+    activeDragRez.current = null;
+    if (!rez) return;
 
-    const rez = active.data.current.reservation as UpcomingReservation;
-    const tableId = over.data.current.tableId as string;
-    const tableStatus = over.data.current.tableStatus as string;
-    if (!['available', 'reserved'].includes(tableStatus)) return;
+    // Use native hit-testing: prefer end-event coordinates, then last tracked pointer.
+    const endActivator = _event.activatorEvent as MouseEvent | PointerEvent | TouchEvent | undefined;
+    let x = pointerPos.current.x;
+    let y = pointerPos.current.y;
+    if (endActivator) {
+      if ('clientX' in endActivator && 'clientY' in endActivator) {
+        x = endActivator.clientX;
+        y = endActivator.clientY;
+      } else if ('changedTouches' in endActivator && endActivator.changedTouches.length > 0) {
+        x = endActivator.changedTouches[0].clientX;
+        y = endActivator.changedTouches[0].clientY;
+      }
+    }
+    const tableId = findTableAtPoint(x, y);
+    if (!tableId) return;
+
+    const tableEl = document.querySelector(`[data-table-id="${tableId}"]`) as HTMLElement | null;
+    const tableStatus = tableEl?.dataset.tableStatus || 'available';
+    if (!['available', 'reserved'].includes(tableStatus)) {
+      showAlert('error', 'Drop target is not open');
+      return;
+    }
 
     try {
-      await fetch('/api/floor-plan/live/transition', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          venue_id: venueId,
-          table_id: tableId,
-          date: businessDate,
-          action: 'seat',
-          reservation_id: rez.id,
-          party_size: rez.party_size,
-          expected_duration: 90,
-        }),
-      });
+      await postTransition({
+        venue_id: venueId,
+        table_id: tableId,
+        date: businessDate,
+        action: 'seat',
+        reservation_id: rez.id,
+        party_size: rez.party_size,
+        expected_duration: 90,
+      }, `Drag seat ${rez.guest_name || 'guest'}`);
 
       // If there was an open suggestion and host chose a different table, log as overridden
       if (
@@ -704,6 +937,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       fetchLiveData();
     } catch (err) {
       console.error('[host-stand] Drag seat failed:', err);
+      showAlert('error', err instanceof Error ? err.message : 'Drag seat failed');
     }
   };
 
@@ -719,13 +953,13 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
     const actions = sequences[table.status];
     if (!actions) return;
 
-    for (const action of actions) {
-      const res = await fetch('/api/floor-plan/live/transition', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ venue_id: venueId, table_id: table.table_id, date: businessDate, action }),
-      });
-      if (!res.ok) break;
+    try {
+      for (const action of actions) {
+        await postTransition({ venue_id: venueId, table_id: table.table_id, date: businessDate, action }, `Force complete ${table.table_number}`);
+      }
+    } catch (err) {
+      showAlert('error', err instanceof Error ? err.message : 'Force complete failed');
+      return;
     }
 
     // Propagate force_complete to combo secondary tables, then release combo
@@ -734,11 +968,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
       const secondaryIds = combo.combined_table_ids.filter((id) => id !== table.table_id);
       for (const secId of secondaryIds) {
         for (const action of actions) {
-          await fetch('/api/floor-plan/live/transition', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ venue_id: venueId, table_id: secId, date: businessDate, action }),
-          }).catch(() => {});
+          await postTransition({ venue_id: venueId, table_id: secId, date: businessDate, action }, `Force complete combo ${secId}`).catch(() => {});
         }
       }
       await fetch('/api/floor-plan/live/combos', {
@@ -751,15 +981,53 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
 
     setSelectedTableId(null);
     await fetchLiveData();
+    showAlert('success', `${table.table_number} force completed`);
     // Table just cleared — fire suggestion for any arrived party already waiting
     triggerSuggestionForArrivedParty(upcoming);
   };
 
   // ── Render ─────────────────────────────────────────────────────
 
+  const now = Date.now();
+  const msSinceLiveUpdate = now - lastLiveUpdateAt;
+  const connectionStatus: 'live' | 'degraded' | 'offline' =
+    isOffline || msSinceLiveUpdate > 300_000
+      ? 'offline'
+      : (syncFailures > 0 || msSinceLiveUpdate > 90_000)
+        ? 'degraded'
+        : 'live';
+  const connectionLabel =
+    connectionStatus === 'live'
+      ? 'Realtime'
+      : connectionStatus === 'degraded'
+        ? 'Polling fallback'
+        : 'No network';
+
   return (
     <div className="flex flex-col h-screen bg-[#0A0A0A] overflow-hidden">
-      <HostStandHeader venueName={venueName} hostName={hostName} businessDate={businessDate} onDateNav={handleDateNav} onDateSet={handleDateSet} />
+      <HostStandHeader
+        venueName={venueName}
+        hostName={hostName}
+        businessDate={businessDate}
+        onDateNav={handleDateNav}
+        onDateSet={handleDateSet}
+        connectionStatus={connectionStatus}
+        connectionLabel={connectionLabel}
+      />
+
+      {alert && (
+        <div
+          className={`mx-4 mt-3 rounded-lg border px-3 py-2 text-sm ${
+            alert.type === 'error'
+              ? 'border-red-700 bg-red-900/30 text-red-200'
+              : alert.type === 'success'
+                ? 'border-emerald-700 bg-emerald-900/30 text-emerald-200'
+                : 'border-amber-700 bg-amber-900/30 text-amber-200'
+          }`}
+        >
+          {alert.message}
+        </div>
+      )}
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex flex-1 min-h-0">
@@ -778,11 +1046,20 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
               onMarkArrived={handleMarkArrived}
               onMarkNoShow={handleMarkNoShow}
               onCancelReservation={handleCancelReservation}
+              onSeatWaitlist={handleSeatWaitlist}
+              onNoShowWaitlist={handleNoShowWaitlist}
+              onRemoveWaitlist={handleRemoveWaitlist}
+              onAdjustWaitQuote={handleAdjustWaitQuote}
             />
           </div>
 
           {/* Floor plan area */}
           <div className="flex-1 flex flex-col p-4 gap-3">
+            {pendingWaitlistSeat && (
+              <div className="rounded-lg border border-amber-700 bg-amber-900/25 px-3 py-2 text-sm text-amber-200">
+                Seating mode: tap an open table for {pendingWaitlistSeat.guest_name} ({pendingWaitlistSeat.party_size}).
+              </div>
+            )}
             <FloorPlanCanvas
               tables={canvasTables}
               sections={sections}
@@ -797,6 +1074,7 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
               sectionCoverMap={sectionCoverMap}
               comboTableIds={comboTableIds}
               comboPrimaryIds={comboPrimaryIds}
+              dragHoverTableId={dragHoverTableId}
               onSelectTable={handleTableSelect}
               onDeselectAll={handleDeselectAll}
               onDoubleClickTable={() => {}}
@@ -807,9 +1085,9 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
         </div>
 
         {/* Drag overlay — shows what's being dragged */}
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={null} style={{ pointerEvents: 'none' }}>
           {activeDragData && (
-            <div className="px-3 py-2 bg-[#FF5A1F] text-white text-sm font-semibold rounded-lg shadow-xl whitespace-nowrap pointer-events-none">
+            <div className="px-3 py-2 bg-[#FF5A1F] text-white text-sm font-semibold rounded-lg shadow-xl whitespace-nowrap">
               {activeDragData.guest_name || 'Guest'} · {activeDragData.party_size}
             </div>
           )}
