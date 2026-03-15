@@ -25,6 +25,8 @@
     "test:e2e:swarm:deep:all": "npx playwright test --workers=1 --project=dashboard --project=manager --project=vendor --grep \"@swarm-deep\"",
     "test:e2e:agent": "npx playwright test --workers=1 --grep \"@browser-agent\"",
     "test:e2e:agent:all": "npx playwright test --workers=1 --project=dashboard --project=manager --project=vendor --project=host-stand --grep \"@browser-agent\"",
+    "test:e2e:agent:external": "set E2E_EXTERNAL_SERVER=1&& npx playwright test --workers=1 --grep \"@browser-agent\"",
+    "test:e2e:agent:all:external": "set E2E_EXTERNAL_SERVER=1&& npx playwright test --workers=1 --project=dashboard --project=manager --project=vendor --project=host-stand --grep \"@browser-agent\"",
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:host": "npx playwright test --project=host-stand",
     "test:e2e:dash": "npx playwright test --project=dashboard"

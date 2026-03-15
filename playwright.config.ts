@@ -6,6 +6,7 @@ dotenv.config(); // fallback
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4018';
 const E2E_SERVER_MODE = process.env.E2E_SERVER_MODE || 'dev';
+const E2E_EXTERNAL_SERVER = process.env.E2E_EXTERNAL_SERVER === '1';
 const BASE_PORT = new URL(BASE_URL).port || '80';
 const WEB_SERVER_COMMAND =
   E2E_SERVER_MODE === 'prod'
@@ -76,10 +77,12 @@ export default defineConfig({
   ],
 
   // Start dev server automatically if not already running
-  webServer: {
-    command: WEB_SERVER_COMMAND,
-    url: BASE_URL,
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  webServer: E2E_EXTERNAL_SERVER
+    ? undefined
+    : {
+        command: WEB_SERVER_COMMAND,
+        url: BASE_URL,
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
 });
