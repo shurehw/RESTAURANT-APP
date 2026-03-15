@@ -249,6 +249,46 @@ export function ReservationListSheet({
     tips: filteredChecks.reduce((s, c) => s + c.tip_total, 0),
   }), [filteredChecks]);
 
+  // ─── Ledger tab: all checks (matched + unmatched) ────────────────
+  type LedgerCheck = UnmatchedCheck & { guest_name?: string };
+
+  const ledgerData = useMemo(() => {
+    // Extract matched checks from reservations
+    const matched: LedgerCheck[] = [];
+    for (const r of filteredResos) {
+      if (r.matched_checks?.length) {
+        for (const mc of r.matched_checks) {
+          matched.push({
+            id: mc.id,
+            table_name: r.table_number || '',
+            employee_name: mc.employee_name,
+            guest_count: mc.guest_count,
+            revenue_total: mc.revenue_total,
+            comp_total: mc.comp_total,
+            tip_total: mc.tip_total,
+            open_time: r.seated_time || r.arrival_time,
+            close_time: r.left_time,
+            is_open: false,
+            guest_name: `${r.first_name} ${r.last_name}`,
+          });
+        }
+      }
+    }
+    // Sort each group by spend descending
+    const sortFn = (a: LedgerCheck, b: LedgerCheck) => {
+      if (sortField === 'name') return a.employee_name.localeCompare(b.employee_name);
+      if (sortField === 'spend') return b.revenue_total - a.revenue_total;
+      const aT = a.open_time || '';
+      const bT = b.open_time || '';
+      return bT.localeCompare(aT);
+    };
+    matched.sort(sortFn);
+    const unmatched = [...filteredChecks].sort(sortFn);
+    const allRevenue = matched.reduce((s, c) => s + c.revenue_total, 0) + checkTotals.revenue;
+    const allCount = matched.length + unmatched.length;
+    return { matched, unmatched, allRevenue, allCount };
+  }, [filteredResos, filteredChecks, sortField, checkTotals.revenue]);
+
   // ─── Filter options ──────────────────────────────────────────────
 
   const statuses = useMemo(() => {
@@ -291,7 +331,7 @@ export function ReservationListSheet({
 
   const visibleCount = tab === 'all' ? allRows.length
     : tab === 'reservations' ? filteredResos.length
-    : filteredChecks.length;
+    : ledgerData.allCount;
 
   const totalRaw = reservations.length + checks.length;
 
@@ -329,7 +369,7 @@ export function ReservationListSheet({
             >
               {t === 'all' ? `All (${reservations.length + checks.length})`
                 : t === 'reservations' ? `Resos (${reservations.length})`
-                : `Ledger (${checks.length})`}
+                : `Ledger (${ledgerData.allCount})`}
             </button>
           ))}
         </div>
@@ -442,7 +482,7 @@ export function ReservationListSheet({
           {!loading && !error && visibleCount === 0 && (
             <div className="text-sm text-muted-foreground py-8 text-center">
               {tab === 'reservations' ? 'No reservations found.'
-                : tab === 'checks' ? 'No checks found.'
+                : tab === 'checks' ? 'No checks in ledger.'
                 : 'No data found.'}
             </div>
           )}
@@ -452,10 +492,33 @@ export function ReservationListSheet({
             <ResoRow key={reso.id} reso={reso} onSelectCheck={onSelectCheck} onClick={handleResoClick} />
           ))}
 
-          {/* Checks tab */}
-          {!loading && tab === 'checks' && filteredChecks.map(check => (
-            <CheckRow key={check.id} check={check} onSelectCheck={onSelectCheck} />
-          ))}
+          {/* Ledger tab: matched + unmatched groups */}
+          {!loading && tab === 'checks' && (
+            <>
+              {ledgerData.matched.length > 0 && (
+                <>
+                  <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1 pt-2 pb-1 flex items-center gap-1.5">
+                    <CalendarCheck className="h-3 w-3" />
+                    Matched to Reservation ({ledgerData.matched.length})
+                  </div>
+                  {ledgerData.matched.map(check => (
+                    <CheckRow key={`m-${check.id}`} check={check} onSelectCheck={onSelectCheck} guestName={check.guest_name} />
+                  ))}
+                </>
+              )}
+              {ledgerData.unmatched.length > 0 && (
+                <>
+                  <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-1 pt-3 pb-1 flex items-center gap-1.5">
+                    <Receipt className="h-3 w-3" />
+                    Walk-ins &amp; Bar ({ledgerData.unmatched.length})
+                  </div>
+                  {ledgerData.unmatched.map(check => (
+                    <CheckRow key={`u-${check.id}`} check={check} onSelectCheck={onSelectCheck} />
+                  ))}
+                </>
+              )}
+            </>
+          )}
 
           {/* All tab */}
           {!loading && tab === 'all' && allRows.map(row =>
@@ -473,25 +536,19 @@ export function ReservationListSheet({
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1">
                     <Receipt className="h-3 w-3" />
-                    {checkTotals.count} checks
+                    {ledgerData.allCount} checks
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3" />
-                    {checkTotals.covers} covers
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1 font-medium text-foreground">
-                    <DollarSign className="h-3 w-3" />
-                    {fmt(checkTotals.revenue)}
-                  </span>
-                  {checkTotals.tips > 0 && (
+                  {ledgerData.matched.length > 0 && (
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Tips: {fmt(checkTotals.tips)}
+                      <CalendarCheck className="h-3 w-3" />
+                      {ledgerData.matched.length} matched
                     </span>
                   )}
                 </div>
+                <span className="flex items-center gap-1 font-medium text-foreground">
+                  <DollarSign className="h-3 w-3" />
+                  {fmt(ledgerData.allRevenue)}
+                </span>
               </>
             ) : tab === 'reservations' ? (
               <>
@@ -651,9 +708,11 @@ function ResoRow({
 function CheckRow({
   check,
   onSelectCheck,
+  guestName,
 }: {
   check: UnmatchedCheck;
   onSelectCheck?: (id: string) => void;
+  guestName?: string;
 }) {
   return (
     <button
@@ -666,8 +725,11 @@ function CheckRow({
       </div>
 
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate">{check.employee_name}</div>
+        <div className="text-sm font-medium truncate">{guestName || check.employee_name}</div>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          {guestName && check.employee_name && (
+            <span className="text-muted-foreground/70">{check.employee_name}</span>
+          )}
           <span className="flex items-center gap-0.5">
             <Users className="h-3 w-3" />
             {check.guest_count}

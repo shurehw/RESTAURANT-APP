@@ -1335,8 +1335,8 @@ export default function LivePulsePage() {
 
   // View mode: today (live) or period aggregation
   const [viewMode, setViewMode] = useState<PulseViewMode>(
-    (['today', 'wtd', 'ptd', 'ytd'].includes(searchParams.get('view') || '')
-      ? searchParams.get('view') as PulseViewMode
+    (['today', 'wtd', 'ptd', 'ytd'].includes(searchParams?.get('view') || '')
+      ? searchParams?.get('view') as PulseViewMode
       : 'today')
   );
 
@@ -1361,7 +1361,7 @@ export default function LivePulsePage() {
   const handleViewChange = (newView: string) => {
     const v = newView as PulseViewMode;
     setViewMode(v);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
     if (v === 'today') {
       params.delete('view');
     } else {
