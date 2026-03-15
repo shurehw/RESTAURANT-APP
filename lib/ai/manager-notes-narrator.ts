@@ -40,7 +40,7 @@ export async function generateNarrativeFromNotes(
     ? `KPI DATA (full-day totals from POS):
 Net Sales: $${Math.round(kpiData!.netSales).toLocaleString()}
 Covers: ${kpiData!.covers}
-Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()}
+${kpiData!.totalComps > 0 ? `Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()}` : ''}
 ${kpiData!.laborCost > 0 ? `Labor Cost: $${Math.round(kpiData!.laborCost).toLocaleString()} (${kpiData!.laborPct.toFixed(1)}%)` : ''}
 `
     : '';
@@ -81,6 +81,7 @@ RULES:
 - NEVER compare manager-reported numbers against KPI data. NEVER flag discrepancies. NEVER suggest "reconciling" numbers. They come from different sources and shifts — both are valid.
 - NEVER put "reconcile", "discrepancy", "variance", or "investigate reporting" in ACTION ITEMS
 - If labor cost is $0 or not provided, do not mention labor at all
+- If comps are $0 or not provided, do not mention comps at all — do NOT say "no comps" or "zero comps"
 - Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
 - In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
 - Names in SPENDERS OVER sections are real guest names (high spenders) — include them in GUEST section as notable spenders
