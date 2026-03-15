@@ -520,7 +520,7 @@ function VarianceBadge({ value, label }: { value: number | null | undefined; lab
 }
 
 export default function NightlyReportPage() {
-  const { selectedVenue, setSelectedVenue, isAllVenues, userRole } = useVenue();
+  const { selectedVenue, setSelectedVenue, venues: allVenues, isAllVenues, userRole } = useVenue();
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -573,6 +573,40 @@ export default function NightlyReportPage() {
   const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
   const [checkDetailOpen, setCheckDetailOpen] = useState(false);
   const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
+
+  // Deep-link params (from email drill-through)
+  const deepSection = searchParams.get('section');   // 'comps' | 'labor' | 'servers'
+  const deepReason = searchParams.get('reason');     // comp reason filter
+  const deepServer = searchParams.get('server');     // server name filter
+  const deepVenueId = searchParams.get('venue');     // target venue
+  const [compTab, setCompTab] = useState<string>(deepReason ? 'all-comps' : 'by-reason');
+
+  // Auto-select venue from deep-link
+  useEffect(() => {
+    if (deepVenueId && deepVenueId !== selectedVenue?.id && allVenues.length > 0) {
+      const target = allVenues.find((v) => v.id === deepVenueId);
+      if (target) setSelectedVenue(target);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deepVenueId, allVenues]);
+
+  // Scroll to section from deep-link after data loads
+  useEffect(() => {
+    if (!deepSection || loading) return;
+    // Small delay to let DOM render after data load
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`section-${deepSection}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Flash highlight
+        el.style.outline = '2px solid #D4622B';
+        el.style.outlineOffset = '4px';
+        el.style.borderRadius = '8px';
+        setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 2500);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [deepSection, loading]);
 
   // Closing Narrative (AI-generated summary)
   const [narrativeText, setNarrativeText] = useState<string | null>(null);
@@ -1912,7 +1946,7 @@ export default function NightlyReportPage() {
 
                 {/* Labor + Comps — only render when data exists */}
                 {(laborData || compCardData) && (
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div id="section-labor" className="grid gap-4 md:grid-cols-2">
                     {laborData && (
                       <LaborCard
                         labor={{ punch_count: 0, ...laborData }}
@@ -2318,7 +2352,7 @@ export default function NightlyReportPage() {
           {!isAllVenues && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Server Performance */}
-            <Card>
+            <Card id="section-servers">
               <CardHeader className="border-b border-brass/20">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-5 w-5 text-sage" />
@@ -2653,7 +2687,7 @@ export default function NightlyReportPage() {
             </Card>
 
             {/* Comps & Discounts */}
-            <Card>
+            <Card id="section-comps">
               <CardHeader className="border-b border-brass/20">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Gift className="h-5 w-5 text-error" />
@@ -2693,7 +2727,7 @@ export default function NightlyReportPage() {
                     </div>
                   </div>
                 ) : ((report?.discounts?.length ?? 0) > 0 || (report?.detailedComps?.length ?? 0) > 0) ? (
-                  <Tabs defaultValue="by-reason" className="w-full">
+                  <Tabs value={compTab} onValueChange={setCompTab} className="w-full">
                     {/* Only show tab switcher when both views have data */}
                     {(report?.detailedComps?.length ?? 0) > 0 && (
                       <div className="px-4 pt-3">
@@ -2759,9 +2793,26 @@ export default function NightlyReportPage() {
                     </TabsContent>
 
                     <TabsContent value="all-comps" className="mt-0">
+                      {deepReason && (
+                        <div className="px-4 py-2 bg-accent/10 border-b border-border flex items-center justify-between">
+                          <span className="text-sm">Filtered: <strong>{deepReason}</strong></span>
+                          <button
+                            className="text-xs text-muted-foreground underline"
+                            onClick={() => {
+                              const params = new URLSearchParams(searchParams.toString());
+                              params.delete('reason');
+                              router.push(`?${params.toString()}`, { scroll: false });
+                            }}
+                          >
+                            Clear filter
+                          </button>
+                        </div>
+                      )}
                       {(report?.detailedComps?.length ?? 0) > 0 ? (
                         <div className="divide-y divide-border">
-                          {report?.detailedComps?.map((comp, i) => (
+                          {report?.detailedComps?.filter((comp) =>
+                            deepReason ? comp.reason?.toLowerCase() === deepReason.toLowerCase() : true
+                          ).map((comp, i) => (
                             <div key={i} className="p-4 hover:bg-muted/50 transition-colors">
                               <div className="flex justify-between items-start">
                                 <div>

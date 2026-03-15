@@ -33,6 +33,27 @@ export interface NightlyEmailParams {
   aiSummaries?: Map<string, string>;
 }
 
+// ── Deep-link builder ────────────────────────────────────────────
+
+/**
+ * Builds a URL to the nightly report page with drill-down params.
+ * Recipients tap a specific callout in the email → land on the
+ * filtered detail view in the app.
+ */
+function drillUrl(
+  appUrl: string,
+  date: string,
+  params: Record<string, string> = {}
+): string {
+  const qs = new URLSearchParams({ date, ...params });
+  return `${appUrl}/reports/nightly?${qs.toString()}`;
+}
+
+function linkStyle(color?: string): string {
+  const c = color || '#D4622B';
+  return `color: ${c}; text-decoration: none; border-bottom: 1px solid ${c};`;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────
 
 function fmt(n: number): string {
@@ -75,8 +96,11 @@ function formatNarrative(raw: string): string {
   text = text.replace(/^Delilah[^\n]*\n?/i, '').trim();
   text = text.replace(/^Revenue:[\s\S]*?---\s*/i, '').trim();
 
+  // Strip markdown heading markers (e.g. "# REVENUE & COMPS" → "REVENUE & COMPS")
+  text = text.replace(/^#{1,3}\s*/gm, '');
+
   // Known section headers
-  const sectionPattern = /\b(REVENUE\s*&\s*COMPS|LABOR|GUEST|KITCHEN|COACHING|ENTERTAINMENT|CULINARY|ACTION\s*ITEMS|INCIDENTS?)\b/g;
+  const sectionPattern = /\b(REVENUE\s*&\s*COMPS|LABOR|GUEST|KITCHEN|TEAM|COACHING|ENTERTAINMENT|CULINARY|ACTION\s*ITEMS|INCIDENTS?)\b/g;
 
   // Split into sections by detecting uppercase headers
   const parts: { heading?: string; body: string }[] = [];
@@ -190,6 +214,14 @@ const TD_STYLE = `
 
 const TD_RIGHT = `${TD_STYLE} text-align: right; font-variant-numeric: tabular-nums;`;
 
+// ── Link context (passed to section renderers for deep-linking) ──
+
+interface LinkCtx {
+  appUrl: string;
+  date: string;
+  venueId: string;
+}
+
 // ── Section Renderers ────────────────────────────────────────────
 
 function renderSummaryKPIs(report: NightlyReportData, labor?: VenueReport['laborData']): string {
@@ -263,7 +295,7 @@ function renderCategoryBreakdown(categories: NightlyReportData['salesByCategory'
     </table>`;
 }
 
-function renderServers(servers: NightlyReportData['servers']): string {
+function renderServers(servers: NightlyReportData['servers'], ctx?: LinkCtx): string {
   if (!servers || servers.length === 0) return '';
 
   const top10 = [...servers]
@@ -271,21 +303,28 @@ function renderServers(servers: NightlyReportData['servers']): string {
     .slice(0, 10);
 
   const rows = top10
-    .map(
-      (s) => `
+    .map((s) => {
+      const nameCell = ctx
+        ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'servers', server: s.employee_name, venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">${s.employee_name}</a>`
+        : s.employee_name;
+      return `
       <tr>
-        <td style="${TD_STYLE}">${s.employee_name}</td>
+        <td style="${TD_STYLE}">${nameCell}</td>
         <td style="${TD_RIGHT}">${num(s.tickets)}</td>
         <td style="${TD_RIGHT}">${num(s.covers)}</td>
         <td style="${TD_RIGHT}">${fmt(s.net_sales)}</td>
         <td style="${TD_RIGHT}">${fmtDecimal(s.avg_ticket)}</td>
         <td style="${TD_RIGHT}">${s.tip_pct != null ? pct(s.tip_pct) : '—'}</td>
-      </tr>`
-    )
+      </tr>`;
+    })
     .join('');
 
+  const headerLink = ctx
+    ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'servers', venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">Top Servers</a>`
+    : 'Top Servers';
+
   return `
-    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">Top Servers</h3>
+    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">${headerLink}</h3>
     <table style="${TABLE_STYLE}">
       <thead>
         <tr>
@@ -335,24 +374,32 @@ function renderMenuItems(items: NightlyReportData['menuItems']): string {
     </table>`;
 }
 
-function renderComps(discounts: NightlyReportData['discounts']): string {
+function renderComps(discounts: NightlyReportData['discounts'], ctx?: LinkCtx): string {
   if (!discounts || discounts.length === 0) return '';
 
   const rows = discounts
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10)
-    .map(
-      (d) => `
+    .map((d) => {
+      const reason = d.reason || 'Unspecified';
+      const reasonCell = ctx
+        ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'comps', reason, venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">${reason}</a>`
+        : reason;
+      return `
       <tr>
-        <td style="${TD_STYLE}">${d.reason || 'Unspecified'}</td>
+        <td style="${TD_STYLE}">${reasonCell}</td>
         <td style="${TD_RIGHT}">${num(d.qty)}</td>
         <td style="${TD_RIGHT}">${fmt(d.amount)}</td>
-      </tr>`
-    )
+      </tr>`;
+    })
     .join('');
 
+  const headerLink = ctx
+    ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'comps', venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">Comps &amp; Discounts</a>`
+    : 'Comps &amp; Discounts';
+
   return `
-    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">Comps &amp; Discounts</h3>
+    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">${headerLink}</h3>
     <table style="${TABLE_STYLE}">
       <thead>
         <tr>
@@ -398,11 +445,15 @@ function renderVIPGuests(guests: NightlyReportData['notableGuests']): string {
     </table>`;
 }
 
-function renderLaborSummary(labor: VenueReport['laborData']): string {
+function renderLaborSummary(labor: VenueReport['laborData'], ctx?: LinkCtx): string {
   if (!labor) return '';
 
+  const headerLink = ctx
+    ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'labor', venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">Labor Summary</a>`
+    : 'Labor Summary';
+
   return `
-    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">Labor Summary</h3>
+    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">${headerLink}</h3>
     <table style="${TABLE_STYLE}">
       <thead>
         <tr>
@@ -441,7 +492,9 @@ function renderLaborSummary(labor: VenueReport['laborData']): string {
 
 // ── Venue Section ────────────────────────────────────────────────
 
-function renderVenueSection(venue: VenueReport, isMultiVenue: boolean): string {
+function renderVenueSection(venue: VenueReport, isMultiVenue: boolean, ctx?: Omit<LinkCtx, 'venueId'>): string {
+  const linkCtx: LinkCtx | undefined = ctx ? { ...ctx, venueId: venue.venueId } : undefined;
+
   const header = isMultiVenue
     ? `<h2 style="font-size: 18px; font-weight: 700; color: ${COLORS.dark}; margin: 24px 0 12px; padding-bottom: 8px; border-bottom: 2px solid ${COLORS.accent};">
         ${venue.venueName}
@@ -462,17 +515,17 @@ function renderVenueSection(venue: VenueReport, isMultiVenue: boolean): string {
     ${header}
     ${renderSummaryKPIs(venue.report, venue.laborData)}
     ${renderCategoryBreakdown(venue.report.salesByCategory)}
-    ${renderServers(venue.report.servers)}
+    ${renderServers(venue.report.servers, linkCtx)}
     ${renderMenuItems(venue.report.menuItems)}
-    ${renderComps(venue.report.discounts)}
+    ${renderComps(venue.report.discounts, linkCtx)}
     ${renderVIPGuests(venue.report.notableGuests)}
-    ${renderLaborSummary(venue.laborData)}
+    ${renderLaborSummary(venue.laborData, linkCtx)}
   `;
 }
 
 // ── Consolidated Summary ─────────────────────────────────────────
 
-function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<string, string>): string {
+function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<string, string>, ctx?: Omit<LinkCtx, 'venueId'>): string {
   if (venues.length <= 1) return '';
 
   const COL_COUNT = 8;
@@ -514,16 +567,28 @@ function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<stri
             </td>
           </tr>`
         : '';
+
+      // Deep-link venue name → full venue report; comps → comp detail
+      const venueNameCell = ctx
+        ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { venue: v.venueId })}" style="${linkStyle(COLORS.dark)}">${v.venueName}</a>`
+        : v.venueName;
+      const compsCell = ctx && s.total_comps > 0
+        ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'comps', venue: v.venueId })}" style="${linkStyle(COLORS.negative)}">${fmt(s.total_comps)}</a>`
+        : fmt(s.total_comps);
+      const laborCell = ctx && v.laborData
+        ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'labor', venue: v.venueId })}" style="${linkStyle(COLORS.dark)}">${pct(v.laborData.labor_pct)}</a>`
+        : (v.laborData ? pct(v.laborData.labor_pct) : '—');
+
       return `
       <tr>
-        <td style="${TD_STYLE} font-weight: 600;">${v.venueName}</td>
+        <td style="${TD_STYLE} font-weight: 600;">${venueNameCell}</td>
         <td style="${TD_RIGHT}">${fmt(s.net_sales)}</td>
         <td style="${TD_RIGHT}">${num(s.total_checks)}</td>
         <td style="${TD_RIGHT}">${num(s.total_covers)}</td>
         <td style="${TD_RIGHT}">${fmtDecimal(avgCheck)}</td>
-        <td style="${TD_RIGHT}">${fmt(s.total_comps)}</td>
+        <td style="${TD_RIGHT}">${compsCell}</td>
         <td style="${TD_RIGHT}">${pct(compPct)}</td>
-        <td style="${TD_RIGHT}">${v.laborData ? pct(v.laborData.labor_pct) : '—'}</td>
+        <td style="${TD_RIGHT}">${laborCell}</td>
       </tr>${summaryRow}`;
     })
     .join('');
@@ -575,8 +640,10 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
     ? `<img src="${logoUrl}" alt="${orgName}" style="height: 32px; margin-right: 12px;" />`
     : '';
 
+  const baseCtx: Omit<LinkCtx, 'venueId'> = { appUrl, date: businessDate };
+
   const venuesSections = venues
-    .map((v) => renderVenueSection(v, isMultiVenue))
+    .map((v) => renderVenueSection(v, isMultiVenue, baseCtx))
     .join('');
 
   return `<!DOCTYPE html>
@@ -618,14 +685,14 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
           <!-- Body -->
           <tr>
             <td style="background-color: ${COLORS.white}; padding: 24px 32px;">
-              ${isMultiVenue ? renderConsolidatedSummary(venues, aiSummaries) : venuesSections}
+              ${isMultiVenue ? renderConsolidatedSummary(venues, aiSummaries, baseCtx) : venuesSections}
             </td>
           </tr>
 
           <!-- CTA -->
           <tr>
             <td style="background-color: ${COLORS.white}; padding: 0 32px 24px;" align="center">
-              <a href="${appUrl}/reports/nightly"
+              <a href="${drillUrl(appUrl, businessDate)}"
                  style="display: inline-block; padding: 12px 32px; background-color: ${COLORS.accent}; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
                 View Full Report in KevaOS
               </a>
