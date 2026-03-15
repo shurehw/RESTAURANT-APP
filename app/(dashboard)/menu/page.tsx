@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { resolveContext } from '@/lib/auth/resolveContext';
 import { HubTabBar } from '@/components/ui/HubTabBar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,8 +29,13 @@ export default async function MenuPage({
   const params = await searchParams;
   const tab = params.tab || 'recipes';
 
+  const ctx = await resolveContext();
+  if (!ctx?.isAuthenticated || !ctx.authUserId) {
+    return <div className="p-8">Not authenticated. Please log in.</div>;
+  }
+
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-6">
         <h1 className="page-header">Menu</h1>
         <p className="text-muted-foreground">
@@ -142,7 +148,7 @@ async function MenuItemsTab() {
   return (
     <div className="space-y-6">
       {/* Coverage summary */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="border rounded-lg p-4">
           <div className="text-sm text-muted-foreground">Total Menu Items</div>
           <div className="text-2xl font-bold mt-1">{totalItems}</div>

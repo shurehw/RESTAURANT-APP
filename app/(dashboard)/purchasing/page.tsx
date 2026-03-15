@@ -44,7 +44,7 @@ export default async function PurchasingPage({
   const isPlatformAdmin = ctx.isPlatformAdmin;
 
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-6">
         <h1 className="page-header">Purchasing</h1>
         <p className="text-muted-foreground">
@@ -83,7 +83,7 @@ async function OrdersTab() {
   const { data: venues } = await supabase
     .from('venues').select('id, name').order('name').limit(1000);
 
-  return <OrdersClient orders={orders || []} vendors={vendors || []} venues={venues || []} />;
+  return <OrdersClient orders={orders || []} vendors={vendors || []} venues={venues || []} embedded />;
 }
 
 async function InvoicesTab({ orgId, isPlatformAdmin }: { orgId: string | null; isPlatformAdmin: boolean }) {
@@ -111,7 +111,7 @@ async function InvoicesTab({ orgId, isPlatformAdmin }: { orgId: string | null; i
     invoices = result.data || [];
   }
 
-  return <InvoicesClient invoices={invoices} venues={venues || []} />;
+  return <InvoicesClient invoices={invoices} venues={venues || []} embedded />;
 }
 
 async function VendorsTab({ orgId, isPlatformAdmin }: { orgId: string | null; isPlatformAdmin: boolean }) {

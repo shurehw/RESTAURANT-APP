@@ -64,9 +64,10 @@ interface OrdersClientProps {
   orders: Order[];
   vendors: Vendor[];
   venues: Venue[];
+  embedded?: boolean;
 }
 
-export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
+export function OrdersClient({ orders, vendors, venues, embedded }: OrdersClientProps) {
   const { selectedVenue } = useVenue();
   const [open, setOpen] = useState(false);
   const [vendorId, setVendorId] = useState("");
@@ -246,12 +247,14 @@ export function OrdersClient({ orders, vendors, venues }: OrdersClientProps) {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex justify-between items-start">
-        <div>
-          <h1 className="page-header">Orders</h1>
-          <p className="text-muted-foreground">
-            Place orders and track deliveries
-          </p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 className="page-header">Orders</h1>
+            <p className="text-muted-foreground">
+              Place orders and track deliveries
+            </p>
+          </div>
+        )}
 
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,11 +51,13 @@ type Venue = {
 interface InvoicesClientProps {
   invoices: Invoice[];
   venues: Venue[];
+  embedded?: boolean;
 }
 
-export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
+export function InvoicesClient({ invoices, venues, embedded }: InvoicesClientProps) {
   const router = useRouter();
   const { selectedVenue } = useVenue();
+  const [isInteractive, setIsInteractive] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const [rejecting, setRejecting] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
 
   // Filter, search, and sort invoices
   const filteredInvoices = useMemo(() => {
-    let result = invoices;
+    let result = [...invoices];
 
     // Filter by selected venue
     if (selectedVenue) {
@@ -130,9 +132,13 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
   }, [filteredInvoices, currentPage]);
 
   // Reset to page 1 when filters change
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, vendorFilter, sortBy, sortOrder]);
+
+  useEffect(() => {
+    setIsInteractive(true);
+  }, []);
 
   const handleAutoMatch = async (invoiceId: string) => {
     setLoading(invoiceId);
@@ -214,15 +220,17 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-invoices-interactive={isInteractive ? "true" : "false"}>
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
-        <div>
-          <h1 className="page-header">Invoices</h1>
-          <p className="text-muted-foreground text-sm md:text-base">
-            Auto-match to POs, manage approvals, and R365 exports
-          </p>
-        </div>
+        {!embedded && (
+          <div>
+            <h1 className="page-header">Invoices</h1>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Auto-match to POs, manage approvals, and R365 exports
+            </p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 md:gap-3">

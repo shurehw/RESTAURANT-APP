@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { DndContext } from '@dnd-kit/core';
 import { FloorPlanCanvas } from './FloorPlanCanvas';
 import { StaffSidebar } from './StaffSidebar';
 import type { VenueTable, VenueSection, VenueLabel, FloorPlan, ShiftTableSplit } from '@/lib/database/floor-plan';
@@ -147,18 +148,20 @@ export function FloorPlanOps({ venues, initialVenueId }: FloorPlanOpsProps) {
               Loading floor plan...
             </div>
           ) : (
-            <FloorPlanCanvas
-              tables={tables}
-              sections={sections}
-              labels={labels}
-              selectedTableIds={new Set()}
-              highlightedTableIds={highlightedTableIds}
-              tableColorMap={tableColorMap}
-              onSelectTable={() => {}}
-              onDeselectAll={() => {}}
-              onDoubleClickTable={() => {}}
-              readOnly={true}
-            />
+            <DndContext>
+              <FloorPlanCanvas
+                tables={tables}
+                sections={sections}
+                labels={labels}
+                selectedTableIds={new Set()}
+                highlightedTableIds={highlightedTableIds}
+                tableColorMap={tableColorMap}
+                onSelectTable={() => {}}
+                onDeselectAll={() => {}}
+                onDoubleClickTable={() => {}}
+                readOnly={true}
+              />
+            </DndContext>
           )}
         </div>
 

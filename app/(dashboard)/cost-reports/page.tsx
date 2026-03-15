@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { resolveContext } from '@/lib/auth/resolveContext';
 import { HubTabBar } from '@/components/ui/HubTabBar';
 import { Card } from '@/components/ui/card';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,8 +36,13 @@ export default async function CostReportsPage({
   const params = await searchParams;
   const tab = params.tab || 'budget';
 
+  const ctx = await resolveContext();
+  if (!ctx?.isAuthenticated || !ctx.authUserId) {
+    return <div className="p-8">Not authenticated. Please log in.</div>;
+  }
+
   return (
-    <div className="p-6">
+    <div>
       <div className="mb-6">
         <h1 className="page-header">Cost Reports</h1>
         <p className="text-muted-foreground">
@@ -84,7 +90,7 @@ async function BudgetTab() {
   return (
     <>
       <BudgetFilters />
-      <div className="grid grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader><CardTitle className="text-overline">Weekly Budget</CardTitle></CardHeader>
           <CardContent>
@@ -166,7 +172,7 @@ async function SavingsTab() {
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-green-50 rounded-lg"><DollarSign className="w-5 h-5 text-green-600" /></div>
@@ -314,7 +320,16 @@ async function VarianceTab() {
         </Card>
       )}
 
-      <div className="grid grid-cols-4 gap-6 mb-8">
+      {totalItems > 0 && unmappedItems === 0 && (
+        <Card className="p-4 mb-6 bg-keva-sage-50 border-keva-sage-200">
+          <h4 className="font-semibold text-keva-sage-800">All menu items mapped</h4>
+          <p className="text-sm text-keva-sage-700">
+            100% coverage. Theoretical COGS is fully computed.
+          </p>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <Card className="p-6">
           <div className="text-sm text-muted-foreground mb-1">Total Sales</div>
           <div className="text-2xl font-bold font-mono">${totalSales.toFixed(0)}</div>
