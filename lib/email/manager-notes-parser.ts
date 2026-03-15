@@ -169,6 +169,37 @@ function cleanNotes(text: string, staffNames?: Set<string>): string {
 }
 
 /**
+ * Extract service concern flags from cover_count check detail data.
+ * Looks for zero/low tips on high-spend checks, long dwell times, etc.
+ * Returns a summary string for the narrator, or null if nothing notable.
+ */
+export function extractServiceFlags(coverCountRaw: string): string | null {
+  // Pattern: "GuestLabel ServerName Server | X Covers | $Y Payment | Z% Tip | HH:MMam - HH:MMam (Xh Ym)"
+  const checkPattern = /(.+?)\s+\w[\w\s]*?Server\s*\|\s*(\d+)\s*Covers?\s*\|\s*\$([\d,]+\.?\d*)\s*Payment\s*\|\s*(\d+)%\s*Tip\s*\|\s*(\d{1,2}:\d{2}[ap]m)\s*-\s*(\d{1,2}:\d{2}[ap]m)\s*\(([^)]+)\)/gi;
+
+  const flags: string[] = [];
+  let match;
+  while ((match = checkPattern.exec(coverCountRaw)) !== null) {
+    const guestLabel = match[1].trim();
+    const covers = parseInt(match[2]);
+    const amount = parseFloat(match[3].replace(/,/g, ''));
+    const tipPct = parseInt(match[4]);
+    const duration = match[7];
+
+    // Flag: zero tip on $500+ check
+    if (tipPct === 0 && amount >= 500) {
+      flags.push(`$${amount.toLocaleString()} check (${covers} covers) with 0% tip over ${duration}`);
+    }
+    // Flag: very low tip (<10%) on $1000+ check
+    else if (tipPct > 0 && tipPct < 10 && amount >= 1000) {
+      flags.push(`$${amount.toLocaleString()} check (${covers} covers) with only ${tipPct}% tip over ${duration}`);
+    }
+  }
+
+  return flags.length > 0 ? flags.join('; ') : null;
+}
+
+/**
  * Strip server check detail blocks from cover_count section.
  * Lightspeed embeds "Notable Guests" with server-attributed checks:
  *   "Visa Cardholder Demi Pinkus Server | 9 Covers | $1,643.33 Payment | 38% Tip | ..."
@@ -331,11 +362,12 @@ export function parseLightspeedDigest(
   for (const { key, raw } of rawExtracts) {
     let processedRaw = raw;
 
-    // For cover_count: strip the "Notable Guests" server check detail block.
-    // This block contains lines like "ServerName Server | X Covers | $Y Payment | Z% Tip | ..."
-    // and item listings like "Don Julio 1942, Casamigos Reposado (+7)".
-    // Keep only the leading cover number and any non-check text.
+    // For cover_count: extract service flags BEFORE stripping check details
     if (key === 'cover_count') {
+      const serviceFlags = extractServiceFlags(raw);
+      if (serviceFlags) {
+        sections['service_flags'] = serviceFlags;
+      }
       processedRaw = stripServerCheckDetails(raw);
     }
 

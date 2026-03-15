@@ -36,11 +36,14 @@ export async function generateNarrativeFromNotes(
   // Only include KPI data when it's meaningful (non-zero sales)
   // Avero venues (Vegas, Harriets) have limited KPI data — manager notes are the primary source
   const hasFullKpi = kpiData && kpiData.netSales > 0 && kpiData.covers > 0;
+  const compPct = hasFullKpi && kpiData!.totalComps > 0
+    ? ((kpiData!.totalComps / kpiData!.netSales) * 100).toFixed(1)
+    : null;
   const kpiContext = hasFullKpi
     ? `KPI DATA (full-day totals from POS):
 Net Sales: $${Math.round(kpiData!.netSales).toLocaleString()}
 Covers: ${kpiData!.covers}
-${kpiData!.totalComps > 0 ? `Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()}` : ''}
+${kpiData!.totalComps > 0 ? `Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()} (${compPct}% of net sales)` : ''}
 ${kpiData!.laborCost > 0 ? `Labor Cost: $${Math.round(kpiData!.laborCost).toLocaleString()} (${kpiData!.laborPct.toFixed(1)}%)` : ''}
 `
     : '';
@@ -82,9 +85,11 @@ RULES:
 - NEVER put "reconcile", "discrepancy", "variance", or "investigate reporting" in ACTION ITEMS
 - If labor cost is $0 or not provided, do not mention labor at all
 - If comps are $0 or not provided, do not mention comps at all — do NOT say "no comps" or "zero comps"
+- If comp % is above 3%, flag it in REVENUE & COMPS as elevated and note the dollar amount
 - Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
 - In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
 - Names in SPENDERS OVER sections are real guest names (high spenders) — include them in GUEST section as notable spenders
+- SERVICE FLAGS section (if present) contains potential service concerns extracted from check data (zero tips, low tips on high-spend checks). Include these in ACTION ITEMS as service follow-ups — they may indicate food quality issues, service problems, or billing disputes worth investigating
 - If a section has no relevant data from the notes, include one bullet with "No notes reported"
 - Be direct and concise — restaurant industry language
 - Do NOT add sections not listed above
