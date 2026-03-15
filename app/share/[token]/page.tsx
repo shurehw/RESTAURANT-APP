@@ -224,7 +224,7 @@ const emptyGmNotes: GmNotes = {
 
 export default function ShareWeeklyPage() {
   const params = useParams();
-  const token = params.token as string;
+  const token = typeof params?.token === 'string' ? params.token : '';
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const [payload, setPayload] = useState<WeeklyAgendaPayload | null>(null);

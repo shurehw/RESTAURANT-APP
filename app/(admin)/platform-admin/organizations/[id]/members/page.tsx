@@ -20,7 +20,7 @@ type Member = {
 
 export default function OrganizationMembers() {
   const params = useParams();
-  const orgId = params.id as string;
+  const orgId = typeof params?.id === 'string' ? params.id : '';
   
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +46,11 @@ export default function OrganizationMembers() {
   }, [orgId]);
 
   useEffect(() => {
+    if (!orgId) {
+      setError('Organization ID is missing');
+      setLoading(false);
+      return;
+    }
     fetchMembers();
   }, [fetchMembers]);
 

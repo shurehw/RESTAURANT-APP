@@ -525,13 +525,13 @@ export default function NightlyReportPage() {
   const router = useRouter();
 
   // Global view mode state (synchronized with URL)
-  type ViewMode = 'nightly' | 'wtd' | 'ptd' | 'ytd';
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    (searchParams.get('view') as ViewMode) || 'nightly'
+    type ViewMode = 'nightly' | 'wtd' | 'ptd' | 'ytd';
+    const [viewMode, setViewMode] = useState<ViewMode>(
+    (searchParams?.get('view') as ViewMode) || 'nightly'
   );
 
   const [date, setDate] = useState(() => {
-    const urlDate = searchParams.get('date');
+    const urlDate = searchParams?.get('date');
     if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) return urlDate;
     const d = new Date();
     d.setDate(d.getDate() - 1);
@@ -575,10 +575,10 @@ export default function NightlyReportPage() {
   const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
 
   // Deep-link params (from email drill-through)
-  const deepSection = searchParams.get('section');   // 'comps' | 'labor' | 'servers'
-  const deepReason = searchParams.get('reason');     // comp reason filter
-  const deepServer = searchParams.get('server');     // server name filter
-  const deepVenueId = searchParams.get('venue');     // target venue
+  const deepSection = searchParams?.get('section');   // 'comps' | 'labor' | 'servers' | 'categories' | 'items'
+  const deepReason = searchParams?.get('reason');     // comp reason filter
+  const deepServer = searchParams?.get('server');     // server name filter
+  const deepVenueId = searchParams?.get('venue');     // target venue
   const [compTab, setCompTab] = useState<string>(deepReason ? 'all-comps' : 'by-reason');
 
   // Auto-select venue from deep-link
@@ -631,7 +631,7 @@ export default function NightlyReportPage() {
   // Handler for view mode changes (updates URL)
   function handleViewChange(newView: ViewMode) {
     setViewMode(newView);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() || '');
     params.set('view', newView);
     router.push(`?${params.toString()}`, { scroll: false });
   }
@@ -1864,12 +1864,14 @@ export default function NightlyReportPage() {
                     secondaryVariancePct={avgCheckSecondaryPct != null ? Math.round(avgCheckSecondaryPct * 10) / 10 : null}
                     secondaryLabel={secondaryLabel}
                   />
-                  <PeriodCategoryMixCard
-                    foodSales={foodNet}
-                    bevSales={bevNet}
-                    otherSales={otherNet}
-                    priorBevPct={priorBevPct}
-                  />
+                  <div id="section-categories">
+                    <PeriodCategoryMixCard
+                      foodSales={foodNet}
+                      bevSales={bevNet}
+                      otherSales={otherNet}
+                      priorBevPct={priorBevPct}
+                    />
+                  </div>
                 </div>
 
                 {/* Closing Narrative — AI-generated summary (nightly only) */}
@@ -2470,10 +2472,11 @@ export default function NightlyReportPage() {
                           // Scored coaching actions
                           const needsCoaching = scoreTier === 'at_risk' || scoreTier === 'developing';
 
+                          const isDeepLinked = deepServer && server.employee_name?.toLowerCase() === deepServer.toLowerCase();
                           return (
                           <tr
                             key={i}
-                            className={`cursor-pointer hover:bg-muted/50 transition-colors ${needsCoaching ? 'bg-amber-50/30 dark:bg-amber-900/5' : ''}`}
+                            className={`cursor-pointer hover:bg-muted/50 transition-colors ${isDeepLinked ? 'bg-accent/10 ring-2 ring-accent ring-inset' : needsCoaching ? 'bg-amber-50/30 dark:bg-amber-900/5' : ''}`}
                             onClick={() => {
                               setSelectedServer(server);
                               setServerModalOpen(true);
@@ -2553,7 +2556,7 @@ export default function NightlyReportPage() {
             </Card>
 
             {/* Top Menu Items */}
-            <Card>
+            <Card id="section-items">
               <CardHeader className="border-b border-brass/20">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <UtensilsCrossed className="h-5 w-5 text-brass" />
@@ -2799,7 +2802,7 @@ export default function NightlyReportPage() {
                           <button
                             className="text-xs text-muted-foreground underline"
                             onClick={() => {
-                              const params = new URLSearchParams(searchParams.toString());
+                              const params = new URLSearchParams(searchParams?.toString() || '');
                               params.delete('reason');
                               router.push(`?${params.toString()}`, { scroll: false });
                             }}

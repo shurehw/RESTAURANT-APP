@@ -3,32 +3,47 @@ export const dynamic = 'force-dynamic';
 /**
  * Daily Forecast Briefing Page
  * AI-powered morning briefing for managers
+ * Accepts ?venue= search param for venue selection (same pattern as forecasts page)
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { requireUser } from '@/lib/auth';
 import { BriefingDisplay } from '@/components/labor/BriefingDisplay';
 import { redirect } from 'next/navigation';
-import { generateDailyBriefing, explainForecastChange, ForecastChange, AdjustmentRecommendation } from '@/lib/ai/forecast-explainer';
+import Link from 'next/link';
+import {
+  generateDailyBriefing,
+  explainForecastChange,
+  ForecastChange,
+  AdjustmentRecommendation,
+} from '@/lib/ai/forecast-explainer';
 
-export default async function DailyBriefingPage() {
-  await requireUser();
+export default async function DailyBriefingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ venue?: string }>;
+}) {
+  const params = await searchParams;
 
   const supabase = await createClient();
 
-  // Get user's selected venue (from session or default)
+  // Get all active venues for the selector
   const { data: venues } = await supabase
     .from('venues')
     .select('id, name')
-    .eq('is_active', true)
-    .limit(1);
+    .eq('is_active', true);
 
   if (!venues || venues.length === 0) {
     redirect('/');
   }
 
-  const venueId = venues[0].id;
-  const venueName = venues[0].name;
+  const venueId = params.venue || venues[0].id;
+  const selectedVenue = venues.find((v) => v.id === venueId);
+
+  if (!selectedVenue) {
+    redirect('/labor/briefing');
+  }
+
+  const venueName = selectedVenue.name;
 
   // Fetch briefing data directly (server component can access DB directly)
   const today = new Date();
@@ -44,6 +59,13 @@ export default async function DailyBriefingPage() {
     .order('forecast_date', { ascending: true })
     .order('shift_type', { ascending: true });
 
+  const dateDisplay = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   if (!forecasts || forecasts.length === 0) {
     const briefingData = {
       venueName,
@@ -55,15 +77,11 @@ export default async function DailyBriefingPage() {
     };
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Daily Briefing</h1>
-            <p className="text-sm text-gray-500 mt-1">AI-powered forecast review</p>
-          </div>
-          <div className="text-sm text-gray-500">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </div>
-        </div>
+        <BriefingHeader
+          venues={venues}
+          selectedVenueId={venueId}
+          dateDisplay={dateDisplay}
+        />
         <BriefingDisplay data={briefingData} />
       </div>
     );
@@ -86,7 +104,10 @@ export default async function DailyBriefingPage() {
 
     if (previousForecasts && previousForecasts.length > 0) {
       const prev = previousForecasts[0];
-      const variancePercentage = ((forecast.covers_predicted - prev.covers_predicted) / prev.covers_predicted) * 100;
+      const variancePercentage =
+        ((forecast.covers_predicted - prev.covers_predicted) /
+          prev.covers_predicted) *
+        100;
       if (Math.abs(variancePercentage) >= 10) {
         const forecastDate = new Date(forecast.forecast_date);
         changes.push({
@@ -96,8 +117,12 @@ export default async function DailyBriefingPage() {
           newRevenue: forecast.revenue_predicted || 0,
           variancePercentage,
           date: forecast.forecast_date,
-          dayOfWeek: forecastDate.toLocaleDateString('en-US', { weekday: 'long' }),
-          factors: { historicalPattern: `${forecast.shift_type} shift pattern` },
+          dayOfWeek: forecastDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+          }),
+          factors: {
+            historicalPattern: `${forecast.shift_type} shift pattern`,
+          },
         });
       }
     }
@@ -105,39 +130,51 @@ export default async function DailyBriefingPage() {
 
   const { data: adjustments } = await (supabase as any)
     .from('schedule_adjustments')
-    .select(`*, shift:shift_assignments(employee:employee_id(first_name, last_name), position, scheduled_start, scheduled_end)`)
+    .select(
+      `*, shift:shift_assignments(employee:employee_id(first_name, last_name), position, scheduled_start, scheduled_end)`
+    )
     .eq('status', 'pending')
     .gte('shift.scheduled_start', today.toISOString())
     .lte('shift.scheduled_start', threeDaysOut.toISOString())
     .order('net_benefit', { ascending: false })
     .limit(5);
 
-  const formattedAdjustments: AdjustmentRecommendation[] = (adjustments || []).map((adj: any) => {
+  const formattedAdjustments: AdjustmentRecommendation[] = (
+    adjustments || []
+  ).map((adj: any) => {
     const shift = adj.shift;
     const employee = shift?.employee;
     const shiftStart = new Date(shift?.scheduled_start);
     return {
       type: adj.adjustment_type as 'cut' | 'add',
-      employeeName: employee ? `${employee.first_name} ${employee.last_name}` : 'Unknown',
+      employeeName: employee
+        ? `${employee.first_name} ${employee.last_name}`
+        : 'Unknown',
       position: shift?.position || 'Unknown',
       savings: adj.labor_savings,
       penalty: adj.penalty_cost ?? 0,
       netBenefit: adj.net_benefit ?? 0,
-      hoursUntilShift: (shiftStart.getTime() - today.getTime()) / (1000 * 60 * 60),
+      hoursUntilShift:
+        (shiftStart.getTime() - today.getTime()) / (1000 * 60 * 60),
       reason: adj.reason || 'Forecast variance',
     };
   });
 
-  const totalPotentialSavings = formattedAdjustments.reduce((sum, adj) => sum + adj.netBenefit, 0);
+  const totalPotentialSavings = formattedAdjustments.reduce(
+    (sum, adj) => sum + adj.netBenefit,
+    0
+  );
 
   const briefing = await generateDailyBriefing({
     venueName,
-    reviewDate: today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    reviewDate: dateDisplay,
     upcomingForecasts: forecasts.map((f) => {
       const forecastDate = new Date(f.forecast_date);
       return {
         date: f.forecast_date,
-        dayOfWeek: forecastDate.toLocaleDateString('en-US', { weekday: 'long' }),
+        dayOfWeek: forecastDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+        }),
         shift: f.shift_type,
         covers: f.covers_predicted,
         revenue: f.revenue_predicted || 0,
@@ -151,7 +188,10 @@ export default async function DailyBriefingPage() {
   });
 
   const changeExplanations = await Promise.all(
-    changes.map(async (change) => ({ change, explanation: await explainForecastChange(change) }))
+    changes.map(async (change) => ({
+      change,
+      explanation: await explainForecastChange(change),
+    }))
   );
 
   const briefingData = {
@@ -165,24 +205,57 @@ export default async function DailyBriefingPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Daily Briefing</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            AI-powered forecast review and recommendations
-          </p>
-        </div>
-        <div className="text-sm text-gray-500">
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
-      </div>
-
+      <BriefingHeader
+        venues={venues}
+        selectedVenueId={venueId}
+        dateDisplay={dateDisplay}
+      />
       <BriefingDisplay data={briefingData} />
+    </div>
+  );
+}
+
+/** Shared header with venue selector and date */
+function BriefingHeader({
+  venues,
+  selectedVenueId,
+  dateDisplay,
+}: {
+  venues: { id: string; name: string }[];
+  selectedVenueId: string;
+  dateDisplay: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Daily Briefing</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          AI-powered forecast review and recommendations
+        </p>
+      </div>
+      <div className="flex items-center gap-4">
+        {venues.length > 1 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Venue:</label>
+            <div className="flex gap-1 flex-wrap">
+              {venues.map((v) => (
+                <Link
+                  key={v.id}
+                  href={`/labor/briefing?venue=${v.id}`}
+                  className={`px-3 py-1.5 border rounded-md text-sm ${
+                    v.id === selectedVenueId
+                      ? 'bg-keva-sage-50 border-keva-sage-300'
+                      : 'bg-white'
+                  }`}
+                >
+                  {v.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        <div className="text-sm text-gray-500">{dateDisplay}</div>
+      </div>
     </div>
   );
 }

@@ -11,7 +11,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
 import { recomputeRollups } from '@/lib/database/portfolio-rollups';
 
+// Vercel Cron sends GET — delegate to shared handler
+export async function GET(request: NextRequest) {
+  return handleRollup(request);
+}
+
 export async function POST(request: NextRequest) {
+  return handleRollup(request);
+}
+
+async function handleRollup(request: NextRequest) {
   const t0 = Date.now();
 
   // ── 1. Verify Cron Secret ──

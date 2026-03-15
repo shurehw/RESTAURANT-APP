@@ -357,7 +357,17 @@ When you are ready to output the final recipe, respond with ONLY valid JSON matc
     let recipe: GeneratedRecipe;
     try {
       // Strip any markdown code fences if present
-      const cleaned = assistantText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      let cleaned = assistantText.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+
+      // If the AI wrapped JSON in explanation text, extract the JSON object
+      if (!cleaned.startsWith('{')) {
+        const jsonStart = cleaned.indexOf('{');
+        const jsonEnd = cleaned.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
+        }
+      }
+
       recipe = JSON.parse(cleaned);
     } catch {
       throw { status: 502, code: 'AI_PARSE_ERROR', message: 'Failed to parse recipe from AI response' };

@@ -8,7 +8,16 @@ import { runAllCOGSEnforcement } from '@/lib/database/cogs-enforcement';
  * Routes violations to Action Center.
  * Trigger via Vercel cron or external scheduler.
  */
+// Vercel Cron sends GET — delegate to shared handler
+export async function GET(req: NextRequest) {
+  return handleCOGSEnforcement(req);
+}
+
 export async function POST(req: NextRequest) {
+  return handleCOGSEnforcement(req);
+}
+
+async function handleCOGSEnforcement(req: NextRequest) {
   try {
     // Verify cron secret
     const authHeader = req.headers.get('authorization');

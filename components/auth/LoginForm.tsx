@@ -11,7 +11,7 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const authError = searchParams.get('error');
+  const authError = searchParams?.get('error');
   const bannerError = error || (
     authError === 'no_org'
       ? 'No organization access found for this account. Contact an admin to assign your account.'
@@ -39,7 +39,7 @@ export function LoginForm() {
       // PWA-only users always go to /pulse
       const redirectTo = data.user?.role === 'pwa'
         ? '/pulse'
-        : searchParams.get('redirect') || '/';
+        : searchParams?.get('redirect') || '/';
       window.location.href = redirectTo;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');

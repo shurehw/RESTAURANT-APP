@@ -16,7 +16,7 @@ import {
   createInvite,
   getTeamMembers,
 } from '@/lib/database/team';
-import { getResendClient, FROM_EMAIL } from '@/lib/email/resend';
+import { getResendClient, WELCOME_EMAIL } from '@/lib/email/resend';
 import { renderInviteEmail } from '@/lib/email/invite-template';
 import { getServiceClient } from '@/lib/supabase/service';
 import { ROLE_LABELS } from '@/lib/nav/role-permissions';
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
     try {
       const resend = getResendClient();
       await resend.emails.send({
-        from: FROM_EMAIL,
+        from: WELCOME_EMAIL,
         to: validated.email,
         subject: `You're invited to join ${org?.name || 'KevaOS'}`,
         html,

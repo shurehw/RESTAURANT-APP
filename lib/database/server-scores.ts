@@ -202,6 +202,7 @@ async function fetchServerPosData(
     turnCovers: number;
     dates: Set<string>;
     perCoverByDay: number[];
+    dailyRevTips: Array<{ rev: number; tips: number }>;
     role_category: RoleCategory;
   }>();
 
@@ -214,16 +215,17 @@ async function fetchServerPosData(
       serverMap.set(name, {
         covers: 0, revenue: 0, tips: 0, comps: 0,
         turnMinsWeighted: 0, turnCovers: 0, dates: new Set(),
-        perCoverByDay: [],
+        perCoverByDay: [], dailyRevTips: [],
         role_category: role,
       });
     }
     const s = serverMap.get(name)!
     const covers = row.covers_count || 0;
     const revenue = parseFloat(row.gross_sales) || 0;
+    const tips = parseFloat(row.tips_total) || 0;
     s.covers += covers;
     s.revenue += revenue;
-    s.tips += parseFloat(row.tips_total) || 0;
+    s.tips += tips;
     s.comps += parseFloat(row.comps_total) || 0;
     const turnMins = parseFloat(row.avg_turn_mins) || 0;
     if (turnMins > 0 && covers > 0) {
@@ -233,6 +235,9 @@ async function fetchServerPosData(
     s.dates.add(row.business_date);
     if (covers > 0) {
       s.perCoverByDay.push(revenue / covers);
+    }
+    if (revenue > 0) {
+      s.dailyRevTips.push({ rev: revenue, tips });
     }
   }
 
@@ -247,7 +252,20 @@ async function fetchServerPosData(
 
   for (const [name, s] of serverMap) {
     const avgPerCover = s.covers > 0 ? s.revenue / s.covers : 0;
-    const avgTipPct = s.tips > 0 && s.revenue > 0 ? (s.tips / s.revenue) * 100 : null;
+    // Tip % excluding outlier days (bottle service/buyouts with 0 tips skew the average)
+    // Exclude days where revenue > 3x median daily revenue
+    const avgTipPct = (() => {
+      const days = s.dailyRevTips;
+      if (days.length < 2) return s.tips > 0 && s.revenue > 0 ? (s.tips / s.revenue) * 100 : null;
+      const sortedRevs = days.map(d => d.rev).sort((a, b) => a - b);
+      const median = sortedRevs[Math.floor(sortedRevs.length / 2)];
+      const cap = median * 3;
+      const filtered = days.filter(d => d.rev <= cap);
+      if (filtered.length === 0) return null;
+      const filteredRev = filtered.reduce((sum, d) => sum + d.rev, 0);
+      const filteredTips = filtered.reduce((sum, d) => sum + d.tips, 0);
+      return filteredTips > 0 && filteredRev > 0 ? (filteredTips / filteredRev) * 100 : null;
+    })();
     const avgTurnMins = s.turnCovers > 0 ? s.turnMinsWeighted / s.turnCovers : null;
 
     servers.push({

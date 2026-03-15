@@ -1,16 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git pull:*)",
-      "Bash(PGHOST=\"db.mnraeesscqsaappkaldb.supabase.co\" PGPORT=\"5432\" PGUSER=\"cli_login_postgres\" PGPASSWORD=\"vycuiAWYZydYWIPEjTfnEbfUpDhTkoWT\" PGDATABASE=\"postgres\" psql -c \"SELECT tablename FROM pg_tables WHERE tablename IN \\(''entertainment_shift_logs'', ''culinary_shift_logs''\\);\")",
-      "Bash(DATABASE_URL=\"postgresql://cli_login_postgres:vycuiAWYZydYWIPEjTfnEbfUpDhTkoWT@db.mnraeesscqsaappkaldb.supabase.co:5432/postgres\" node scripts/_apply_migration.mjs scripts/_tmp_entertainment.sql)",
-      "Read(//c/Dev/RESTAURANT-APP/$HOME/**)",
-      "Read(//c/Dev/RESTAURANT-APP/**)",
-      "Read(//c//**)",
-      "Read(//c/Dev/RESTAURANT-APP/$HOME/.config/**)",
-      "Bash(gh run list --limit 1 --json status,conclusion,headBranch,createdAt)",
-      "Read(//c/Dev/RESTAURANT-APP/{ gsub\\(/[[:space:]]/, \"\"\"\", $1\\); gsub\\(/[[:space:]]/**)",
-      "Read(//c/Dev/RESTAURANT-APP/$APPDATA/**)"
+      "Bash(gh run list *)"
     ]
   }
 }

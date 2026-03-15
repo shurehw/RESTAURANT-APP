@@ -27,7 +27,6 @@ const MAX_REQUESTS = 100; // requests per window
 export async function rateLimit(req: NextRequest, keyExtra = ''): Promise<void> {
   // Skip rate limiting if Redis not configured
   if (!redis) {
-    console.warn('[Rate Limit] Redis not configured, skipping rate limit check');
     return;
   }
 

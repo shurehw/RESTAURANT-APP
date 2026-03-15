@@ -13,6 +13,27 @@ import { getFiscalPeriod, getFiscalYearStart, getAllPeriodsInFiscalYear, getSame
 import { fetchLaborSummary } from '@/lib/database/tipsee'; // Fallback for live query
 import { getActiveSalesPaceVenues, getVenueFiscalConfig, getLatestSnapshot } from '@/lib/database/sales-pace';
 
+// Auto-grat venues: tip % from payments is meaningless (automatic service charges)
+const AUTO_GRAT_VENUE_IDS = new Set([
+  'a7da18a4-a70b-4492-abed-c9fed5851c9e', // Bird Streets Club
+  '288b7f22-ffdc-4701-a396-a6b415aff0f1', // Delilah Miami
+]);
+
+// Classify TipSee employee roles — returns null for non-scoreable roles (managers, admin, etc.)
+function classifyRole(role: string | null): string | null {
+  if (!role) return 'server';
+  const r = role.toLowerCase();
+  if (r.includes('manager') || r.includes('admin') || r.includes('valet') ||
+      r.includes('event') || r.includes('cover charge')) return null;
+  if (r.includes('bartend') || r.includes('bar back') || r.includes('barback') ||
+      r.includes('service bar')) return 'bartender';
+  if (r.includes('host') || r.includes('maitre')) return 'host';
+  if (r.includes('server') || r.includes('waiter') || r.includes('waitress') ||
+      r.includes('captain')) return 'server';
+  if (r.includes('busser') || r.includes('runner') || r.includes('sommelier')) return 'other';
+  return 'server';
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const action = searchParams.get('action');
@@ -644,6 +665,7 @@ export async function GET(request: NextRequest) {
       const byServer = new Map<string, {
         employee_name: string;
         employee_role: string;
+        role_category: string;
         gross_sales: number;
         checks_count: number;
         covers_count: number;
@@ -651,16 +673,21 @@ export async function GET(request: NextRequest) {
         turn_mins_sum: number;
         turn_mins_count: number;
         days: Set<string>;
+        dailyRevTips: Array<{ rev: number; tips: number }>;
       }>();
 
       for (const row of rows) {
+        const role = classifyRole(row.employee_role);
+        if (!role) continue; // skip managers, admin, valet, etc.
         const key = row.employee_name;
         const existing = byServer.get(key) || {
           employee_name: row.employee_name,
           employee_role: row.employee_role || '',
+          role_category: role,
           gross_sales: 0, checks_count: 0, covers_count: 0,
           tips_total: 0, turn_mins_sum: 0, turn_mins_count: 0,
           days: new Set<string>(),
+          dailyRevTips: [] as Array<{ rev: number; tips: number }>,
         };
         existing.gross_sales += row.gross_sales || 0;
         existing.checks_count += row.checks_count || 0;
@@ -671,23 +698,49 @@ export async function GET(request: NextRequest) {
           existing.turn_mins_count++;
         }
         existing.days.add(row.business_date);
+        existing.dailyRevTips.push({ rev: row.gross_sales || 0, tips: row.tips_total || 0 });
         byServer.set(key, existing);
       }
 
+      const isAutoGrat = AUTO_GRAT_VENUE_IDS.has(venueId!);
+
       return Array.from(byServer.values())
-        .map((s) => ({
-          employee_name: s.employee_name,
-          employee_role_name: s.employee_role,
-          tickets: s.checks_count,
-          covers: s.covers_count,
-          net_sales: s.gross_sales,
-          avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
-          avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
-          avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
-          tip_pct: s.gross_sales > 0 && s.tips_total > 0 ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null,
-          total_tips: s.tips_total,
-          days_worked: s.days.size,
-        }))
+        .map((s) => {
+          // Outlier-filtered tip %: exclude days where revenue > 3x median (bottle service/buyouts)
+          const tipPct = (() => {
+            if (isAutoGrat) return null;
+            const days = s.dailyRevTips;
+            if (days.length < 2) {
+              return s.tips_total > 0 && s.gross_sales > 0
+                ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null;
+            }
+            const sortedRevs = days.map(d => d.rev).sort((a, b) => a - b);
+            const median = sortedRevs[Math.floor(sortedRevs.length / 2)];
+            const cap = median * 3;
+            const filtered = days.filter(d => d.rev <= cap);
+            if (filtered.length === 0) return null;
+            const filteredRev = filtered.reduce((sum, d) => sum + d.rev, 0);
+            const filteredTips = filtered.reduce((sum, d) => sum + d.tips, 0);
+            return filteredTips > 0 && filteredRev > 0
+              ? Math.round((filteredTips / filteredRev) * 1000) / 10 : null;
+          })();
+
+          return {
+            employee_name: s.employee_name,
+            employee_role_name: s.employee_role,
+            role_category: s.role_category,
+            tickets: s.checks_count,
+            covers: s.covers_count,
+            net_sales: s.gross_sales,
+            avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
+            avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
+            avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
+            tip_pct: tipPct,
+            total_tips: s.tips_total,
+            days_worked: s.days.size,
+            is_auto_grat: isAutoGrat,
+          };
+        })
         .sort((a, b) => b.net_sales - a.net_sales);
     }
 
@@ -1013,20 +1066,28 @@ export async function GET(request: NextRequest) {
         quantity: cat.quantity_sold || 0,
       })),
 
-      servers: (serverResult.data || []).map((server: any) => ({
-        employee_name: server.employee_name,
-        employee_role_name: server.employee_role,
-        tickets: server.checks_count,
-        covers: server.covers_count,
-        net_sales: server.gross_sales,
-        avg_ticket: server.avg_check,
-        avg_turn_mins: server.avg_turn_mins,
-        avg_per_cover: server.avg_per_cover,
-        tip_pct: server.gross_sales > 0 && server.tips_total != null
-          ? Math.round((server.tips_total / server.gross_sales) * 1000) / 10
-          : null,
-        total_tips: server.tips_total || 0,
-      })),
+      servers: (serverResult.data || [])
+        .filter((server: any) => classifyRole(server.employee_role) !== null)
+        .map((server: any) => {
+          const isAutoGrat = AUTO_GRAT_VENUE_IDS.has(venueId!);
+          return {
+            employee_name: server.employee_name,
+            employee_role_name: server.employee_role,
+            role_category: classifyRole(server.employee_role),
+            tickets: server.checks_count,
+            covers: server.covers_count,
+            net_sales: server.gross_sales,
+            avg_ticket: server.avg_check,
+            avg_turn_mins: server.avg_turn_mins,
+            avg_per_cover: server.avg_per_cover,
+            tip_pct: isAutoGrat ? null
+              : server.gross_sales > 0 && server.tips_total != null
+                ? Math.round((server.tips_total / server.gross_sales) * 1000) / 10
+                : null,
+            total_tips: server.tips_total || 0,
+            is_auto_grat: isAutoGrat,
+          };
+        }),
 
       menuItems: (itemResult.data || []).map((item: any) => ({
         name: item.menu_item_name,
@@ -1575,11 +1636,15 @@ async function handleGroupFacts(date: string, viewMode: string) {
   function aggServerData(rows: any[]): any[] {
     const byServer = new Map<string, any>();
     for (const row of rows) {
+      const role = classifyRole(row.employee_role);
+      if (!role) continue; // skip managers, admin, valet, etc.
       const key = row.employee_name;
       const existing = byServer.get(key) || {
         employee_name: row.employee_name, employee_role: row.employee_role || '',
+        role_category: role,
         gross_sales: 0, checks_count: 0, covers_count: 0, tips_total: 0,
         turn_mins_sum: 0, turn_mins_count: 0, days: new Set<string>(),
+        dailyRevTips: [] as { rev: number; tips: number }[],
       };
       existing.gross_sales += row.gross_sales || 0;
       existing.checks_count += row.checks_count || 0;
@@ -1587,18 +1652,39 @@ async function handleGroupFacts(date: string, viewMode: string) {
       existing.tips_total += row.tips_total || 0;
       if (row.avg_turn_mins > 0) { existing.turn_mins_sum += row.avg_turn_mins; existing.turn_mins_count++; }
       existing.days.add(row.business_date);
+      (existing.dailyRevTips as { rev: number; tips: number }[]).push({ rev: row.gross_sales || 0, tips: row.tips_total || 0 });
       byServer.set(key, existing);
     }
     return Array.from(byServer.values())
-      .map(s => ({
-        employee_name: s.employee_name, employee_role_name: s.employee_role,
-        tickets: s.checks_count, covers: s.covers_count, net_sales: s.gross_sales,
-        avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
-        avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
-        avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
-        tip_pct: s.gross_sales > 0 && s.tips_total > 0 ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null,
-        total_tips: s.tips_total, days_worked: s.days.size,
-      }))
+      .map(s => {
+        // Outlier-filtered tip %: exclude days where revenue > 3x median
+        const tipPct = (() => {
+          const days = s.dailyRevTips;
+          if (days.length < 2) {
+            return s.tips_total > 0 && s.gross_sales > 0
+              ? Math.round((s.tips_total / s.gross_sales) * 1000) / 10 : null;
+          }
+          const sortedRevs = days.map((d: any) => d.rev).sort((a: number, b: number) => a - b);
+          const median = sortedRevs[Math.floor(sortedRevs.length / 2)];
+          const cap = median * 3;
+          const filtered = days.filter((d: any) => d.rev <= cap);
+          if (filtered.length === 0) return null;
+          const filteredRev = filtered.reduce((sum: number, d: any) => sum + d.rev, 0);
+          const filteredTips = filtered.reduce((sum: number, d: any) => sum + d.tips, 0);
+          return filteredTips > 0 && filteredRev > 0
+            ? Math.round((filteredTips / filteredRev) * 1000) / 10 : null;
+        })();
+        return {
+          employee_name: s.employee_name, employee_role_name: s.employee_role,
+          role_category: s.role_category,
+          tickets: s.checks_count, covers: s.covers_count, net_sales: s.gross_sales,
+          avg_ticket: s.checks_count > 0 ? Math.round((s.gross_sales / s.checks_count) * 100) / 100 : 0,
+          avg_turn_mins: s.turn_mins_count > 0 ? Math.round(s.turn_mins_sum / s.turn_mins_count) : 0,
+          avg_per_cover: s.covers_count > 0 ? Math.round((s.gross_sales / s.covers_count) * 100) / 100 : 0,
+          tip_pct: tipPct,
+          total_tips: s.tips_total, days_worked: s.days.size,
+        };
+      })
       .sort((a: any, b: any) => b.net_sales - a.net_sales);
   }
 

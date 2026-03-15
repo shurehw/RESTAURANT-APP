@@ -7,6 +7,7 @@
  */
 
 import { getServiceClient } from '@/lib/supabase/service';
+import { shouldSilenceMissingRelationError } from '@/lib/database/schema-guards';
 import type { MenuAgentMode, MenuActionType } from '@/lib/ai/menu-agent-policy';
 
 // ── Types ──────────────────────────────────────────────────────
@@ -368,6 +369,9 @@ export async function getMenuItemPerformance(
     .eq('venue_id', venueId);
 
   if (error) {
+    if (shouldSilenceMissingRelationError('menu-agent', 'v_menu_item_performance', error)) {
+      return [];
+    }
     console.error('[MenuAgent] Error fetching item performance:', error.message);
     return [];
   }
@@ -428,6 +432,9 @@ export async function getMenuMarginHealth(venueId: string): Promise<any[]> {
     .eq('venue_id', venueId);
 
   if (error) {
+    if (shouldSilenceMissingRelationError('menu-agent', 'v_menu_margin_health', error)) {
+      return [];
+    }
     console.error('[MenuAgent] Error fetching margin health:', error.message);
     return [];
   }

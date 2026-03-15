@@ -43,7 +43,16 @@ function verifyCronSecret(request: NextRequest): boolean {
 // Main Handler
 // ============================================================================
 
+// Vercel Cron sends GET — delegate to shared handler
+export async function GET(request: NextRequest) {
+  return handleEnforce(request);
+}
+
 export async function POST(request: NextRequest) {
+  return handleEnforce(request);
+}
+
+async function handleEnforce(request: NextRequest) {
   const t0 = Date.now();
 
   if (!verifyCronSecret(request)) {

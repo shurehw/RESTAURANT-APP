@@ -310,7 +310,7 @@ export function CommandTrigger() {
   return (
     <button
       onClick={toggleCommandPanel}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border-2 border-keva-brass/30 bg-keva-brass/5 hover:bg-keva-brass/10 text-foreground hover:border-keva-brass/50 transition-colors shadow-sm"
+      className="flex items-center gap-1.5 px-2.5 py-1 rounded-[6px] border border-keva-slate-700 bg-keva-slate-800 text-keva-fog-100 hover:border-brass hover:text-brass transition-all shadow-sm"
       title="Command (Ctrl+K)"
     >
       <Command className="w-4 h-4" />

@@ -80,15 +80,9 @@ export async function POST(req: NextRequest) {
 
     assertVenueAccess(venueId, venueIds);
 
-    // TODO: Call Python forecaster service
-    // This would be a separate process/container running forecaster.py
-
-    return NextResponse.json({
-      success: true,
-      message: `Forecast generation triggered for ${daysAhead} days`,
-      venueId,
-      daysAhead,
-      note: 'Python forecaster service will run and populate demand_forecasts table',
-    });
+    return NextResponse.json(
+      { error: 'Forecast generation via Python service not yet integrated' },
+      { status: 501 }
+    );
   });
 }

@@ -126,8 +126,8 @@ export interface ReservationEvent {
 // ── Valid state transitions ──────────────────────────────────────
 
 const VALID_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
-  pending: ['confirmed', 'cancelled', 'waitlisted'],
-  confirmed: ['arrived', 'cancelled', 'no_show', 'waitlisted'],
+  pending: ['confirmed', 'arrived', 'seated', 'cancelled', 'no_show', 'waitlisted'],
+  confirmed: ['arrived', 'seated', 'cancelled', 'no_show', 'waitlisted'],
   waitlisted: ['confirmed', 'cancelled'],
   arrived: ['seated', 'cancelled', 'no_show'],
   seated: ['completed'],

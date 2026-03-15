@@ -27,7 +27,7 @@ interface RecipeData {
 export default function EditRecipePage() {
   const params = useParams();
   const router = useRouter();
-  const recipeId = params.id as string;
+  const recipeId = typeof params?.id === 'string' ? params.id : '';
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +35,12 @@ export default function EditRecipePage() {
   const [mode, setMode] = useState<'builder' | 'rethink'>('builder');
 
   useEffect(() => {
+    if (!recipeId) {
+      setError('Recipe ID is missing');
+      setLoading(false);
+      return;
+    }
+
     async function fetchRecipe() {
       try {
         const response = await fetch(`/api/recipes/${recipeId}`);

@@ -73,9 +73,10 @@ export default async function InvoiceReviewPage({ params }: Props) {
     .order("created_at", { ascending: true });
 
   const allLines = lines || [];
-  const mappedLines = allLines.filter((l) => l.item_id !== null);
-  const unmappedLines = allLines.filter((l) => l.item_id === null);
-  const backorderedLines = allLines.filter((l) => l.qty === 0);
+  const activeLines = allLines.filter((l) => !l.is_ignored);
+  const mappedLines = activeLines.filter((l) => l.item_id !== null);
+  const unmappedLines = activeLines.filter((l) => l.item_id === null);
+  const backorderedLines = activeLines.filter((l) => l.qty === 0);
 
   // Calculate GL breakdown for mapped items
   const glBreakdown = mappedLines.reduce((acc, line) => {
@@ -98,8 +99,8 @@ export default async function InvoiceReviewPage({ params }: Props) {
   type GLBreakdownItem = { gl_account: any; total: number; line_count: number };
   const glSummary = (Object.values(glBreakdown) as GLBreakdownItem[]).sort((a, b) => b.total - a.total);
 
-  const mappingProgress = allLines.length > 0
-    ? Math.round((mappedLines.length / allLines.length) * 100)
+  const mappingProgress = activeLines.length > 0
+    ? Math.round((mappedLines.length / activeLines.length) * 100)
     : 0;
 
   return (
@@ -163,7 +164,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-medium">Mapping Progress</div>
             <div className="text-sm text-muted-foreground">
-              {mappedLines.length} of {allLines.length} items mapped
+              {mappedLines.length} of {activeLines.length} items mapped
             </div>
           </div>
           <div className="w-full bg-keva-sage-100 rounded-full h-2">
@@ -207,7 +208,7 @@ export default async function InvoiceReviewPage({ params }: Props) {
               <XCircle className="w-5 h-5 text-keva-slate-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold">{allLines.length}</div>
+              <div className="text-2xl font-bold">{activeLines.length}</div>
               <div className="text-sm text-muted-foreground">Total Items</div>
             </div>
           </div>

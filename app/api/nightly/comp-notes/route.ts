@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
+import { shouldSilenceMissingRelationError } from '@/lib/database/schema-guards';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
       .eq('business_date', businessDate);
 
     if (error) {
+      if (shouldSilenceMissingRelationError('comp-notes', 'comp_notes', error)) {
+        return NextResponse.json({ notes: {} });
+      }
       // Return empty notes gracefully for table/schema issues
       console.error('Error fetching comp notes:', error.code, error.message);
       return NextResponse.json({ notes: {} });
@@ -86,6 +90,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (shouldSilenceMissingRelationError('comp-notes', 'comp_notes', error)) {
+        return NextResponse.json({ success: false, degraded: true });
+      }
       console.error('Error saving comp note:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }

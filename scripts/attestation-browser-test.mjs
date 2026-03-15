@@ -17,7 +17,7 @@ config({ path: join(__dirname, '../.env') });
 config({ path: join(__dirname, '../.env.local'), override: true });
 
 const USE_LOCAL = process.argv.includes('--local');
-const PROD_URL = USE_LOCAL ? 'http://localhost:3000' : 'https://prime-cost.com';
+const PROD_URL = USE_LOCAL ? 'http://localhost:3000' : 'https://kevaos.ai';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

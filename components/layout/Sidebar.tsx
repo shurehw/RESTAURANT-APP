@@ -18,12 +18,12 @@ export function Sidebar({ user, userRole }: SidebarProps) {
   const permissions = getNavPermissions(userRole);
 
   return (
-    <aside className="w-64 border-r bg-card">
-      <div className="flex h-16 items-center px-6 border-b">
+    <aside className="w-64 border-r border-brass bg-keva-slate-800">
+      <div className="flex h-16 items-center px-6 border-b border-keva-slate-700 bg-white">
         <KevaOSLogo size="md" />
       </div>
 
-      <nav className="p-4 space-y-1">
+      <nav className="p-3 space-y-0.5">
         {/* Primary ops */}
         <NavLink href="/">Home</NavLink>
         {permissions.nightlyReport && (
@@ -96,7 +96,7 @@ export function Sidebar({ user, userRole }: SidebarProps) {
           </NavSection>
         )}
 
-        <div className="border-t my-2"></div>
+        <div className="border-t border-keva-slate-700 my-2"></div>
         {permissions.laborSchedule && (
           <NavLink href="/admin/floor-plan-builder">Floor Plan Builder</NavLink>
         )}
@@ -105,10 +105,10 @@ export function Sidebar({ user, userRole }: SidebarProps) {
         )}
       </nav>
 
-      <div className="absolute bottom-0 w-64 border-t p-4">
+      <div className="absolute bottom-0 w-64 border-t border-keva-slate-700 p-3">
         <div className="mb-2">
-          <p className="text-sm font-medium truncate">{user.email}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm font-medium truncate text-keva-fog-200">{user.email}</p>
+          <p className="text-xs text-keva-slate-400">
             {user.user_metadata?.full_name || 'User'}
           </p>
         </div>
@@ -123,7 +123,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
     <Link
       href={href}
       prefetch={false}
-      className="block px-4 py-2 rounded-md text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+      className="block px-3 py-1.5 rounded-md text-sm font-medium text-keva-fog-200 hover:bg-white/[0.08] hover:text-keva-fog-100 transition-colors"
     >
       {children}
     </Link>
@@ -132,11 +132,11 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
 
 function NavSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <div className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+    <div className="space-y-0.5 mt-3">
+      <div className="px-3 py-1 text-[11px] font-semibold text-keva-slate-400 uppercase tracking-wider">
         {title}
       </div>
-      <div className="space-y-1 pl-2">
+      <div className="space-y-0.5 pl-2">
         {children}
       </div>
     </div>

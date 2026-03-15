@@ -31,7 +31,7 @@ export async function proxy(request: NextRequest) {
 
   // Non-primary domains -> redirect everything to kevaos.ai
   if (
-    (hostname.includes('prime-cost.com') || hostname.includes('opsos-restaurant-app.vercel.app')) &&
+    (hostname.includes('prime-cost.com') || hostname.includes('opsos.app') || hostname.includes('opsos-restaurant-app.vercel.app')) &&
     !hostname.includes('kevaos.ai')
   ) {
     return NextResponse.redirect(new URL(`https://kevaos.ai${pathname}`, request.url), 301);

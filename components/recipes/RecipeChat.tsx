@@ -342,15 +342,51 @@ export function RecipeChat({ existingRecipe }: RecipeChatProps = {}) {
     setSaving(true);
 
     try {
-      const components = recipe.ingredients.map(ing => ({
-        type: ing.is_sub_recipe ? 'sub_recipe' : 'item',
-        itemId: !ing.is_sub_recipe ? ing.catalog_item_id : null,
-        subRecipeId: ing.is_sub_recipe ? ing.catalog_item_id : null,
-        qty: ing.qty * scale,
-        uom: ing.uom,
-        name: ing.catalog_item_name || ing.name,
-        cost: ing.estimated_cost,
-      }));
+      // Auto-create any unmatched ingredients in the catalog
+      const unmatchedIngredients = recipe.ingredients.filter(
+        ing => !ing.catalog_item_id && !ing.is_sub_recipe
+      );
+
+      let newItemMap = new Map<string, string>(); // ingredient name → catalog item ID
+
+      if (unmatchedIngredients.length > 0) {
+        const res = await fetch('/api/items/from-recipe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ingredients: unmatchedIngredients.map(ing => ({
+              name: ing.name,
+              uom: ing.uom,
+              category_hint: recipe.item_category,
+              estimated_cost: ing.estimated_cost,
+            })),
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ message: 'Failed to add items to catalog' }));
+          throw new Error(err.message);
+        }
+
+        const { created } = await res.json();
+        for (const item of created) {
+          newItemMap.set(item.name.toLowerCase(), item.id);
+        }
+      }
+
+      const components = recipe.ingredients
+        .filter(ing => ing.catalog_item_id || ing.is_sub_recipe || newItemMap.has(ing.name.toLowerCase()))
+        .map(ing => ({
+          type: ing.is_sub_recipe ? 'sub_recipe' : 'item',
+          itemId: !ing.is_sub_recipe
+            ? (ing.catalog_item_id || newItemMap.get(ing.name.toLowerCase()) || null)
+            : null,
+          subRecipeId: ing.is_sub_recipe ? ing.catalog_item_id : null,
+          qty: ing.qty * scale,
+          uom: ing.uom,
+          name: ing.catalog_item_name || ing.name,
+          cost: ing.estimated_cost,
+        }));
 
       const filteredComponents = components.filter(c => c.itemId || c.subRecipeId);
 
@@ -900,7 +936,7 @@ export function RecipeChat({ existingRecipe }: RecipeChatProps = {}) {
                 )}
                 {newItemCount > 0 && (
                   <span className="flex items-center gap-1 text-brass">
-                    <Plus className="w-3 h-3" /> {newItemCount} new
+                    <Plus className="w-3 h-3" /> {newItemCount} to add
                   </span>
                 )}
               </div>
@@ -923,7 +959,7 @@ export function RecipeChat({ existingRecipe }: RecipeChatProps = {}) {
                         <Badge variant="brass" className="text-[10px] py-0">sub-recipe</Badge>
                       )}
                       {!ing.catalog_item_id && !ing.is_sub_recipe && (
-                        <Badge variant="outline" className="text-[10px] py-0 border-brass/40 text-brass">new</Badge>
+                        <Badge variant="outline" className="text-[10px] py-0 border-brass/40 text-brass">+ add to catalog</Badge>
                       )}
                       <span className="text-sm font-medium">
                         {ing.catalog_item_name || ing.name}
@@ -1164,11 +1200,11 @@ export function RecipeChat({ existingRecipe }: RecipeChatProps = {}) {
                   className="w-full"
                   variant="brass"
                   onClick={handleSaveToBuilder}
-                  disabled={saving || catalogMatchedCount === 0}
+                  disabled={saving}
                 >
                   <Save className="w-4 h-4 mr-2" />
                   {saving
-                    ? 'Saving...'
+                    ? (newItemCount > 0 ? 'Adding to catalog & saving...' : 'Saving...')
                     : existingRecipe
                       ? 'Save as New Version'
                       : 'Save to Recipe Builder'}
@@ -1180,9 +1216,9 @@ export function RecipeChat({ existingRecipe }: RecipeChatProps = {}) {
                   </p>
                 )}
 
-                {catalogMatchedCount === 0 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    No catalog matches — add items to your product catalog first
+                {newItemCount > 0 && !saving && (
+                  <p className="text-xs text-brass text-center">
+                    {newItemCount} new item{newItemCount > 1 ? 's' : ''} will be added to your catalog on save
                   </p>
                 )}
               </div>

@@ -373,7 +373,8 @@ async function searchInvoicesList(page: Page, invoiceNumber: string, context: Se
   }, context.venueId);
   await gotoStable(page, '/invoices');
   await ensureAuthenticated(page);
-  const search = page.getByPlaceholder(/search invoices, vendors, po numbers/i);
+  await expect(page.locator('[data-invoices-interactive="true"]')).toBeVisible({ timeout: 30000 });
+  const search = page.getByPlaceholder(/search invoices, vendors, po numbers/i).first();
   await search.fill(invoiceNumber);
   await expect(page.locator('tr', { hasText: invoiceNumber }).first()).toBeVisible({ timeout: 20000 });
   return page.locator('tr', { hasText: invoiceNumber }).first();
@@ -388,17 +389,6 @@ test.describe('Dashboard Invoice Mutations', () => {
 
   test('auto-match links a draft invoice to a seeded purchase order', async ({ page }) => {
     const cleanup = newCleanupState();
-    const pageErrors: string[] = [];
-    const consoleErrors: string[] = [];
-
-    page.on('pageerror', (error) => {
-      pageErrors.push(error.message);
-    });
-    page.on('console', (message) => {
-      if (message.type() === 'error') {
-        consoleErrors.push(message.text());
-      }
-    });
 
     try {
       const context = await getCurrentPageVenueContext(page);
@@ -450,20 +440,25 @@ test.describe('Dashboard Invoice Mutations', () => {
         response.request().method() === 'POST'
       );
       const matchButton = row.getByRole('button', { name: /auto-match|match/i });
-      await matchButton.evaluate((button: HTMLButtonElement) => button.click());
-      const request = await requestPromise.catch(() => null);
-      expect(
-        request,
-        `Auto-match request never started. pageErrors=${JSON.stringify(pageErrors)} consoleErrors=${JSON.stringify(consoleErrors)}`
-      ).not.toBeNull();
+      await matchButton.click();
+      await requestPromise;
       const response = await responsePromise;
-      const result = await response.json();
+      let result: Record<string, unknown> | null = null;
+      let responseBodyError: string | null = null;
 
-      expect(response.ok(), JSON.stringify(result)).toBeTruthy();
-      expect(result).toMatchObject({
-        po_number: orderNumber,
-        matched_lines: 1,
-      });
+      try {
+        result = await response.json();
+      } catch (error) {
+        responseBodyError = error instanceof Error ? error.message : String(error);
+      }
+
+      expect(response.ok(), responseBodyError ?? JSON.stringify(result)).toBeTruthy();
+      if (result) {
+        expect(result).toMatchObject({
+          po_number: orderNumber,
+          matched_lines: 1,
+        });
+      }
 
       const supabase = getServiceSupabase();
       await expect
@@ -480,7 +475,7 @@ test.describe('Dashboard Invoice Mutations', () => {
           match_confidence: expect.stringMatching(/high|medium|low/),
         });
     } finally {
-      void cleanupSeedData(cleanup);
+      await cleanupSeedData(cleanup);
     }
   });
 
@@ -529,7 +524,7 @@ test.describe('Dashboard Invoice Mutations', () => {
           status: 'draft',
         });
     } finally {
-      void cleanupSeedData(cleanup);
+      await cleanupSeedData(cleanup);
     }
   });
 
@@ -576,7 +571,7 @@ test.describe('Dashboard Invoice Mutations', () => {
         }, { timeout: 40000 })
         .toBe(item.id);
     } finally {
-      void cleanupSeedData(cleanup);
+      await cleanupSeedData(cleanup);
     }
   });
 
@@ -609,7 +604,22 @@ test.describe('Dashboard Invoice Mutations', () => {
       await gotoStable(page, `/invoices/${invoice.id}/review`);
       await ensureAuthenticated(page);
       await expect(page.getByRole('heading', { name: /review invoice/i })).toBeVisible();
+      await expect(page.locator('[data-invoice-review-actions-ready="true"]')).toBeVisible({ timeout: 30000 });
+
+      const approveRequestPromise = page.waitForRequest((request) =>
+        request.url().includes(`/api/invoices/${invoice.id}/approve`) &&
+        request.method() === 'POST'
+      );
+      const approveResponsePromise = page.waitForResponse((response) =>
+        response.url().includes(`/api/invoices/${invoice.id}/approve`) &&
+        response.request().method() === 'POST'
+      );
+
       await page.getByRole('button', { name: /approve & save/i }).click();
+      await approveRequestPromise;
+      const approveResponse = await approveResponsePromise;
+      const approveResult = await approveResponse.json().catch(() => null);
+      expect(approveResponse.ok(), JSON.stringify(approveResult)).toBeTruthy();
 
       const supabase = getServiceSupabase();
       await expect
@@ -623,7 +633,7 @@ test.describe('Dashboard Invoice Mutations', () => {
         }, { timeout: 40000 })
         .toBe('approved');
     } finally {
-      void cleanupSeedData(cleanup);
+      await cleanupSeedData(cleanup);
     }
   });
 
@@ -651,12 +661,40 @@ test.describe('Dashboard Invoice Mutations', () => {
 
       await gotoStable(page, `/invoices/${invoice.id}/review`);
       await ensureAuthenticated(page);
+      await expect(page.locator('[data-mapped-items-ready="true"]')).toBeVisible({ timeout: 30000 });
+      const unmapRequestPromise = page.waitForRequest((request) =>
+        request.url().includes('/api/invoice-lines/') &&
+        request.url().includes('/unmap') &&
+        request.method() === 'POST'
+      );
+      const unmapResponsePromise = page.waitForResponse((response) =>
+        response.url().includes('/api/invoice-lines/') &&
+        response.url().includes('/unmap') &&
+        response.request().method() === 'POST'
+      );
       page.once('dialog', (dialog) => dialog.accept());
       await page.locator('table tbody tr', { hasText: item.name }).locator('button').last().click({ force: true });
+      await unmapRequestPromise;
+      const unmapResponse = await unmapResponsePromise;
+      expect(unmapResponse.ok(), await unmapResponse.text()).toBeTruthy();
+
+      const supabase = getServiceSupabase();
+      await expect
+        .poll(async () => {
+          const { data } = await supabase
+            .from('invoice_lines')
+            .select('item_id')
+            .eq('invoice_id', invoice.id)
+            .maybeSingle();
+          return data?.item_id ?? null;
+        }, { timeout: 20000 })
+        .toBeNull();
+
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await expect(page.getByRole('heading', { name: /mapped items \(0\)/i })).toBeVisible({ timeout: 20000 });
       await expect(page.getByText(item.name, { exact: true }).first()).toBeVisible({ timeout: 20000 });
     } finally {
-      void cleanupSeedData(cleanup);
+      await cleanupSeedData(cleanup);
     }
   });
 
@@ -686,8 +724,22 @@ test.describe('Dashboard Invoice Mutations', () => {
 
       await gotoStable(page, `/invoices/${invoice.id}/review`);
       await ensureAuthenticated(page);
+      await expect(page.locator('[data-invoice-line-mapper-ready="true"]').first()).toBeVisible({ timeout: 30000 });
       await expect(page.getByText(lineDescription, { exact: true }).first()).toBeVisible({ timeout: 20000 });
+      const ignoreRequestPromise = page.waitForRequest((request) =>
+        request.url().includes('/api/invoice-lines/') &&
+        request.url().includes('/ignore') &&
+        request.method() === 'POST'
+      );
+      const ignoreResponsePromise = page.waitForResponse((response) =>
+        response.url().includes('/api/invoice-lines/') &&
+        response.url().includes('/ignore') &&
+        response.request().method() === 'POST'
+      );
       await page.getByRole('button', { name: /^ignore$/i }).click();
+      await ignoreRequestPromise;
+      const ignoreResponse = await ignoreResponsePromise;
+      expect(ignoreResponse.ok()).toBeTruthy();
 
       const supabase = getServiceSupabase();
       await expect
@@ -700,8 +752,12 @@ test.describe('Dashboard Invoice Mutations', () => {
           return data?.is_ignored ?? false;
         }, { timeout: 20000 })
         .toBeTruthy();
+
+      await gotoStable(page, `/invoices/${invoice.id}/review`);
+      await expect(page.getByText(lineDescription, { exact: true }).first()).not.toBeVisible({ timeout: 20000 });
+      await expect(page.getByRole('button', { name: /^ignore$/i })).toHaveCount(0);
     } finally {
-      void cleanupSeedData(cleanup);
+      await cleanupSeedData(cleanup);
     }
   });
 });

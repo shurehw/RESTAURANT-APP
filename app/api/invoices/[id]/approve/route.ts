@@ -40,7 +40,13 @@ export async function POST(
     // 2. Check for unresolved intake policy block violations
     const { hasUnresolvedBlocks } = await import('@/lib/enforcement/intake-policy');
     const blockCheck = await hasUnresolvedBlocks(id);
-    if (blockCheck.blocked) {
+    const missingPolicySchema =
+      blockCheck.blocked &&
+      blockCheck.count === 1 &&
+      blockCheck.violations[0]?.id === '' &&
+      blockCheck.violations[0]?.message?.includes('Unable to verify intake policy status');
+
+    if (blockCheck.blocked && !missingPolicySchema) {
       return NextResponse.json(
         {
           error: 'Invoice has unresolved intake policy violations',

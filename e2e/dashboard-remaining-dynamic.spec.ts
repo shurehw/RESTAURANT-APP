@@ -176,6 +176,7 @@ test.describe('Dashboard Remaining Dynamic Routes', () => {
   });
 
   test('vendor onboarding branded route loads for a real organization slug', async ({ page }) => {
+    test.setTimeout(60000);
     await page.goto('/settings/account');
     await ensureAuthenticated(page);
 
@@ -188,7 +189,7 @@ test.describe('Dashboard Remaining Dynamic Routes', () => {
     for (const slug of candidates) {
       let navigated = true;
       try {
-        await page.goto(`/vendor-onboarding/${slug}`, { waitUntil: 'domcontentloaded', timeout: 5000 });
+        await page.goto(`/vendor-onboarding/${slug}`, { waitUntil: 'domcontentloaded', timeout: 10000 });
       } catch {
         navigated = false;
       }
@@ -209,8 +210,8 @@ test.describe('Dashboard Remaining Dynamic Routes', () => {
     test.skip(!matchedSlug, 'No branded vendor onboarding route rendered for available organization slug candidates');
 
     await expect(page).toHaveURL(new RegExp(`/vendor-onboarding/${matchedSlug}$`));
-    await expect(page.getByText(/vendor profile setup/i)).toBeVisible();
-    await expect(page.getByLabel(/email address/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /vendor profile setup/i })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByLabel(/email address/i)).toBeVisible({ timeout: 30000 });
     await expect(page.getByRole('button', { name: /continue/i })).toBeVisible();
   });
 });

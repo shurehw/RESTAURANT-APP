@@ -6,6 +6,7 @@
 
 import { getServiceClient } from '@/lib/supabase/service';
 import { getReservationsForVenueDate } from '@/lib/database/reservations';
+import { shouldSilenceMissingRelationError } from '@/lib/database/schema-guards';
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -87,6 +88,9 @@ export async function getPreshiftNotes(
     .maybeSingle();
 
   if (error) {
+    if (shouldSilenceMissingRelationError('preshift', 'preshift_notes', error)) {
+      return null;
+    }
     console.error('[preshift] Failed to fetch notes:', error.message);
     return null;
   }
@@ -155,6 +159,9 @@ export async function getCoversForecast(
     .maybeSingle();
 
   if (error) {
+    if (shouldSilenceMissingRelationError('preshift', 'venue_day_forecast', error)) {
+      return null;
+    }
     console.error('[preshift] Failed to fetch covers forecast:', error.message);
     return null;
   }
@@ -334,7 +341,7 @@ export async function getPreviousNight86Items(
     .select('eightysixed_items')
     .eq('venue_id', venueId)
     .eq('business_date', prevDate)
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 

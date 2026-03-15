@@ -17,6 +17,48 @@ import { resolveContext } from '@/lib/auth/resolveContext';
 
 type AnyRecord = Record<string, any>;
 
+const FALLBACK_COLUMNS: Record<string, string[]> = {
+  custom_catalog_products: [
+    'id',
+    'organization_id',
+    'name',
+    'sku',
+    'is_active',
+    'created_at',
+    'updated_at',
+  ],
+  competitor_products_scraped: [
+    'id',
+    'organization_id',
+    'competitor_name',
+    'product_name',
+    'variant',
+    'category',
+    'min_qty',
+    'unit_price',
+    'source_url',
+    'scraped_at',
+    'created_at',
+  ],
+  custom_product_competitor_pricing: [
+    'id',
+    'organization_id',
+    'custom_product_id',
+    'competitor_name',
+    'product_name',
+    'variant',
+    'category',
+    'min_qty',
+    'unit_price',
+    'source_url',
+    'scraped_at',
+    'imported_from_scraped_id',
+    'created_by',
+    'created_at',
+    'updated_at',
+  ],
+};
+
 async function getTableColumns(
   supabase: ReturnType<typeof createAdminClient>,
   tableName: string,
@@ -28,7 +70,9 @@ async function getTableColumns(
     .eq('table_schema', 'public')
     .eq('table_name', tableName);
 
-  if (error || !data) return new Set();
+  if (error || !data || data.length === 0) {
+    return new Set(FALLBACK_COLUMNS[tableName] || []);
+  }
   return new Set(data.map((r: { column_name: string }) => r.column_name));
 }
 
@@ -284,4 +328,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-

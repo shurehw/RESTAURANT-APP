@@ -37,7 +37,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
   const [isOpen, setIsOpen] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
 
   // Auto-close sidebar when route changes (navigation)
   useEffect(() => {
@@ -76,7 +76,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
       <button
         onClick={() => setIsOpen(!isOpen)}
         data-pwa-hide
-        className="lg:hidden fixed top-6 left-4 z-50 p-2 bg-keva-sage-600 text-white rounded-md shadow-lg"
+        className="lg:hidden fixed top-6 left-4 z-50 p-2 bg-keva-slate-800 text-white rounded-md shadow-lg"
         aria-label="Toggle menu"
       >
         {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -97,19 +97,19 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
         className={`
           fixed inset-y-0 left-0 z-40
           lg:sticky lg:top-0 lg:z-auto lg:bottom-auto lg:left-auto lg:h-dvh
-          w-64 bg-keva-sage-600 border-r-2 border-brass
+          w-64 bg-keva-slate-800 border-r border-brass
           flex flex-col flex-shrink-0
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
-        {/* Logo — matches topbar height (h-16 mobile, h-24 desktop) */}
-        <div className="h-16 lg:h-24 flex-shrink-0 flex items-center justify-center px-4 border-b border-keva-sage-200 bg-white">
-          <KevaOSLogo size="lg" />
+        {/* Logo — matches topbar height (h-16) */}
+        <div className="h-16 flex-shrink-0 flex items-center justify-center px-4 border-b border-keva-slate-700 bg-white">
+          <KevaOSLogo size="md" />
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1 overflow-y-auto flex-1 min-h-0" aria-label="Main navigation">
+        <nav className="p-3 space-y-0.5 overflow-y-auto flex-1 min-h-0" aria-label="Main navigation">
           {/* Primary ops — always visible at the top */}
           <NavLink
             href="/"
@@ -221,7 +221,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
           </NavSection>
           )}
 
-          <div className="pt-4 mt-4 border-t border-keva-sage-500">
+          <div className="pt-3 mt-3 border-t border-keva-slate-700">
             {permissions.laborSchedule && (
               <NavLink href="/admin/floor-plan-builder" icon={<LayoutGrid className="w-5 h-5" />}>
                 Floor Plan Builder
@@ -236,7 +236,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
         </nav>
 
         {/* Footer — pinned to bottom */}
-        <div className="flex-shrink-0 border-t border-keva-sage-500 pb-2">
+        <div className="flex-shrink-0 border-t border-keva-slate-700 pb-2">
           <div className="px-4 py-3">
             <div className="flex items-center gap-3">
               <a
@@ -250,7 +250,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
                   <div className="text-sm font-medium text-white truncate group-hover:text-brass transition-colors">
                     {userName || 'User'}
                   </div>
-                  <div className="text-[11px] text-keva-sage-300 truncate capitalize">
+                  <div className="text-[11px] text-keva-slate-400 truncate capitalize">
                     {ROLE_LABELS[userRole] || userRole}
                   </div>
                 </div>
@@ -275,8 +275,8 @@ function NavSection({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-4 mb-2">
-      <div className="px-3 mb-2 text-xs font-semibold text-keva-sage-300 uppercase tracking-wider">
+    <div className="mt-3 mb-1.5">
+      <div className="px-3 mb-1.5 text-[11px] font-semibold text-keva-slate-400 uppercase tracking-wider">
         {title}
       </div>
       <div className="space-y-1">{children}</div>
@@ -298,7 +298,7 @@ function SignOutButton() {
   return (
     <button
       onClick={handleLogout}
-      className="p-1.5 rounded-md text-keva-sage-300 hover:text-white hover:bg-keva-sage-500 transition-colors"
+      className="p-1.5 rounded-md text-keva-slate-400 hover:text-white hover:bg-white/[0.08] transition-colors"
       title="Sign out"
     >
       <LogOut className="w-4 h-4" />

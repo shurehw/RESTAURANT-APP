@@ -156,7 +156,7 @@ export default async function DashboardLayout({
           />
 
           {/* Page Content */}
-          <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+          <main id="main-content" className="flex-1 p-4 sm:p-5 lg:p-6">{children}</main>
         </div>
 
         {/* Command Panel — gated by aiAssistant permission */}
@@ -172,7 +172,7 @@ function Topbar({ venues, organizationSlug, organizationName }: {
   organizationName?: string;
 }) {
   return (
-    <header className="h-16 lg:h-24 border-b-2 border-brass bg-white px-4 sm:px-6 lg:px-8">
+    <header className="h-16 border-b border-brass bg-white px-4 sm:px-5 lg:px-6">
       <div className="h-full flex items-center justify-between lg:justify-end">
         {/* Mobile: Add spacing for hamburger button */}
         <div className="w-12 lg:hidden" />

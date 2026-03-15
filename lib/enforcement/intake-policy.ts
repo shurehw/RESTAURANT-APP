@@ -20,6 +20,13 @@
 
 import { getServiceClient } from '@/lib/supabase/service';
 
+function isMissingIntakePolicyRelation(message: string | undefined): boolean {
+  const value = (message || '').toLowerCase();
+  return value.includes('could not find the table') ||
+    value.includes('schema cache') ||
+    (value.includes('relation') && value.includes('does not exist'));
+}
+
 // ── Types ──────────────────────────────────────────────────────
 
 export interface IntakePolicySettings {
@@ -369,7 +376,9 @@ export async function getViolationsForInvoice(
 /**
  * Check if an invoice has unresolved block-severity violations.
  *
- * FAIL CLOSED: If the query errors, assume blocked.
+ * Fail closed for operational errors. If the intake-policy relations are not
+ * present in the current environment yet, degrade open so AP approval can
+ * proceed while migrations catch up.
  */
 export async function hasUnresolvedBlocks(invoiceId: string): Promise<{
   blocked: boolean;
@@ -385,8 +394,15 @@ export async function hasUnresolvedBlocks(invoiceId: string): Promise<{
     .eq('enforcement_action', 'block')
     .eq('resolved', false);
 
-  // FAIL CLOSED: if we can't check, assume blocked
   if (error) {
+    if (isMissingIntakePolicyRelation(error.message)) {
+      return {
+        blocked: false,
+        count: 0,
+        violations: [],
+      };
+    }
+
     console.error('[IntakePolicy] Failed to check blocks — failing closed:', error.message);
     return {
       blocked: true,

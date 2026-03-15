@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relay Logo Mark Options</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: #F5F1EB;
+      color: #1C1917;
+      padding: 2rem;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #78716C; margin-bottom: 2rem; font-size: 0.875rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card h2 { font-size: 1rem; margin-bottom: 0.25rem; }
+    .card .desc { font-size: 0.75rem; color: #78716C; margin-bottom: 1.5rem; line-height: 1.5; }
+    .previews {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    .preview-dark, .preview-light {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 1.5rem;
+      border-radius: 12px;
+      flex: 1;
+    }
+    .preview-dark { background: #1C1917; }
+    .preview-light { background: #F5F1EB; }
+    .preview-label { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.5; }
+    .preview-dark .preview-label { color: #F5F1EB; }
+
+    /* Inline wordmark preview */
+    .wordmark {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .wordmark-dark { color: #F5F1EB; }
+    .wordmark-light { color: #1C1917; }
+
+    /* App icon preview */
+    .app-icons {
+      display: flex;
+      gap: 1rem;
+      align-items: end;
+      margin-top: 0.5rem;
+    }
+    .app-icon {
+      border-radius: 22%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .app-icon-lg { width: 80px; height: 80px; }
+    .app-icon-sm { width: 48px; height: 48px; }
+  </style>
+</head>
+<body>
+  <h1>Relay Logo Mark Options</h1>
+  <p class="subtitle">Relay = the delivery layer of the Keva Loop. An electrical relay receives a signal and closes a circuit. These marks reference that.</p>
+
+  <div class="grid">
+
+    <!-- Option A: Relay Switch (SPDT) -->
+    <div class="card">
+      <h2>A. Relay Switch</h2>
+      <p class="desc">Classic SPDT relay — an arm pivoting between two contacts. Signal comes in, circuit closes. The most literal electrical relay reference.</p>
+      <div class="previews">
+        <div class="preview-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <!-- Bottom contact -->
+            <circle cx="12" cy="36" r="3" fill="#D4622B"/>
+            <!-- Top contact -->
+            <circle cx="36" cy="12" r="3" fill="#D4622B"/>
+            <!-- Arm (the relay switch) -->
+            <line x1="12" y1="36" x2="38" y2="16" stroke="#D4622B" stroke-width="3" stroke-linecap="round"/>
+            <!-- Base contact point -->
+            <circle cx="12" cy="36" r="5" fill="none" stroke="#D4622B" stroke-width="1.5"/>
+            <!-- Signal in (left) -->
+            <line x1="2" y1="36" x2="7" y2="36" stroke="#F5F1EB" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+            <!-- Signal out (right) -->
+            <line x1="39" y1="12" x2="46" y2="12" stroke="#F5F1EB" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+          </svg>
+          <div class="wordmark wordmark-dark">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">dark</span>
+        </div>
+        <div class="preview-light">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <circle cx="12" cy="36" r="3" fill="#D4622B"/>
+            <circle cx="36" cy="12" r="3" fill="#D4622B"/>
+            <line x1="12" y1="36" x2="38" y2="16" stroke="#D4622B" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="12" cy="36" r="5" fill="none" stroke="#D4622B" stroke-width="1.5"/>
+            <line x1="2" y1="36" x2="7" y2="36" stroke="#1C1917" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+            <line x1="39" y1="12" x2="46" y2="12" stroke="#1C1917" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+          </svg>
+          <div class="wordmark wordmark-light">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">light</span>
+        </div>
+      </div>
+      <div class="app-icons">
+        <div class="app-icon app-icon-lg" style="background:#1C1917">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+            <circle cx="14" cy="34" r="3" fill="#D4622B"/>
+            <circle cx="34" cy="14" r="3" fill="#D4622B"/>
+            <line x1="14" y1="34" x2="36" y2="18" stroke="#D4622B" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="14" cy="34" r="5" fill="none" stroke="#D4622B" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <span style="font-size:0.625rem;color:#78716C">app icon</span>
+      </div>
+    </div>
+
+    <!-- Option B: Pulse Through Node -->
+    <div class="card">
+      <h2>B. Signal Pulse</h2>
+      <p class="desc">A signal pulse passing through a relay node. Flat line enters, spikes through the center point, exits clean. Represents Keva's signal being relayed to the manager.</p>
+      <div class="previews">
+        <div class="preview-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <!-- Pulse waveform -->
+            <polyline points="4,24 14,24 18,10 24,38 30,14 34,24 44,24" fill="none" stroke="#D4622B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- Center node -->
+            <circle cx="24" cy="24" r="4" fill="#D4622B" opacity="0.2"/>
+            <circle cx="24" cy="24" r="2" fill="#D4622B"/>
+          </svg>
+          <div class="wordmark wordmark-dark">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">dark</span>
+        </div>
+        <div class="preview-light">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <polyline points="4,24 14,24 18,10 24,38 30,14 34,24 44,24" fill="none" stroke="#D4622B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="24" cy="24" r="4" fill="#D4622B" opacity="0.2"/>
+            <circle cx="24" cy="24" r="2" fill="#D4622B"/>
+          </svg>
+          <div class="wordmark wordmark-light">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">light</span>
+        </div>
+      </div>
+      <div class="app-icons">
+        <div class="app-icon app-icon-lg" style="background:#1C1917">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+            <polyline points="4,24 14,24 18,10 24,38 30,14 34,24 44,24" fill="none" stroke="#D4622B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="24" cy="24" r="4" fill="#D4622B" opacity="0.2"/>
+            <circle cx="24" cy="24" r="2" fill="#D4622B"/>
+          </svg>
+        </div>
+        <span style="font-size:0.625rem;color:#78716C">app icon</span>
+      </div>
+    </div>
+
+    <!-- Option C: Closing Circuit -->
+    <div class="card">
+      <h2>C. Closing Circuit</h2>
+      <p class="desc">Two contacts about to close — the moment the relay engages. An arc of energy between them. Represents the enforcement moment: signal processed, action delivered.</p>
+      <div class="previews">
+        <div class="preview-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <!-- Left terminal -->
+            <rect x="8" y="16" width="4" height="16" rx="2" fill="#D4622B"/>
+            <!-- Right terminal -->
+            <rect x="36" y="16" width="4" height="16" rx="2" fill="#D4622B"/>
+            <!-- Arc / spark between -->
+            <path d="M16 24 C20 18, 28 18, 32 24 C28 30, 20 30, 16 24Z" fill="#D4622B" opacity="0.15"/>
+            <path d="M14 24 C18 16, 30 16, 34 24" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 24 C18 32, 30 32, 34 24" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+            <!-- Center spark dot -->
+            <circle cx="24" cy="24" r="2" fill="#D4622B"/>
+          </svg>
+          <div class="wordmark wordmark-dark">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">dark</span>
+        </div>
+        <div class="preview-light">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <rect x="8" y="16" width="4" height="16" rx="2" fill="#D4622B"/>
+            <rect x="36" y="16" width="4" height="16" rx="2" fill="#D4622B"/>
+            <path d="M16 24 C20 18, 28 18, 32 24 C28 30, 20 30, 16 24Z" fill="#D4622B" opacity="0.15"/>
+            <path d="M14 24 C18 16, 30 16, 34 24" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 24 C18 32, 30 32, 34 24" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="24" cy="24" r="2" fill="#D4622B"/>
+          </svg>
+          <div class="wordmark wordmark-light">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">light</span>
+        </div>
+      </div>
+      <div class="app-icons">
+        <div class="app-icon app-icon-lg" style="background:#1C1917">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+            <rect x="8" y="16" width="4" height="16" rx="2" fill="#D4622B"/>
+            <rect x="36" y="16" width="4" height="16" rx="2" fill="#D4622B"/>
+            <path d="M14 24 C18 16, 30 16, 34 24" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 24 C18 32, 30 32, 34 24" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="24" cy="24" r="2" fill="#D4622B"/>
+          </svg>
+        </div>
+        <span style="font-size:0.625rem;color:#78716C">app icon</span>
+      </div>
+    </div>
+
+    <!-- Option D: Bolt Through Gate -->
+    <div class="card">
+      <h2>D. Bolt Through Gate</h2>
+      <p class="desc">A lightning bolt passing through a gate/threshold. Raw electrical energy — the signal has been processed, now it's delivered with force. No ambiguity. Engine energy.</p>
+      <div class="previews">
+        <div class="preview-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <!-- Gate posts -->
+            <rect x="14" y="6" width="3" height="36" rx="1.5" fill="#D4622B" opacity="0.3"/>
+            <rect x="31" y="6" width="3" height="36" rx="1.5" fill="#D4622B" opacity="0.3"/>
+            <!-- Lightning bolt -->
+            <polygon points="28,6 18,22 24,22 20,42 32,22 26,22 32,6" fill="#D4622B"/>
+          </svg>
+          <div class="wordmark wordmark-dark">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">dark</span>
+        </div>
+        <div class="preview-light">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <rect x="14" y="6" width="3" height="36" rx="1.5" fill="#D4622B" opacity="0.3"/>
+            <rect x="31" y="6" width="3" height="36" rx="1.5" fill="#D4622B" opacity="0.3"/>
+            <polygon points="28,6 18,22 24,22 20,42 32,22 26,22 32,6" fill="#D4622B"/>
+          </svg>
+          <div class="wordmark wordmark-light">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">light</span>
+        </div>
+      </div>
+      <div class="app-icons">
+        <div class="app-icon app-icon-lg" style="background:#1C1917">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+            <rect x="14" y="6" width="3" height="36" rx="1.5" fill="#D4622B" opacity="0.3"/>
+            <rect x="31" y="6" width="3" height="36" rx="1.5" fill="#D4622B" opacity="0.3"/>
+            <polygon points="28,6 18,22 24,22 20,42 32,22 26,22 32,6" fill="#D4622B"/>
+          </svg>
+        </div>
+        <span style="font-size:0.625rem;color:#78716C">app icon</span>
+      </div>
+    </div>
+
+    <!-- Option E: Relay Coil -->
+    <div class="card">
+      <h2>E. Relay Coil</h2>
+      <p class="desc">The electromagnetic coil that powers a relay — a wound spiral with two terminals. The engine that makes the switch happen. Minimal, technical, unmistakably electrical.</p>
+      <div class="previews">
+        <div class="preview-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <!-- Coil windings -->
+            <path d="M12,36 L12,30 C12,26 16,24 20,24 C24,24 24,20 20,20 C16,20 16,16 20,16 C24,16 24,12 20,12 L12,12" fill="none" stroke="#D4622B" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Terminal dots -->
+            <circle cx="12" cy="12" r="3" fill="#D4622B"/>
+            <circle cx="12" cy="36" r="3" fill="#D4622B"/>
+            <!-- Activation arrow -->
+            <line x1="30" y1="30" x2="30" y2="18" stroke="#D4622B" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+            <polyline points="26,22 30,18 34,22" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+            <!-- Switch contact -->
+            <circle cx="38" cy="14" r="2.5" fill="#D4622B"/>
+            <line x1="30" y1="18" x2="36" y2="14" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <div class="wordmark wordmark-dark">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">dark</span>
+        </div>
+        <div class="preview-light">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+            <path d="M12,36 L12,30 C12,26 16,24 20,24 C24,24 24,20 20,20 C16,20 16,16 20,16 C24,16 24,12 20,12 L12,12" fill="none" stroke="#D4622B" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="3" fill="#D4622B"/>
+            <circle cx="12" cy="36" r="3" fill="#D4622B"/>
+            <line x1="30" y1="30" x2="30" y2="18" stroke="#D4622B" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+            <polyline points="26,22 30,18 34,22" fill="none" stroke="#D4622B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+            <circle cx="38" cy="14" r="2.5" fill="#D4622B"/>
+            <line x1="30" y1="18" x2="36" y2="14" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <div class="wordmark wordmark-light">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">light</span>
+        </div>
+      </div>
+      <div class="app-icons">
+        <div class="app-icon app-icon-lg" style="background:#1C1917">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40">
+            <path d="M12,36 L12,30 C12,26 16,24 20,24 C24,24 24,20 20,20 C16,20 16,16 20,16 C24,16 24,12 20,12 L12,12" fill="none" stroke="#D4622B" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="3" fill="#D4622B"/>
+            <circle cx="12" cy="36" r="3" fill="#D4622B"/>
+            <circle cx="38" cy="14" r="2.5" fill="#D4622B"/>
+            <line x1="30" y1="18" x2="36" y2="14" stroke="#D4622B" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span style="font-size:0.625rem;color:#78716C">app icon</span>
+      </div>
+    </div>
+
+    <!-- Option F: R Monogram (letterform) -->
+    <div class="card">
+      <h2>F. R Letterform</h2>
+      <p class="desc">A custom R built from circuit-like geometry — straight stems with a deliberate break/gap where the leg kicks out, referencing an open relay contact. Pairs with the K mark from KevaOS.</p>
+      <div class="previews">
+        <div class="preview-dark">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 52" width="40" height="47">
+            <!-- Stem -->
+            <rect x="0" y="0" width="10" height="52" rx="2" fill="#D4622B"/>
+            <!-- Bowl -->
+            <path d="M10,2 L28,2 C36,2 40,8 40,14 C40,20 36,26 28,26 L10,26" fill="none" stroke="#D4622B" stroke-width="4"/>
+            <!-- Leg with gap (relay break) -->
+            <line x1="22" y1="26" x2="22" y2="32" stroke="#D4622B" stroke-width="4" stroke-linecap="round"/>
+            <!-- Kicked leg after gap -->
+            <line x1="24" y1="36" x2="40" y2="52" stroke="#D4622B" stroke-width="4" stroke-linecap="round"/>
+            <!-- Gap spark -->
+            <circle cx="23" cy="34" r="1.5" fill="#D4622B" opacity="0.4"/>
+          </svg>
+          <div class="wordmark wordmark-dark" style="margin-top:4px">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">dark</span>
+        </div>
+        <div class="preview-light">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 52" width="40" height="47">
+            <rect x="0" y="0" width="10" height="52" rx="2" fill="#D4622B"/>
+            <path d="M10,2 L28,2 C36,2 40,8 40,14 C40,20 36,26 28,26 L10,26" fill="none" stroke="#D4622B" stroke-width="4"/>
+            <line x1="22" y1="26" x2="22" y2="32" stroke="#D4622B" stroke-width="4" stroke-linecap="round"/>
+            <line x1="24" y1="36" x2="40" y2="52" stroke="#D4622B" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="23" cy="34" r="1.5" fill="#D4622B" opacity="0.4"/>
+          </svg>
+          <div class="wordmark wordmark-light" style="margin-top:4px">
+            <span>Relay</span>
+          </div>
+          <span class="preview-label">light</span>
+        </div>
+      </div>
+      <div class="app-icons">
+        <div class="app-icon app-icon-lg" style="background:#1C1917">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 52" width="36" height="42">
+            <rect x="0" y="0" width="10" height="52" rx="2" fill="#D4622B"/>
+            <path d="M10,2 L28,2 C36,2 40,8 40,14 C40,20 36,26 28,26 L10,26" fill="none" stroke="#D4622B" stroke-width="4"/>
+            <line x1="22" y1="26" x2="22" y2="32" stroke="#D4622B" stroke-width="4" stroke-linecap="round"/>
+            <line x1="24" y1="36" x2="40" y2="52" stroke="#D4622B" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="23" cy="34" r="1.5" fill="#D4622B" opacity="0.4"/>
+          </svg>
+        </div>
+        <span style="font-size:0.625rem;color:#78716C">app icon</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:2rem;padding:1.5rem;background:white;border-radius:16px;max-width:640px">
+    <h2 style="font-size:1rem;margin-bottom:0.5rem">Reference: Keva Loop Mapping</h2>
+    <p style="font-size:0.75rem;color:#78716C;line-height:1.6">
+      <strong>Signals</strong> flow in &rarr; <strong>Keva</strong> (K mark) processes &rarr; <strong>Agents</strong> act &rarr; <strong>Relay</strong> (this mark) delivers<br>
+      The Relay mark should feel like it belongs in the same family as the K mark but has its own identity as the delivery/action layer.
+    </p>
+  </div>
+</body>
+</html>

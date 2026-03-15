@@ -153,7 +153,10 @@ export function CompetitorPricingPanel() {
   };
 
   return (
-    <div className="space-y-4">
+    <div
+      className="space-y-4"
+      data-competitor-pricing-ready={loading ? 'false' : 'true'}
+    >
       <div>
         <h1 className="text-2xl font-bold text-ledger-black">Custom Catalog Competitor Pricing</h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -357,4 +360,3 @@ function renderSource(url: string | null) {
     </a>
   );
 }
-

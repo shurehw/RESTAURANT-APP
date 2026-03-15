@@ -136,7 +136,7 @@ export default {
           foreground: "var(--keva-fog)",
         },
 
-        border: "hsl(from var(--keva-slate) h s 90%)",
+        border: "hsl(from var(--keva-slate) h s 85%)",
         input: "hsl(from var(--keva-slate) h s 85%)",
         ring: "var(--keva-brass)",
 
@@ -158,19 +158,19 @@ export default {
       },
 
       fontSize: {
-        // KevaOS Typography Scale
+        // KevaOS Typography Scale — tightened for command-center density
         "display": ["3rem", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "700" }],
-        "h1": ["2.5rem", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }],
-        "h2": ["2rem", { lineHeight: "1.25", letterSpacing: "-0.01em", fontWeight: "700" }],
-        "h3": ["1.5rem", { lineHeight: "1.3", letterSpacing: "-0.01em", fontWeight: "600" }],
-        "h4": ["1.25rem", { lineHeight: "1.4", letterSpacing: "0", fontWeight: "600" }],
-        "h5": ["1.125rem", { lineHeight: "1.4", letterSpacing: "0", fontWeight: "600" }],
-        "h6": ["1rem", { lineHeight: "1.5", letterSpacing: "0", fontWeight: "600" }],
-        "body-lg": ["1.125rem", { lineHeight: "1.6" }],
-        "body": ["1rem", { lineHeight: "1.6" }],
-        "body-sm": ["0.875rem", { lineHeight: "1.5" }],
-        "caption": ["0.75rem", { lineHeight: "1.4", letterSpacing: "0.01em", fontWeight: "500" }],
-        "overline": ["0.75rem", { lineHeight: "1.2", letterSpacing: "0.08em", fontWeight: "600" }],
+        "h1": ["2.25rem", { lineHeight: "1.15", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "h2": ["1.75rem", { lineHeight: "1.2", letterSpacing: "-0.01em", fontWeight: "700" }],
+        "h3": ["1.375rem", { lineHeight: "1.25", letterSpacing: "-0.01em", fontWeight: "600" }],
+        "h4": ["1.25rem", { lineHeight: "1.3", letterSpacing: "0", fontWeight: "600" }],
+        "h5": ["1.125rem", { lineHeight: "1.3", letterSpacing: "0", fontWeight: "600" }],
+        "h6": ["1rem", { lineHeight: "1.4", letterSpacing: "0", fontWeight: "600" }],
+        "body-lg": ["1.125rem", { lineHeight: "1.5" }],
+        "body": ["1rem", { lineHeight: "1.5" }],
+        "body-sm": ["0.875rem", { lineHeight: "1.4" }],
+        "caption": ["0.6875rem", { lineHeight: "1.3", letterSpacing: "0.01em", fontWeight: "500" }],
+        "overline": ["0.6875rem", { lineHeight: "1.2", letterSpacing: "0.1em", fontWeight: "600" }],
       },
 
       borderRadius: {

@@ -30,6 +30,7 @@ import {
   type TableState,
   type TableTransitionResult,
 } from '@/lib/floor-management/table-state-machine';
+import { transitionReservationStatus, updateReservation } from '@/lib/database/reservations';
 
 const VALID_ACTIONS = [
   'reserve', 'seat', 'occupy', 'check_drop', 'bus', 'clear', 'block', 'unblock',
@@ -135,6 +136,34 @@ export async function POST(request: NextRequest) {
         { error: result.error, from_status: result.from_status, to_status: result.to_status },
         { status: 409 },
       );
+    }
+
+    if (reservation_id) {
+      if (action === 'reserve') {
+        await updateReservation(reservation_id, { table_ids: [table_id] });
+      }
+
+      if (action === 'seat') {
+        await updateReservation(reservation_id, { table_ids: [table_id] });
+        const reservationTransition = await transitionReservationStatus(
+          reservation_id,
+          'seated',
+          user.id,
+          'user',
+          { venue_id, table_id },
+        );
+
+        if (!reservationTransition.success) {
+          return NextResponse.json(
+            {
+              error: reservationTransition.error || 'Reservation transition failed',
+              from_status: result.from_status,
+              to_status: result.to_status,
+            },
+            { status: 409 },
+          );
+        }
+      }
     }
 
     return NextResponse.json({

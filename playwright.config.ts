@@ -5,6 +5,12 @@ dotenv.config({ path: '.env.local' });
 dotenv.config(); // fallback
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:4018';
+const E2E_SERVER_MODE = process.env.E2E_SERVER_MODE || 'dev';
+const BASE_PORT = new URL(BASE_URL).port || '80';
+const WEB_SERVER_COMMAND =
+  E2E_SERVER_MODE === 'prod'
+    ? `npm run start -- -p ${BASE_PORT}`
+    : `npm run dev -- -p ${BASE_PORT} --webpack`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -42,7 +48,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/manager.json',
       },
       dependencies: ['setup'],
-      testMatch: /swarm(?:-deep)?\.spec\.ts/,
+      testMatch: /(manager.*|swarm(?:-deep)?)\.spec\.ts/,
     },
     {
       name: 'vendor',
@@ -51,7 +57,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/vendor.json',
       },
       dependencies: ['setup'],
-      testMatch: /swarm(?:-deep)?\.spec\.ts/,
+      testMatch: /(vendor.*|swarm(?:-deep)?)\.spec\.ts/,
     },
 
     // Host stand tests (iPad landscape)
@@ -65,15 +71,15 @@ export default defineConfig({
         hasTouch: true,
       },
       dependencies: ['setup'],
-      testMatch: /host-stand\.spec\.ts/,
+      testMatch: /host-stand.*\.spec\.ts/,
     },
   ],
 
   // Start dev server automatically if not already running
   webServer: {
-    command: 'npm run dev -- -p 4018 --webpack',
+    command: WEB_SERVER_COMMAND,
     url: BASE_URL,
-    reuseExistingServer: false,
+    reuseExistingServer: true,
     timeout: 120_000,
   },
 });

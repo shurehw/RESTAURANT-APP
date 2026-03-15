@@ -7,6 +7,7 @@
  */
 
 import { getServiceClient } from '@/lib/supabase/service';
+import { shouldSilenceMissingRelationError } from '@/lib/database/schema-guards';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -67,6 +68,9 @@ export async function getCompSetVenues(venueId: string): Promise<CompSetVenue[]>
     .order('comp_venue_name');
 
   if (error) {
+    if (shouldSilenceMissingRelationError('comp-set', 'comp_set_venues', error)) {
+      return [];
+    }
     console.error('[CompSet] Error fetching venues:', error.message);
     return [];
   }

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface MappedItemsTableProps {
   lines: Array<{
@@ -25,9 +25,14 @@ interface MappedItemsTableProps {
 
 export function MappedItemsTable({ lines }: MappedItemsTableProps) {
   const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
   const [unmapping, setUnmapping] = useState<string | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set());
   const [batchUnmapping, setBatchUnmapping] = useState(false);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   const handleUnmap = async (lineId: string) => {
     if (!confirm('Are you sure you want to unmap this item?')) return;
@@ -107,7 +112,7 @@ export function MappedItemsTable({ lines }: MappedItemsTableProps) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-mapped-items-ready={isReady ? 'true' : 'false'}>
       {selectedLines.size > 0 && (
         <div className="flex items-center justify-between p-3 bg-orange-50 border border-orange-200 rounded">
           <span className="text-sm font-medium text-orange-900">

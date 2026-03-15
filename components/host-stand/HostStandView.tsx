@@ -828,8 +828,12 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
   const findTableAtPoint = useCallback((x: number, y: number): string | null => {
     const els = document.elementsFromPoint(x, y);
     for (const el of els) {
-      const tableId = (el as HTMLElement).dataset?.tableId;
-      if (tableId) return tableId;
+      let node: HTMLElement | null = el as HTMLElement;
+      while (node) {
+        const tableId = node.dataset?.tableId;
+        if (tableId) return tableId;
+        node = node.parentElement;
+      }
     }
     return null;
   }, []);
@@ -838,24 +842,21 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
   const activeDragRez = useRef<UpcomingReservation | null>(null);
   const pointerPos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dragHoverTableId, setDragHoverTableId] = useState<string | null>(null);
+  const dragTrackingCleanupRef = useRef<(() => void) | null>(null);
 
-  // Track pointer position natively during drag for drop-target detection
-  useEffect(() => {
-    if (!activeDragData) return;
+  const handleDragStart = (event: DragStartEvent) => {
+    dragTrackingCleanupRef.current?.();
+
     const onMove = (e: PointerEvent) => {
       pointerPos.current = { x: e.clientX, y: e.clientY };
-      // Hit-test for hover highlight — find table element under pointer
-      const id = findTableAtPoint(e.clientX, e.clientY);
-      setDragHoverTableId(id);
+      setDragHoverTableId(findTableAtPoint(e.clientX, e.clientY));
     };
     window.addEventListener('pointermove', onMove);
-    return () => {
+    dragTrackingCleanupRef.current = () => {
       window.removeEventListener('pointermove', onMove);
       setDragHoverTableId(null);
     };
-  }, [activeDragData]);
 
-  const handleDragStart = (event: DragStartEvent) => {
     // Seed pointer position at drag start in case pointermove never fires.
     const activator = event.activatorEvent as MouseEvent | PointerEvent | TouchEvent | undefined;
     if (activator) {
@@ -878,23 +879,15 @@ export function HostStandView({ venueId, venueName, hostName }: HostStandViewPro
 
   const handleDragEnd = async (_event: DragEndEvent) => {
     setActiveDragData(null);
+    dragTrackingCleanupRef.current?.();
+    dragTrackingCleanupRef.current = null;
     const rez = activeDragRez.current;
     activeDragRez.current = null;
     if (!rez) return;
 
-    // Use native hit-testing: prefer end-event coordinates, then last tracked pointer.
-    const endActivator = _event.activatorEvent as MouseEvent | PointerEvent | TouchEvent | undefined;
+    // Use the last tracked pointer position for drop hit-testing.
     let x = pointerPos.current.x;
     let y = pointerPos.current.y;
-    if (endActivator) {
-      if ('clientX' in endActivator && 'clientY' in endActivator) {
-        x = endActivator.clientX;
-        y = endActivator.clientY;
-      } else if ('changedTouches' in endActivator && endActivator.changedTouches.length > 0) {
-        x = endActivator.changedTouches[0].clientX;
-        y = endActivator.changedTouches[0].clientY;
-      }
-    }
     const tableId = findTableAtPoint(x, y);
     if (!tableId) return;
 

@@ -30,6 +30,7 @@ interface InvoiceLineMapperProps {
 }
 
 export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMapperProps) {
+  const [isReady, setIsReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState(line.description);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
@@ -41,6 +42,10 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const [isIgnoring, setIsIgnoring] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   // Auto-search on mount
   useEffect(() => {
@@ -807,7 +812,7 @@ export function InvoiceLineMapper({ line, vendorId, vendorName }: InvoiceLineMap
   const detectedPackLabel = getDetectedPackLabel(line.description);
 
   return (
-    <Card className="p-4 border-l-4 border-brass">
+    <Card className="p-4 border-l-4 border-brass" data-invoice-line-mapper-ready={isReady ? 'true' : 'false'}>
       {/* Invoice Context - Always Visible */}
       <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
         <div className="flex items-center justify-between mb-2">

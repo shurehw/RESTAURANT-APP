@@ -17,6 +17,7 @@ export function getResendClient(): Resend {
 }
 
 export const FROM_EMAIL = (process.env.RESEND_FROM_EMAIL || 'reports@kevaos.ai').trim();
-export const REPLY_TO_EMAIL = (process.env.REPLY_TO_EMAIL || 'support@kevaos.ai').trim();
+export const WELCOME_EMAIL = 'welcome@kevaos.ai';
+export const REPLY_TO_EMAIL = (process.env.REPLY_TO_EMAIL || 'jacob@hwoodgroup.com').trim();
 export const UNSUBSCRIBE_URL = 'https://kevaos.ai/settings/notifications';
 

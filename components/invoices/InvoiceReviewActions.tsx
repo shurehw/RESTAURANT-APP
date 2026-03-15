@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 
 interface InvoiceReviewActionsProps {
@@ -15,8 +15,13 @@ export function InvoiceReviewActions({
   allMapped,
 }: InvoiceReviewActionsProps) {
   const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    setIsReady(true);
+  }, []);
 
   const handleApprove = async () => {
     setIsApproving(true);
@@ -67,7 +72,7 @@ export function InvoiceReviewActions({
   };
 
   return (
-    <>
+    <div data-invoice-review-actions-ready={isReady ? "true" : "false"} className="contents">
       <Button
         variant="destructive"
         onClick={handleDelete}
@@ -86,6 +91,6 @@ export function InvoiceReviewActions({
           {isApproving ? "Approving..." : "Approve & Save"}
         </Button>
       )}
-    </>
+    </div>
   );
 }

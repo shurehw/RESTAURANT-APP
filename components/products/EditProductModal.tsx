@@ -81,6 +81,11 @@ interface EditProductModalProps {
 export function EditProductModal({ product, onClose, onSave }: EditProductModalProps) {
   const [editedProduct, setEditedProduct] = useState<Product>(product);
   const [isSaving, setIsSaving] = useState(false);
+  const nameInputId = `edit-product-name-${product.id}`;
+  const skuInputId = `edit-product-sku-${product.id}`;
+  const categorySelectId = `edit-product-category-${product.id}`;
+  const subcategoryInputId = `edit-product-subcategory-${product.id}`;
+  const baseUomSelectId = `edit-product-base-uom-${product.id}`;
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -119,10 +124,11 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
         <div className="p-6 space-y-4">
           {/* Product Name */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label htmlFor={nameInputId} className="text-xs font-medium text-muted-foreground block mb-1">
               Product Name *
             </label>
             <Input
+              id={nameInputId}
               value={editedProduct.name}
               onChange={(e) => setEditedProduct({ ...editedProduct, name: e.target.value })}
               placeholder="e.g., Tito's Vodka 750ml"
@@ -131,10 +137,11 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
 
           {/* SKU */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label htmlFor={skuInputId} className="text-xs font-medium text-muted-foreground block mb-1">
               SKU
             </label>
             <Input
+              id={skuInputId}
               value={editedProduct.sku}
               onChange={(e) => setEditedProduct({ ...editedProduct, sku: e.target.value })}
               placeholder="e.g., AUTO-123456"
@@ -145,10 +152,11 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
           {/* Category & Subcategory */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label htmlFor={categorySelectId} className="text-xs font-medium text-muted-foreground block mb-1">
                 Category *
               </label>
               <select
+                id={categorySelectId}
                 value={editedProduct.category}
                 onChange={(e) => setEditedProduct({ ...editedProduct, category: e.target.value })}
                 className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
@@ -186,10 +194,11 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label htmlFor={subcategoryInputId} className="text-xs font-medium text-muted-foreground block mb-1">
                 Subcategory
               </label>
               <Input
+                id={subcategoryInputId}
                 value={editedProduct.subcategory || ''}
                 onChange={(e) => setEditedProduct({ ...editedProduct, subcategory: e.target.value })}
                 placeholder="e.g., Vodka, Tequila, etc."
@@ -199,10 +208,11 @@ export function EditProductModal({ product, onClose, onSave }: EditProductModalP
 
           {/* Recipe Unit */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label htmlFor={baseUomSelectId} className="text-xs font-medium text-muted-foreground block mb-1">
               Recipe Unit (Base UOM) *
             </label>
             <select
+              id={baseUomSelectId}
               value={editedProduct.base_uom}
               onChange={(e) => setEditedProduct({ ...editedProduct, base_uom: e.target.value })}
               className="w-full px-3 py-2 text-sm border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass"
