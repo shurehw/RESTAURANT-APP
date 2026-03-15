@@ -1,8 +1,8 @@
 // KevaOS PWA Service Worker v7
 // Network-first for API (live data), stale-while-revalidate for shell, offline fallback
 
-const CACHE_VERSION = 'kevaos-v9';
-const API_CACHE = 'kevaos-api-v9';
+const CACHE_VERSION = 'kevaos-v10';
+const API_CACHE = 'kevaos-api-v10';
 const MAX_API_ENTRIES = 50;
 const OFFLINE_URL = '/offline.html';
 

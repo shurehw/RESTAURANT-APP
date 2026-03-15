@@ -12,6 +12,7 @@ import { TopbarActions } from "@/components/layout/TopbarActions";
 import { FloatingChatWidget } from "@/components/chatbot/FloatingChatWidget";
 import { VenueProvider } from "@/components/providers/VenueProvider";
 import { getNavPermissions, type UserRole } from "@/lib/nav/role-permissions";
+import { NightlyReportSheet } from "@/components/pwa/NightlyReportSheet";
 
 export default async function DashboardLayout({
   children,
@@ -199,11 +200,12 @@ function PwaVenueBar({ venues, organizationName }: {
 
   return (
     <div className="hidden" data-pwa-show>
-      <div className="h-12 border-b border-border bg-background/95 backdrop-blur px-4 flex items-center">
+      <div className="h-12 border-b border-border bg-background/95 backdrop-blur px-4 flex items-center justify-between">
         <TopbarActions
           venues={venues}
           organizationName={organizationName}
         />
+        <NightlyReportSheet />
       </div>
     </div>
   );
