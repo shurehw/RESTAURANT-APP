@@ -200,8 +200,36 @@ async function handleSync(request: NextRequest) {
           console.error(`[sync-tipsee] Failed to cache ${venue.name}:`, upsertError);
           venuesFailed++;
         } else {
-          console.log(`[sync-tipsee] ✓ ${venue.name} synced in ${queryDuration}ms`);
+          console.log(`[sync-tipsee] ✓ ${venue.name} synced in ${queryDuration}ms (net_sales: ${report?.summary?.net_sales ?? 'N/A'})`);
           venuesSynced++;
+        }
+
+        // For Simphony venues, also upsert venue_day_facts so the nightly report
+        // facts fallback has data even if the live Simphony path fails later
+        if (posType === 'simphony' && report?.summary?.net_sales > 0) {
+          const s = report.summary;
+          const food = report.salesByCategory?.find((c: any) => c.category === 'Food')?.net_sales || 0;
+          const bev = report.salesByCategory?.find((c: any) => c.category === 'Beverage')?.net_sales || 0;
+          await (supabase as any)
+            .from('venue_day_facts')
+            .upsert({
+              venue_id: venue.id,
+              business_date: venueBusinessDate,
+              gross_sales: s.sub_total || s.net_sales,
+              net_sales: s.net_sales,
+              food_sales: food,
+              beverage_sales: bev,
+              comps_total: s.total_comps || 0,
+              voids_total: s.total_voids || 0,
+              taxes_total: s.total_tax || 0,
+              checks_count: s.total_checks || 0,
+              covers_count: s.total_covers || 0,
+              is_complete: true,
+              last_synced_at: new Date().toISOString(),
+            }, { onConflict: 'venue_id,business_date' })
+            .then(({ error: factsErr }: any) => {
+              if (factsErr) console.error(`[sync-tipsee] Failed to upsert venue_day_facts for ${venue.name}:`, factsErr.message);
+            });
         }
       } catch (error: any) {
         console.error(`[sync-tipsee] Error syncing ${venue.name}:`, error);

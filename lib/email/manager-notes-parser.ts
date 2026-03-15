@@ -246,7 +246,7 @@ export function extractSubjectDate(subject: string): string | null {
  * Extract property name from Lightspeed email subject.
  * "Daily Digest for Delilah Hollywood for Thursday, March 13, 2026"
  */
-function parsePropertyName(subject: string): string {
+export function parsePropertyName(subject: string): string {
   const match = subject.match(/Daily Digest for (.+?) for/i);
   if (match) return match[1].trim();
 

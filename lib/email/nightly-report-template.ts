@@ -31,6 +31,7 @@ export interface NightlyEmailParams {
   appUrl: string;
   logoUrl?: string | null;
   aiSummaries?: Map<string, string>;
+  venuesWithNoNotes?: Set<string>;
 }
 
 // ── Deep-link builder ────────────────────────────────────────────
@@ -224,38 +225,43 @@ interface LinkCtx {
 
 // ── Section Renderers ────────────────────────────────────────────
 
-function renderSummaryKPIs(report: NightlyReportData, labor?: VenueReport['laborData']): string {
+function renderSummaryKPIs(report: NightlyReportData, labor?: VenueReport['laborData'], ctx?: LinkCtx): string {
   const s = report.summary;
   const avgCheck = s.total_checks > 0 ? s.net_sales / s.total_checks : 0;
   const compPct = s.net_sales > 0 ? (s.total_comps / (s.net_sales + s.total_comps)) * 100 : 0;
 
-  const kpis = [
+  const kpis: Array<{ label: string; value: string; href?: string }> = [
     { label: 'Net Sales', value: fmt(s.net_sales) },
     { label: 'Checks', value: num(s.total_checks) },
     { label: 'Covers', value: num(s.total_covers) },
     { label: 'Avg Check', value: fmtDecimal(avgCheck) },
-    { label: 'Comps', value: fmt(s.total_comps) },
-    { label: 'Comp %', value: pct(compPct) },
+    { label: 'Comps', value: fmt(s.total_comps), href: ctx ? drillUrl(ctx.appUrl, ctx.date, { section: 'comps', venue: ctx.venueId }) : undefined },
+    { label: 'Comp %', value: pct(compPct), href: ctx ? drillUrl(ctx.appUrl, ctx.date, { section: 'comps', venue: ctx.venueId }) : undefined },
   ];
 
   if (labor) {
     kpis.push(
-      { label: 'Labor Cost', value: fmt(labor.labor_cost) },
-      { label: 'Labor %', value: pct(labor.labor_pct) }
+      { label: 'Labor Cost', value: fmt(labor.labor_cost), href: ctx ? drillUrl(ctx.appUrl, ctx.date, { section: 'labor', venue: ctx.venueId }) : undefined },
+      { label: 'Labor %', value: pct(labor.labor_pct), href: ctx ? drillUrl(ctx.appUrl, ctx.date, { section: 'labor', venue: ctx.venueId }) : undefined }
     );
   }
 
   const kpiCards = kpis
     .map(
-      (k) => `
+      (k) => {
+        const valueHtml = k.href
+          ? `<a href="${k.href}" style="${linkStyle(COLORS.dark)} font-size: 18px; font-weight: 700;">${k.value}</a>`
+          : k.value;
+        return `
       <td style="padding: 8px; text-align: center; width: ${100 / kpis.length}%;">
         <div style="font-size: 11px; color: ${COLORS.textMuted}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">
           ${k.label}
         </div>
         <div style="font-size: 18px; font-weight: 700; color: ${COLORS.dark};">
-          ${k.value}
+          ${valueHtml}
         </div>
-      </td>`
+      </td>`;
+      }
     )
     .join('');
 
@@ -265,7 +271,7 @@ function renderSummaryKPIs(report: NightlyReportData, labor?: VenueReport['labor
     </table>`;
 }
 
-function renderCategoryBreakdown(categories: NightlyReportData['salesByCategory']): string {
+function renderCategoryBreakdown(categories: NightlyReportData['salesByCategory'], ctx?: LinkCtx): string {
   if (!categories || categories.length === 0) return '';
 
   const rows = categories
@@ -280,8 +286,12 @@ function renderCategoryBreakdown(categories: NightlyReportData['salesByCategory'
     )
     .join('');
 
+  const headerLink = ctx
+    ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'categories', venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">Sales by Category</a>`
+    : 'Sales by Category';
+
   return `
-    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">Sales by Category</h3>
+    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">${headerLink}</h3>
     <table style="${TABLE_STYLE}">
       <thead>
         <tr>
@@ -340,7 +350,7 @@ function renderServers(servers: NightlyReportData['servers'], ctx?: LinkCtx): st
     </table>`;
 }
 
-function renderMenuItems(items: NightlyReportData['menuItems']): string {
+function renderMenuItems(items: NightlyReportData['menuItems'], ctx?: LinkCtx): string {
   if (!items || items.length === 0) return '';
 
   const top10 = [...items]
@@ -359,8 +369,12 @@ function renderMenuItems(items: NightlyReportData['menuItems']): string {
     )
     .join('');
 
+  const headerLink = ctx
+    ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'items', venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">Top Menu Items</a>`
+    : 'Top Menu Items';
+
   return `
-    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">Top Menu Items</h3>
+    <h3 style="font-size: 14px; font-weight: 600; color: ${COLORS.dark}; margin: 16px 0 8px;">${headerLink}</h3>
     <table style="${TABLE_STYLE}">
       <thead>
         <tr>
@@ -412,21 +426,24 @@ function renderComps(discounts: NightlyReportData['discounts'], ctx?: LinkCtx): 
     </table>`;
 }
 
-function renderVIPGuests(guests: NightlyReportData['notableGuests']): string {
+function renderVIPGuests(guests: NightlyReportData['notableGuests'], ctx?: LinkCtx): string {
   if (!guests || guests.length === 0) return '';
 
   const rows = guests
     .slice(0, 5)
-    .map(
-      (g) => `
+    .map((g) => {
+      const serverCell = ctx && g.server
+        ? `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'servers', server: g.server, venue: ctx.venueId })}" style="${linkStyle(COLORS.dark)}">${g.server}</a>`
+        : g.server;
+      return `
       <tr>
         <td style="${TD_STYLE}">${g.cardholder_name || 'Anonymous'}</td>
-        <td style="${TD_STYLE}">${g.server}</td>
+        <td style="${TD_STYLE}">${serverCell}</td>
         <td style="${TD_RIGHT}">${num(g.covers)}</td>
         <td style="${TD_RIGHT}">${fmt(g.payment)}</td>
         <td style="${TD_RIGHT}">${g.tip_percent != null ? pct(g.tip_percent) : '—'}</td>
-      </tr>`
-    )
+      </tr>`;
+    })
     .join('');
 
   return `
@@ -506,26 +523,132 @@ function renderVenueSection(venue: VenueReport, isMultiVenue: boolean, ctx?: Omi
   if (isMultiVenue) {
     return `
       ${header}
-      ${renderSummaryKPIs(venue.report, venue.laborData)}
-      ${renderCategoryBreakdown(venue.report.salesByCategory)}
+      ${renderSummaryKPIs(venue.report, venue.laborData, linkCtx)}
+      ${renderCategoryBreakdown(venue.report.salesByCategory, linkCtx)}
     `;
   }
 
   return `
     ${header}
-    ${renderSummaryKPIs(venue.report, venue.laborData)}
-    ${renderCategoryBreakdown(venue.report.salesByCategory)}
+    ${renderSummaryKPIs(venue.report, venue.laborData, linkCtx)}
+    ${renderCategoryBreakdown(venue.report.salesByCategory, linkCtx)}
     ${renderServers(venue.report.servers, linkCtx)}
-    ${renderMenuItems(venue.report.menuItems)}
+    ${renderMenuItems(venue.report.menuItems, linkCtx)}
     ${renderComps(venue.report.discounts, linkCtx)}
-    ${renderVIPGuests(venue.report.notableGuests)}
+    ${renderVIPGuests(venue.report.notableGuests, linkCtx)}
     ${renderLaborSummary(venue.laborData, linkCtx)}
   `;
 }
 
+// ── Narrative Linkification ──────────────────────────────────────
+
+/**
+ * Replace first occurrence of `pattern` in text segments only (skips HTML tags).
+ */
+function replaceFirstOutsideTags(
+  html: string,
+  pattern: RegExp,
+  makeLink: (match: string) => string
+): string {
+  const parts = html.split(/(<[^>]+>)/);
+  let done = false;
+  return parts
+    .map((part, i) => {
+      // Odd indices are HTML tags — leave them alone
+      if (done || i % 2 === 1) return part;
+      return part.replace(pattern, (m) => {
+        if (done) return m;
+        done = true;
+        return makeLink(m);
+      });
+    })
+    .join('');
+}
+
+/**
+ * Inject drill-through links into narrative text for known entities.
+ * Matches comp reason names, server names, and generic labor/comp mentions
+ * so that prose callouts like "BOH mistakes totaling $333" become tappable.
+ */
+function linkifyNarrative(
+  html: string,
+  ctx: LinkCtx,
+  venue: VenueReport
+): string {
+  let result = html;
+
+  // 1. Link known comp reason names (longest first to avoid partial matches)
+  const reasonList = (venue.report.discounts || [])
+    .map((d) => d.reason)
+    .filter((r): r is string => !!r && r.length > 2);
+  const reasons = Array.from(new Set<string>(reasonList)).sort(
+    (a, b) => b.length - a.length
+  );
+
+  for (const reason of reasons) {
+    const escaped = reason.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    result = replaceFirstOutsideTags(
+      result,
+      new RegExp(escaped, 'i'),
+      (m) =>
+        `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'comps', reason, venue: ctx.venueId })}" style="${linkStyle()}">${m}</a>`
+    );
+  }
+
+  // 2. Link known server names
+  const nameList = (venue.report.servers || [])
+    .map((s) => s.employee_name)
+    .filter((n): n is string => !!n && n.length > 2);
+  const serverNames = Array.from(new Set<string>(nameList)).sort(
+    (a, b) => b.length - a.length
+  );
+
+  for (const name of serverNames) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    result = replaceFirstOutsideTags(
+      result,
+      new RegExp(`\\b${escaped}\\b`, 'i'),
+      (m) =>
+        `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'servers', server: name, venue: ctx.venueId })}" style="${linkStyle()}">${m}</a>`
+    );
+  }
+
+  // 3. Link first "labor" mention
+  if (!result.includes('section=labor')) {
+    result = replaceFirstOutsideTags(
+      result,
+      /\blabor\b/i,
+      (m) =>
+        `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'labor', venue: ctx.venueId })}" style="${linkStyle()}">${m}</a>`
+    );
+  }
+
+  // 4. Link generic "comp"/"comps" if no specific reason was already linked
+  if (!result.includes('section=comps')) {
+    result = replaceFirstOutsideTags(
+      result,
+      /\bcomps?\b/i,
+      (m) =>
+        `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'comps', venue: ctx.venueId })}" style="${linkStyle()}">${m}</a>`
+    );
+  }
+
+  // 5. Link beverage/food category mentions
+  if (!result.includes('section=categories')) {
+    result = replaceFirstOutsideTags(
+      result,
+      /\b(beverage|bev(?:erage)?\s+(?:mix|sales|%|percent|ratio)|food\s+(?:sales|mix|%))\b/i,
+      (m) =>
+        `<a href="${drillUrl(ctx.appUrl, ctx.date, { section: 'categories', venue: ctx.venueId })}" style="${linkStyle()}">${m}</a>`
+    );
+  }
+
+  return result;
+}
+
 // ── Consolidated Summary ─────────────────────────────────────────
 
-function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<string, string>, ctx?: Omit<LinkCtx, 'venueId'>): string {
+function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<string, string>, ctx?: Omit<LinkCtx, 'venueId'>, venuesWithNoNotes?: Set<string>): string {
   if (venues.length <= 1) return '';
 
   const COL_COUNT = 8;
@@ -559,11 +682,24 @@ function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<stri
       const avgCheck = s.total_checks > 0 ? s.net_sales / s.total_checks : 0;
       const compPct = s.net_sales > 0 ? (s.total_comps / (s.net_sales + s.total_comps)) * 100 : 0;
       const summary = aiSummaries?.get(v.venueId);
+      const noManagerNotes = venuesWithNoNotes?.has(v.venueId);
       const isLongNarrative = summary && summary.length > 200;
-      const summaryRow = summary
+      // Build linkified narrative: render first, then inject drill-through links
+      let renderedNarrative = '';
+      if (summary) {
+        renderedNarrative = isLongNarrative ? formatNarrative(summary) : summary;
+        if (ctx) {
+          renderedNarrative = linkifyNarrative(renderedNarrative, { ...ctx, venueId: v.venueId }, v);
+        }
+      }
+      const noNotesTag = noManagerNotes
+        ? `<span style="font-size: 11px; color: ${COLORS.textMuted}; font-style: italic;">No manager notes provided.</span>`
+        : '';
+      const narrativeContent = [noNotesTag, renderedNarrative].filter(Boolean).join(renderedNarrative && isLongNarrative ? '<br/>' : ' ');
+      const summaryRow = narrativeContent
         ? `<tr>
             <td colspan="${COL_COUNT}" style="padding: ${isLongNarrative ? '8px 12px 14px' : '4px 12px 12px'}; ${isLongNarrative ? '' : 'font-size: 12px; color: ' + COLORS.textMuted + '; font-style: italic;'} border-bottom: 1px solid ${COLORS.border};">
-              ${isLongNarrative ? formatNarrative(summary) : summary}
+              ${narrativeContent}
             </td>
           </tr>`
         : '';
@@ -632,7 +768,7 @@ function renderConsolidatedSummary(venues: VenueReport[], aiSummaries?: Map<stri
 // ── Main Renderer ────────────────────────────────────────────────
 
 export function renderNightlyReportEmail(params: NightlyEmailParams): string {
-  const { orgName, businessDate, venues, appUrl, logoUrl, aiSummaries } = params;
+  const { orgName, businessDate, venues, appUrl, logoUrl, aiSummaries, venuesWithNoNotes } = params;
   const isMultiVenue = venues.length > 1;
   const dateDisplay = formatDate(businessDate);
 
@@ -685,7 +821,7 @@ export function renderNightlyReportEmail(params: NightlyEmailParams): string {
           <!-- Body -->
           <tr>
             <td style="background-color: ${COLORS.white}; padding: 24px 32px;">
-              ${isMultiVenue ? renderConsolidatedSummary(venues, aiSummaries, baseCtx) : venuesSections}
+              ${isMultiVenue ? renderConsolidatedSummary(venues, aiSummaries, baseCtx, venuesWithNoNotes) : venuesSections}
             </td>
           </tr>
 

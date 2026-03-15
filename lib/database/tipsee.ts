@@ -1127,10 +1127,19 @@ export async function fetchSimphonyNightlyReport(
   }
 
   // Fetch server performance + comp breakdown from Simphony BI API if venueId available
-  const [servers, compData] = await Promise.all([
-    venueId ? fetchSimphonyServerPerformance(venueId, date) : Promise.resolve([]),
-    venueId ? fetchSimphonyCompBreakdown(venueId, date) : Promise.resolve(null),
-  ]);
+  // Wrapped in try/catch so BI API failures don't prevent the core report from being returned
+  let servers: NightlyReportData['servers'] = [];
+  let compData: { discounts: NightlyReportData['discounts']; detailedComps: NightlyReportData['detailedComps'] } | null = null;
+  if (venueId) {
+    try {
+      [servers, compData] = await Promise.all([
+        fetchSimphonyServerPerformance(venueId, date),
+        fetchSimphonyCompBreakdown(venueId, date),
+      ]);
+    } catch (err: any) {
+      console.error(`[tipsee] Simphony BI API failed for venue ${venueId} on ${date} — returning report without comp/server detail:`, err.message);
+    }
+  }
 
   return {
     date,

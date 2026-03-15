@@ -32,6 +32,7 @@ import { fetchManagerDigestEmails } from '@/lib/email/outlook-digest-fetcher';
 import {
   parseLightspeedDigest,
   parseWynnShiftReport,
+  parsePropertyName,
   resolveVenueName,
   extractSubjectDate,
 } from '@/lib/email/manager-notes-parser';
@@ -197,7 +198,7 @@ async function processOrg(
   );
 
   // 4.5. Process manager email notes (Lightspeed/Wynn → parsed → AI narrative)
-  await processManagerEmailNotes(org.id, orgVenues, businessDate, reportCache, laborCache);
+  const { venuesWithNoNotes } = await processManagerEmailNotes(org.id, orgVenues, businessDate, reportCache, laborCache);
 
   // 5. Generate AI summaries per venue (multi-venue only)
   let aiSummaries: Map<string, string> | undefined;
@@ -224,6 +225,7 @@ async function processOrg(
     reportCache,
     laborCache,
     aiSummaries,
+    venuesWithNoNotes,
   });
 
   return { ...result, venueCount: reportCache.size };
@@ -241,8 +243,9 @@ async function processManagerEmailNotes(
   businessDate: string,
   reportCache: Map<string, NightlyReportData>,
   laborCache: Map<string, VenueReport['laborData']>
-): Promise<void> {
+): Promise<{ venuesWithNoNotes: Set<string> }> {
   const supabase = getServiceClient();
+  const venuesWithNoNotes = new Set<string>();
 
   // Build venue lookup by KevaOS name → venue record
   const venueByName = new Map<string, { id: string; name: string }>();
@@ -255,12 +258,12 @@ async function processManagerEmailNotes(
     emails = await fetchManagerDigestEmails(businessDate);
   } catch (err: any) {
     console.error('[nightly-report-cron] Failed to fetch manager emails:', err.message);
-    return;
+    return { venuesWithNoNotes };
   }
 
   if (emails.length === 0) {
     console.log('[nightly-report-cron] No manager digest emails found');
-    return;
+    return { venuesWithNoNotes };
   }
 
   // Pre-fetch comp trends for all venues with report data
@@ -280,14 +283,6 @@ async function processManagerEmailNotes(
 
   for (const email of emails) {
     try {
-      // Parse based on format
-      const parsed =
-        email.format === 'wynn'
-          ? parseWynnShiftReport(email.htmlBody, email.subject)
-          : parseLightspeedDigest(email.htmlBody, email.subject);
-
-      if (!parsed) continue;
-
       // For Lightspeed emails: verify the subject date matches the business date
       // The 2-day fetch window can pick up emails from adjacent dates
       if (email.format === 'lightspeed') {
@@ -296,6 +291,27 @@ async function processManagerEmailNotes(
         if (subjectDate && subjectDate !== expectedMD) {
           continue; // Wrong date — skip
         }
+      }
+
+      // Parse based on format
+      const parsed =
+        email.format === 'wynn'
+          ? parseWynnShiftReport(email.htmlBody, email.subject)
+          : parseLightspeedDigest(email.htmlBody, email.subject);
+
+      if (!parsed) {
+        // Email received but no manager notes sections found — track the venue
+        if (email.format === 'lightspeed') {
+          const venueName = parsePropertyName(email.subject);
+          if (venueName) {
+            const kevaos = resolveVenueName(venueName);
+            if (kevaos) {
+              const venue = venueByName.get(kevaos.toLowerCase());
+              if (venue) venuesWithNoNotes.add(venue.id);
+            }
+          }
+        }
+        continue;
       }
 
       // Resolve venue name → KevaOS venue name
@@ -399,6 +415,26 @@ async function processManagerEmailNotes(
       `[nightly-report-cron] Processed ${processed} manager email note(s) for ${businessDate}`
     );
   }
+  // Remove venues from "no notes" set if they actually had notes processed
+  // (venues with notes would have been stored in manager_email_notes)
+  if (processed > 0) {
+    const { data: notedVenues } = await (supabase as any)
+      .from('manager_email_notes')
+      .select('venue_id')
+      .eq('business_date', businessDate)
+      .in('venue_id', [...venuesWithNoNotes]);
+    for (const row of notedVenues || []) {
+      venuesWithNoNotes.delete(row.venue_id);
+    }
+  }
+
+  if (venuesWithNoNotes.size > 0) {
+    console.log(
+      `[nightly-report-cron] ${venuesWithNoNotes.size} venue(s) had digest email but no manager notes`
+    );
+  }
+
+  return { venuesWithNoNotes };
 }
 
 // ── Data Fetchers ────────────────────────────────────────────────
@@ -416,7 +452,58 @@ async function fetchVenueReport(
   tipseeLocationUuid: string | undefined,
   businessDate: string
 ): Promise<NightlyReportData | null> {
-  // Try cache first
+  // Detect POS type upfront so we can route Simphony differently
+  let posType: string | null = null;
+  if (tipseeLocationUuid) {
+    try {
+      posType = await getPosTypeForLocations([tipseeLocationUuid]);
+    } catch {}
+  }
+
+  // For Simphony venues: venue_day_facts is the primary source (populated by ETL),
+  // then enrich with cache data (comp details, servers) if available
+  if (posType === 'simphony') {
+    let factsReport: NightlyReportData | null = null;
+    try {
+      factsReport = await fetchNightlyReportFromFacts(businessDate, venueId);
+    } catch (err: any) {
+      console.error(`[nightly-report-cron] Facts fetch failed for Simphony venue ${venueId}:`, err.message);
+    }
+
+    // Enrich with cache data (has comp details, servers from BI API)
+    const { data: cached } = await supabase
+      .from('tipsee_nightly_cache')
+      .select('report_data')
+      .eq('venue_id', venueId)
+      .eq('business_date', businessDate)
+      .maybeSingle();
+
+    if (cached?.report_data?.summary?.net_sales > 0) {
+      // Cache has full report with comp/server detail — prefer it
+      return cached.report_data as NightlyReportData;
+    }
+
+    // If facts has data, use it (even without comp/server detail)
+    if (factsReport && factsReport.summary.net_sales > 0) {
+      return factsReport;
+    }
+
+    // Last resort: try Simphony live
+    try {
+      const report = await fetchSimphonyNightlyReport(businessDate, tipseeLocationUuid!, venueId);
+      if (report && report.summary.net_sales > 0) {
+        return report;
+      }
+      console.warn(`[nightly-report-cron] Simphony live returned $0 for venue ${venueId} on ${businessDate}`);
+    } catch (err: any) {
+      console.error(`[nightly-report-cron] Simphony live failed for venue ${venueId}:`, err.message);
+    }
+
+    // Return whatever we have (facts $0 is better than null)
+    return factsReport;
+  }
+
+  // Non-Simphony venues: cache-first (Upserve cache has full detail)
   const { data: cached } = await supabase
     .from('tipsee_nightly_cache')
     .select('report_data')
@@ -426,31 +513,16 @@ async function fetchVenueReport(
 
   if (cached?.report_data) {
     const summary = cached.report_data.summary;
-    // Skip $0 cache — either stale or venue was closed (live will confirm)
     if (summary && summary.net_sales > 0) {
       return cached.report_data as NightlyReportData;
-    }
-  }
-
-  // For Simphony venues, try live path with BI API comp breakdown
-  if (tipseeLocationUuid) {
-    try {
-      const posType = await getPosTypeForLocations([tipseeLocationUuid]);
-      if (posType === 'simphony') {
-        const report = await fetchSimphonyNightlyReport(businessDate, tipseeLocationUuid, venueId);
-        if (report && report.summary.net_sales > 0) {
-          return report;
-        }
-      }
-    } catch {
-      // Fall through to venue_day_facts
     }
   }
 
   // Fallback to venue_day_facts
   try {
     return await fetchNightlyReportFromFacts(businessDate, venueId);
-  } catch {
+  } catch (err: any) {
+    console.error(`[nightly-report-cron] Facts fallback failed for venue ${venueId}:`, err.message);
     return null;
   }
 }

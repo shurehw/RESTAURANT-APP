@@ -136,6 +136,10 @@
       "schedule": "0 11 * * *"
     },
     {
+      "path": "/api/etl/sync?action=yesterday",
+      "schedule": "0 13 * * *"
+    },
+    {
       "path": "/api/etl/sync?action=reviews",
       "schedule": "15 */6 * * *"
     },
@@ -154,6 +158,22 @@
     {
       "path": "/api/cron/server-scores",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/rollup",
+      "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/compute-rez-metrics",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/rez-yield-backtest",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/cogs-enforcement",
+      "schedule": "30 13 * * *"
     }
   ]
 }

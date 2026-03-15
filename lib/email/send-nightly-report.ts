@@ -24,6 +24,7 @@ interface SendForOrgParams {
   reportCache: Map<string, NightlyReportData>;
   laborCache: Map<string, VenueReport['laborData']>;
   aiSummaries?: Map<string, string>;
+  venuesWithNoNotes?: Set<string>;
 }
 
 interface SendResult {
@@ -41,7 +42,7 @@ interface SendResult {
 export async function sendNightlyReportForOrg(
   params: SendForOrgParams
 ): Promise<SendResult> {
-  const { orgId, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries } = params;
+  const { orgId, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries, venuesWithNoNotes } = params;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kevaos.ai';
   const resend = getResendClient();
 
@@ -73,6 +74,7 @@ export async function sendNightlyReportForOrg(
         reportCache,
         laborCache,
         aiSummaries,
+        venuesWithNoNotes,
         appUrl,
         resend,
       });
@@ -101,10 +103,11 @@ async function sendToSubscriber(params: {
   reportCache: Map<string, NightlyReportData>;
   laborCache: Map<string, VenueReport['laborData']>;
   aiSummaries?: Map<string, string>;
+  venuesWithNoNotes?: Set<string>;
   appUrl: string;
   resend: ReturnType<typeof getResendClient>;
 }): Promise<boolean> {
-  const { subscriber, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries, appUrl, resend } = params;
+  const { subscriber, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries, venuesWithNoNotes, appUrl, resend } = params;
 
   // Resolve which venues this subscriber should see
   const { venues, isConsolidated } = await resolveSubscriberVenues(subscriber, orgVenues);
@@ -135,6 +138,7 @@ async function sendToSubscriber(params: {
     appUrl,
     logoUrl,
     aiSummaries,
+    venuesWithNoNotes,
   });
 
   // Build subject line

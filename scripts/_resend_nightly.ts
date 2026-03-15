@@ -110,9 +110,10 @@ async function main() {
     }
 
     // Process manager email notes (Lightspeed/Wynn → parsed → AI narrative)
+    const venuesWithNoNotes = new Set<string>();
     try {
       const { fetchManagerDigestEmails } = await import('@/lib/email/outlook-digest-fetcher');
-      const { parseLightspeedDigest, parseWynnShiftReport, resolveVenueName, extractSubjectDate } = await import('@/lib/email/manager-notes-parser');
+      const { parseLightspeedDigest, parseWynnShiftReport, parsePropertyName, resolveVenueName, extractSubjectDate } = await import('@/lib/email/manager-notes-parser');
       const { generateNarrativeFromNotes } = await import('@/lib/ai/manager-notes-narrator');
 
       const venueByName = new Map<string, { id: string; name: string }>();
@@ -123,16 +124,29 @@ async function main() {
 
       let noteCount = 0;
       for (const email of emails) {
-        const parsed = email.format === 'wynn'
-          ? parseWynnShiftReport(email.htmlBody, email.subject)
-          : parseLightspeedDigest(email.htmlBody, email.subject);
-        if (!parsed) continue;
-
         // Skip Lightspeed emails that don't match the business date
         if (email.format === 'lightspeed') {
           const subjectDate = extractSubjectDate(email.subject);
           const expectedMD = businessDate.substring(5);
           if (subjectDate && subjectDate !== expectedMD) continue;
+        }
+
+        const parsed = email.format === 'wynn'
+          ? parseWynnShiftReport(email.htmlBody, email.subject)
+          : parseLightspeedDigest(email.htmlBody, email.subject);
+        if (!parsed) {
+          // Email received but no manager notes — track the venue
+          if (email.format === 'lightspeed') {
+            const venueName = parsePropertyName(email.subject);
+            if (venueName) {
+              const kevaos = resolveVenueName(venueName);
+              if (kevaos) {
+                const venue = venueByName.get(kevaos.toLowerCase());
+                if (venue) venuesWithNoNotes.add(venue.id);
+              }
+            }
+          }
+          continue;
         }
 
         const kevaosName = resolveVenueName(parsed.venueName);
@@ -182,6 +196,19 @@ async function main() {
         else noteCount++;
       }
       if (noteCount > 0) console.log(`  Stored/found ${noteCount} manager email note(s)`);
+      // Remove venues that actually had notes stored
+      for (const vid of [...venuesWithNoNotes]) {
+        const { data: noted } = await (supabase as any)
+          .from('manager_email_notes')
+          .select('id')
+          .eq('venue_id', vid)
+          .eq('business_date', businessDate)
+          .maybeSingle();
+        if (noted) venuesWithNoNotes.delete(vid);
+      }
+      if (venuesWithNoNotes.size > 0) {
+        console.log(`  ${venuesWithNoNotes.size} venue(s) had digest email but no manager notes`);
+      }
     } catch (emailErr: any) {
       console.log(`  Skipping manager email notes: ${emailErr.message}`);
     }
@@ -211,6 +238,7 @@ async function main() {
       reportCache,
       laborCache,
       aiSummaries,
+      venuesWithNoNotes,
     });
 
     await logReportRun({
