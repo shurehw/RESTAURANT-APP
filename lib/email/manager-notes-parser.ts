@@ -191,6 +191,24 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Extract the business date from a Lightspeed email subject.
+ * "Daily Digest for Keys for Mar 12th" → "03-12"
+ * "Daily Digest for Delilah LA for Mar 13th" → "03-13"
+ * Returns MM-DD string or null if not parseable.
+ */
+export function extractSubjectDate(subject: string): string | null {
+  const months: Record<string, string> = {
+    jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+    jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+  };
+  const match = subject.match(/for\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:st|nd|rd|th)?/i);
+  if (!match) return null;
+  const month = months[match[1].toLowerCase()];
+  const day = match[2].padStart(2, '0');
+  return `${month}-${day}`;
+}
+
 // ── Lightspeed Parser ──────────────────────────────────────────────
 
 /**

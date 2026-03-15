@@ -33,6 +33,7 @@ import {
   parseLightspeedDigest,
   parseWynnShiftReport,
   resolveVenueName,
+  extractSubjectDate,
 } from '@/lib/email/manager-notes-parser';
 import { generateNarrativeFromNotes } from '@/lib/ai/manager-notes-narrator';
 
@@ -272,6 +273,16 @@ async function processManagerEmailNotes(
           : parseLightspeedDigest(email.htmlBody, email.subject);
 
       if (!parsed) continue;
+
+      // For Lightspeed emails: verify the subject date matches the business date
+      // The 2-day fetch window can pick up emails from adjacent dates
+      if (email.format === 'lightspeed') {
+        const subjectDate = extractSubjectDate(email.subject);
+        const expectedMD = businessDate.substring(5); // "YYYY-MM-DD" → "MM-DD"
+        if (subjectDate && subjectDate !== expectedMD) {
+          continue; // Wrong date — skip
+        }
+      }
 
       // Resolve venue name → KevaOS venue name
       const kevaosName = resolveVenueName(parsed.venueName);
