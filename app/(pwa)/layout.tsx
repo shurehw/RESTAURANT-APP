@@ -8,9 +8,10 @@ import { createClient } from '@/lib/supabase/server';
 import { VenueProvider } from '@/components/providers/VenueProvider';
 import { FloatingChatWidget, CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
 import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
+import { NightlyReportSheet } from '@/components/pwa/NightlyReportSheet';
 
 export const metadata = {
-  title: 'Pulse',
+  title: 'KevaOS',
 };
 
 export default async function PwaLayout({
@@ -33,7 +34,10 @@ export default async function PwaLayout({
         {/* Thin PWA header */}
         <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center justify-between sticky top-0 z-50">
           <KevaOSLogo size="sm" />
-          <CommandTrigger />
+          <div className="flex items-center gap-1">
+            <NightlyReportSheet />
+            <CommandTrigger />
+          </div>
         </header>
 
         {/* Content */}
