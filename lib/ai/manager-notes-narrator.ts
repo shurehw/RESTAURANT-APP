@@ -73,7 +73,10 @@ ACTION ITEMS
 RULES:
 - Use ONLY the section headers above (REVENUE & COMPS, GUEST, KITCHEN, ACTION ITEMS)
 - Each bullet MUST start with the bullet character followed by a space
-- Include specific dollar amounts and numbers where available
+- KPI DATA is the authoritative source for revenue, covers, comps, and labor — use those numbers in REVENUE & COMPS
+- Manager notes may cover only ONE shift (e.g., dinner only) at venues that run multiple dayparts (brunch + dinner). Do NOT compare or flag discrepancies between manager-reported numbers and KPI data — KPI data is full-day and always correct
+- If the manager notes mention revenue or cover numbers, ignore them in favor of KPI data
+- Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
 - If a section has no relevant data from the notes, include one bullet with "No notes reported"
 - Be direct and concise — restaurant industry language
 - Do NOT add sections not listed above
