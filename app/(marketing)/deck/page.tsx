@@ -20,7 +20,7 @@ export default function DeckPage() {
 
       if (res.ok) {
         // Fetch the deck HTML from public
-        const htmlRes = await fetch('/deck.html');
+        const htmlRes = await fetch('/deck.html?v=' + Date.now(), { cache: 'no-store' });
         const html = await htmlRes.text();
         setDeckHtml(html);
         setState('unlocked');
