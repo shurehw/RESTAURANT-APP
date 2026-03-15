@@ -129,13 +129,13 @@ async function main() {
     { text: "Keva", options: { fontSize: 12, fontFace: FONT, color: SLATE, bold: true, charSpacing: 2 } },
     { text: "OS", options: { fontSize: 12, fontFace: FONT, color: BRASS, bold: false, charSpacing: 2 } },
   ], { x: 0.7, y: 0.56, w: 2, h: 0.25, margin: 0 });
-  s1.addText("The AI-Enforced Control", { x: 1.1, y: 1.1, w: 8.5, h: 0.8, fontSize: 44, fontFace: FONT, color: SLATE, bold: true, margin: 0 });
-  s1.addText("Plane for Hospitality", { x: 1.1, y: 1.8, w: 8.5, h: 0.8, fontSize: 44, fontFace: FONT, color: BRASS, bold: true, margin: 0 });
+  s1.addText("Nothing slips.", { x: 1.1, y: 1.1, w: 8.5, h: 0.8, fontSize: 48, fontFace: FONT, color: SLATE, bold: true, margin: 0 });
+  s1.addText("The AI-Enforced Control Plane for Hospitality", { x: 1.1, y: 1.9, w: 8.5, h: 0.6, fontSize: 24, fontFace: FONT, color: BRASS, bold: true, margin: 0 });
   s1.addText([
     { text: "Keva ", options: { fontSize: 18, fontFace: FONT, color: BRASS, italic: true } },
     { text: "  —  permanence, fixity, establishment.", options: { fontSize: 18, fontFace: FONT, color: SAGE, italic: true } },
   ], { x: 1.1, y: 2.8, w: 7, h: 0.4, margin: 0 });
-  s1.addText("The fixed framework that runs every night, every shift, every venue. Not recommendations — enforcement.", {
+  s1.addText("Catching what your managers miss and enforcing the fix across every location, every night.", {
     x: 1.1, y: 3.5, w: 6.5, h: 0.8, fontSize: 14, fontFace: FONT, color: MID, lineSpacingMultiple: 1.5, margin: 0
   });
   // Footer with logo lockup

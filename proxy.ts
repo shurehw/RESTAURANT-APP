@@ -20,7 +20,7 @@ const publicRoutes = [
   '/manifest.json',
 ];
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
 
@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Non-primary domains → redirect everything to kevaos.ai
+  // Non-primary domains -> redirect everything to kevaos.ai
   if (
     (hostname.includes('prime-cost.com') || hostname.includes('opsos-restaurant-app.vercel.app')) &&
     !hostname.includes('kevaos.ai')
@@ -37,9 +37,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL(`https://kevaos.ai${pathname}`, request.url), 301);
   }
 
-  // Marketing domain — serve coming-soon page on root for unauthenticated visitors
+  // Marketing domain -> serve coming-soon page on root for unauthenticated visitors
   if (hostname.includes('kevaos.ai') && pathname === '/') {
-    const hasSession = request.cookies.getAll().some(c => c.name.includes('-auth-token'));
+    const hasSession = request.cookies.getAll().some((c) => c.name.includes('-auth-token'));
     const hasLegacy = request.cookies.get('user_id');
     if (!hasSession && !hasLegacy) {
       return NextResponse.rewrite(new URL('/coming-soon', request.url));
@@ -47,20 +47,15 @@ export async function middleware(request: NextRequest) {
   }
 
   // Allow public routes
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
+  if (publicRoutes.some((route) => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  // ========================================================================
-  // Supabase session refresh (standard SSR pattern)
-  // Calling getUser() refreshes expired access tokens using the refresh token.
-  // Refreshed cookies are forwarded to both the browser (response) and
-  // downstream route handlers (updated request).
-  // ========================================================================
+  // Standard Supabase SSR session refresh.
   let supabaseResponse = NextResponse.next({ request });
 
   const hasSupabaseSession = request.cookies.getAll().some(
-    cookie => cookie.name.includes('-auth-token')
+    (cookie) => cookie.name.includes('-auth-token'),
   );
 
   let supabaseUser = null;
@@ -75,35 +70,31 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
-            // Update request cookies so downstream route handlers see refreshed tokens
             cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
             supabaseResponse = NextResponse.next({ request });
-            // Update response cookies so the browser stores refreshed tokens
             cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
+              supabaseResponse.cookies.set(name, value, options),
             );
           },
         },
-      }
+      },
     );
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     supabaseUser = user;
   }
 
-  // API routes handle their own auth — pass through with refreshed cookies
+  // API routes handle their own auth.
   if (pathname.startsWith('/api/')) {
     return supabaseResponse;
   }
 
-  // Check for legacy user_id cookie (migration support)
-  // Allow access only with valid Supabase auth session.
-  // Legacy user_id cookie is not sufficient for access control.
   if (supabaseUser) {
     return supabaseResponse;
   }
 
-  // No authentication found — redirect to login
   const loginUrl = new URL('/login', request.url);
   loginUrl.searchParams.set('redirect', pathname);
   return NextResponse.redirect(loginUrl);
@@ -111,13 +102,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public directory)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { CompSettingsForm } from './CompSettingsForm';
-import { LogoUploader } from './LogoUploader';
+import { useEffect, useState } from 'react';
 import { ApprovedReasonsManager } from './ApprovedReasonsManager';
+import { CompSettingsForm } from './CompSettingsForm';
+import { ImportExport } from './ImportExport';
+import { LogoUploader } from './LogoUploader';
 import { SOPPreview } from './SOPPreview';
 import { VersionHistory } from './VersionHistory';
-import { ImportExport } from './ImportExport';
 
 interface Organization {
   id: string;
@@ -18,13 +18,22 @@ interface Props {
   organizations: Organization[];
 }
 
+const TABS = [
+  { id: 'settings', label: 'Thresholds' },
+  { id: 'reasons', label: 'Approved Reasons' },
+  { id: 'history', label: 'Version History' },
+  { id: 'import', label: 'Import/Export' },
+  { id: 'logo', label: 'Logo' },
+  { id: 'sop', label: 'Generate SOP' },
+] as const;
+
+type ActiveTab = (typeof TABS)[number]['id'];
+
 export function CompSettingsManager({ organizations }: Props) {
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(
-    organizations[0] || null
-  );
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(organizations[0] || null);
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'settings' | 'reasons' | 'logo' | 'sop' | 'history' | 'import'>('settings');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('settings');
 
   useEffect(() => {
     if (selectedOrg) {
@@ -49,7 +58,7 @@ export function CompSettingsManager({ organizations }: Props) {
 
   async function handleSaveSettings(updates: any) {
     if (!selectedOrg) return;
-    
+
     setLoading(true);
     try {
       const res = await fetch('/api/comp/settings', {
@@ -87,7 +96,6 @@ export function CompSettingsManager({ organizations }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Organization Selector */}
       <div className="flex items-center gap-4">
         <label className="font-medium">Organization:</label>
         <select
@@ -106,20 +114,12 @@ export function CompSettingsManager({ organizations }: Props) {
         </select>
       </div>
 
-      {/* Tabs */}
       <div className="border-b">
         <nav className="flex gap-4">
-          {[
-            { id: 'settings', label: '⚙️ Thresholds' },
-            { id: 'reasons', label: '✅ Approved Reasons' },
-            { id: 'history', label: '📜 Version History' },
-            { id: 'import', label: '💾 Import/Export' },
-            { id: 'logo', label: '🎨 Logo' },
-            { id: 'sop', label: '📄 Generate SOP' },
-          ].map((tab) => (
+          {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 border-b-2 font-medium transition-colors ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
@@ -132,7 +132,6 @@ export function CompSettingsManager({ organizations }: Props) {
         </nav>
       </div>
 
-      {/* Tab Content */}
       <div className="py-6">
         {loading && !settings ? (
           <div className="text-center py-12">

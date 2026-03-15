@@ -20,6 +20,22 @@ interface CompDetail {
   items: string[]; // e.g. "Truffle Fries ($18.00)", "Cocktail x2 ($36.00)"
 }
 
+interface CompItemTrend {
+  itemName: string;
+  compCount: number;
+  totalNights: number;
+  compRate: number;       // % of nights comped
+  topReasons: string[];
+}
+
+interface CompTrends {
+  windowDays: number;
+  activeDays: number;
+  avgDailyCompPct: number;
+  avgDailyCompTotal: number;
+  problemItems: CompItemTrend[];
+}
+
 interface KpiData {
   netSales: number;
   covers: number;
@@ -28,6 +44,7 @@ interface KpiData {
   laborPct: number;
   compBreakdown?: CompBreakdown[];
   compDetails?: CompDetail[];
+  compTrends?: CompTrends | null;
 }
 
 /**
@@ -79,14 +96,28 @@ export async function generateNarrativeFromNotes(
     compDetailContext = `\nComp Details (top ${topComps.length} by amount):\n${lines.join('\n')}`;
   }
 
+  // Build multi-day comp trend context
+  let compTrendContext = '';
+  if (kpiData?.compTrends && kpiData.compTrends.problemItems.length > 0) {
+    const t = kpiData.compTrends;
+    const lines = t.problemItems.map(item => {
+      const reasonStr = item.topReasons.length > 0 ? ` (${item.topReasons[0]})` : '';
+      return `  ${item.itemName}: comped ${item.compCount}x over ${item.totalNights} of last ${t.activeDays} nights (${item.compRate}% comp rate)${reasonStr}`;
+    });
+    compTrendContext = `\n\nCOMP TREND DATA (last ${t.activeDays} nights):
+Avg daily comp rate: ${t.avgDailyCompPct}% ($${t.avgDailyCompTotal.toLocaleString()}/night)
+Recurring problem items:
+${lines.join('\n')}`;
+  }
+
   const kpiContext = hasFullKpi
     ? `KPI DATA (full-day totals from POS):
 Net Sales: $${Math.round(kpiData!.netSales).toLocaleString()}
 Covers: ${kpiData!.covers}
 ${kpiData!.totalComps > 0 ? `Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()} (${compPct}% of net sales)${compBreakdownContext}${compDetailContext}` : ''}
-${kpiData!.laborCost > 0 ? `Labor Cost: $${Math.round(kpiData!.laborCost).toLocaleString()} (${kpiData!.laborPct.toFixed(1)}%)` : ''}
+${kpiData!.laborCost > 0 ? `Labor Cost: $${Math.round(kpiData!.laborCost).toLocaleString()} (${kpiData!.laborPct.toFixed(1)}%)` : ''}${compTrendContext}
 `
-    : '';
+    : (compTrendContext ? compTrendContext + '\n' : '');
 
   const prompt = `You are an operations analyst for a high-end restaurant group. Given a venue's manager notes from their nightly report email plus KPI data for ${businessDate}, produce a structured operational narrative.
 
@@ -98,50 +129,38 @@ ${kpiContext}
 MANAGER NOTES FROM NIGHTLY EMAIL:
 ${sectionEntries}
 
-FORMAT YOUR RESPONSE EXACTLY LIKE THIS (use these exact section headers and bullet points with the bullet character):
+FORMAT YOUR RESPONSE USING THESE EXACT SECTION HEADERS:
 
 REVENUE & COMPS
-• [Revenue observation with specific numbers]
-• [Comp/discount observation if relevant]
+1-2 sentences: net sales, covers, comp total and %, top comp reason. If comp % is above 3%, note it as elevated.
 
 GUEST
-• [Notable guests, VIPs, people of note mentioned in the notes]
-• [Cover count observations if mentioned]
-• [High spender observations if available]
+1-2 sentences: notable guests, cover count, high spenders.
 
 KITCHEN
-• [Kitchen notes if any were provided]
-• [Food quality or operational notes]
+1 sentence: kitchen notes or "No notes reported."
 
 ACTION ITEMS
-• [Any follow-up items identified from the notes]
+Top 2-3 issues flagged tonight. Each on its own line, one sentence. Only flag something from COMP TREND DATA if tonight's comp matches an ongoing pattern (e.g. "Bavette comped again — 11% comp rate over 14 nights, recurring grill issue").
 
 RULES:
-- Use ONLY the section headers above (REVENUE & COMPS, GUEST, KITCHEN, ACTION ITEMS)
-- Each bullet MUST start with the bullet character followed by a space
-- If KPI DATA is provided, use those numbers for revenue/covers/comps/labor in REVENUE & COMPS
-- If no KPI DATA is provided, use any revenue/cover numbers from the manager notes
-- NEVER compare manager-reported numbers against KPI data. NEVER flag discrepancies. NEVER suggest "reconciling" numbers. They come from different sources and shifts — both are valid.
-- NEVER put "reconcile", "discrepancy", "variance", or "investigate reporting" in ACTION ITEMS
-- If labor cost is $0 or not provided, do not mention labor at all
-- If comps are $0 or not provided, do not mention comps at all — do NOT say "no comps" or "zero comps"
-- If comp % is above 3%, flag it in REVENUE & COMPS as elevated and note the dollar amount
-- If Comp Breakdown by Reason is provided, mention the top 1-2 reasons by dollar amount in REVENUE & COMPS (e.g. "Comps led by VIP/Owner ($X) and Kitchen Error ($Y)")
-- If Comp Details are provided, look for patterns worth flagging in ACTION ITEMS:
-  - Multiple comps by the same server (possible training issue or abuse)
-  - Food items comped repeatedly (possible kitchen/quality issue — name the item)
-  - Large single comps (>$200) without a clear reason
-  - Beverage-heavy comps (possible service recovery or unauthorized pours)
-- When mentioning comped items, name the specific menu items — this helps operators identify recurring quality or service problems
-- Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
-- In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
-- Names in SPENDERS OVER sections are real guest names (high spenders) — include them in GUEST section as notable spenders
-- SERVICE FLAGS section (if present) contains potential service concerns extracted from check data (zero tips, low tips on high-spend checks). Include these in ACTION ITEMS as service follow-ups — they may indicate food quality issues, service problems, or billing disputes worth investigating
-- If a section has no relevant data from the notes, include one bullet with "No notes reported"
+- Use ONLY the section headers above
+- ALL sections use plain sentences — NO bullets, dashes, or list markers
+- ACTION ITEMS: each item on its own line, no dashes or bullets
+- REVENUE & COMPS: keep it brief — total comps, comp %, top 1 reason by dollar amount. Do NOT list every comp detail or every server's comps.
+- ACTION ITEMS: only flag the top issues that need follow-up. Only reference historical trend data when tonight has a comp that matches a known recurring pattern. Do NOT dump all trend data.
+- If KPI DATA is provided, use those numbers
+- If no KPI DATA, use numbers from manager notes
+- NEVER compare manager-reported numbers against KPI data
+- If labor cost is $0, do not mention labor
+- If comps are $0, do not mention comps
+- Names followed by "Server" are STAFF, NOT guests
+- Names in SPENDERS OVER sections are guest names — include in GUEST
+- SERVICE FLAGS go in ACTION ITEMS as service follow-ups
 - Be direct and concise — restaurant industry language
-- Do NOT add sections not listed above
+- Keep the TOTAL response under 150 words
 - Do NOT use emojis
-- Do NOT include a title line or header — start directly with the first section`;
+- Start directly with the first section`;
 
   try {
     const message = await anthropic.messages.create({

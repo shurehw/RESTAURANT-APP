@@ -172,8 +172,8 @@ export async function getManagerSignalProfile(
   const open = commitments.filter((c: any) => ['open', 'due'].includes(c.commitment_status)).length;
   const closedCommitments = fulfilled + unfulfilled;
 
-  // Employee mention analysis
-  const employeeMentions = signals.filter((s: any) => s.signal_type === 'employee_mention');
+  // Employee mention analysis (includes both manager mentions and guest review mentions)
+  const employeeMentions = signals.filter((s: any) => s.signal_type === 'employee_mention' || s.signal_type === 'guest_review_mention');
   const byEmployee = new Map<string, { count: number; positive: number; negative: number; actionable: number }>();
   for (const m of employeeMentions) {
     const name = (m.entity_name || 'unknown').toLowerCase().trim();
@@ -272,7 +272,7 @@ export async function getManagerSignalProfile(
     total_attestations: attestationIds.size,
     total_signals: signals.length,
     avg_signals_per_attestation: signals.length / attestationIds.size,
-    employee_mentions: byType['employee_mention'] || 0,
+    employee_mentions: (byType['employee_mention'] || 0) + (byType['guest_review_mention'] || 0),
     action_commitments: byType['action_commitment'] || 0,
     menu_items: byType['menu_item'] || 0,
     operational_issues: byType['operational_issue'] || 0,
@@ -346,7 +346,7 @@ export async function getManagerSignalTimeline(
     }
     const day = byDate.get(row.business_date)!;
     day.signal_count++;
-    if (row.signal_type === 'employee_mention') day.employee_mentions++;
+    if (row.signal_type === 'employee_mention' || row.signal_type === 'guest_review_mention') day.employee_mentions++;
     if (row.signal_type === 'action_commitment') day.action_commitments++;
     if (row.signal_type === 'operational_issue') day.operational_issues++;
     day.signals.push(row);
@@ -508,7 +508,7 @@ export async function getManagerComparison(
     const unfulfilled = commitments.filter((c: any) => c.commitment_status === 'unfulfilled').length;
     const closed = fulfilled + unfulfilled;
 
-    const empMentions = managerSignals.filter((s: any) => s.signal_type === 'employee_mention');
+    const empMentions = managerSignals.filter((s: any) => s.signal_type === 'employee_mention' || s.signal_type === 'guest_review_mention');
     const negativeMentions = empMentions.filter((m: any) => m.mention_sentiment === 'negative');
     const uniqueEmps = new Set(empMentions.map((m: any) => (m.entity_name || '').toLowerCase().trim()));
 
@@ -677,6 +677,7 @@ function incrementBucket(bucket: SignalTrendBucket, signalType: string) {
   bucket.total++;
   switch (signalType) {
     case 'employee_mention': bucket.employee++; break;
+    case 'guest_review_mention': bucket.employee++; break;
     case 'operational_issue': bucket.issue++; break;
     case 'guest_insight': bucket.guest++; break;
     case 'menu_item': bucket.menu++; break;

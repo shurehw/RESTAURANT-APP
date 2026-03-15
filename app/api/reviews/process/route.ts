@@ -1,17 +1,16 @@
 /**
  * POST /api/reviews/process
  *
- * Processes unprocessed guest reviews through AI signal extraction.
- * Extracts employee mentions, sentiment, and service quality signals
- * and writes them to attestation_signals as 'guest_review_mention'.
+ * Processes unprocessed guest reviews (from reviews_raw / Widewail)
+ * through AI signal extraction. Extracts employee mentions, sentiment,
+ * and service quality signals → writes to attestation_signals as 'guest_review_mention'.
  *
- * Designed to run after review ingestion (cron or manual trigger).
+ * Designed to run after the 6-hourly review sync from TipSee.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveContext } from '@/lib/auth/resolveContext';
-import { getUnprocessedReviews } from '@/lib/database/guest-reviews';
-import { processReviewSignals } from '@/lib/ai/review-signal-extractor';
+import { getUnprocessedReviews, processReviewSignals } from '@/lib/ai/review-signal-extractor';
 
 export async function POST(request: NextRequest) {
   try {

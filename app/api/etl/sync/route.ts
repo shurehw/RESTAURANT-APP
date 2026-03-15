@@ -22,6 +22,7 @@ import {
 } from '@/lib/etl/tipsee-sync';
 import { syncReviews, backfillReviews } from '@/lib/etl/review-sync';
 import { getServiceClient } from '@/lib/supabase/service';
+import { getUnprocessedReviews, processReviewSignals } from '@/lib/ai/review-signal-extractor';
 
 // Secret for cron job authentication (set in env vars)
 const CRON_SECRET = process.env.CRON_SECRET || process.env.ETL_CRON_SECRET;
@@ -85,6 +86,28 @@ export async function GET(request: NextRequest) {
     if (action === 'reviews') {
       console.log('Starting incremental review sync...');
       const result = await syncReviews();
+
+      // After sync, extract employee signals from new reviews (non-blocking)
+      try {
+        const supabase = getServiceClient();
+        const { data: venues } = await (supabase as any)
+          .from('venues')
+          .select('id')
+          .eq('is_active', true);
+
+        let totalSignals = 0;
+        for (const venue of venues || []) {
+          const reviews = await getUnprocessedReviews(venue.id, 30);
+          if (reviews.length > 0) {
+            const signalResult = await processReviewSignals(venue.id, reviews);
+            totalSignals += signalResult.signals_created;
+          }
+        }
+        console.log(`[review-sync] Extracted ${totalSignals} employee signals from new reviews`);
+      } catch (err) {
+        console.error('[review-sync] Signal extraction failed:', err);
+      }
+
       return NextResponse.json(result);
     }
 

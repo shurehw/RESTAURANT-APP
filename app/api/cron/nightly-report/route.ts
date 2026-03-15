@@ -36,6 +36,7 @@ import {
   extractSubjectDate,
 } from '@/lib/email/manager-notes-parser';
 import { generateNarrativeFromNotes } from '@/lib/ai/manager-notes-narrator';
+import { fetchCompTrends } from '@/lib/database/comp-trends';
 
 // ── Auth ─────────────────────────────────────────────────────────
 
@@ -262,6 +263,19 @@ async function processManagerEmailNotes(
     return;
   }
 
+  // Pre-fetch comp trends for all venues with report data
+  const compTrendsCache = new Map<string, any>();
+  await Promise.allSettled(
+    orgVenues
+      .filter(v => reportCache.has(v.id))
+      .map(async (v) => {
+        try {
+          const trends = await fetchCompTrends(v.id, businessDate);
+          if (trends) compTrendsCache.set(v.id, trends);
+        } catch {}
+      })
+  );
+
   let processed = 0;
 
   for (const email of emails) {
@@ -315,6 +329,8 @@ async function processManagerEmailNotes(
       const labor = laborCache.get(venue.id);
       if (report) {
         const s = report.summary;
+        const compTrends = compTrendsCache.get(venue.id) || null;
+
         kpiData = {
           netSales: s.net_sales,
           covers: s.total_covers,
@@ -335,6 +351,7 @@ async function processManagerEmailNotes(
             reason: c.reason,
             items: c.comped_items || [],
           })),
+          compTrends,
         };
       }
 

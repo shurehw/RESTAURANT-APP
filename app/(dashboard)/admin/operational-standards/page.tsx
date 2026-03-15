@@ -9,7 +9,7 @@ export default async function AdminOperationalStandardsPage() {
   const user = await requireUser();
   const { orgId } = await getUserOrgAndVenues(user.id);
 
-  // Use admin client — auth already validated by requireUser + getUserOrgAndVenues
+  // Use admin client because auth is already validated upstream.
   const supabase = createAdminClient();
   const { data: org, error } = await supabase
     .from('organizations')
@@ -17,7 +17,6 @@ export default async function AdminOperationalStandardsPage() {
     .eq('id', orgId)
     .single();
 
-  // If error, log it but still try to show the page with empty org
   if (error) {
     console.error('Failed to fetch organization:', error);
   }
@@ -33,7 +32,7 @@ export default async function AdminOperationalStandardsPage() {
         </p>
         <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <p className="text-sm text-blue-900 font-medium">
-            🔒 <strong>Enforcement Principle:</strong> Companies calibrate sensitivity, not accountability.
+            [Locked] <strong>Enforcement Principle:</strong> Companies calibrate sensitivity, not accountability.
             KevaOS defines what must be reviewed.
           </p>
           <ul className="mt-2 text-sm text-blue-800 space-y-1 ml-6 list-disc">

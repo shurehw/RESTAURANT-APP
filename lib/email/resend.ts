@@ -16,7 +16,7 @@ export function getResendClient(): Resend {
   return resendClient;
 }
 
-export const FROM_EMAIL = (process.env.RESEND_FROM_EMAIL || 'reports@prime-cost.com').trim();
-export const REPLY_TO_EMAIL = (process.env.REPLY_TO_EMAIL || 'support@prime-cost.com').trim();
-export const UNSUBSCRIBE_URL = 'https://prime-cost.com/settings/notifications';
+export const FROM_EMAIL = (process.env.RESEND_FROM_EMAIL || 'reports@kevaos.ai').trim();
+export const REPLY_TO_EMAIL = (process.env.REPLY_TO_EMAIL || 'support@kevaos.ai').trim();
+export const UNSUBSCRIBE_URL = 'https://kevaos.ai/settings/notifications';
 

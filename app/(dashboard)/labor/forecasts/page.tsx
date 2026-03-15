@@ -10,6 +10,7 @@ import { ForecastChart } from '@/components/labor/ForecastChart';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, DollarSign, Users, Calendar } from 'lucide-react';
+import Link from 'next/link';
 
 export default async function ForecastsPage({
   searchParams,
@@ -68,37 +69,39 @@ export default async function ForecastsPage({
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex gap-4 mb-6 items-center">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Venue:</label>
-          <select
-            className="px-3 py-2 border rounded-md"
-            value={selectedVenue}
-            onChange={(e) => {
-              window.location.href = `/labor/forecasts?venue=${e.target.value}&days=${daysAhead}`;
-            }}
-          >
+          <div className="flex gap-1 flex-wrap">
             {venues?.map((v) => (
-              <option key={v.id} value={v.id}>
+              <Link
+                key={v.id}
+                href={`/labor/forecasts?venue=${v.id}&days=${daysAhead}`}
+                className={`px-3 py-1.5 border rounded-md text-sm ${
+                  v.id === selectedVenue ? 'bg-keva-sage-50 border-keva-sage-300' : 'bg-white'
+                }`}
+              >
                 {v.name}
-              </option>
+              </Link>
             ))}
-          </select>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium">Days Ahead:</label>
-          <select
-            className="px-3 py-2 border rounded-md"
-            value={daysAhead}
-            onChange={(e) => {
-              window.location.href = `/labor/forecasts?venue=${selectedVenue}&days=${e.target.value}`;
-            }}
-          >
-            <option value="7">7 days</option>
-            <option value="14">14 days</option>
-            <option value="30">30 days</option>
-          </select>
+          <div className="flex gap-1">
+            {[7, 14, 30].map((d) => (
+              <Link
+                key={d}
+                href={`/labor/forecasts?venue=${selectedVenue}&days=${d}`}
+                className={`px-3 py-1.5 border rounded-md text-sm ${
+                  d === daysAhead ? 'bg-keva-sage-50 border-keva-sage-300' : 'bg-white'
+                }`}
+              >
+                {d} days
+              </Link>
+            ))}
+          </div>
         </div>
 
         <Button variant="brass" className="ml-auto">

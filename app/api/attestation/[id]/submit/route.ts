@@ -380,6 +380,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       } catch (err) {
         console.error('[Attestation] Operator intelligence generation failed:', err);
       }
+
     } catch (err) {
       console.error('[Attestation] Signal extraction failed:', err);
     }

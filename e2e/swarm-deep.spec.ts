@@ -15,7 +15,9 @@ import path from 'node:path';
 test.describe.configure({ mode: 'parallel' });
 
 const APP_ROOT = path.join(process.cwd(), 'app');
-const MAX_ROUTES = Number(process.env.SWARM_DEEP_MAX_ROUTES || '40');
+const MAX_ROUTES = process.env.SWARM_DEEP_MAX_ROUTES
+  ? Number(process.env.SWARM_DEEP_MAX_ROUTES)
+  : null;
 const ROUTE_TIMEOUT_MS = Number(process.env.SWARM_DEEP_ROUTE_TIMEOUT_MS || '15000');
 const TEST_TIMEOUT_MS = Number(process.env.SWARM_DEEP_TEST_TIMEOUT_MS || '900000');
 const ACTION_LIMIT = Number(process.env.SWARM_DEEP_ACTION_LIMIT || '20');
@@ -70,7 +72,7 @@ async function getDeepSwarmRoutes(): Promise<string[]> {
   return [...routes]
     .filter((r) => !r.startsWith('/present'))
     .sort((a, b) => a.localeCompare(b))
-    .slice(0, MAX_ROUTES);
+    .slice(0, MAX_ROUTES ?? undefined);
 }
 
 function isDangerousLabel(text: string): boolean {
@@ -180,6 +182,8 @@ async function probeInteractions(page: Page, actions: string[]) {
 test('@swarm-deep: discovered routes survive interaction probes', async ({ page }, testInfo) => {
   test.setTimeout(TEST_TIMEOUT_MS);
   const context = page.context();
+  const seedState = await context.storageState();
+  const seedCookies = seedState.cookies;
   const routes = await getDeepSwarmRoutes();
   test.skip(routes.length === 0, 'No routes discovered');
 
@@ -191,6 +195,12 @@ test('@swarm-deep: discovered routes survive interaction probes', async ({ page 
   const reports: ProbeReport[] = [];
 
   for (const route of routes) {
+    // Restore original auth/session cookies before each route so actions on one
+    // page (e.g. profile/menu clicks) cannot invalidate later route probes.
+    if (seedCookies.length > 0) {
+      await context.clearCookies();
+      await context.addCookies(seedCookies);
+    }
     const routePage = await context.newPage();
     const actions: string[] = [];
     const consoleErrors: string[] = [];

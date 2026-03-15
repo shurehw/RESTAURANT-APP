@@ -42,7 +42,7 @@ export async function sendNightlyReportForOrg(
   params: SendForOrgParams
 ): Promise<SendResult> {
   const { orgId, orgName, logoUrl, businessDate, orgVenues, reportCache, laborCache, aiSummaries } = params;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://prime-cost.com';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kevaos.ai';
   const resend = getResendClient();
 
   const subscribers = await getActiveSubscribers(orgId);

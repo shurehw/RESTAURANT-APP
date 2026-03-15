@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 import { guard } from "@/lib/api/guard";
+import { requireUser } from "@/lib/auth";
 
 type VendorTolerance = {
   matching_mode: string;
@@ -59,7 +60,8 @@ export async function POST(
 ) {
   return guard(async () => {
     const { id: invoiceId } = await params;
-    const supabase = await createClient();
+    await requireUser();
+    const supabase = createAdminClient();
 
     // Get invoice with lines
     const { data: invoice, error: invError } = await supabase

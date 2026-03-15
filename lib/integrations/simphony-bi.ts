@@ -555,6 +555,67 @@ export async function getEmployeeDimensions(
   return (data.employees || data) as SimphonyEmployeeDimension[];
 }
 
+/**
+ * Get menu item daily totals — per-item sales/discount breakdown by revenue center.
+ * Items with dscTtl < 0 had discounts (comps) applied.
+ */
+export async function getMenuItemDailyTotals(
+  config: SimphonyBIConfig,
+  idToken: string,
+  locRef: string,
+  busDt: string
+): Promise<any> {
+  const url = `${config.appServer}/bi/v1/${config.orgIdentifier}/getMenuItemDailyTotals`;
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ locRef, busDt }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Simphony getMenuItemDailyTotals failed: ${res.status} - ${text.slice(0, 300)}`
+    );
+  }
+
+  return await res.json();
+}
+
+/**
+ * Get menu item dimensions — metadata for all configured menu items.
+ * Returns num → name/category mapping.
+ */
+export async function getMenuItemDimensions(
+  config: SimphonyBIConfig,
+  idToken: string,
+  locRef: string
+): Promise<any> {
+  const url = `${config.appServer}/bi/v1/${config.orgIdentifier}/getMenuItemDimensions`;
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ locRef }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(
+      `Simphony getMenuItemDimensions failed: ${res.status} - ${text.slice(0, 300)}`
+    );
+  }
+
+  return await res.json();
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // ERROR TYPES
 // ══════════════════════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
 import { requireUser } from '@/lib/auth';
@@ -10,8 +10,8 @@ export async function POST(
 ) {
   return guard(async () => {
     const { id } = await params;
-    const supabase = await createClient();
     const user = await requireUser();
+    const supabase = createAdminClient();
 
     // 1. Validate invoice exists and is in approvable state
     const { data: invoice, error: fetchError } = await supabase

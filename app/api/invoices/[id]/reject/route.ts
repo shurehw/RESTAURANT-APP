@@ -1,6 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { guard } from '@/lib/api/guard';
+import { requireUser } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
@@ -10,15 +11,17 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
     const { reason } = body;
+    void reason;
 
-    const supabase = await createClient();
+    await requireUser();
+    const supabase = createAdminClient();
 
-    // Update invoice status to draft with rejection note
+    // Some environments do not have an invoices.notes column. Keep rejection
+    // behavior schema-safe by only changing the status here.
     const { error } = await supabase
       .from('invoices')
       .update({
         status: 'draft',
-        notes: reason ? `Rejected: ${reason}` : 'Rejected by admin',
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);

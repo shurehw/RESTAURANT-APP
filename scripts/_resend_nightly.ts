@@ -45,12 +45,39 @@ async function main() {
     const venueIds = orgVenues.map(v => v.id);
     const tipseeMappings = await getVenueTipseeMappings(venueIds);
 
-    // Fetch report data — skip stale cache, always read fresh from venue_day_facts
+    // Fetch report data — cache-first, Simphony live path, then venue_day_facts fallback
+    const { fetchSimphonyNightlyReport, getPosTypeForLocations } = await import('@/lib/database/tipsee');
     const reportCache = new Map<string, any>();
     for (const venue of orgVenues) {
       try {
+        const tipseeUuid = tipseeMappings.get(venue.id);
+
+        // Try cache first (skip $0)
+        const { data: cached } = await (supabase as any)
+          .from('tipsee_nightly_cache').select('report_data')
+          .eq('venue_id', venue.id).eq('business_date', businessDate).maybeSingle();
+        if (cached?.report_data?.summary?.net_sales > 0) {
+          reportCache.set(venue.id, cached.report_data);
+          continue;
+        }
+
+        // Simphony live path (Dallas) — includes BI API comp breakdown
+        if (tipseeUuid) {
+          try {
+            const posType = await getPosTypeForLocations([tipseeUuid]);
+            if (posType === 'simphony') {
+              const report = await fetchSimphonyNightlyReport(businessDate, tipseeUuid, venue.id);
+              if (report && report.summary.net_sales > 0) {
+                reportCache.set(venue.id, report);
+                continue;
+              }
+            }
+          } catch {}
+        }
+
+        // Fallback to venue_day_facts
         const report = await fetchNightlyReportFromFacts(businessDate, venue.id);
-        reportCache.set(venue.id, report);
+        if (report) reportCache.set(venue.id, report);
       } catch {}
     }
 
@@ -126,8 +153,21 @@ async function main() {
         const labor = laborCache.get(venue.id);
         if (report) {
           const s = report.summary;
-          kpiData = { netSales: s.net_sales, covers: s.total_covers, totalComps: s.total_comps,
-            laborCost: labor?.labor_cost || 0, laborPct: labor?.labor_pct || 0 };
+          const { fetchCompTrends } = await import('@/lib/database/comp-trends');
+          let compTrends = null;
+          try { compTrends = await fetchCompTrends(venue.id, businessDate); } catch {}
+          kpiData = {
+            netSales: s.net_sales, covers: s.total_covers, totalComps: s.total_comps,
+            laborCost: labor?.labor_cost || 0, laborPct: labor?.labor_pct || 0,
+            compBreakdown: (report.discounts || []).map((d: any) => ({
+              reason: d.reason, qty: d.qty, amount: d.amount,
+            })),
+            compDetails: (report.detailedComps || []).map((c: any) => ({
+              server: c.server, compTotal: c.comp_total, checkTotal: c.check_total,
+              reason: c.reason, items: c.comped_items || [],
+            })),
+            compTrends,
+          };
         }
 
         const narrative = await generateNarrativeFromNotes(venue.name, businessDate, parsed.sections, kpiData);

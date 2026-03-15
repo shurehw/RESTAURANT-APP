@@ -15,13 +15,18 @@ import {
 interface GenerateOnboardingLinkProps {
   vendorId: string;
   vendorName: string;
+  organizationSlug: string;
 }
 
-export function GenerateOnboardingLink({ vendorId, vendorName }: GenerateOnboardingLinkProps) {
+export function GenerateOnboardingLink({
+  vendorId,
+  vendorName,
+  organizationSlug,
+}: GenerateOnboardingLinkProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/vendor-onboarding`;
+  const link = `${typeof window !== "undefined" ? window.location.origin : ""}/vendor-onboarding/${organizationSlug}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(link);
@@ -41,13 +46,13 @@ export function GenerateOnboardingLink({ vendorId, vendorName }: GenerateOnboard
         <DialogHeader>
           <DialogTitle>Vendor Onboarding Link</DialogTitle>
           <DialogDescription>
-            Share this universal link with all vendors. They'll enter their email to access their profile form.
+            Share this branded link with vendors so they land on the correct onboarding page.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="p-3 bg-muted rounded-md">
-            <p className="text-xs text-muted-foreground mb-2">Universal Onboarding Link</p>
+            <p className="text-xs text-muted-foreground mb-2">Organization Onboarding Link</p>
             <p className="text-sm font-mono break-all">{link}</p>
           </div>
 
@@ -70,7 +75,7 @@ export function GenerateOnboardingLink({ vendorId, vendorName }: GenerateOnboard
           </Button>
 
           <div className="text-xs text-muted-foreground p-3 bg-blue-50 border border-blue-200 rounded">
-            💡 This single link works for all vendors. They identify themselves using their email address.
+            Vendors identify themselves with their email after opening this organization-specific link.
           </div>
         </div>
       </DialogContent>

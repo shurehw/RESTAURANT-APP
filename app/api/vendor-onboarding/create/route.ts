@@ -39,13 +39,27 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
 
-    // Generate shareable link
+    const { data: vendorOrg, error: vendorOrgError } = await supabase
+      .from('vendors')
+      .select('organization:organizations!inner(slug)')
+      .eq('id', vendorId)
+      .single();
+
+    if (vendorOrgError) throw vendorOrgError;
+
+    const organizationSlug = vendorOrg?.organization?.slug;
+    if (!organizationSlug) {
+      throw new Error('Vendor organization slug not found');
+    }
+
+    // Generate shareable link for the branded public onboarding route.
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const link = `${baseUrl}/vendor-onboarding/${token}`;
+    const link = `${baseUrl}/vendor-onboarding/${organizationSlug}`;
 
     return NextResponse.json({
       success: true,
       invitation,
+      token,
       link,
     });
   });

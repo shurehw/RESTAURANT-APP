@@ -5,9 +5,9 @@ export const dynamic = 'force-dynamic';
  * Each organization has their own branded vendor onboarding page
  */
 
-import { createClient } from "@/lib/supabase/server";
 import { VendorOnboardingClient } from "@/components/vendors/VendorOnboardingClient";
 import { notFound } from "next/navigation";
+import { createAdminClient } from "@/lib/supabase/server";
 
 interface Props {
   params: Promise<{
@@ -17,7 +17,7 @@ interface Props {
 
 export default async function VendorOnboardingPage({ params }: Props) {
   const { orgSlug } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch organization by slug
   const { data: organization } = await supabase

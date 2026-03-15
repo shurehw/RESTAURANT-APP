@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@/lib/supabase/server';
 import { FloorPlanEditor } from '@/components/floor-plan/FloorPlanEditor';
 import { redirect } from 'next/navigation';
+import { requireUser } from '@/lib/auth';
+import { getUserOrgAndVenues } from '@/lib/tenant';
 
 export default async function FloorPlanPage({
   searchParams,
@@ -15,12 +17,18 @@ export default async function FloorPlanPage({
   searchParams: Promise<{ venue?: string }>;
 }) {
   const supabase = await createClient();
+  const user = await requireUser();
+  const { venueIds } = await getUserOrgAndVenues(user.id);
 
   // Get all active venues (auth handled by dashboard layout)
-  const { data: venues } = await supabase
+  let query = supabase
     .from('venues')
     .select('id, name')
     .eq('is_active', true);
+  if (venueIds.length > 0) {
+    query = query.in('id', venueIds);
+  }
+  const { data: venues } = await query;
 
   if (!venues || venues.length === 0) {
     redirect('/');

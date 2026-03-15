@@ -56,6 +56,12 @@ export default async function VendorDetailPage({ params }: Props) {
     redirect("/vendors");
   }
 
+  const { data: organization } = await adminClient
+    .from("organizations")
+    .select("slug")
+    .eq("id", ctx.orgId)
+    .single();
+
   // Fetch ACH forms
   const { data: achForms } = await adminClient
     .from("vendor_ach_forms")
@@ -96,7 +102,13 @@ export default async function VendorDetailPage({ params }: Props) {
           </div>
 
           <div className="flex items-center gap-3">
-            <GenerateOnboardingLink vendorId={vendor.id} vendorName={vendor.name} />
+            {organization?.slug ? (
+              <GenerateOnboardingLink
+                vendorId={vendor.id}
+                vendorName={vendor.name}
+                organizationSlug={organization.slug}
+              />
+            ) : null}
             <Badge variant={vendor.is_active ? "sage" : "default"} className="text-sm">
               {vendor.is_active ? "Active" : "Inactive"}
             </Badge>

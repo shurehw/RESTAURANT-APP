@@ -66,6 +66,24 @@ interface IntelligenceInsert {
   status: IntelligenceStatus;
 }
 
+type SupabaseLikeError = {
+  code?: string | null;
+  message?: string | null;
+  details?: string | null;
+  hint?: string | null;
+};
+
+function isMissingOperatorIntelligenceTable(error: SupabaseLikeError | null | undefined): boolean {
+  if (!error) return false;
+  const text = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`.toLowerCase();
+  return (
+    error.code === 'PGRST205' ||
+    error.code === '42P01' ||
+    text.includes("could not find the table 'public.operator_intelligence'") ||
+    text.includes('relation "operator_intelligence" does not exist')
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Generate intelligence from signals (called post-submit)
 // ---------------------------------------------------------------------------
@@ -282,6 +300,9 @@ export async function generateIntelligence(
     .insert(items);
 
   if (error) {
+    if (isMissingOperatorIntelligenceTable(error)) {
+      return { created: 0, errors };
+    }
     errors.push(`Failed to insert ${items.length} intelligence items: ${error.message}`);
     return { created: 0, errors };
   }
@@ -329,6 +350,9 @@ export async function getActiveIntelligence(
 
   const { data, error } = await query;
   if (error) {
+    if (isMissingOperatorIntelligenceTable(error)) {
+      return [];
+    }
     console.error('[operator-intelligence] getActiveIntelligence error:', error);
     return [];
   }
@@ -351,7 +375,13 @@ export async function getIntelligenceSummary(
   if (venueId) query = query.eq('venue_id', venueId);
 
   const { data, error } = await query;
-  if (error || !data) return { critical: 0, warning: 0, info: 0, total: 0 };
+  if (error) {
+    if (isMissingOperatorIntelligenceTable(error)) {
+      return { critical: 0, warning: 0, info: 0, total: 0 };
+    }
+    return { critical: 0, warning: 0, info: 0, total: 0 };
+  }
+  if (!data) return { critical: 0, warning: 0, info: 0, total: 0 };
 
   const critical = data.filter((r: any) => r.severity === 'critical').length;
   const warning = data.filter((r: any) => r.severity === 'warning').length;
@@ -380,6 +410,7 @@ export async function acknowledgeIntelligence(
     })
     .eq('id', id);
 
+  if (isMissingOperatorIntelligenceTable(error)) return false;
   return !error;
 }
 
@@ -401,6 +432,7 @@ export async function resolveIntelligence(
     })
     .eq('id', id);
 
+  if (isMissingOperatorIntelligenceTable(error)) return false;
   return !error;
 }
 
@@ -422,5 +454,6 @@ export async function dismissIntelligence(
     })
     .eq('id', id);
 
+  if (isMissingOperatorIntelligenceTable(error)) return false;
   return !error;
 }

@@ -3,34 +3,36 @@
 import { useMemo, useState } from 'react';
 import {
   AlertTriangle,
+  ChefHat,
   ChevronDown,
   ChevronUp,
+  DollarSign,
+  Music,
+  Radio,
   Star,
+  TrendingUp,
+  type LucideIcon,
   UserCheck,
   Users,
   UtensilsCrossed,
-  Music,
-  DollarSign,
-  ChefHat,
-  TrendingUp,
-  type LucideIcon,
-  Radio,
 } from 'lucide-react';
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { useVenue } from '@/components/providers/VenueProvider';
-import type { OrgSignalItem } from '@/lib/database/signal-analytics';
-import type { SignalTrendData, SignalTrendBucket } from '@/lib/database/signal-analytics';
+import type { OrgSignalItem, SignalTrendBucket, SignalTrendData } from '@/lib/database/signal-analytics';
 
-const SIGNAL_TYPE_CONFIG: Record<string, { icon: LucideIcon; color: string; chartColor: string; label: string }> = {
+const SIGNAL_TYPE_CONFIG: Record<
+  string,
+  { icon: LucideIcon; color: string; chartColor: string; label: string }
+> = {
   employee_mention: { icon: UserCheck, color: 'text-blue-600', chartColor: '#2563eb', label: 'Employee' },
   menu_item: { icon: UtensilsCrossed, color: 'text-emerald-600', chartColor: '#059669', label: 'Menu' },
   operational_issue: { icon: AlertTriangle, color: 'text-red-600', chartColor: '#dc2626', label: 'Issue' },
@@ -65,7 +67,7 @@ const FEED_TABS = [
   { id: 'comp_pattern', label: 'Comps' },
   { id: 'culinary', label: 'Culinary' },
   { id: 'revenue_insight', label: 'Revenue' },
-];
+] as const;
 
 type TrendView = 'weekly' | 'period' | 'yearly';
 
@@ -81,10 +83,9 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
   const [trendView, setTrendView] = useState<TrendView>('weekly');
   const [selectedEntity, setSelectedEntity] = useState<string | null>(null);
 
-  // Filter by selected venue (show all when "All Venues" selected)
   const venueSignals = useMemo(
-    () => isAllVenues ? signals : signals.filter(s => s.venue_name === selectedVenue?.name),
-    [signals, selectedVenue?.name, isAllVenues],
+    () => (isAllVenues ? signals : signals.filter((s) => s.venue_name === selectedVenue?.name)),
+    [isAllVenues, selectedVenue?.name, signals],
   );
 
   const informationalSignals = useMemo(
@@ -93,22 +94,27 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
   );
 
   const entityClusters = useMemo(() => {
-    const byEntity = new Map<string, {
-      count: number; positive: number; negative: number; neutral: number; actionable: number;
-    }>();
+    const byEntity = new Map<
+      string,
+      { count: number; positive: number; negative: number; neutral: number; actionable: number }
+    >();
 
-    for (const s of informationalSignals) {
-      if (!s.entity_name) continue;
-      const name = s.entity_name;
-      if (!byEntity.has(name)) {
-        byEntity.set(name, { count: 0, positive: 0, negative: 0, neutral: 0, actionable: 0 });
-      }
-      const cluster = byEntity.get(name)!;
-      cluster.count++;
-      if (s.mention_sentiment === 'positive') cluster.positive++;
-      else if (s.mention_sentiment === 'negative') cluster.negative++;
-      else if (s.mention_sentiment === 'actionable') cluster.actionable++;
-      else cluster.neutral++;
+    for (const signal of informationalSignals) {
+      if (!signal.entity_name) continue;
+      const current =
+        byEntity.get(signal.entity_name) || {
+          count: 0,
+          positive: 0,
+          negative: 0,
+          neutral: 0,
+          actionable: 0,
+        };
+      current.count++;
+      if (signal.mention_sentiment === 'positive') current.positive++;
+      else if (signal.mention_sentiment === 'negative') current.negative++;
+      else if (signal.mention_sentiment === 'actionable') current.actionable++;
+      else current.neutral++;
+      byEntity.set(signal.entity_name, current);
     }
 
     return [...byEntity.entries()]
@@ -118,38 +124,32 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
   }, [informationalSignals]);
 
   const filteredSignals = useMemo(() => {
-    let filtered = activeTab === 'all'
-      ? informationalSignals
-      : informationalSignals.filter((s) => s.signal_type === activeTab);
+    let filtered =
+      activeTab === 'all'
+        ? informationalSignals
+        : informationalSignals.filter((s) => s.signal_type === activeTab);
 
     if (selectedEntity) {
       filtered = filtered.filter((s) => s.entity_name === selectedEntity);
     }
 
     return filtered;
-  }, [informationalSignals, activeTab, selectedEntity]);
+  }, [activeTab, informationalSignals, selectedEntity]);
 
   const chartData: SignalTrendBucket[] = trendData[trendView] || [];
-  const hasTrend = chartData.some((b) => b.total > 0);
+  const hasTrend = chartData.some((bucket) => bucket.total > 0);
 
   if (informationalSignals.length === 0 && !hasTrend) return null;
 
   return (
     <div>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center gap-3 text-left"
-      >
+      <button onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center gap-3 text-left">
         <Radio className="h-5 w-5 text-muted-foreground" />
         <div>
           <h2 className="text-lg font-semibold">Signal Feed</h2>
-          <p className="text-xs text-muted-foreground">
-            Signal trends and recent observations
-          </p>
+          <p className="text-xs text-muted-foreground">Signal trends and recent observations</p>
         </div>
-        <span className="ml-1 text-xs text-muted-foreground">
-          ({informationalSignals.length} this week)
-        </span>
+        <span className="ml-1 text-xs text-muted-foreground">({informationalSignals.length} this week)</span>
         {isOpen ? (
           <ChevronUp className="ml-auto h-4 w-4 text-muted-foreground" />
         ) : (
@@ -159,20 +159,18 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
 
       {isOpen && (
         <div className="mt-4 space-y-5">
-          {/* Trend Chart */}
           {chartData.length > 0 && (
             <div>
-              {/* View Toggle */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="inline-flex rounded-md border border-border text-xs">
-                  {(['weekly', 'period', 'yearly'] as const).map((view, i) => (
+                  {(['weekly', 'period', 'yearly'] as const).map((view, index) => (
                     <button
                       key={view}
                       onClick={() => setTrendView(view)}
                       className={`px-2.5 py-1 transition-colors ${
-                        i === 0 ? 'rounded-l-md' : ''
-                      } ${i === 2 ? 'rounded-r-md' : ''} ${
-                        i > 0 ? 'border-l border-border' : ''
+                        index === 0 ? 'rounded-l-md' : ''
+                      } ${index === 2 ? 'rounded-r-md' : ''} ${
+                        index > 0 ? 'border-l border-border' : ''
                       } ${
                         trendView === view
                           ? 'bg-muted font-medium text-foreground'
@@ -187,11 +185,7 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
 
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                    vertical={false}
-                  />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                   <XAxis
                     dataKey="label"
                     tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
@@ -214,47 +208,38 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
                     }}
                     labelStyle={{ fontWeight: 600 }}
                   />
-                  {CHART_SERIES.map((s) => (
+                  {CHART_SERIES.map((series) => (
                     <Bar
-                      key={s.key}
-                      dataKey={s.key}
-                      name={s.label}
+                      key={series.key}
+                      dataKey={series.key}
+                      name={series.label}
                       stackId="signals"
-                      fill={s.color}
-                      radius={s.key === 'revenue' ? [2, 2, 0, 0] : undefined}
+                      fill={series.color}
+                      radius={series.key === 'revenue' ? [2, 2, 0, 0] : undefined}
                     />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
 
-              {/* Legend */}
               <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                {CHART_SERIES.map((s) => (
-                  <div key={s.key} className="flex items-center gap-1.5">
-                    <div
-                      className="h-2.5 w-2.5 rounded-sm"
-                      style={{ backgroundColor: s.color }}
-                    />
-                    <span>{s.label}</span>
+                {CHART_SERIES.map((series) => (
+                  <div key={series.key} className="flex items-center gap-1.5">
+                    <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: series.color }} />
+                    <span>{series.label}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Entity Clustering */}
           {entityClusters.length > 0 && (
             <div>
-              <h3 className="mb-2 text-xs font-medium text-muted-foreground">
-                Recurring Entities
-              </h3>
+              <h3 className="mb-2 text-xs font-medium text-muted-foreground">Recurring Entities</h3>
               <div className="flex flex-wrap gap-2">
                 {entityClusters.map((entity) => (
                   <button
                     key={entity.name}
-                    onClick={() =>
-                      setSelectedEntity(selectedEntity === entity.name ? null : entity.name)
-                    }
+                    onClick={() => setSelectedEntity(selectedEntity === entity.name ? null : entity.name)}
                     className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition-colors ${
                       selectedEntity === entity.name
                         ? 'bg-brass/10 font-semibold text-brass ring-1 ring-brass/30'
@@ -303,7 +288,6 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
             </div>
           )}
 
-          {/* Filter tabs + signal rows */}
           {informationalSignals.length > 0 && (
             <div>
               <div className="mb-3 flex flex-wrap gap-1.5">
@@ -311,7 +295,7 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
                   const count =
                     tab.id === 'all'
                       ? informationalSignals.length
-                      : informationalSignals.filter((s) => s.signal_type === tab.id).length;
+                      : informationalSignals.filter((signal) => signal.signal_type === tab.id).length;
                   if (tab.id !== 'all' && count === 0) return null;
                   return (
                     <button
@@ -334,9 +318,7 @@ export function SignalFeed({ signals, trendData }: SignalFeedProps) {
                   <SignalRow key={signal.id} signal={signal} />
                 ))}
                 {filteredSignals.length === 0 && (
-                  <div className="py-4 text-center text-xs text-muted-foreground">
-                    No signals of this type
-                  </div>
+                  <div className="py-4 text-center text-xs text-muted-foreground">No signals of this type</div>
                 )}
               </div>
             </div>
@@ -366,10 +348,7 @@ function SignalRow({ signal }: { signal: OrgSignalItem }) {
         <div className="text-sm">
           {truncated && !expanded ? `${text.slice(0, 120)}...` : text}
           {truncated && (
-            <button
-              onClick={() => setExpanded(!expanded)}
-              className="ml-1 text-xs text-brass hover:underline"
-            >
+            <button onClick={() => setExpanded(!expanded)} className="ml-1 text-xs text-brass hover:underline">
               {expanded ? 'Less' : 'More'}
             </button>
           )}

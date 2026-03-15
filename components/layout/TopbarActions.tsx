@@ -2,7 +2,6 @@
 
 import { Building2 } from 'lucide-react';
 import { NotificationsDropdown } from './NotificationsDropdown';
-import { IntegrationStatus } from './IntegrationStatus';
 import { CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { useEffect } from 'react';
@@ -78,9 +77,6 @@ export function TopbarActions({ venues, organizationSlug, organizationName }: To
 
       {/* Command Panel Trigger */}
       <CommandTrigger />
-
-      {/* Integration Status */}
-      <IntegrationStatus />
 
       {/* Notifications */}
       <NotificationsDropdown />

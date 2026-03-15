@@ -805,37 +805,55 @@ export async function syncVenueDay(
       }
     }
 
-    // 3. Extract server performance
+    // 3. Extract server performance (with per-server tips via payment join)
     const serverResult = useHistorical
       ? await pool.query(
-          `SELECT
-            employee_name,
-            employee_role_name as employee_role,
+          `WITH check_tips AS (
+            SELECT p.check_id, SUM(p.tip_amount) as total_tips
+            FROM public.payments p
+            JOIN public.checks c ON p.check_id = c.id
+            WHERE c.location = $1 AND c.trading_day = $2 AND p.tip_amount > 0
+            GROUP BY p.check_id
+          )
+          SELECT
+            c.employee_name,
+            c.employee_role_name as employee_role,
             COUNT(*) as checks_count,
-            SUM(guest_count) as covers_count,
-            SUM(revenue_total) as gross_sales,
-            SUM(comp_total) as comps_total,
-            ROUND(AVG(CASE WHEN close_time > open_time
-              THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins
-          FROM public.checks
-          WHERE location = $1 AND trading_day = $2
-          GROUP BY employee_name, employee_role_name
+            SUM(c.guest_count) as covers_count,
+            SUM(c.revenue_total) as gross_sales,
+            SUM(c.comp_total) as comps_total,
+            ROUND(AVG(CASE WHEN c.close_time > c.open_time
+              THEN EXTRACT(EPOCH FROM (c.close_time - c.open_time))/60 END)::numeric, 0) as avg_turn_mins,
+            SUM(COALESCE(ct.total_tips, 0)) as tips_total
+          FROM public.checks c
+          LEFT JOIN check_tips ct ON ct.check_id = c.id
+          WHERE c.location = $1 AND c.trading_day = $2
+          GROUP BY c.employee_name, c.employee_role_name
           ORDER BY gross_sales DESC`,
           [locationName, businessDate]
         )
       : await pool.query(
-          `SELECT
-            employee_name,
-            employee_role_name as employee_role,
+          `WITH check_tips AS (
+            SELECT p.check_id, SUM(p.tip_amount) as total_tips
+            FROM public.tipsee_payments p
+            JOIN public.tipsee_checks c ON p.check_id = c.id
+            WHERE c.location_uuid = $1 AND c.trading_day = $2 AND p.tip_amount > 0
+            GROUP BY p.check_id
+          )
+          SELECT
+            c.employee_name,
+            c.employee_role_name as employee_role,
             COUNT(*) as checks_count,
-            SUM(guest_count) as covers_count,
-            SUM(revenue_total) as gross_sales,
-            SUM(comp_total) as comps_total,
-            ROUND(AVG(CASE WHEN close_time > open_time
-              THEN EXTRACT(EPOCH FROM (close_time - open_time))/60 END)::numeric, 0) as avg_turn_mins
-          FROM public.tipsee_checks
-          WHERE location_uuid = $1 AND trading_day = $2
-          GROUP BY employee_name, employee_role_name
+            SUM(c.guest_count) as covers_count,
+            SUM(c.revenue_total) as gross_sales,
+            SUM(c.comp_total) as comps_total,
+            ROUND(AVG(CASE WHEN c.close_time > c.open_time
+              THEN EXTRACT(EPOCH FROM (c.close_time - c.open_time))/60 END)::numeric, 0) as avg_turn_mins,
+            SUM(COALESCE(ct.total_tips, 0)) as tips_total
+          FROM public.tipsee_checks c
+          LEFT JOIN check_tips ct ON ct.check_id = c.id
+          WHERE c.location_uuid = $1 AND c.trading_day = $2
+          GROUP BY c.employee_name, c.employee_role_name
           ORDER BY gross_sales DESC`,
           [tipseeLocationUuid, businessDate]
         );
@@ -998,7 +1016,7 @@ export async function syncVenueDay(
           covers_count: parseInt(server.covers_count) || 0,
           comps_total: parseFloat(server.comps_total) || 0,
           avg_turn_mins: parseFloat(server.avg_turn_mins) || 0,
-          tips_total: 0, // Would need per-server tip query
+          tips_total: parseFloat(server.tips_total) || 0,
           last_synced_at: new Date().toISOString(),
           etl_run_id: etlRunId,
         }, {

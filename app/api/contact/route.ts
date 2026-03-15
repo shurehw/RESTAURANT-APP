@@ -9,7 +9,15 @@ import { createAdminClient } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON body' },
+        { status: 400 }
+      );
+    }
     const { name, email, company, venues, message } = body;
 
     if (!name || !email || !company || !venues) {

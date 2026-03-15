@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LaborStandardsForm } from './LaborStandardsForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,16 +18,14 @@ interface Props {
 }
 
 export function OperationalStandardsManager({ organizations }: Props) {
-  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(
-    organizations[0] || null
-  );
+  const [selectedOrg, setSelectedOrg] = useState<Organization | null>(organizations[0] || null);
   const [standards, setStandards] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedOrg) {
-      loadStandards(selectedOrg.id);
+      void loadStandards(selectedOrg.id);
     }
   }, [selectedOrg]);
 
@@ -43,8 +41,8 @@ export function OperationalStandardsManager({ organizations }: Props) {
         const errData = await res.json();
         setError(errData.error || 'Failed to load standards');
       }
-    } catch (error) {
-      console.error('Failed to load standards:', error);
+    } catch (loadError) {
+      console.error('Failed to load standards:', loadError);
       setError('Network error loading standards');
     } finally {
       setLoading(false);
@@ -69,16 +67,16 @@ export function OperationalStandardsManager({ organizations }: Props) {
       if (res.ok) {
         const data = await res.json();
         setStandards(data.data);
-        alert(`✅ Standards updated successfully to version ${data.version}`);
+        alert(`Standards updated successfully to version ${data.version}`);
       } else {
-        const error = await res.json();
-        setError(error.error || 'Failed to update standards');
-        alert(`❌ Failed to update standards: ${error.error}`);
+        const saveError = await res.json();
+        setError(saveError.error || 'Failed to update standards');
+        alert(`Failed to update standards: ${saveError.error}`);
       }
-    } catch (error) {
+    } catch (saveError) {
       setError('Network error updating standards');
-      alert('❌ Network error updating standards');
-      console.error(error);
+      alert('Network error updating standards');
+      console.error(saveError);
     } finally {
       setLoading(false);
     }
@@ -94,7 +92,6 @@ export function OperationalStandardsManager({ organizations }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Organization Selector */}
       <Card>
         <CardHeader>
           <CardTitle>Select Organization</CardTitle>
@@ -127,7 +124,6 @@ export function OperationalStandardsManager({ organizations }: Props) {
         </CardContent>
       </Card>
 
-      {/* Error Display */}
       {error && (
         <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
@@ -135,7 +131,6 @@ export function OperationalStandardsManager({ organizations }: Props) {
         </Alert>
       )}
 
-      {/* Standards Configuration */}
       {loading && !standards ? (
         <div className="text-center py-12">
           <p className="text-muted-foreground">Loading standards...</p>
@@ -152,7 +147,6 @@ export function OperationalStandardsManager({ organizations }: Props) {
             <TabsTrigger value="overview">Overview</TabsTrigger>
           </TabsList>
 
-          {/* Labor Standards Tab */}
           <TabsContent value="labor" className="space-y-4">
             <Alert>
               <InfoIcon className="h-4 w-4" />
@@ -169,7 +163,6 @@ export function OperationalStandardsManager({ organizations }: Props) {
             />
           </TabsContent>
 
-          {/* Comp Standards Tab */}
           <TabsContent value="comp" className="space-y-4">
             <Card>
               <CardHeader>
@@ -208,7 +201,7 @@ export function OperationalStandardsManager({ organizations }: Props) {
                       href="/admin/comp-settings"
                       className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
                     >
-                      Configure Comp Settings →
+                      Configure Comp Settings
                     </a>
                   </div>
                 </div>
@@ -216,7 +209,6 @@ export function OperationalStandardsManager({ organizations }: Props) {
             </Card>
           </TabsContent>
 
-          {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-4">
             <Card>
               <CardHeader>
@@ -224,13 +216,14 @@ export function OperationalStandardsManager({ organizations }: Props) {
                 <CardDescription>Complete view of all enforcement standards</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Labor Overview */}
                 <div>
                   <h3 className="font-semibold mb-3">Labor Standards</h3>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div className="space-y-1">
                       <p className="text-muted-foreground">Target Labor %</p>
-                      <p className="font-medium">{standards.labor?.target_labor_pct || 0}% ± {standards.labor?.labor_pct_tolerance || 0}%</p>
+                      <p className="font-medium">
+                        {standards.labor?.target_labor_pct || 0}% +/- {standards.labor?.labor_pct_tolerance || 0}%
+                      </p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-muted-foreground">SPLH Floor</p>
@@ -238,12 +231,13 @@ export function OperationalStandardsManager({ organizations }: Props) {
                     </div>
                     <div className="space-y-1">
                       <p className="text-muted-foreground">CPLH Target</p>
-                      <p className="font-medium">{standards.labor?.cplh_target || 0} ± {standards.labor?.cplh_tolerance || 0}</p>
+                      <p className="font-medium">
+                        {standards.labor?.cplh_target || 0} +/- {standards.labor?.cplh_tolerance || 0}
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Comp Overview */}
                 <div>
                   <h3 className="font-semibold mb-3">Comp Standards</h3>
                   <div className="grid grid-cols-3 gap-4 text-sm">
@@ -257,12 +251,13 @@ export function OperationalStandardsManager({ organizations }: Props) {
                     </div>
                     <div className="space-y-1">
                       <p className="text-muted-foreground">Daily Budget</p>
-                      <p className="font-medium">{standards.comp?.daily_comp_pct_warning || 0}% / {standards.comp?.daily_comp_pct_critical || 0}%</p>
+                      <p className="font-medium">
+                        {standards.comp?.daily_comp_pct_warning || 0}% / {standards.comp?.daily_comp_pct_critical || 0}%
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Version Info */}
                 <div className="pt-4 border-t">
                   <div className="flex items-center justify-between text-sm">
                     <div className="space-y-1">

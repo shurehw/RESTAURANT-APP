@@ -394,8 +394,45 @@ export default function ShareWeeklyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-bold">Weekly Agenda</h1>
+            <p className="text-sm text-muted-foreground">Loading shared weekly report...</p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Guest Experience</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Preparing review and feedback summary.
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">GM Notes</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Loading operational context and notes.
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Executive Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                Building the shared weekly overview.
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span className="text-sm">Fetching report data</span>
+          </div>
+        </div>
       </div>
     );
   }

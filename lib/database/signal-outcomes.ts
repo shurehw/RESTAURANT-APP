@@ -155,7 +155,7 @@ export async function getEmployeeMentionHistory(
     .from('attestation_signals')
     .select('entity_name, entity_type, mention_sentiment, mention_context, business_date')
     .eq('venue_id', venueId)
-    .eq('signal_type', 'employee_mention')
+    .in('signal_type', ['employee_mention', 'guest_review_mention'])
     .gte('business_date', cutoff)
     .not('entity_name', 'is', null)
     .order('business_date', { ascending: false });

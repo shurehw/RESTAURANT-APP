@@ -400,12 +400,10 @@ export function InvoicesClient({ invoices, venues }: InvoicesClientProps) {
                         </Button>
                       </>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/invoices/${invoice.id}/review`)}
-                    >
-                      View
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/invoices/${invoice.id}/review`}>
+                        View
+                      </Link>
                     </Button>
                   </div>
                 </TableCell>

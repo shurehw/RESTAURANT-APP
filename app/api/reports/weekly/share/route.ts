@@ -13,7 +13,24 @@ import { createShareToken } from '@/lib/database/weekly-share';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rawBody = await request.text();
+    if (!rawBody) {
+      return NextResponse.json(
+        { error: 'Request body is required' },
+        { status: 400 },
+      );
+    }
+
+    let body: { venue_id?: string; week_start?: string };
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json(
+        { error: 'Request body must be valid JSON' },
+        { status: 400 },
+      );
+    }
+
     const { venue_id, week_start } = body;
 
     if (!venue_id || !week_start) {

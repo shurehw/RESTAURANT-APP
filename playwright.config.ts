@@ -33,7 +33,7 @@ export default defineConfig({
         storageState: 'e2e/.auth/dashboard.json',
       },
       dependencies: ['setup'],
-      testMatch: /(dashboard|swarm(?:-deep)?)\.spec\.ts/,
+      testMatch: /(dashboard.*|swarm(?:-deep)?)\.spec\.ts/,
     },
     {
       name: 'manager',

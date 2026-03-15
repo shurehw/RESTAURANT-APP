@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/service';
-import { fetchNightlyReport, fetchNightlyReportFromFacts, getPosTypeForLocations } from '@/lib/database/tipsee';
+import { fetchNightlyReport, fetchNightlyReportFromFacts, fetchSimphonyNightlyReport, getPosTypeForLocations } from '@/lib/database/tipsee';
 
 interface VenueMapping {
   id: string;
@@ -174,9 +174,11 @@ async function handleSync(request: NextRequest) {
         // Detect POS type — Avero and Simphony venues use venue_day_facts,
         // only Upserve venues query TipSee check-level tables directly
         const posType = await getPosTypeForLocations([venue.tipsee_location_uuid]);
-        const report = (posType === 'avero' || posType === 'simphony')
-          ? await fetchNightlyReportFromFacts(venueBusinessDate, venue.id)
-          : await fetchNightlyReport(venueBusinessDate, venue.tipsee_location_uuid);
+        const report = posType === 'simphony'
+          ? await fetchSimphonyNightlyReport(venueBusinessDate, venue.tipsee_location_uuid, venue.id)
+          : posType === 'avero'
+            ? await fetchNightlyReportFromFacts(venueBusinessDate, venue.id)
+            : await fetchNightlyReport(venueBusinessDate, venue.tipsee_location_uuid);
         const queryDuration = Date.now() - venueT0;
 
         // Upsert to cache

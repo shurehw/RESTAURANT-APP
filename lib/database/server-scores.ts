@@ -72,6 +72,12 @@ const WEIGHTS = {
   consistency: 0.05,
 } as const;
 
+// Venues with auto service charge — tip % from payments is not meaningful
+const AUTO_GRAT_VENUE_IDS = new Set([
+  'a7da18a4-a70b-4492-abed-c9fed5851c9e', // Bird Streets Club
+  '288b7f22-ffdc-4701-a396-a6b415aff0f1', // Delilah Miami
+]);
+
 // ══════════════════════════════════════════════════════════════════════════
 // Scoring helpers
 // ══════════════════════════════════════════════════════════════════════════
@@ -137,8 +143,11 @@ function tierFromScore(score: number): ScoreTier {
 // Data fetching
 // ══════════════════════════════════════════════════════════════════════════
 
+export type RoleCategory = 'server' | 'bartender' | 'host' | 'other';
+
 interface ServerPosData {
   server_name: string;
+  role_category: RoleCategory;
   shifts: number;
   total_covers: number;
   total_revenue: number;
@@ -149,126 +158,140 @@ interface ServerPosData {
   per_cover_values: number[]; // for consistency scoring
 }
 
+function classifyRole(role: string | null): RoleCategory | null {
+  if (!role) return 'server';
+  const r = role.toLowerCase();
+  // Exclude non-scoreable roles
+  if (r.includes('manager') || r.includes('admin') || r.includes('valet') || r.includes('event') || r.includes('cover charge')) return null;
+  if (r.includes('bartend') || r.includes('bar back') || r.includes('barback') || r.includes('service bar')) return 'bartender';
+  if (r.includes('host') || r.includes('maitre')) return 'host';
+  if (r.includes('server') || r.includes('waiter') || r.includes('waitress') || r.includes('captain')) return 'server';
+  if (r.includes('busser') || r.includes('runner') || r.includes('sommelier')) return 'other';
+  return 'server';
+}
+
+type TeamAvgs = { avg_per_cover: number; avg_tip_pct: number; avg_turn_mins: number; avg_comp_rate: number };
+
 async function fetchServerPosData(
   venueId: string,
   sinceDate: string,
   untilDate: string
-): Promise<{ servers: ServerPosData[]; teamAvgs: { avg_per_cover: number; avg_tip_pct: number; avg_turn_mins: number; avg_comp_rate: number } }> {
+): Promise<{ servers: ServerPosData[]; roleAvgs: Map<RoleCategory, TeamAvgs> }> {
   const supabase = getServiceClient();
 
-  // Get per-check data for the window
-  const { data: checks, error } = await (supabase as any)
-    .from('pos_checks')
-    .select('server_name, guest_count, revenue_total, subtotal, tip_amount, open_time, close_time, business_date')
+  // Read from server_day_facts (populated by TipSee ETL)
+  const { data: facts, error } = await (supabase as any)
+    .from('server_day_facts')
+    .select('employee_name, employee_role, business_date, gross_sales, checks_count, covers_count, tips_total, comps_total, avg_turn_mins')
     .eq('venue_id', venueId)
     .gte('business_date', sinceDate)
     .lte('business_date', untilDate)
-    .not('server_name', 'is', null)
-    .gt('guest_count', 0);
+    .gt('covers_count', 0);
 
-  if (error || !checks?.length) {
-    return { servers: [], teamAvgs: { avg_per_cover: 0, avg_tip_pct: 0, avg_turn_mins: 0, avg_comp_rate: 0 } };
+  if (error || !facts?.length) {
+    return { servers: [], roleAvgs: new Map() };
   }
 
-  // Get comp data
-  const { data: comps } = await (supabase as any)
-    .from('pos_checks')
-    .select('server_name, comp_total')
-    .eq('venue_id', venueId)
-    .gte('business_date', sinceDate)
-    .lte('business_date', untilDate)
-    .not('server_name', 'is', null)
-    .gt('comp_total', 0);
-
-  const compByServer = new Map<string, number>();
-  for (const c of comps || []) {
-    compByServer.set(c.server_name, (compByServer.get(c.server_name) || 0) + (c.comp_total || 0));
-  }
-
-  // Aggregate by server
+  // Aggregate daily facts by server across the window
   const serverMap = new Map<string, {
     covers: number;
     revenue: number;
     tips: number;
-    tipChecks: number;
-    turnMinsTotal: number;
-    turnCount: number;
+    comps: number;
+    turnMinsWeighted: number;
+    turnCovers: number;
     dates: Set<string>;
-    perCoverByCheck: number[];
+    perCoverByDay: number[];
+    role_category: RoleCategory;
   }>();
 
-  for (const check of checks) {
-    const name = check.server_name;
+  for (const row of facts) {
+    const name = row.employee_name;
+    if (!name) continue;
+    const role = classifyRole(row.employee_role);
+    if (!role) continue; // Skip managers, admins, valets, etc.
     if (!serverMap.has(name)) {
       serverMap.set(name, {
-        covers: 0, revenue: 0, tips: 0, tipChecks: 0,
-        turnMinsTotal: 0, turnCount: 0, dates: new Set(),
-        perCoverByCheck: [],
+        covers: 0, revenue: 0, tips: 0, comps: 0,
+        turnMinsWeighted: 0, turnCovers: 0, dates: new Set(),
+        perCoverByDay: [],
+        role_category: role,
       });
     }
-    const s = serverMap.get(name)!;
-    const covers = check.guest_count || 1;
-    const revenue = check.revenue_total || check.subtotal || 0;
+    const s = serverMap.get(name)!
+    const covers = row.covers_count || 0;
+    const revenue = parseFloat(row.gross_sales) || 0;
     s.covers += covers;
     s.revenue += revenue;
-    if (check.tip_amount != null && check.tip_amount > 0) {
-      s.tips += check.tip_amount;
-      s.tipChecks++;
+    s.tips += parseFloat(row.tips_total) || 0;
+    s.comps += parseFloat(row.comps_total) || 0;
+    const turnMins = parseFloat(row.avg_turn_mins) || 0;
+    if (turnMins > 0 && covers > 0) {
+      s.turnMinsWeighted += turnMins * covers;
+      s.turnCovers += covers;
     }
-    if (check.open_time && check.close_time) {
-      const openMs = new Date(check.open_time).getTime();
-      const closeMs = new Date(check.close_time).getTime();
-      const turnMins = (closeMs - openMs) / 60000;
-      if (turnMins > 0 && turnMins < 480) { // sanity: < 8 hours
-        s.turnMinsTotal += turnMins;
-        s.turnCount++;
-      }
-    }
-    s.dates.add(check.business_date);
+    s.dates.add(row.business_date);
     if (covers > 0) {
-      s.perCoverByCheck.push(revenue / covers);
+      s.perCoverByDay.push(revenue / covers);
     }
   }
 
   const servers: ServerPosData[] = [];
-  let totalCovers = 0, totalRevenue = 0, totalTips = 0, totalTipChecks = 0;
-  let totalTurnMins = 0, totalTurnCount = 0, totalCompAmount = 0;
+
+  // Accumulators per role for peer-group averages
+  const roleAccum = new Map<RoleCategory, {
+    covers: number; revenue: number; tips: number;
+    turnWeighted: number; turnCovers: number; comps: number;
+    serversWithTips: number;
+  }>();
 
   for (const [name, s] of serverMap) {
     const avgPerCover = s.covers > 0 ? s.revenue / s.covers : 0;
-    const avgTipPct = s.tipChecks > 0 && s.revenue > 0 ? (s.tips / s.revenue) * 100 : null;
-    const avgTurnMins = s.turnCount > 0 ? s.turnMinsTotal / s.turnCount : null;
-    const serverComps = compByServer.get(name) || 0;
+    const avgTipPct = s.tips > 0 && s.revenue > 0 ? (s.tips / s.revenue) * 100 : null;
+    const avgTurnMins = s.turnCovers > 0 ? s.turnMinsWeighted / s.turnCovers : null;
 
     servers.push({
       server_name: name,
+      role_category: s.role_category,
       shifts: s.dates.size,
       total_covers: s.covers,
       total_revenue: s.revenue,
       avg_per_cover: avgPerCover,
       avg_tip_pct: avgTipPct,
       avg_turn_mins: avgTurnMins,
-      total_comps: serverComps,
-      per_cover_values: s.perCoverByCheck,
+      total_comps: s.comps,
+      per_cover_values: s.perCoverByDay,
     });
 
-    totalCovers += s.covers;
-    totalRevenue += s.revenue;
-    totalTips += s.tips;
-    totalTipChecks += s.tipChecks;
-    totalTurnMins += s.turnMinsTotal;
-    totalTurnCount += s.turnCount;
-    totalCompAmount += serverComps;
+    // Accumulate per-role totals
+    if (!roleAccum.has(s.role_category)) {
+      roleAccum.set(s.role_category, {
+        covers: 0, revenue: 0, tips: 0, turnWeighted: 0,
+        turnCovers: 0, comps: 0, serversWithTips: 0,
+      });
+    }
+    const ra = roleAccum.get(s.role_category)!;
+    ra.covers += s.covers;
+    ra.revenue += s.revenue;
+    ra.tips += s.tips;
+    if (s.tips > 0) ra.serversWithTips++;
+    ra.turnWeighted += s.turnMinsWeighted;
+    ra.turnCovers += s.turnCovers;
+    ra.comps += s.comps;
   }
 
-  const teamAvgs = {
-    avg_per_cover: totalCovers > 0 ? totalRevenue / totalCovers : 0,
-    avg_tip_pct: totalTipChecks > 0 && totalRevenue > 0 ? (totalTips / totalRevenue) * 100 : 0,
-    avg_turn_mins: totalTurnCount > 0 ? totalTurnMins / totalTurnCount : 0,
-    avg_comp_rate: totalRevenue > 0 ? (totalCompAmount / totalRevenue) * 100 : 0,
-  };
+  // Compute per-role averages
+  const roleAvgs = new Map<RoleCategory, TeamAvgs>();
+  for (const [role, ra] of roleAccum) {
+    roleAvgs.set(role, {
+      avg_per_cover: ra.covers > 0 ? ra.revenue / ra.covers : 0,
+      avg_tip_pct: ra.serversWithTips > 0 && ra.revenue > 0 ? (ra.tips / ra.revenue) * 100 : 0,
+      avg_turn_mins: ra.turnCovers > 0 ? ra.turnWeighted / ra.turnCovers : 0,
+      avg_comp_rate: ra.revenue > 0 ? (ra.comps / ra.revenue) * 100 : 0,
+    });
+  }
 
-  return { servers, teamAvgs };
+  return { servers, roleAvgs };
 }
 
 interface MentionCounts {
@@ -336,7 +359,7 @@ export async function computeServerScores(
     fetchMentionCounts(venueId, sinceDate, businessDate, 'guest_review_mention'),
   ]);
 
-  const { servers, teamAvgs } = posResult;
+  const { servers, roleAvgs } = posResult;
 
   if (servers.length === 0) {
     return { scored: 0, errors: ['No server POS data found in window'] };
@@ -344,6 +367,7 @@ export async function computeServerScores(
 
   const supabase = getServiceClient();
   let scored = 0;
+  const defaultAvgs: TeamAvgs = { avg_per_cover: 0, avg_tip_pct: 0, avg_turn_mins: 0, avg_comp_rate: 0 };
 
   for (const server of servers) {
     // Minimum threshold: need at least 2 shifts to score
@@ -351,23 +375,28 @@ export async function computeServerScores(
 
     const nameLower = server.server_name.toLowerCase();
 
+    // Use peer-group averages (bartenders vs bartenders, servers vs servers)
+    const peerAvgs = roleAvgs.get(server.role_category) || defaultAvgs;
+
     // --- Component scores ---
 
-    const revenueScore = scoreHigherIsBetter(server.avg_per_cover, teamAvgs.avg_per_cover);
+    const revenueScore = scoreHigherIsBetter(server.avg_per_cover, peerAvgs.avg_per_cover);
 
-    const tipScore = server.avg_tip_pct != null && teamAvgs.avg_tip_pct > 0
-      ? scoreHigherIsBetter(server.avg_tip_pct, teamAvgs.avg_tip_pct)
-      : null;
+    // Skip tip % for auto-grat venues — payment tips are not meaningful
+    const tipScore = AUTO_GRAT_VENUE_IDS.has(venueId) ? null
+      : server.avg_tip_pct != null && peerAvgs.avg_tip_pct > 0
+        ? scoreHigherIsBetter(server.avg_tip_pct, peerAvgs.avg_tip_pct)
+        : null;
 
-    const turnScore = server.avg_turn_mins != null && teamAvgs.avg_turn_mins > 0
-      ? scoreLowerIsBetter(server.avg_turn_mins, teamAvgs.avg_turn_mins)
+    const turnScore = server.avg_turn_mins != null && peerAvgs.avg_turn_mins > 0
+      ? scoreLowerIsBetter(server.avg_turn_mins, peerAvgs.avg_turn_mins)
       : null;
 
     const serverCompRate = server.total_revenue > 0
       ? (server.total_comps / server.total_revenue) * 100
       : 0;
-    const compScore = teamAvgs.avg_comp_rate > 0
-      ? scoreLowerIsBetter(serverCompRate, teamAvgs.avg_comp_rate)
+    const compScore = peerAvgs.avg_comp_rate > 0
+      ? scoreLowerIsBetter(serverCompRate, peerAvgs.avg_comp_rate)
       : 50;
 
     const consistencyScoreVal = scoreConsistency(server.per_cover_values);
@@ -401,10 +430,10 @@ export async function computeServerScores(
     const tier = tierFromScore(roundedComposite);
 
     const componentData: ComponentData = {
-      revenue_per_cover: { value: server.avg_per_cover, team_avg: teamAvgs.avg_per_cover },
-      tip_pct: server.avg_tip_pct != null ? { value: server.avg_tip_pct, team_avg: teamAvgs.avg_tip_pct } : null,
-      turn_time_mins: server.avg_turn_mins != null ? { value: server.avg_turn_mins, team_avg: teamAvgs.avg_turn_mins } : null,
-      comp_rate_pct: { value: serverCompRate, team_avg: teamAvgs.avg_comp_rate },
+      revenue_per_cover: { value: server.avg_per_cover, team_avg: peerAvgs.avg_per_cover },
+      tip_pct: server.avg_tip_pct != null ? { value: server.avg_tip_pct, team_avg: peerAvgs.avg_tip_pct } : null,
+      turn_time_mins: server.avg_turn_mins != null ? { value: server.avg_turn_mins, team_avg: peerAvgs.avg_turn_mins } : null,
+      comp_rate_pct: { value: serverCompRate, team_avg: peerAvgs.avg_comp_rate },
       manager_mentions: mgr ? { positive: mgr.positive, negative: mgr.negative, total: mgr.total } : null,
       guest_reviews: rev ? { positive: rev.positive, negative: rev.negative, total: rev.total } : null,
       greet_time_avg_sec: null, // future: from greeting_metrics
@@ -417,6 +446,7 @@ export async function computeServerScores(
       venue_id: venueId,
       business_date: businessDate,
       server_name: server.server_name,
+      role_category: server.role_category,
       revenue_per_cover_score: revenueScore,
       tip_pct_score: tipScore,
       turn_time_score: turnScore,
@@ -435,7 +465,7 @@ export async function computeServerScores(
 
     const { error } = await (supabase as any)
       .from('server_performance_scores')
-      .upsert(row, { onConflict: 'venue_id,server_name,business_date' });
+      .upsert(row, { onConflict: 'venue_id,server_name,business_date,role_category' });
 
     if (error) {
       errors.push(`Failed to upsert score for ${server.server_name}: ${error.message}`);
