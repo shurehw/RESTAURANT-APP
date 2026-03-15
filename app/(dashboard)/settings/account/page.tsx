@@ -2,9 +2,10 @@ import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Card } from '@/components/ui/card';
-import { Mail, Building2, Shield, Lock } from 'lucide-react';
+import { Mail, Building2, Shield, Lock, Bell } from 'lucide-react';
 import { ROLE_LABELS, type UserRole } from '@/lib/nav/role-permissions';
 import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm';
+import NightlyReportToggle from '@/components/settings/NightlyReportToggle';
 
 export default async function AccountPage() {
   const user = await requireUser();
@@ -50,6 +51,14 @@ export default async function AccountPage() {
           <InfoRow icon={<Building2 className="w-4 h-4" />} label="Organization" value={organization?.name || '—'} />
           <InfoRow icon={<Shield className="w-4 h-4" />} label="Role" value={ROLE_LABELS[navRole]} />
         </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center gap-3 mb-5">
+          <Bell className="w-5 h-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">Notifications</h2>
+        </div>
+        <NightlyReportToggle />
       </Card>
 
       <Card className="p-6">
