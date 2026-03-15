@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 export default function DeckPage() {
   const [state, setState] = useState<'locked' | 'loading' | 'unlocked' | 'error'>('locked');
   const [password, setPassword] = useState('');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [deckHtml, setDeckHtml] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,6 +19,10 @@ export default function DeckPage() {
       });
 
       if (res.ok) {
+        // Fetch the deck HTML from public
+        const htmlRes = await fetch('/deck.html');
+        const html = await htmlRes.text();
+        setDeckHtml(html);
         setState('unlocked');
       } else {
         setState('error');
@@ -30,11 +34,10 @@ export default function DeckPage() {
     }
   }
 
-  if (state === 'unlocked') {
+  if (state === 'unlocked' && deckHtml) {
     return (
       <iframe
-        ref={iframeRef}
-        src="/api/deck"
+        srcDoc={deckHtml}
         className="fixed inset-0 w-full h-full border-0"
         title="KevaOS Pitch Deck"
         allow="fullscreen"
@@ -45,7 +48,6 @@ export default function DeckPage() {
   return (
     <div className="min-h-screen flex items-center justify-center"
       style={{ background: '#0A0A0F', fontFamily: "'Space Grotesk', sans-serif" }}>
-      {/* K mark */}
       <div className="w-full max-w-sm px-6">
         <div className="flex flex-col items-center mb-10">
           <svg viewBox="0 0 52 58" className="w-10 h-11 mb-4">
