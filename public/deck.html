@@ -10,17 +10,19 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #0A0A0F;
-    --surface: #111116;
-    --surface-2: #18181E;
-    --border: rgba(255,255,255,0.06);
-    --text: #E8E4DD;
-    --text-dim: rgba(232,228,221,0.45);
+    --bg: #FFFEFB;
+    --surface: #F5F1EB;
+    --surface-2: #FAF8F5;
+    --border: #E8E2DA;
+    --text: #1C1917;
+    --text-dim: #8B7E6F;
     --gold: #D4622B;
-    --gold-dim: rgba(212,98,43,0.10);
-    --charcoal: #2A2A32;
-    --green: #22C55E;
-    --green-dim: rgba(34,197,94,0.12);
+    --gold-dim: #FCEADB;
+    --charcoal: #44403C;
+    --green: #5C6B4F;
+    --green-dim: rgba(92,107,79,0.12);
+    --gray-300: #D5CCC1;
+    --gray-400: #B5ADA1;
   }
 
   html, body {
@@ -114,7 +116,7 @@
 
   .lead {
     font-size: clamp(0.95rem, 1.3vw, 1.15rem);
-    color: rgba(232,228,221,0.6);
+    color: #6B6156;
     font-weight: 400;
     line-height: 1.65;
     max-width: 46rem;
@@ -218,7 +220,7 @@
   }
 
   .loop-arrow {
-    color: rgba(232,228,221,0.15);
+    color: #D5CCC1;
     font-size: 0.9rem;
     padding: 0 0.35rem;
     font-family: 'JetBrains Mono', monospace;
@@ -237,23 +239,23 @@
     color: var(--text-dim);
     font-size: 1rem;
     padding: 0.85rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid #E8E2DA;
     text-decoration: line-through;
-    text-decoration-color: rgba(232,228,221,0.15);
+    text-decoration-color: #D5CCC1;
   }
   .compare-arrow {
     color: var(--gold);
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.85rem;
     padding: 0.85rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid #E8E2DA;
   }
   .compare-right {
     color: var(--text);
     font-weight: 600;
     font-size: 1rem;
     padding: 0.85rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid #E8E2DA;
   }
 
   /* --- Modules --- */
@@ -291,9 +293,9 @@
     border-radius: 2px;
     margin-left: 0.5rem;
   }
-  .badge-live { background: rgba(34,197,94,0.15); color: #22C55E; }
-  .badge-beta { background: rgba(212,98,43,0.15); color: var(--gold); }
-  .badge-q2 { background: rgba(232,228,221,0.08); color: var(--text-dim); }
+  .badge-live { background: rgba(92,107,79,0.15); color: #5C6B4F; }
+  .badge-beta { background: #FCEADB; color: var(--gold); }
+  .badge-q2 { background: #E8E2DA; color: var(--text-dim); }
 
   /* --- Competitor table --- */
   .comp-table {
@@ -315,15 +317,15 @@
   }
   .comp-table td {
     padding: 0.65rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
+    border-bottom: 1px solid #E8E2DA;
     color: var(--text-dim);
   }
   .comp-table td:first-child { color: var(--text); font-weight: 500; }
   .comp-table .yes { color: var(--gold); }
-  .comp-table .no { color: rgba(255,255,255,0.1); }
+  .comp-table .no { color: #D5CCC1; }
   .comp-table tr.us td {
     background: var(--gold-dim);
-    border-bottom-color: rgba(212,98,43,0.08);
+    border-bottom-color: #FCEADB;
   }
   .comp-table tr.us td:first-child { color: var(--gold); font-weight: 600; }
 
@@ -375,7 +377,7 @@
     margin: 1.25rem 0;
     background: var(--gold-dim);
   }
-  blockquote p { color: rgba(232,228,221,0.7); font-size: 0.95rem; }
+  blockquote p { color: #44403C; font-size: 0.95rem; }
 
   /* --- Flow diagram --- */
   .flow-row {
@@ -399,7 +401,7 @@
     font-weight: 600;
   }
   .flow-arrow {
-    color: rgba(232,228,221,0.15);
+    color: #D5CCC1;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.8rem;
     padding: 0 0.5rem;
@@ -436,7 +438,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.6rem 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
+    border-bottom: 1px solid #E8E2DA;
   }
   .int-item .int-name { font-weight: 500; color: var(--text); font-size: 0.9rem; }
   .int-item .int-status {
@@ -446,7 +448,7 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
-  .int-item .int-status.live { color: #22C55E; }
+  .int-item .int-status.live { color: #5C6B4F; }
   .int-item .int-status.ready { color: var(--text-dim); }
   .int-item .int-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.15rem; }
 
@@ -481,7 +483,7 @@
     font-size: 0.6rem;
     font-weight: 500;
     letter-spacing: 0.3em;
-    color: rgba(232,228,221,0.15);
+    color: #D5CCC1;
   }
   .nav-brand span { font-weight: 400; letter-spacing: 0.35em; opacity: 0.6; }
 
@@ -506,7 +508,7 @@
   .nav-counter {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.6rem;
-    color: rgba(232,228,221,0.2);
+    color: #B5ADA1;
     font-variant-numeric: tabular-nums;
     min-width: 3rem;
     text-align: center;
@@ -526,12 +528,12 @@
   .minimap-dot {
     width: 4px;
     height: 4px;
-    background: rgba(232,228,221,0.08);
+    background: #E8E2DA;
     cursor: pointer;
     transition: all 0.3s;
   }
   .minimap-dot.active { background: var(--gold); width: 4px; height: 12px; }
-  .minimap-dot:hover { background: rgba(232,228,221,0.25); }
+  .minimap-dot:hover { background: #B5ADA1; }
 
   /* --- Title slide --- */
   .title-slide { text-align: center; align-items: center; }
@@ -555,7 +557,7 @@
     font-size: 0.5rem;
     letter-spacing: 0.3em;
     text-transform: uppercase;
-    color: rgba(232,228,221,0.1);
+    color: #D5CCC1;
   }
 
   /* --- Closing slide --- */
@@ -569,7 +571,7 @@
   }
   .closing-slide h1 span { font-weight: 400; letter-spacing: 0.12em; opacity: 0.5; }
   .closing-lines { margin-top: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
-  .closing-lines p { font-size: 1.05rem; color: rgba(232,228,221,0.4); text-align: center; line-height: 1.8; }
+  .closing-lines p { font-size: 1.05rem; color: #8B7E6F; text-align: center; line-height: 1.8; }
   .final-line { margin-top: 2.5rem; font-size: 1.15rem !important; color: var(--text) !important; font-weight: 600; }
 
   /* --- Procurement flow --- */
@@ -594,7 +596,7 @@
     letter-spacing: 0.02em;
   }
   .revenue-flow .rf-arrow {
-    color: rgba(232,228,221,0.15);
+    color: #D5CCC1;
     padding: 0 0.25rem;
   }
 
@@ -676,7 +678,7 @@
     <h1>Nothing slips.</h1>
     <p style="font-family: 'JetBrains Mono', monospace; font-size: clamp(1rem, 2vw, 1.4rem); letter-spacing: 0.08em; color: var(--gold); margin-bottom: 1.5rem;">The AI-Enforced Control Plane for Hospitality</p>
     <p class="lead">Catching what your managers miss and enforcing the fix<br>across every location, every night.</p>
-    <p style="margin-top: 2rem; font-size: 0.85rem; color: rgba(232,228,221,0.3); font-style: italic;">Keva &mdash; permanence, fixity, establishment.</p>
+    <p style="margin-top: 2rem; font-size: 0.85rem; color: #B5ADA1; font-style: italic;">Keva &mdash; permanence, fixity, establishment.</p>
     <div class="confidential">KevaOS &middot; The Binyan Group &middot; Confidential &middot; 2026</div>
   </div>
 
@@ -1322,16 +1324,16 @@
     <img src="/deck-assets/image-1-1.png" alt="KevaOS" class="closing-logo">
     <div class="slide-label">KevaOS</div>
     <h1>Keva</h1>
-    <p style="font-size: 1rem; color: rgba(232,228,221,0.4); font-style: italic; margin-bottom: 2rem;">permanence, fixity, establishment.</p>
+    <p style="font-size: 1rem; color: #8B7E6F; font-style: italic; margin-bottom: 2rem;">permanence, fixity, establishment.</p>
     <div class="closing-lines">
       <p>Every month KevaOS runs,</p>
       <p>the venue loses muscle memory</p>
       <p>for doing things manually.</p>
-      <p style="margin-top: 1.5rem; color: rgba(232,228,221,0.25);">That's not lock-in through a contract.</p>
-      <p style="color: rgba(232,228,221,0.25);">That's lock-in through permanence.</p>
+      <p style="margin-top: 1.5rem; color: #B5ADA1;">That's not lock-in through a contract.</p>
+      <p style="color: #B5ADA1;">That's lock-in through permanence.</p>
     </div>
     <p class="final-line">The fixed framework becomes the way the venue operates.<br>And permanence is the only moat that deepens with time.</p>
-    <div style="margin-top: 3.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.45rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(232,228,221,0.08);">KevaOS &middot; The Binyan Group &middot; Confidential</div>
+    <div style="margin-top: 3.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.45rem; letter-spacing: 0.35em; text-transform: uppercase; color: #E8E2DA;">KevaOS &middot; The Binyan Group &middot; Confidential</div>
   </div>
 
 </div>
