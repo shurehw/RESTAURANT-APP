@@ -168,6 +168,25 @@ function cleanNotes(text: string, staffNames?: Set<string>): string {
   return result;
 }
 
+/**
+ * Strip server check detail blocks from cover_count section.
+ * Lightspeed embeds "Notable Guests" with server-attributed checks:
+ *   "Visa Cardholder Demi Pinkus Server | 9 Covers | $1,643.33 Payment | 38% Tip | ..."
+ * We keep only the leading cover number and any text before "Notable Guests".
+ */
+function stripServerCheckDetails(raw: string): string {
+  // Split at "Notable Guests" — everything after is server check data
+  const notableIdx = raw.search(/Notable Guests/i);
+  if (notableIdx >= 0) {
+    raw = raw.substring(0, notableIdx).trim();
+  }
+
+  // Also strip any remaining "Name Server | X Covers | ..." patterns
+  raw = raw.replace(/(?:Visa Cardholder|Valued Customer|Customer \d+|[A-Z][a-z]+ [A-Z][a-z]+)\s+\w[\w\s]*?Server\s*\|[\s\S]*?(?=\n[A-Z]|\n\n|$)/gi, '');
+
+  return raw.trim();
+}
+
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -292,7 +311,28 @@ export function parseLightspeedDigest(
 
   // Second pass: clean each section with staff names removed
   for (const { key, raw } of rawExtracts) {
-    const cleaned = cleanNotes(raw, staffToStrip);
+    let processedRaw = raw;
+
+    // For cover_count: strip the "Notable Guests" server check detail block.
+    // This block contains lines like "ServerName Server | X Covers | $Y Payment | Z% Tip | ..."
+    // and item listings like "Don Julio 1942, Casamigos Reposado (+7)".
+    // Keep only the leading cover number and any non-check text.
+    if (key === 'cover_count') {
+      processedRaw = stripServerCheckDetails(raw);
+    }
+
+    // For spenders_over_* and other_notes: strip "N/A" entries with staff names
+    // The pattern is typically "N/A ServerName1, ServerName2, ServerName3"
+    if (key.startsWith('spenders_over_') || key === 'other_notes') {
+      // Remove "SPENDERS OVER XK N/A ..." blocks that leaked into other_notes
+      processedRaw = processedRaw.replace(/SPENDERS OVER \d+K\s*N\/?A\s*[\w\s,]*/gi, '').trim();
+      // If starts with N/A, it means no notable spenders — just staff names filling the field
+      if (/^\s*N\/?A\b/i.test(processedRaw)) {
+        continue; // Skip this section entirely
+      }
+    }
+
+    const cleaned = cleanNotes(processedRaw, staffToStrip);
     if (cleaned) {
       sections[key] = cleaned;
     }
