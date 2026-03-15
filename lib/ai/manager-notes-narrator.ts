@@ -77,6 +77,8 @@ RULES:
 - Manager notes may cover only ONE shift (e.g., dinner only) at venues that run multiple dayparts (brunch + dinner). Do NOT compare or flag discrepancies between manager-reported numbers and KPI data — KPI data is full-day and always correct
 - If the manager notes mention revenue or cover numbers, ignore them in favor of KPI data
 - Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
+- In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
+- Names in SPENDERS OVER sections that are not also in PEOPLE WE KNOW are likely staff names — do NOT list them as notable guests unless they appear in PEOPLE WE KNOW
 - If a section has no relevant data from the notes, include one bullet with "No notes reported"
 - Be direct and concise — restaurant industry language
 - Do NOT add sections not listed above
