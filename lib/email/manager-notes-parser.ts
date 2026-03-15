@@ -321,15 +321,9 @@ export function parseLightspeedDigest(
       processedRaw = stripServerCheckDetails(raw);
     }
 
-    // For spenders_over_* and other_notes: strip "N/A" entries with staff names
-    // The pattern is typically "N/A ServerName1, ServerName2, ServerName3"
-    if (key.startsWith('spenders_over_') || key === 'other_notes') {
-      // Remove "SPENDERS OVER XK N/A ..." blocks that leaked into other_notes
-      processedRaw = processedRaw.replace(/SPENDERS OVER \d+K\s*N\/?A\s*[\w\s,]*/gi, '').trim();
-      // If starts with N/A, it means no notable spenders — just staff names filling the field
-      if (/^\s*N\/?A\b/i.test(processedRaw)) {
-        continue; // Skip this section entirely
-      }
+    // For other_notes: clean up any "SPENDERS OVER XK" headers that leaked in
+    if (key === 'other_notes') {
+      processedRaw = processedRaw.replace(/SPENDERS OVER \d+K\s*/gi, '').trim();
     }
 
     const cleaned = cleanNotes(processedRaw, staffToStrip);

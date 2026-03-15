@@ -83,7 +83,7 @@ RULES:
 - If labor cost is $0 or not provided, do not mention labor at all
 - Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
 - In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
-- Names in SPENDERS OVER sections that are not also in PEOPLE WE KNOW are likely staff names — do NOT list them as notable guests unless they appear in PEOPLE WE KNOW
+- Names in SPENDERS OVER sections are real guest names (high spenders) — include them in GUEST section as notable spenders
 - If a section has no relevant data from the notes, include one bullet with "No notes reported"
 - Be direct and concise — restaurant industry language
 - Do NOT add sections not listed above
