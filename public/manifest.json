@@ -1,7 +1,7 @@
 {
-  "name": "Pulse — Live Sales",
-  "short_name": "Pulse",
-  "description": "Real-time sales pace during service",
+  "name": "KevaOS",
+  "short_name": "KevaOS",
+  "description": "Restaurant operations enforcement engine",
   "start_url": "/sales/pace",
   "scope": "/",
   "id": "/sales/pace",

@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Pulse",
+    title: "KevaOS",
     startupImage: "/icons/pulse-512.png",
   },
   icons: {

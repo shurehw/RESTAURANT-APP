@@ -1,8 +1,8 @@
-// Pulse PWA Service Worker v3
+// KevaOS PWA Service Worker v7
 // Network-first for API (live data), stale-while-revalidate for shell, offline fallback
 
-const CACHE_VERSION = 'pulse-v6';
-const API_CACHE = 'pulse-api-v6';
+const CACHE_VERSION = 'kevaos-v7';
+const API_CACHE = 'kevaos-api-v7';
 const MAX_API_ENTRIES = 50;
 const OFFLINE_URL = '/offline.html';
 
