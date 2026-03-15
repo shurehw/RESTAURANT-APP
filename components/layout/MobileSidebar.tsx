@@ -71,10 +71,11 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
       onTouchEnd={handleTouchEnd}
       className="contents"
     >
-      {/* Hamburger Button - Mobile Only (hidden for onboarding — only one page) */}
+      {/* Hamburger Button - Mobile Only (hidden for onboarding and PWA standalone) */}
       {userRole !== 'onboarding' && (
       <button
         onClick={() => setIsOpen(!isOpen)}
+        data-pwa-hide
         className="lg:hidden fixed top-6 left-4 z-50 p-2 bg-keva-sage-600 text-white rounded-md shadow-lg"
         aria-label="Toggle menu"
       >
