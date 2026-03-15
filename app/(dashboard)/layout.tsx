@@ -148,6 +148,12 @@ export default async function DashboardLayout({
             />
           </div>
 
+          {/* Compact venue selector for PWA standalone mode */}
+          <PwaVenueBar
+            venues={venues || []}
+            organizationName={organization?.name}
+          />
+
           {/* Page Content */}
           <main id="main-content" className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
@@ -177,5 +183,28 @@ function Topbar({ venues, organizationSlug, organizationName }: {
         />
       </div>
     </header>
+  );
+}
+
+/**
+ * Compact venue selector shown only in PWA standalone mode.
+ * The full topbar is hidden via data-pwa-hide, so this provides
+ * venue switching for installed-PWA dashboard users.
+ */
+function PwaVenueBar({ venues, organizationName }: {
+  venues: Array<{ id: string; name: string; location?: string | null; city?: string | null; state?: string | null }>;
+  organizationName?: string;
+}) {
+  if (venues.length === 0) return null;
+
+  return (
+    <div className="hidden" data-pwa-show>
+      <div className="h-12 border-b border-border bg-background/95 backdrop-blur px-4 flex items-center">
+        <TopbarActions
+          venues={venues}
+          organizationName={organizationName}
+        />
+      </div>
+    </div>
   );
 }

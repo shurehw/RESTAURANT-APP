@@ -135,11 +135,17 @@
     [data-pwa-hide] {
       display: none !important;
     }
+    [data-pwa-show] {
+      display: block !important;
+    }
   }
 
   /* JS fallback for standalone detection */
   .pwa-standalone [data-pwa-hide] {
     display: none !important;
+  }
+  .pwa-standalone [data-pwa-show] {
+    display: block !important;
   }
 
   /* Focus visible outline */
