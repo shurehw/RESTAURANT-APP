@@ -45,17 +45,17 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "KevaOS",
-    startupImage: "/icons/kevaos-512.png",
+    title: "Relay",
+    startupImage: "/icons/relay-512.png",
   },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icons/kevaos-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/kevaos-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/relay-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/relay-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/kevaos-192.png", sizes: "180x180", type: "image/png" },
+      { url: "/icons/relay-192.png", sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {

@@ -72,7 +72,7 @@ export default async function DashboardLayout({
         || ORG_TO_NAV_ROLE[orgRole]
         || 'manager';
 
-  // PWA-only users cannot access the dashboard — redirect to Pulse
+  // Relay-only users cannot access the dashboard — redirect to Relay PWA
   if (userRole === 'pwa') {
     redirect('/pulse');
   }

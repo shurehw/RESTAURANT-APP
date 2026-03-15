@@ -1,5 +1,5 @@
 /**
- * Pulse PWA Layout
+ * Relay PWA Layout
  * Minimal chrome — no sidebar, just venue context + content.
  * Used when the app is installed as a standalone PWA.
  */
@@ -7,11 +7,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { VenueProvider } from '@/components/providers/VenueProvider';
 import { FloatingChatWidget, CommandTrigger } from '@/components/chatbot/FloatingChatWidget';
-import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
+import { RelayLogo } from '@/components/ui/RelayLogo';
 import { NightlyReportSheet } from '@/components/pwa/NightlyReportSheet';
 
 export const metadata = {
-  title: 'KevaOS',
+  title: 'Relay',
 };
 
 export default async function PwaLayout({
@@ -33,7 +33,7 @@ export default async function PwaLayout({
       <div className="min-h-screen bg-background flex flex-col" style={{ paddingTop: 'var(--sat)', paddingLeft: 'var(--sal)', paddingRight: 'var(--sar)' }}>
         {/* Thin PWA header */}
         <header className="h-12 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center justify-between sticky top-0 z-50">
-          <KevaOSLogo size="sm" />
+          <RelayLogo size="sm" />
           <div className="flex items-center gap-1">
             <NightlyReportSheet />
             <CommandTrigger />

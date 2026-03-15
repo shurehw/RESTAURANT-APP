@@ -266,7 +266,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
       };
 
     case 'pwa':
-      // PWA Only: Pulse live sales monitoring only
+      // Relay Only: live sales monitoring only
       return {
         orders: false,
         invoices: false,
@@ -353,7 +353,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   exec_chef: 'Executive Chef',
   sous_chef: 'Sous Chef',
   readonly: 'Read Only',
-  pwa: 'PWA Only',
+  pwa: 'Relay Only',
   onboarding: 'Onboarding',
 };
 
@@ -370,6 +370,6 @@ export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   exec_chef: 'Kitchen + procurement, plus operational visibility',
   sous_chef: 'Kitchen operations, limited visibility',
   readonly: 'Read-only access to all operational data',
-  pwa: 'Pulse PWA access only — live sales monitoring',
+  pwa: 'Relay access only — live sales monitoring',
   onboarding: 'Nightly report, Pulse, and attestation history — temporary onboarding access',
 };
