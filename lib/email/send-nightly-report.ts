@@ -45,43 +45,45 @@ export async function sendNightlyReportForOrg(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://kevaos.ai';
   const resend = getResendClient();
 
-  const subscribers = await getActiveSubscribers(orgId);
+  let subscribers = await getActiveSubscribers(orgId);
   if (subscribers.length === 0) {
     return { sent: 0, failed: 0, errors: [] };
+  }
+
+  // If TEST_SEND_TO is set, filter to just that email
+  const testTo = process.env.TEST_SEND_TO;
+  if (testTo) {
+    subscribers = subscribers.filter(s => s.email === testTo);
+    if (subscribers.length === 0) return { sent: 0, failed: 0, errors: [] };
   }
 
   let sent = 0;
   let failed = 0;
   const errors: string[] = [];
 
-  // Process each subscriber
-  const results = await Promise.allSettled(
-    subscribers.map(async (sub) => {
-      try {
-        return await sendToSubscriber({
-          subscriber: sub,
-          orgName,
-          logoUrl,
-          businessDate,
-          orgVenues,
-          reportCache,
-          laborCache,
-          aiSummaries,
-          appUrl,
-          resend,
-        });
-      } catch (err: any) {
-        throw new Error(`${sub.email}: ${err.message}`);
-      }
-    })
-  );
-
-  for (const result of results) {
-    if (result.status === 'fulfilled' && result.value) {
-      sent++;
-    } else if (result.status === 'rejected') {
+  // Process subscribers sequentially to respect Resend 2 req/sec rate limit
+  for (const sub of subscribers) {
+    try {
+      const result = await sendToSubscriber({
+        subscriber: sub,
+        orgName,
+        logoUrl,
+        businessDate,
+        orgVenues,
+        reportCache,
+        laborCache,
+        aiSummaries,
+        appUrl,
+        resend,
+      });
+      if (result) sent++;
+    } catch (err: any) {
       failed++;
-      errors.push(result.reason?.message || 'Unknown error');
+      errors.push(`${sub.email}: ${err.message}`);
+    }
+    // Rate limit: wait 600ms between sends (under 2/sec limit)
+    if (subscribers.indexOf(sub) < subscribers.length - 1) {
+      await new Promise(r => setTimeout(r, 600));
     }
   }
 

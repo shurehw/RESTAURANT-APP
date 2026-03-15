@@ -83,31 +83,19 @@ export async function generateNarrativeFromNotes(
     }
   }
 
-  // Build comp detail context (top comps with item-level detail)
-  let compDetailContext = '';
-  if (hasFullKpi && kpiData!.compDetails && kpiData!.compDetails.length > 0) {
-    const topComps = kpiData!.compDetails
-      .sort((a, b) => b.compTotal - a.compTotal)
-      .slice(0, 8); // Top 8 comps by dollar amount
-    const lines = topComps.map(c => {
-      const itemStr = c.items.length > 0 ? ` — Items: ${c.items.join(', ')}` : '';
-      return `  $${Math.round(c.compTotal)} comp on $${Math.round(c.checkTotal)} check | ${c.reason} | Server: ${c.server}${itemStr}`;
-    });
-    compDetailContext = `\nComp Details (top ${topComps.length} by amount):\n${lines.join('\n')}`;
-  }
+  // Comp detail context — keep minimal (top reason only, no item dump)
+  const compDetailContext = '';
 
-  // Build multi-day comp trend context
+  // Build multi-day comp trend context — keep minimal, only flag recurring items
   let compTrendContext = '';
   if (kpiData?.compTrends && kpiData.compTrends.problemItems.length > 0) {
     const t = kpiData.compTrends;
-    const lines = t.problemItems.map(item => {
-      const reasonStr = item.topReasons.length > 0 ? ` (${item.topReasons[0]})` : '';
-      return `  ${item.itemName}: comped ${item.compCount}x over ${item.totalNights} of last ${t.activeDays} nights (${item.compRate}% comp rate)${reasonStr}`;
-    });
-    compTrendContext = `\n\nCOMP TREND DATA (last ${t.activeDays} nights):
-Avg daily comp rate: ${t.avgDailyCompPct}% ($${t.avgDailyCompTotal.toLocaleString()}/night)
-Recurring problem items:
-${lines.join('\n')}`;
+    // Only include top 3 recurring items as brief notes
+    const top3 = t.problemItems.slice(0, 3);
+    const lines = top3.map(item =>
+      `  ${item.itemName}: ${item.compRate}% comp rate over ${t.activeDays} nights`
+    );
+    compTrendContext = `\nRecurring comp items (background context only — do NOT list these in output):\n${lines.join('\n')}`;
   }
 
   const kpiContext = hasFullKpi
@@ -141,14 +129,16 @@ KITCHEN
 1 sentence: kitchen notes or "No notes reported."
 
 ACTION ITEMS
-Top 2-3 issues flagged tonight. Each on its own line, one sentence. Only flag something from COMP TREND DATA if tonight's comp matches an ongoing pattern (e.g. "Bavette comped again — 11% comp rate over 14 nights, recurring grill issue").
+• Top operational issue flagged tonight (service, staffing, kitchen, guest complaint, etc.)
+• Another issue if applicable
+• Max 3 items — cover the MOST IMPORTANT issues across all areas, not just comps
 
 RULES:
 - Use ONLY the section headers above
-- ALL sections use plain sentences — NO bullets, dashes, or list markers
-- ACTION ITEMS: each item on its own line, no dashes or bullets
+- REVENUE & COMPS, GUEST, and KITCHEN use plain sentences — no bullets
+- ACTION ITEMS: each item starts with • (bullet character) on its own line. Max 3 items, one sentence each.
+- ACTION ITEMS must cover the top operational issues — service flags, kitchen problems, staffing gaps, guest complaints, facility issues. Comps are already covered in REVENUE & COMPS so do NOT repeat comp details in action items unless there is a specific recurring pattern that needs manager attention.
 - REVENUE & COMPS: keep it brief — total comps, comp %, top 1 reason by dollar amount. Do NOT list every comp detail or every server's comps.
-- ACTION ITEMS: only flag the top issues that need follow-up. Only reference historical trend data when tonight has a comp that matches a known recurring pattern. Do NOT dump all trend data.
 - If KPI DATA is provided, use those numbers
 - If no KPI DATA, use numbers from manager notes
 - NEVER compare manager-reported numbers against KPI data

@@ -328,24 +328,37 @@ export async function fetchNightlyReport(
     )),
 
     // 5: Discounts/Comps Summary - combines check-level and item-level comps
+    // Falls back to tipsee_check_items.void_reason when check-level reason is empty
     timed('5:discounts', pool.query(
       `WITH check_comps AS (
         SELECT
-          COALESCE(NULLIF(voidcomp_reason_text, ''), 'Unknown') as reason,
-          id as check_id,
-          comp_total as amount
-        FROM public.tipsee_checks
-        WHERE location_uuid = $1 AND trading_day = $2 AND comp_total > 0
+          COALESCE(
+            NULLIF(c.voidcomp_reason_text, ''),
+            (SELECT NULLIF(TRIM(ci.void_reason), '') FROM public.tipsee_check_items ci
+             WHERE ci.check_id = c.id AND ci.comp_total > 0 AND ci.void_reason IS NOT NULL
+               AND TRIM(ci.void_reason) != '' LIMIT 1),
+            'Unknown'
+          ) as reason,
+          c.id as check_id,
+          c.comp_total as amount
+        FROM public.tipsee_checks c
+        WHERE c.location_uuid = $1 AND c.trading_day = $2 AND c.comp_total > 0
       ),
       item_comps AS (
         SELECT
-          COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason,
+          COALESCE(
+            NULLIF(c.voidcomp_reason_text, ''),
+            (SELECT NULLIF(TRIM(ci2.void_reason), '') FROM public.tipsee_check_items ci2
+             WHERE ci2.check_id = c.id AND ci2.comp_total > 0 AND ci2.void_reason IS NOT NULL
+               AND TRIM(ci2.void_reason) != '' LIMIT 1),
+            'Unknown'
+          ) as reason,
           ci.check_id,
           SUM(ci.comp_total) as amount
         FROM public.tipsee_check_items ci
         JOIN public.tipsee_checks c ON ci.check_id = c.id
         WHERE c.location_uuid = $1 AND c.trading_day = $2 AND ci.comp_total > 0
-        GROUP BY c.voidcomp_reason_text, ci.check_id
+        GROUP BY c.voidcomp_reason_text, c.id, ci.check_id
       ),
       all_comps AS (
         SELECT DISTINCT ON (COALESCE(ic.check_id, cc.check_id))
@@ -384,7 +397,13 @@ export async function fetchNightlyReport(
         c.employee_name as server,
         GREATEST(c.comp_total, COALESCE(ict.total, 0)) as comp_total,
         c.revenue_total + GREATEST(c.comp_total, COALESCE(ict.total, 0)) as check_total,
-        COALESCE(NULLIF(c.voidcomp_reason_text, ''), 'Unknown') as reason,
+        COALESCE(
+          NULLIF(c.voidcomp_reason_text, ''),
+          (SELECT NULLIF(TRIM(ci.void_reason), '') FROM public.tipsee_check_items ci
+           WHERE ci.check_id = c.id AND ci.comp_total > 0 AND ci.void_reason IS NOT NULL
+             AND TRIM(ci.void_reason) != '' LIMIT 1),
+          'Unknown'
+        ) as reason,
         bp.cc_name as cardholder_name
       FROM public.tipsee_checks c
       LEFT JOIN item_comp_totals ict ON ict.check_id = c.id
@@ -1409,13 +1428,21 @@ export async function fetchCompsByReason(
   const pool = getTipseePool();
 
   const result = await pool.query(
-    `SELECT
-      COALESCE(NULLIF(TRIM(voidcomp_reason_text), ''), 'No Reason') as reason,
-      COUNT(*)::int as count,
-      COALESCE(SUM(comp_total), 0) as total
-    FROM public.tipsee_checks
-    WHERE location_uuid = ANY($1) AND trading_day = $2 AND comp_total > 0
-    GROUP BY COALESCE(NULLIF(TRIM(voidcomp_reason_text), ''), 'No Reason')
+    `SELECT reason, COUNT(*)::int as count, COALESCE(SUM(comp_total), 0) as total
+    FROM (
+      SELECT
+        COALESCE(
+          NULLIF(TRIM(c.voidcomp_reason_text), ''),
+          (SELECT NULLIF(TRIM(ci.void_reason), '') FROM public.tipsee_check_items ci
+           WHERE ci.check_id = c.id AND ci.comp_total > 0 AND ci.void_reason IS NOT NULL
+             AND TRIM(ci.void_reason) != '' LIMIT 1),
+          'No Reason'
+        ) as reason,
+        c.comp_total
+      FROM public.tipsee_checks c
+      WHERE c.location_uuid = ANY($1) AND c.trading_day = $2 AND c.comp_total > 0
+    ) sub
+    GROUP BY reason
     ORDER BY total DESC`,
     [locationUuids, date]
   );
@@ -1466,7 +1493,13 @@ export async function fetchCompDetails(
           WHERE ci.check_id = c.id AND ci.comp_total > 0
         ), 0)) as comp_total,
         c.revenue_total + GREATEST(c.comp_total, 0) as check_total,
-        COALESCE(NULLIF(TRIM(c.voidcomp_reason_text), ''), 'No Reason') as reason
+        COALESCE(
+          NULLIF(TRIM(c.voidcomp_reason_text), ''),
+          (SELECT NULLIF(TRIM(ci.void_reason), '') FROM public.tipsee_check_items ci
+           WHERE ci.check_id = c.id AND ci.comp_total > 0 AND ci.void_reason IS NOT NULL
+             AND TRIM(ci.void_reason) != '' LIMIT 1),
+          'No Reason'
+        ) as reason
       FROM public.tipsee_checks c
       WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
         AND (c.comp_total > 0 OR EXISTS (
@@ -1621,15 +1654,23 @@ export async function fetchCompsByReasonForRange(
   const pool = getTipseePool();
 
   const result = await pool.query(
-    `SELECT
-      COALESCE(NULLIF(TRIM(voidcomp_reason_text), ''), 'No Reason') as reason,
-      COUNT(*)::int as count,
-      COALESCE(SUM(comp_total), 0) as total
-    FROM public.tipsee_checks
-    WHERE location_uuid = ANY($1)
-      AND trading_day >= $2 AND trading_day <= $3
-      AND comp_total > 0
-    GROUP BY COALESCE(NULLIF(TRIM(voidcomp_reason_text), ''), 'No Reason')
+    `SELECT reason, COUNT(*)::int as count, COALESCE(SUM(comp_total), 0) as total
+    FROM (
+      SELECT
+        COALESCE(
+          NULLIF(TRIM(c.voidcomp_reason_text), ''),
+          (SELECT NULLIF(TRIM(ci.void_reason), '') FROM public.tipsee_check_items ci
+           WHERE ci.check_id = c.id AND ci.comp_total > 0 AND ci.void_reason IS NOT NULL
+             AND TRIM(ci.void_reason) != '' LIMIT 1),
+          'No Reason'
+        ) as reason,
+        c.comp_total
+      FROM public.tipsee_checks c
+      WHERE c.location_uuid = ANY($1)
+        AND c.trading_day >= $2 AND c.trading_day <= $3
+        AND c.comp_total > 0
+    ) sub
+    GROUP BY reason
     ORDER BY total DESC`,
     [locationUuids, startDate, endDate]
   );
@@ -1811,7 +1852,13 @@ export async function fetchCompExceptions(
         c.guest_count as covers,
         GREATEST(c.comp_total, COALESCE(item_comps.total, 0)) as comp_total,
         c.revenue_total as check_total,
-        COALESCE(NULLIF(c.voidcomp_reason_text, ''), '') as reason
+        COALESCE(
+          NULLIF(c.voidcomp_reason_text, ''),
+          (SELECT NULLIF(TRIM(ci.void_reason), '') FROM public.tipsee_check_items ci
+           WHERE ci.check_id = c.id AND ci.comp_total > 0 AND ci.void_reason IS NOT NULL
+             AND TRIM(ci.void_reason) != '' LIMIT 1),
+          ''
+        ) as reason
       FROM public.tipsee_checks c
       LEFT JOIN LATERAL (
         SELECT SUM(comp_total) as total

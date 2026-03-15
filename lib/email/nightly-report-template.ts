@@ -71,8 +71,9 @@ function formatNarrative(raw: string): string {
   // Strip the leading header line if present (e.g. "NIGHTLY OPERATING REPORT Delilah Dallas — ...")
   let text = raw.replace(/^NIGHTLY OPERATING REPORT[^\n]*\n?/i, '').trim();
 
-  // Strip the KPI header line (Revenue: $X Covers: Y ...)
-  text = text.replace(/^Revenue:\s*\$[\d,.]+.*?---\s*/i, '').trim();
+  // Strip the multi-line KPI header block (Revenue: $X ... --- )
+  text = text.replace(/^Delilah[^\n]*\n?/i, '').trim();
+  text = text.replace(/^Revenue:[\s\S]*?---\s*/i, '').trim();
 
   // Known section headers
   const sectionPattern = /\b(REVENUE\s*&\s*COMPS|LABOR|GUEST|KITCHEN|COACHING|ENTERTAINMENT|CULINARY|ACTION\s*ITEMS|INCIDENTS?)\b/g;
@@ -118,7 +119,8 @@ function formatNarrative(raw: string): string {
           bullets.map((b) => `<li style="margin-bottom: 2px; font-size: 11px; color: ${COLORS.textMuted};">${b.trim()}</li>`).join('') +
           '</ul>';
       } else {
-        body = `<span style="font-size: 11px; color: ${COLORS.textMuted};">${body}</span>`;
+        // Convert newlines to <br/> so action items on separate lines render correctly
+        body = `<span style="font-size: 11px; color: ${COLORS.textMuted};">${body.replace(/\n/g, '<br/>')}</span>`;
       }
 
       if (p.heading) {

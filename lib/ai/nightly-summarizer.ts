@@ -61,12 +61,14 @@ async function fetchManagerEmailNarratives(
     .select('venue_id, closing_narrative')
     .in('venue_id', venueIds)
     .eq('business_date', businessDate)
-    .not('closing_narrative', 'is', null);
+    .not('closing_narrative', 'is', null)
+    .order('received_at', { ascending: true });
 
   if (error || !data) return map;
 
   for (const row of data) {
-    if (row.closing_narrative?.trim()) {
+    if (row.closing_narrative?.trim() && !map.has(row.venue_id)) {
+      // Use the first (earliest) narrative per venue — skip duplicates from multiple shift emails
       map.set(row.venue_id, row.closing_narrative.trim());
     }
   }
