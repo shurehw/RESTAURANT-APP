@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 interface CheckSummary {
   id: string;
   table_name: string;
+  name?: string;
   employee_name: string;
   guest_count: number;
   sub_total: number;
@@ -263,7 +264,7 @@ export function CheckListSheet({
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <Receipt className="h-4 w-4" />
-              Checks
+              Guest Ledger
               {!loading && (
                 <Badge variant="default" className="text-xs">
                   {hasActiveFilters ? `${totals.count} of ${total}` : `${checks.length} of ${total}`}
@@ -383,24 +384,26 @@ export function CheckListSheet({
             </div>
           )}
 
-          {!loading && filtered.map(check => (
+          {!loading && filtered.map(check => {
+            const isSimphony = check.id.startsWith('simphony-');
+            const displayName = check.employee_name || check.name || 'Unknown';
+            return (
             <button
               key={check.id}
-              onClick={() => onSelectCheck(check.id)}
-              className="w-full text-left px-3 py-2.5 rounded-md hover:bg-muted/50 active:bg-muted transition-colors flex items-center gap-3 border-b border-border/50 last:border-0"
+              onClick={() => !isSimphony && onSelectCheck(check.id)}
+              className={`w-full text-left px-3 py-2.5 rounded-md transition-colors flex items-center gap-3 border-b border-border/50 last:border-0 ${isSimphony ? 'cursor-default' : 'hover:bg-muted/50 active:bg-muted'}`}
             >
               {/* Left: time + table */}
               <div className="min-w-[60px]">
-                <div className="text-xs font-medium">{fmtTime(check.open_time)}</div>
-                <div className="text-[11px] text-muted-foreground">{check.table_name}</div>
+                <div className="text-xs font-medium">{isSimphony ? check.table_name || '—' : fmtTime(check.open_time)}</div>
+                {!isSimphony && <div className="text-[11px] text-muted-foreground">{check.table_name}</div>}
               </div>
 
-              {/* Center: server + covers */}
+              {/* Center: server/name + covers */}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{check.employee_name}</div>
+                <div className="text-sm font-medium truncate">{displayName}</div>
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <Users className="h-3 w-3" />
-                  {check.guest_count}
+                  {!isSimphony && <><Users className="h-3 w-3" />{check.guest_count}</>}
                   {check.comp_total > 0 && (
                     <span className="text-red-400">comp {fmt(check.comp_total)}</span>
                   )}
@@ -421,7 +424,8 @@ export function CheckListSheet({
                 )}
               </div>
             </button>
-          ))}
+            );
+          })}
 
           {/* Load more */}
           {!loading && hasMore && !allLoaded && (

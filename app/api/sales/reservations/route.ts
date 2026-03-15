@@ -13,7 +13,9 @@ import { getTipseeMappingForVenue } from '@/lib/database/sales-pace';
 import {
   fetchReservationsForDate,
   fetchChecksForDate,
+  fetchSimphonyChecksForDate,
   fetchSrVenueIdFromTipsee,
+  getPosTypeForLocations,
   type ReservationSummary,
 } from '@/lib/database/tipsee';
 import {
@@ -101,11 +103,16 @@ export async function GET(request: NextRequest) {
         : fetchReservationsForDate(locationUuids, date);
 
     // Fetch reservations + checks in parallel (checks require TipSee mapping)
+    const checkFetcher = async () => {
+      if (locationUuids.length === 0) return { checks: [] as any[], total: 0 };
+      const posType = await getPosTypeForLocations(locationUuids);
+      const fetcher = posType === 'simphony' ? fetchSimphonyChecksForDate : fetchChecksForDate;
+      return fetcher(locationUuids, date, 0).catch(() => ({ checks: [] as any[], total: 0 }));
+    };
+
     const [rezData, checkData] = await Promise.all([
       reservationFetch,
-      locationUuids.length > 0
-        ? fetchChecksForDate(locationUuids, date, 0).catch(() => ({ checks: [] as any[], total: 0 }))
-        : Promise.resolve({ checks: [] as any[], total: 0 }),
+      checkFetcher(),
     ]);
 
     const { reservations, total } = rezData;

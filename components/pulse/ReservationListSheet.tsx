@@ -303,7 +303,7 @@ export function ReservationListSheet({
         <SheetHeader className="px-4 pt-4 pb-2">
           <SheetTitle className="flex items-center gap-2">
             <Receipt className="h-4 w-4" />
-            Checks
+            Guest Ledger
             {!loading && (
               <Badge variant="default" className="text-xs">
                 {hasActiveFilters || search ? `${visibleCount} of ${totalRaw}` : totalRaw}
@@ -329,7 +329,7 @@ export function ReservationListSheet({
             >
               {t === 'all' ? `All (${reservations.length + checks.length})`
                 : t === 'reservations' ? `Resos (${reservations.length})`
-                : `Checks (${checks.length})`}
+                : `Ledger (${checks.length})`}
             </button>
           ))}
         </div>

@@ -18,9 +18,28 @@ const DEFAULT_LOCATION = 'aeb1790a-1ce9-4d6c-b1bc-7ef618294dc4';
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const date = searchParams.get('date');
-  const location = searchParams.get('location') || DEFAULT_LOCATION;
+  let location = searchParams.get('location') || '';
+  const venueIdParam = searchParams.get('venue_id');
   const action = searchParams.get('action');
   const forceLive = searchParams.get('force_live') === 'true'; // For debugging
+
+  // Resolve venue_id → tipsee location UUID if provided
+  if (venueIdParam && !searchParams.get('location')) {
+    const supabase = getServiceClient();
+    const { data: mapping } = await (supabase as any)
+      .from('venue_tipsee_mapping')
+      .select('tipsee_location_uuid')
+      .eq('venue_id', venueIdParam)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (mapping?.tipsee_location_uuid) {
+      location = mapping.tipsee_location_uuid;
+    } else {
+      return NextResponse.json({ error: 'No TipSee mapping for venue' }, { status: 404 });
+    }
+  }
+
+  if (!location) location = DEFAULT_LOCATION;
 
   try {
     // Handle locations list request

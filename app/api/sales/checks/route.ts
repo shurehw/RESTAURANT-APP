@@ -11,6 +11,7 @@ import { cookies } from 'next/headers';
 import { getTipseeMappingForVenue } from '@/lib/database/sales-pace';
 import {
   fetchChecksForDate,
+  fetchSimphonyChecksForDate,
   fetchCheckDetail,
   getPosTypeForLocations,
 } from '@/lib/database/tipsee';
@@ -75,26 +76,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const posType = await getPosTypeForLocations(locationUuids);
-    if (posType === 'simphony') {
-      return NextResponse.json({
-        checks: [],
-        pos_type: 'simphony',
-        count: 0,
-        total: 0,
-        message: 'Individual check data is not available for Simphony POS venues',
-      });
-    }
-
     const rawLimit = toSafeInt(request.nextUrl.searchParams.get('limit'), 50);
     const limit = rawLimit === 0 ? 0 : Math.max(1, Math.min(rawLimit, 200)); // 0 = fetch all
     const rawOffset = toSafeInt(request.nextUrl.searchParams.get('offset'), 0);
     const offset = limit === 0 ? 0 : Math.max(0, rawOffset);
 
-    const { checks, total } = await fetchChecksForDate(locationUuids, date, limit, offset);
+    const posType = await getPosTypeForLocations(locationUuids);
+    const fetcher = posType === 'simphony'
+      ? fetchSimphonyChecksForDate
+      : fetchChecksForDate;
+
+    const { checks, total } = await fetcher(locationUuids, date, limit, offset);
     return NextResponse.json({
       checks,
-      pos_type: 'upserve',
+      pos_type: posType,
       count: checks.length,
       total,
       limit,

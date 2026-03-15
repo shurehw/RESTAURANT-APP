@@ -2330,6 +2330,75 @@ export async function fetchChecksForDate(
   return { checks, total: allChecks.length };
 }
 
+/**
+ * Fetch Simphony "checks" by grouping tipsee_simphony_sales_items by check_number.
+ * Simphony doesn't provide per-check detail in the same way Upserve does,
+ * but item-level data is available grouped by check_number.
+ * No server/table data available — Simphony limitation.
+ */
+export async function fetchSimphonyChecksForDate(
+  locationUuids: string[],
+  date: string,
+  limit = 50,
+  offset = 0
+): Promise<{ checks: CheckSummary[]; total: number }> {
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `SELECT
+      i.check_number::text as id,
+      i.check_number,
+      COALESCE(SUM(i.quantity), 0) as item_count,
+      COALESCE(SUM(i.sales_total), 0) as gross_sales,
+      COALESCE(SUM(i.sales_total) + SUM(i.discount_total), 0) as net_sales,
+      ABS(COALESCE(SUM(i.discount_total), 0)) as comp_total,
+      COALESCE(SUM(CASE
+        WHEN LOWER(COALESCE(m.major_group_name, '')) IN ('beverage', 'beverages', 'bar', 'drinks', 'wine', 'beer', 'liquor')
+          OR i.revenue_center_number = 2
+        THEN i.sales_total ELSE 0 END), 0) as bev_sales,
+      COALESCE(SUM(CASE
+        WHEN LOWER(COALESCE(m.major_group_name, '')) NOT IN ('beverage', 'beverages', 'bar', 'drinks', 'wine', 'beer', 'liquor')
+          AND i.revenue_center_number != 2
+        THEN i.sales_total ELSE 0 END), 0) as food_sales,
+      MIN(i.revenue_center_number) as rvc_number
+    FROM public.tipsee_simphony_sales_items i
+    LEFT JOIN public.tipsee_simphony_menu_dimensions m
+      ON m.location_uuid = i.location_uuid AND m.menu_item_number = i.menu_item_number
+    WHERE i.location_uuid = ANY($1) AND i.trading_day = $2
+      AND i.check_number IS NOT NULL
+    GROUP BY i.check_number
+    ORDER BY COALESCE(SUM(i.sales_total), 0) DESC`,
+    [locationUuids, date]
+  );
+
+  const allChecks: CheckSummary[] = result.rows.map(row => {
+    const r = cleanRow(row);
+    const rvcNum = r.rvc_number;
+    const tableName = rvcNum === 2 ? 'Bar' : rvcNum ? `RVC ${rvcNum}` : '';
+    return {
+      id: `simphony-${r.id}`,
+      table_name: tableName,
+      name: `Check #${r.check_number}`,
+      employee_name: '',
+      guest_count: 0,
+      sub_total: r.gross_sales || 0,
+      revenue_total: r.net_sales || 0,
+      comp_total: r.comp_total || 0,
+      void_total: 0,
+      open_time: `${date}T12:00:00`,
+      close_time: `${date}T23:59:00`,
+      is_open: false,
+      payment_total: r.net_sales || 0,
+      tip_total: 0,
+    } as CheckSummary;
+  });
+
+  const total = allChecks.length;
+  const checks = limit > 0 ? allChecks.slice(offset, offset + limit) : allChecks;
+
+  return { checks, total };
+}
+
 export interface CheckItemDetail {
   name: string;
   category: string;

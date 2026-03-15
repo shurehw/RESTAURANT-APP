@@ -1585,7 +1585,7 @@ export default function LivePulsePage() {
             onClick={() => setServiceSheetOpen(true)}
           >
             <Receipt className="h-4 w-4 mr-1.5" />
-            Checks
+            Guest Ledger
           </Button>
         )}
       </div>

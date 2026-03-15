@@ -12,7 +12,9 @@ import { getTipseeMappingForVenue, getVenueTimezone, getSalesPaceSettings } from
 import {
   fetchReservationsAllStatuses,
   fetchChecksForDate,
+  fetchSimphonyChecksForDate,
   fetchTableCapacityLookback,
+  getPosTypeForLocations,
   type ReservationSlim,
   type CheckSummary,
 } from '@/lib/database/tipsee';
@@ -196,10 +198,14 @@ export async function GET(request: NextRequest) {
     const dateObj = new Date(date + 'T12:00:00');
     const dow = dateObj.getDay();
 
+    // Determine POS type to pick the right check fetcher
+    const posType = await getPosTypeForLocations(locationUuids);
+    const checkFetcher = posType === 'simphony' ? fetchSimphonyChecksForDate : fetchChecksForDate;
+
     // Parallel data fetch
     const [rezData, checkData, capacityMap, venueTz, paceSettings] = await Promise.all([
       fetchReservationsAllStatuses(locationUuids, date),
-      fetchChecksForDate(locationUuids, date, 0).catch(() => ({ checks: [] as CheckSummary[], total: 0 })),
+      checkFetcher(locationUuids, date, 0).catch(() => ({ checks: [] as CheckSummary[], total: 0 })),
       fetchTableCapacityLookback(locationUuids, dow, 90),
       getVenueTimezone(venueId),
       getSalesPaceSettings(venueId),
