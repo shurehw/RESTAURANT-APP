@@ -33,12 +33,15 @@ export async function generateNarrativeFromNotes(
     .map(([key, value]) => `${key.toUpperCase().replace(/_/g, ' ')}: ${value}`)
     .join('\n\n');
 
-  const kpiContext = kpiData
-    ? `KPI DATA:
-Net Sales: $${Math.round(kpiData.netSales).toLocaleString()}
-Covers: ${kpiData.covers}
-Total Comps: $${Math.round(kpiData.totalComps).toLocaleString()}
-Labor Cost: $${Math.round(kpiData.laborCost).toLocaleString()} (${kpiData.laborPct.toFixed(1)}%)
+  // Only include KPI data when it's meaningful (non-zero sales)
+  // Avero venues (Vegas, Harriets) have limited KPI data — manager notes are the primary source
+  const hasFullKpi = kpiData && kpiData.netSales > 0 && kpiData.covers > 0;
+  const kpiContext = hasFullKpi
+    ? `KPI DATA (full-day totals from POS):
+Net Sales: $${Math.round(kpiData!.netSales).toLocaleString()}
+Covers: ${kpiData!.covers}
+Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()}
+${kpiData!.laborCost > 0 ? `Labor Cost: $${Math.round(kpiData!.laborCost).toLocaleString()} (${kpiData!.laborPct.toFixed(1)}%)` : ''}
 `
     : '';
 
@@ -73,9 +76,11 @@ ACTION ITEMS
 RULES:
 - Use ONLY the section headers above (REVENUE & COMPS, GUEST, KITCHEN, ACTION ITEMS)
 - Each bullet MUST start with the bullet character followed by a space
-- KPI DATA is the authoritative source for revenue, covers, comps, and labor — use those numbers in REVENUE & COMPS
-- Manager notes may cover only ONE shift (e.g., dinner only) at venues that run multiple dayparts (brunch + dinner). Do NOT compare or flag discrepancies between manager-reported numbers and KPI data — KPI data is full-day and always correct
-- If the manager notes mention revenue or cover numbers, ignore them in favor of KPI data
+- If KPI DATA is provided, use those numbers for revenue/covers/comps/labor in REVENUE & COMPS
+- If no KPI DATA is provided, use any revenue/cover numbers from the manager notes
+- NEVER compare manager-reported numbers against KPI data. NEVER flag discrepancies. NEVER suggest "reconciling" numbers. They come from different sources and shifts — both are valid.
+- NEVER put "reconcile", "discrepancy", "variance", or "investigate reporting" in ACTION ITEMS
+- If labor cost is $0 or not provided, do not mention labor at all
 - Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
 - In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
 - Names in SPENDERS OVER sections that are not also in PEOPLE WE KNOW are likely staff names — do NOT list them as notable guests unless they appear in PEOPLE WE KNOW
