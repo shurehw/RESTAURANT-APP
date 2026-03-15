@@ -5,11 +5,13 @@
  * Lets installed-app users pull the final submission for any venue/date.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, Loader2, FileX } from 'lucide-react';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { AttestationReadView } from '@/components/pwa/AttestationReadView';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type {
   NightlyAttestation,
   CompResolution,
@@ -125,7 +127,10 @@ export default function PwaAttestationPage() {
   }, [fetchAttestation]);
 
   const venueName = selectedVenue?.name ?? 'Select Venue';
-  const dateInputRef = useRef<HTMLInputElement>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+
+  // Convert YYYY-MM-DD string ↔ Date for the Calendar component
+  const selectedDate = new Date(date + 'T00:00:00');
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -134,23 +139,34 @@ export default function PwaAttestationPage() {
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => shiftDate(d, -1))}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <button
-          type="button"
-          onClick={() => dateInputRef.current?.showPicker?.()}
-          className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md hover:bg-muted transition-colors relative"
-        >
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <span>{formatDateShort(date)}</span>
-          {/* Hidden native date input — only opens on tap */}
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={date}
-            onChange={(e) => e.target.value && setDate(e.target.value)}
-            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-            tabIndex={-1}
-          />
-        </button>
+
+        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md hover:bg-muted transition-colors"
+            >
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <span>{formatDateShort(date)}</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(day) => {
+                if (day) {
+                  const iso = day.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                  setDate(iso);
+                  setCalendarOpen(false);
+                }
+              }}
+              defaultMonth={selectedDate}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => shiftDate(d, 1))}>
           <ChevronRight className="h-5 w-5" />
         </Button>
