@@ -1,18 +1,18 @@
 export const dynamic = 'force-dynamic';
 
 /**
- * Floor Plan — Daily Operations
- * View floor plan with staff assignments and table status.
- * For editing the layout (tables, sections, labels), use the builder in Settings.
+ * Floor Plan Builder — Settings
+ * Design and manage floor plan layouts: add/edit tables, sections, labels.
+ * For daily staff assignments, use the Floor Plan ops page (/floor-plan).
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { FloorPlanOps } from '@/components/floor-plan/FloorPlanOps';
+import { FloorPlanBuilder } from '@/components/floor-plan/FloorPlanBuilder';
 import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues } from '@/lib/tenant';
 
-export default async function FloorPlanPage({
+export default async function FloorPlanBuilderPage({
   searchParams,
 }: {
   searchParams: Promise<{ venue?: string }>;
@@ -21,7 +21,6 @@ export default async function FloorPlanPage({
   const user = await requireUser();
   const { venueIds } = await getUserOrgAndVenues(user.id);
 
-  // Get all active venues (auth handled by dashboard layout)
   let query = supabase
     .from('venues')
     .select('id, name')
@@ -36,17 +35,13 @@ export default async function FloorPlanPage({
   }
 
   const params = await searchParams;
-
-  // Keep venue in URL so client knows which venue is active
   if (!params.venue) {
-    redirect(`/floor-plan?venue=${venues[0].id}`);
+    redirect(`/admin/floor-plan-builder?venue=${venues[0].id}`);
   }
-
-  const venueId = params.venue;
 
   return (
     <div className="h-full">
-      <FloorPlanOps venues={venues} initialVenueId={venueId} />
+      <FloorPlanBuilder venues={venues} initialVenueId={params.venue} />
     </div>
   );
 }

@@ -8,6 +8,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1379,6 +1380,12 @@ export default function NightlyReportPage() {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
+            <Link href="/reports/weekly">
+              <Button variant="outline" size="sm">
+                <Calendar className="h-4 w-4 mr-1.5" />
+                Weekly Agenda
+              </Button>
+            </Link>
             {selectedVenue && !isAllVenues && viewMode === 'nightly' && (
               <Button
                 variant="outline"

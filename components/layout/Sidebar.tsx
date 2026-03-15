@@ -1,18 +1,22 @@
 /**
  * components/layout/Sidebar.tsx
- * Sidebar navigation with user profile and logout
+ * Desktop sidebar navigation — mirrors MobileSidebar structure
  */
 
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { LogoutButton } from './LogoutButton';
 import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
+import { getNavPermissions, type UserRole } from '@/lib/nav/role-permissions';
 
 interface SidebarProps {
   user: User;
+  userRole: UserRole;
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, userRole }: SidebarProps) {
+  const permissions = getNavPermissions(userRole);
+
   return (
     <aside className="w-64 border-r bg-card">
       <div className="flex h-16 items-center px-6 border-b">
@@ -20,30 +24,85 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       <nav className="p-4 space-y-1">
+        {/* Primary ops */}
         <NavLink href="/">Home</NavLink>
-        <NavLink href="/reports/nightly">Nightly Report</NavLink>
-        <NavLink href="/labor/briefing">Daily Briefing</NavLink>
-        <NavLink href="/preshift">Preshift</NavLink>
-        <NavLink href="/control-plane/attestations">Attestations</NavLink>
-        <NavLink href="/reports/health">Venue Health</NavLink>
-        <NavSection title="Sales">
-          <NavLink href="/sales/pace">Live Pulse</NavLink>
-          <NavLink href="/sales/forecasts">Forecasts</NavLink>
-        </NavSection>
-        <NavSection title="Labor">
-          <NavLink href="/labor/requirements">Requirements</NavLink>
-          <NavLink href="/labor/schedule">Schedule</NavLink>
-          <NavLink href="/labor/schedule/compare">Compare</NavLink>
+        {permissions.nightlyReport && (
+          <NavLink href="/reports/nightly">Nightly Report</NavLink>
+        )}
+        {permissions.preshift && (
+          <NavLink href="/preshift">Preshift</NavLink>
+        )}
+        {permissions.laborSchedule && (
           <NavLink href="/floor-plan">Floor Plan</NavLink>
-        </NavSection>
-        <NavSection title="COGS">
-          <NavLink href="/invoices">Invoices</NavLink>
-          <NavLink href="/inventory">Inventory</NavLink>
-          <NavLink href="/recipes">Recipes</NavLink>
-        </NavSection>
+        )}
+        {permissions.oversight && (
+          <NavLink href="/oversight">Oversight</NavLink>
+        )}
+
+        {/* Revenue */}
+        {(permissions.forecasts || permissions.reservations) && (
+          <NavSection title="Revenue">
+            {permissions.forecasts && (
+              <NavLink href="/sales/forecasts">Forecasts</NavLink>
+            )}
+            {permissions.reservations && (
+              <NavLink href="/sales/reservations">Reservations</NavLink>
+            )}
+            {permissions.agents && (
+              <NavLink href="/admin/rez-yield-agent">Revenue Agent</NavLink>
+            )}
+          </NavSection>
+        )}
+
+        {/* Labor */}
+        {(permissions.laborRequirements || permissions.laborSchedule) && (
+          <NavSection title="Labor">
+            {permissions.laborRequirements && (
+              <NavLink href="/labor/requirements">Requirements</NavLink>
+            )}
+            {permissions.laborSchedule && (
+              <NavLink href="/labor/schedule">Schedule</NavLink>
+            )}
+            {permissions.laborSchedule && (
+              <NavLink href="/labor/agent">Agent</NavLink>
+            )}
+            {permissions.laborSchedule && (
+              <NavLink href="/labor/efficiency">Efficiency</NavLink>
+            )}
+          </NavSection>
+        )}
+
+        {/* COGS */}
+        {(permissions.orders || permissions.recipes || permissions.inventory) && (
+          <NavSection title="COGS">
+            {permissions.orders && (
+              <NavLink href="/purchasing">Purchasing</NavLink>
+            )}
+            {permissions.recipes && (
+              <NavLink href="/menu">Menu</NavLink>
+            )}
+            {permissions.inventory && (
+              <NavLink href="/inventory">Inventory</NavLink>
+            )}
+            {permissions.budget && (
+              <NavLink href="/cost-reports">Cost Reports</NavLink>
+            )}
+            {permissions.agents && (
+              <NavLink href="/admin/menu-agent">Menu Agent</NavLink>
+            )}
+            {permissions.agents && (
+              <NavLink href="/admin/procurement-agent">Procurement Agent</NavLink>
+            )}
+          </NavSection>
+        )}
+
         <div className="border-t my-2"></div>
-        <NavLink href="/admin/settings">Settings</NavLink>
-        <NavLink href="/admin/mockups">Mockups Admin</NavLink>
+        {permissions.laborSchedule && (
+          <NavLink href="/admin/floor-plan-builder">Floor Plan Builder</NavLink>
+        )}
+        {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
+          <NavLink href="/admin/settings">Settings</NavLink>
+        )}
       </nav>
 
       <div className="absolute bottom-0 w-64 border-t p-4">

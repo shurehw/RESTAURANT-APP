@@ -5,27 +5,20 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import {
   ShoppingCart,
-  FileText,
-  Users,
-  Package,
   UtensilsCrossed,
   ClipboardList,
-  DollarSign,
   BarChart3,
-  Search,
   CalendarCheck,
   Calendar,
   Bot,
-  CheckSquare,
   Moon,
-  Music2,
   AlertTriangle,
-  Activity,
-  ShieldAlert,
+  ShieldCheck,
   Settings,
   LogOut,
-  Zap,
   LayoutGrid,
+  Warehouse,
+  PieChart,
 } from 'lucide-react';
 import { NavLink } from '@/components/layout/NavLink';
 import { KevaOSLogo } from '@/components/ui/KevaOSLogo';
@@ -136,24 +129,19 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
               Preshift
             </NavLink>
           )}
-          {permissions.attestations && (
-            <NavLink href="/control-plane/attestations" icon={<CheckSquare className="w-5 h-5" />}>
-              Attestations
+          {permissions.laborSchedule && (
+            <NavLink href="/floor-plan" icon={<LayoutGrid className="w-5 h-5" />}>
+              Floor Plan
             </NavLink>
           )}
-          {permissions.venueHealth && (
-            <NavLink href="/reports/health" icon={<Activity className="w-5 h-5" />}>
-              Venue Health
-            </NavLink>
-          )}
-          {permissions.managerIntelligence && (
-            <NavLink href="/admin/manager-intelligence" icon={<ShieldAlert className="w-5 h-5" />}>
-              Intelligence
+          {permissions.oversight && (
+            <NavLink href="/oversight" icon={<ShieldCheck className="w-5 h-5" />}>
+              Oversight
             </NavLink>
           )}
 
-          {(permissions.forecasts || permissions.reservations || permissions.entertainment) && (
-            <NavSection title="Sales">
+          {(permissions.forecasts || permissions.reservations) && (
+            <NavSection title="Revenue">
               {permissions.forecasts && (
                 <NavLink href="/sales/forecasts" icon={<BarChart3 className="w-5 h-5" />}>
                   Forecasts
@@ -164,9 +152,9 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
                   Reservations
                 </NavLink>
               )}
-              {permissions.entertainment && organizationSlug?.includes('hwood') && (
-                <NavLink href="/entertainment" icon={<Music2 className="w-5 h-5" />}>
-                  Entertainment
+              {permissions.agents && (
+                <NavLink href="/admin/rez-yield-agent" icon={<Bot className="w-5 h-5" />}>
+                  Revenue Agent
                 </NavLink>
               )}
             </NavSection>
@@ -185,13 +173,13 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
                 </NavLink>
               )}
               {permissions.laborSchedule && (
-                <NavLink href="/labor/schedule/compare" icon={<BarChart3 className="w-5 h-5" />}>
-                  Compare
+                <NavLink href="/labor/agent" icon={<Bot className="w-5 h-5" />}>
+                  Agent
                 </NavLink>
               )}
               {permissions.laborSchedule && (
-                <NavLink href="/floor-plan" icon={<LayoutGrid className="w-5 h-5" />}>
-                  Floor Plan
+                <NavLink href="/labor/efficiency" icon={<BarChart3 className="w-5 h-5" />}>
+                  Efficiency
                 </NavLink>
               )}
             </NavSection>
@@ -200,56 +188,44 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
           {(permissions.orders || permissions.invoices || permissions.vendors || permissions.products || permissions.recipes || permissions.inventory) && (
           <NavSection title="COGS">
             {permissions.orders && (
-              <NavLink href="/orders" icon={<ShoppingCart className="w-5 h-5" />}>
-                Orders
-              </NavLink>
-            )}
-            {permissions.invoices && (
-              <NavLink href="/invoices" icon={<FileText className="w-5 h-5" />}>
-                Invoices
-              </NavLink>
-            )}
-{permissions.vendors && (
-              <NavLink href="/vendors" icon={<Users className="w-5 h-5" />}>
-                Vendors
-              </NavLink>
-            )}
-            {permissions.products && (
-              <NavLink href="/products" icon={<Package className="w-5 h-5" />}>
-                Products
+              <NavLink href="/purchasing" icon={<ShoppingCart className="w-5 h-5" />}>
+                Purchasing
               </NavLink>
             )}
             {permissions.recipes && (
-              <NavLink href="/recipes" icon={<UtensilsCrossed className="w-5 h-5" />}>
-                Recipes
+              <NavLink href="/menu" icon={<UtensilsCrossed className="w-5 h-5" />}>
+                Menu
               </NavLink>
             )}
             {permissions.inventory && (
-              <NavLink href="/inventory" icon={<ClipboardList className="w-5 h-5" />}>
+              <NavLink href="/inventory" icon={<Warehouse className="w-5 h-5" />}>
                 Inventory
+              </NavLink>
+            )}
+            {permissions.budget && (
+              <NavLink href="/cost-reports" icon={<PieChart className="w-5 h-5" />}>
+                Cost Reports
+              </NavLink>
+            )}
+            {permissions.agents && (
+              <NavLink href="/admin/menu-agent" icon={<Bot className="w-5 h-5" />}>
+                Menu Agent
+              </NavLink>
+            )}
+            {permissions.agents && (
+              <NavLink href="/admin/procurement-agent" icon={<Bot className="w-5 h-5" />}>
+                Procurement Agent
               </NavLink>
             )}
           </NavSection>
           )}
 
-          {permissions.agents && (
-            <NavSection title="Agents">
-              <NavLink href="/admin/menu-agent" icon={<UtensilsCrossed className="w-5 h-5" />}>
-                Menu Agent
-              </NavLink>
-              <NavLink href="/admin/procurement-agent" icon={<ShoppingCart className="w-5 h-5" />}>
-                Procurement Agent
-              </NavLink>
-              <NavLink href="/admin/rez-yield-agent" icon={<CalendarCheck className="w-5 h-5" />}>
-                Revenue Agent
-              </NavLink>
-            </NavSection>
-          )}
-
           <div className="pt-4 mt-4 border-t border-keva-sage-500">
-            <NavLink href="/research" icon={<Search className="w-5 h-5" />}>
-              Research
-            </NavLink>
+            {permissions.laborSchedule && (
+              <NavLink href="/admin/floor-plan-builder" icon={<LayoutGrid className="w-5 h-5" />}>
+                Floor Plan Builder
+              </NavLink>
+            )}
             {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
               <NavLink href="/admin/settings" icon={<Settings className="w-5 h-5" />}>
                 Settings

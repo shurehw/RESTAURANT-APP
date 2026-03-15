@@ -44,8 +44,8 @@ export interface NavPermissions {
   // Agent Dashboards (admin-level)
   agents: boolean;
 
-  // Operator Intelligence (owner/director only — not visible to managers)
-  managerIntelligence: boolean;
+  // Oversight (director+ only — venue health, compliance, manager intelligence)
+  oversight: boolean;
 }
 
 /**
@@ -82,7 +82,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: true,
         entertainment: true,
         agents: true,
-        managerIntelligence: true,
+        oversight: true,
       };
 
     case 'gm':
@@ -112,7 +112,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: true,
         entertainment: true,
         agents: true,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'agm':
@@ -142,7 +142,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: true,
         entertainment: true,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'manager':
@@ -172,7 +172,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: false,
         entertainment: true,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'exec_chef':
@@ -202,7 +202,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: false,
         entertainment: false,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'sous_chef':
@@ -232,7 +232,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: false,
         entertainment: false,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'readonly':
@@ -262,7 +262,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: false,
         entertainment: true,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'pwa':
@@ -292,7 +292,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: false,
         entertainment: false,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     case 'onboarding':
@@ -323,7 +323,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         procurementSettings: false,
         entertainment: false,
         agents: false,
-        managerIntelligence: false,
+        oversight: false,
       };
 
     default:
