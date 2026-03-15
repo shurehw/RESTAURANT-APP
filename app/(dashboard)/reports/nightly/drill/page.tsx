@@ -92,15 +92,26 @@ const SECTION_TITLES: Record<string, string> = {
 
 const SECTION_SOURCE_TYPES: Record<string, string[]> = {
   comps: ['ai_comp_review', 'ai_drill_insight'],
-  servers: ['ai_server_coaching', 'ai_drill_insight'],
+  servers: ['ai_server_coaching', 'ai_server_score', 'ai_drill_insight'],
   labor: ['ai_drill_insight'],
   items: ['ai_drill_insight'],
   categories: ['ai_drill_insight'],
 };
 
+const SECTION_CATEGORIES: Record<string, string[]> = {
+  comps: ['violation'],
+  servers: ['training'],
+  labor: ['process'],
+  items: ['process'],
+  categories: ['process'],
+};
+
 function filterActionsBySection(actions: ActionItem[], section: string): ActionItem[] {
   const sourceTypes = SECTION_SOURCE_TYPES[section] || [];
-  return actions.filter(a => sourceTypes.includes(a.source_type));
+  const categories = SECTION_CATEGORIES[section] || [];
+  return actions.filter(a =>
+    sourceTypes.includes(a.source_type) || categories.includes(a.category)
+  );
 }
 
 const PRIORITY_STYLES = {
@@ -194,22 +205,57 @@ export default function DrillPage() {
     fetchData();
   }, [date, venueId, section]);
 
-  // Fetch existing Action Center items for this venue
+  // Fetch Action Center items, fall back to on-demand AI if none exist
   useEffect(() => {
     if (!venueId || !section) return;
 
     setActionsLoading(true);
     fetch(`/api/control-plane/actions?venue_id=${venueId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(res => {
-        if (res?.actions) {
-          const relevant = filterActionsBySection(res.actions, section);
-          setActions(relevant);
+      .then(async (res) => {
+        const existing = res?.actions ? filterActionsBySection(res.actions, section) : [];
+        if (existing.length > 0) {
+          setActions(existing);
+          setActionsLoading(false);
+          return;
         }
+
+        // No existing actions — generate on-demand if we have report data
+        if (!report) { setActionsLoading(false); return; }
+
+        const sectionData: Record<string, unknown> = { summary: report.summary };
+        if (section === 'comps') { sectionData.discounts = report.discounts; sectionData.detailedComps = report.detailedComps; }
+        else if (section === 'servers') { sectionData.servers = report.servers; sectionData.detailedComps = report.detailedComps; }
+        else if (section === 'items') { sectionData.menuItems = report.menuItems; }
+        else if (section === 'labor' && labor) { sectionData.labor = labor; }
+        else if (section === 'categories') { sectionData.salesByCategory = report.salesByCategory; }
+
+        try {
+          const aiRes = await fetch('/api/ai/drill-insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ section, venueName, date, venueId, data: sectionData }),
+          });
+          const aiData = aiRes.ok ? await aiRes.json() : null;
+          if (aiData?.insights?.length > 0) {
+            // Map AI insights to ActionItem shape for display
+            setActions(aiData.insights.map((ins: any, i: number) => ({
+              id: `ai-${i}`,
+              title: ins.pattern,
+              description: ins.detail,
+              action: ins.action,
+              priority: ins.severity === 'high' ? 'high' : ins.severity === 'medium' ? 'medium' : 'low',
+              category: 'ai_generated',
+              source_type: 'ai_drill_insight',
+              status: 'pending',
+            })));
+          }
+        } catch {}
+        setActionsLoading(false);
       })
-      .catch(() => {})
-      .finally(() => setActionsLoading(false));
-  }, [venueId, section]);
+      .catch(() => setActionsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [venueId, section, report, labor]);
 
   if (loading) {
     return (

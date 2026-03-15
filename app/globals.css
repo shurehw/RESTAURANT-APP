@@ -306,7 +306,7 @@
 
   .nav-link.active {
     @apply text-brass border-l-[3px] border-brass pl-[9px] font-semibold;
-    background-color: rgb(var(--color-brass) / 0.15);
+    background-color: rgba(212, 98, 43, 0.15);
   }
 
   .nav-link:not(.active) {
