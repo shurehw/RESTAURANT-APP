@@ -682,7 +682,7 @@
     <div class="confidential">KevaOS &middot; The Binyan Group &middot; Confidential &middot; 2026</div>
   </div>
 
-  <!-- 2: Every Restaurant Runs on Trust -->
+  <!-- 2: The Problem -->
   <div class="slide">
     <div class="slide-label">The Problem</div>
     <h2>Every Restaurant Runs on Trust.<br><span class="hl">Trust breaks. Every night.</span></h2>
@@ -713,7 +713,7 @@
     </div>
   </div>
 
-  <!-- 3: KevaOS Is an Enforcement Engine -->
+  <!-- 3: The Solution -->
   <div class="slide">
     <div class="slide-label">The Solution</div>
     <h2>KevaOS Is an Enforcement Engine</h2>
@@ -739,21 +739,22 @@
     </div>
   </div>
 
-  <!-- 4: System Architecture -->
+  <!-- 4: Architecture + Integrations -->
   <div class="slide">
     <div class="slide-label">Architecture</div>
     <h2>System Architecture</h2>
-    <p class="lead">Integrations &rarr; data lake &rarr; enforcement engine &rarr; action.</p>
+    <p class="lead">Plugs into what venues already run. No rip-and-replace.</p>
     <div class="moats" style="grid-template-columns: 1fr 1fr 1fr;">
       <div class="moat">
         <img src="/deck-assets/image-4-3.png" alt="" class="section-icon">
         <h3 class="hl">Input Layer</h3>
         <ul>
-          <li>Toast / Simphony / Upserve</li>
-          <li>7shifts (via TipSee)</li>
-          <li>SevenRooms / Tripleseat</li>
-          <li>Restaurant365</li>
-          <li>UniFi Protect (cameras)</li>
+          <li>Toast / Simphony / Upserve <span style="font-size:0.65rem;color:var(--green);">Live</span></li>
+          <li>7shifts via TipSee <span style="font-size:0.65rem;color:var(--green);">Live</span></li>
+          <li>SevenRooms / Tripleseat <span style="font-size:0.65rem;color:var(--green);">Live</span></li>
+          <li>Restaurant365 <span style="font-size:0.65rem;color:var(--green);">Live</span></li>
+          <li>UniFi Protect (cameras) <span style="font-size:0.65rem;color:var(--green);">Live</span></li>
+          <li>Square / Lightspeed <span style="font-size:0.65rem;color:var(--text-dim);">Ready</span></li>
         </ul>
       </div>
       <div class="moat">
@@ -780,7 +781,7 @@
         </ul>
       </div>
     </div>
-    <p style="margin-top: 1.25rem;"><strong>Fail-closed architecture.</strong> The fixed framework doesn't ask &mdash; it enforces.</p>
+    <p style="margin-top: 1.25rem;"><strong>Fail-closed architecture.</strong> Venues keep their POS &mdash; we add the enforcement layer on top.</p>
   </div>
 
   <!-- 5: Autonomous AI Agents -->
@@ -824,199 +825,115 @@
     <p style="margin-top: 1rem;">These aren't features with AI sprinkled on top. <strong>They're autonomous agents that take action without waiting for a human.</strong></p>
   </div>
 
-  <!-- 6: Labor Rails -->
+  <!-- 6: Enforcement Core — Labor + Comps + Attestation -->
   <div class="slide">
-    <div class="slide-label">Labor</div>
-    <h2>Labor Rails</h2>
-    <p class="lead">The schedule doesn't publish unless it's within bounds.</p>
-    <div class="cols" style="margin-top: 1.5rem;">
-      <div>
-        <h3 class="hl">The 4:30 PM Pile-Up Problem</h3>
-        <p>Modeled on real high-volume restaurant data: all servers scheduled to arrive at the same time. Three hours of excess labor before the dining room fills.</p>
-        <div class="stats" style="margin-top: 1.25rem;">
-          <div class="stat"><div class="stat-value gold">$625K</div><div class="stat-label">savings per venue / year (validated)</div></div>
-        </div>
-      </div>
-      <div>
-        <h3>How Labor Rails Work</h3>
+    <div class="slide-label">Enforcement Core</div>
+    <h2>Labor, Comps &amp; Attestation</h2>
+    <p class="lead">Three enforcement domains live today. Each one catches what managers miss.</p>
+    <div class="cols-3" style="margin-top: 1.25rem;">
+      <div class="card">
+        <h3 class="hl">Labor Rails</h3>
+        <p style="margin-bottom: 0.5rem;">Schedule blocked until rails pass.</p>
         <ul>
-          <li>Max SPLH by daypart from 7shifts data</li>
-          <li>Staggered start times enforced</li>
-          <li>Staff-to-cover ratio by section</li>
-          <li>Mid-service cut/call-in recommendations</li>
-          <li>OT threshold alerts before approval</li>
-          <li><strong>Schedule blocked until rails pass</strong></li>
+          <li>Max SPLH by daypart</li>
+          <li>Staggered starts enforced</li>
+          <li>Mid-service cut recommendations</li>
+          <li>OT alerts before approval</li>
         </ul>
+        <div class="stat" style="margin-top: 0.75rem;"><div class="stat-value gold" style="font-size: 1.5rem;">$625K</div><div class="stat-label">savings / venue / year</div></div>
       </div>
-    </div>
-    <div class="callout">
-      <p><strong>Portfolio-wide labor savings: $1M+ annually</strong> across a multi-venue operator.</p>
-    </div>
-  </div>
-
-  <!-- 7: Comp Enforcement -->
-  <div class="slide">
-    <div class="slide-label">Comps</div>
-    <h2>Comp Enforcement</h2>
-    <p class="lead">Every comp reviewed by AI against policy. Every night. No exceptions.</p>
-    <div class="cols" style="margin-top: 1.5rem;">
-      <div>
-        <h3>How It Works</h3>
+      <div class="card">
+        <h3 class="hl">Comp Enforcement</h3>
+        <p style="margin-bottom: 0.5rem;">Every comp reviewed by AI. Every night.</p>
         <ul>
-          <li><strong class="hl">1.</strong> POS data syncs in real time</li>
-          <li><strong class="hl">2.</strong> Every comp flagged against venue policy</li>
-          <li><strong class="hl">3.</strong> AI reviews patterns: same server, same reason, consecutive</li>
-          <li><strong class="hl">4.</strong> Violations created in control plane</li>
-          <li><strong class="hl">5.</strong> Manager must attest nightly &mdash; can't skip</li>
+          <li>POS syncs in real time</li>
+          <li>Pattern detection (server, reason, frequency)</li>
+          <li>Violations auto-created</li>
+          <li>High-value auto-escalation</li>
         </ul>
+        <p style="margin-top: 0.75rem; font-size: 0.75rem;">2&ndash;5% of revenue lost to ungoverned comps. At $10M = <strong class="hl">$200&ndash;500K/yr.</strong></p>
       </div>
-      <div>
-        <h3>Policy Controls</h3>
+      <div class="card">
+        <h3 class="hl">Nightly Attestation</h3>
+        <p style="margin-bottom: 0.5rem;">Shift doesn't close until every variance is explained.</p>
         <ul>
-          <li>Approved comp reasons with max amounts</li>
-          <li>Daily comp % warning/critical thresholds</li>
-          <li>Server-level comp dollar limits</li>
-          <li>Manager authority tiers</li>
-          <li>High-value comp auto-escalation</li>
-          <li>Immutable audit trail (version control)</li>
-        </ul>
-      </div>
-    </div>
-    <div class="callout">
-      <p><strong>Industry benchmark: 2&ndash;5% of gross revenue</strong> lost to ungoverned comps. At $10M revenue, that's <strong class="hl">$200&ndash;500K/year.</strong></p>
-    </div>
-  </div>
-
-  <!-- 8: Booking Engine -->
-  <div class="slide">
-    <div class="slide-label">Reservations</div>
-    <h2>KevaOS Is the Booking Engine</h2>
-    <p class="lead">Resy, OpenTable, SevenRooms become channels. KevaOS owns the decision.</p>
-    <div class="flow-row" style="margin: 1.25rem 0;">
-      <div class="flow-box">Resy</div>
-      <div class="flow-arrow">&rarr;</div>
-      <div class="flow-box">OpenTable</div>
-      <div class="flow-arrow">&rarr;</div>
-      <div class="flow-box">SevenRooms</div>
-      <div class="flow-arrow">&rarr;</div>
-      <div class="flow-box">Walk-ins</div>
-      <div class="flow-arrow">&rarr;</div>
-      <div class="flow-box">Phone</div>
-      <div class="flow-arrow">&rarr;</div>
-      <div class="flow-box highlight">KevaOS Rez-Yield Agent</div>
-    </div>
-    <div class="cols">
-      <div>
-        <h3>Floor Plan Management</h3>
-        <ul>
-          <li>Drag-and-drop table layout editor</li>
-          <li>Section management with staff assignment</li>
-          <li>Real-time table state machine (7 states)</li>
-          <li>Turn tracking with duration forecasting</li>
-          <li>Table combos for large parties</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Yield Optimization</h3>
-        <ul>
-          <li>Per-slot demand + duration forecasting</li>
-          <li>Stress scoring blocks overbooking</li>
-          <li>VIP table protection by level</li>
-          <li>Value delta vs. slot demand (RevPASH)</li>
-          <li>Backtest policy changes before deploy</li>
-        </ul>
-      </div>
-    </div>
-    <p style="margin-top: 1rem;"><strong>The booking platforms become dumb pipes.</strong> KevaOS decides who sits where, when, and at what price.</p>
-  </div>
-
-  <!-- 9: Procurement Agent -->
-  <div class="slide">
-    <div class="slide-label">Procurement</div>
-    <h2>Procurement Agent</h2>
-    <p class="lead">Monitors consumption. Builds the PO. Follows up with vendors. Reviews delivery. Closes the receipt.</p>
-    <p style="margin-top: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--gold);">One trigger. Three revenue events: SaaS fee + Product margin + Fulfillment margin</p>
-    <div class="proc-grid" style="margin-top: 1.25rem;">
-      <div class="proc-trigger">Menu item depletion (POS)</div>
-      <div class="proc-arrow">&rarr;</div>
-      <div><span class="proc-entity">SHW</span><br><span class="proc-desc">Ingredient restock</span></div>
-
-      <div class="proc-trigger">Packaging burn rate</div>
-      <div class="proc-arrow">&rarr;</div>
-      <div><span class="proc-entity">Shureprint</span><br><span class="proc-desc">Custom packaging</span></div>
-
-      <div class="proc-trigger">Cleaning SLA trigger</div>
-      <div class="proc-arrow">&rarr;</div>
-      <div><span class="proc-entity">GroundOps</span><br><span class="proc-desc">Consumables</span></div>
-
-      <div class="proc-trigger">Equipment wear / opening</div>
-      <div class="proc-arrow">&rarr;</div>
-      <div><span class="proc-entity">E&amp;E Mercantile</span><br><span class="proc-desc">FF&amp;E, uniforms, OS&amp;E</span></div>
-    </div>
-    <p style="margin-top: 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim);">Decision tiers: <span class="hl">Auto (&lt;$500)</span> &middot; Manager ($500&ndash;$2.5K) &middot; Exec ($2.5K+)</p>
-    <p style="margin-top: 0.5rem;">Anomaly detection: AI-reviewed &mdash; consumption spikes, price variance, waste patterns.</p>
-  </div>
-
-  <!-- 10: Attestation & Control Plane -->
-  <div class="slide">
-    <div class="slide-label">Attestation</div>
-    <h2>Attestation &amp; Control Plane</h2>
-    <p class="lead">The shift doesn't close until the manager explains every variance.</p>
-    <div class="cols" style="margin-top: 1.5rem;">
-      <div>
-        <h3 class="hl">Attestation Domains</h3>
-        <ul>
-          <li>Revenue variance (vs. forecast)</li>
-          <li>Labor cost vs. rails</li>
-          <li>Comp exceptions</li>
-          <li>Incidents (guest, equipment, safety)</li>
-          <li>Coaching notes</li>
-          <li>Entertainment quality</li>
-          <li>Culinary (86s, quality, prep)</li>
-        </ul>
-      </div>
-      <div>
-        <h3 class="hl">Control Plane</h3>
-        <p>Every signal flows into a violation state machine with escalation.</p>
-        <ul>
-          <li>Violations created automatically</li>
-          <li>State machine: open &rarr; acknowledged &rarr; resolved</li>
-          <li>Escalation flows (manager &rarr; exec &rarr; platform)</li>
-          <li>Carry-forward compliance tracking</li>
+          <li>Revenue, labor, comp domains</li>
+          <li>Incidents &amp; coaching notes</li>
+          <li>Violation state machine with escalation</li>
           <li>AI-generated narrative summaries</li>
-          <li>Nightly email briefing to subscribers</li>
         </ul>
+        <p style="margin-top: 0.75rem; font-size: 0.75rem;">Variance isn't punished &mdash; it's explained. <strong>The requirement is permanent.</strong></p>
       </div>
-    </div>
-    <div class="callout">
-      <p><strong>Variance isn't punished &mdash; it's explained.</strong> But the requirement to explain is permanent.</p>
     </div>
   </div>
 
-  <!-- 11: Demand Forecasting & Sensors -->
+  <!-- 7: Revenue Capture — Booking + Procurement -->
+  <div class="slide">
+    <div class="slide-label">Revenue Capture</div>
+    <h2>Booking Engine &amp; Procurement</h2>
+    <p class="lead">KevaOS controls how guests sit and how inventory restocks. Two revenue-generating enforcement layers.</p>
+    <div class="cols" style="margin-top: 1.25rem;">
+      <div>
+        <h3 class="hl">Rez-Yield Engine</h3>
+        <div class="flow-row" style="margin: 0.75rem 0;">
+          <div class="flow-box" style="font-size:0.7rem;">Resy</div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-box" style="font-size:0.7rem;">OpenTable</div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-box" style="font-size:0.7rem;">SevenRooms</div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-box highlight" style="font-size:0.7rem;">KevaOS</div>
+        </div>
+        <ul>
+          <li>Drag-and-drop floor plan with 7-state table machine</li>
+          <li>Per-slot demand + duration forecasting</li>
+          <li>VIP protection, stress scoring, RevPASH optimization</li>
+          <li>Walk-in capture feeds demand forecasting</li>
+        </ul>
+        <p style="margin-top: 0.75rem;"><strong>Booking platforms become dumb pipes.</strong> KevaOS decides who sits where.</p>
+      </div>
+      <div>
+        <h3 class="hl">Procurement Agent</h3>
+        <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--gold); margin-bottom: 0.5rem;">One trigger. Three revenue events: SaaS + Product margin + Fulfillment</p>
+        <div class="proc-grid" style="margin-top: 0.5rem; gap: 0.5rem 1rem;">
+          <div class="proc-trigger" style="font-size:0.78rem;">Menu depletion</div>
+          <div class="proc-arrow">&rarr;</div>
+          <div><span class="proc-entity">SHW</span></div>
+          <div class="proc-trigger" style="font-size:0.78rem;">Packaging burn</div>
+          <div class="proc-arrow">&rarr;</div>
+          <div><span class="proc-entity">Shureprint</span></div>
+          <div class="proc-trigger" style="font-size:0.78rem;">Cleaning SLA</div>
+          <div class="proc-arrow">&rarr;</div>
+          <div><span class="proc-entity">GroundOps</span></div>
+          <div class="proc-trigger" style="font-size:0.78rem;">Equipment wear</div>
+          <div class="proc-arrow">&rarr;</div>
+          <div><span class="proc-entity">E&amp;E Mercantile</span></div>
+        </div>
+        <p style="margin-top: 0.75rem; font-size: 0.78rem;">Tiers: <span class="hl">Auto (&lt;$500)</span> &middot; Manager ($500&ndash;$2.5K) &middot; Exec ($2.5K+)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8: Intelligence — Forecasting + Sensors + Server Score -->
   <div class="slide">
     <div class="slide-label">Intelligence</div>
-    <h2>Demand Forecasting &amp; Sensors</h2>
-    <p class="lead">Predict demand. Verify execution. Feed the loop.</p>
-    <div class="cols" style="margin-top: 1.5rem;">
-      <div>
+    <h2>Forecasting, Sensors &amp; Server Score</h2>
+    <p class="lead">Predict demand. Verify execution. Score performance. Feed the loop.</p>
+    <div class="cols-3" style="margin-top: 1.25rem;">
+      <div class="card">
         <img src="/deck-assets/image-11-1.png" alt="" class="section-icon">
         <h3>Demand Forecasting</h3>
-        <p style="margin-bottom: 0.5rem;">Covers, revenue, and ingredient demand &mdash; predicted daily. Drives labor scheduling, procurement, and prep lists.</p>
         <ul>
           <li>Daily cover &amp; revenue predictions</li>
-          <li>Hourly demand curves (day-of-week + events)</li>
-          <li>Ingredient demand from forecast + recipes</li>
-          <li>MAPE accuracy tracking per venue</li>
-          <li>Manager override with reason coding</li>
-          <li>Auto-generated prep lists from forecast</li>
-          <li>Rez pacing feeds real-time demand adjustments</li>
+          <li>Hourly demand curves</li>
+          <li>Ingredient demand from recipes</li>
+          <li>MAPE accuracy tracking</li>
+          <li>Rez pacing feeds real-time adjustments</li>
         </ul>
       </div>
-      <div>
+      <div class="card">
         <img src="/deck-assets/image-4-5.png" alt="" class="section-icon">
         <h3>Sensor Layer</h3>
-        <p style="margin-bottom: 0.5rem;">Physical verification inputs that feed the enforcement engine.</p>
         <ul>
           <li>Camera occupancy snapshots</li>
           <li>Greeting time measurement</li>
@@ -1024,60 +941,25 @@
           <li>Plating scale integration</li>
           <li>POS real-time transaction sync</li>
         </ul>
-        <div class="callout" style="margin-top: 1rem;">
-          <p>Sensors provide ground truth. They're one input &mdash; not the product.</p>
-        </div>
       </div>
-    </div>
-    <p style="margin-top: 1rem;"><strong>Forecasting is the brain. Sensors are the eyes.</strong> The enforcement engine connects them.</p>
-  </div>
-
-  <!-- 12: Server Score & Host Stand -->
-  <div class="slide">
-    <div class="slide-label">Performance</div>
-    <h2>Server Score &amp; Host Stand</h2>
-    <div class="cols" style="margin-top: 1.5rem;">
-      <div>
+      <div class="card">
         <img src="/deck-assets/image-12-1.png" alt="" class="section-icon">
         <h3>Server Score</h3>
-        <p style="margin-bottom: 0.5rem;">A 0&ndash;100 composite from real data &mdash; not manager opinion.</p>
-        <h3 style="font-size: 0.85rem; margin-top: 1rem;">Performance Inputs</h3>
         <ul>
-          <li>Revenue per cover</li>
-          <li>Tip % vs. team average</li>
-          <li>Turn time vs. team average</li>
-          <li>Comp rate and frequency</li>
-          <li>Guest review sentiment</li>
-          <li>Manager attestation notes</li>
-          <li>Shift-to-shift consistency</li>
+          <li>0&ndash;100 composite from real data</li>
+          <li>Revenue, tips, turn time, comps</li>
+          <li>Guest sentiment + manager notes</li>
+          <li>Drives section assignments</li>
+          <li>Model improves each service</li>
         </ul>
-        <p style="margin-top: 0.75rem; font-size: 0.8rem;">Weights tuned per venue from live data. Model improves with each service.</p>
       </div>
-      <div>
-        <img src="/deck-assets/image-12-2.png" alt="" class="section-icon">
-        <h3>Host Stand Platform</h3>
-        <p style="margin-bottom: 0.75rem;">The only screen at the front door. Prime real estate.</p>
-        <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
-          <h3 style="font-size: 0.85rem;">Floor State Machine</h3>
-          <p>Real-time table status from POS + camera. Available, seated, check dropped, bussing &mdash; tracked automatically.</p>
-        </div>
-        <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
-          <h3 style="font-size: 0.85rem;">Waitlist Management</h3>
-          <p>Full waitlist with wait time estimation, SMS notifications, and seating preference tracking.</p>
-        </div>
-        <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
-          <h3 style="font-size: 0.85rem;">Rez-Yield Integration</h3>
-          <p>Seat candidate scoring with operational + predictive adjustments.</p>
-        </div>
-        <div class="card" style="padding: 1rem;">
-          <h3 style="font-size: 0.85rem;">Walk-in Capture</h3>
-          <p>Every walk-in tracked. Party size, preferences, wait time. Feeds demand forecasting.</p>
-        </div>
-      </div>
+    </div>
+    <div class="callout">
+      <p><strong>Forecasting is the brain. Sensors are the eyes. Server score is the feedback loop.</strong> The enforcement engine connects them all.</p>
     </div>
   </div>
 
-  <!-- 13: The Signal Loop -->
+  <!-- 9: Signals Run Keva -->
   <div class="slide">
     <div class="slide-label">The Brain</div>
     <h2>Signals Run Keva</h2>
@@ -1127,29 +1009,7 @@
     </div>
   </div>
 
-  <!-- 14: Competitive Landscape -->
-  <div class="slide">
-    <div class="slide-label">Competition</div>
-    <h2>Competitive Landscape</h2>
-    <table class="comp-table">
-      <thead><tr><th>Capability</th><th>Toast</th><th>Nory ($63M)</th><th>R365</th><th>7shifts</th><th>BarVision</th><th>KevaOS</th></tr></thead>
-      <tbody>
-        <tr><td>Enforcement (not advisory)</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>AI comp review</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Camera-based ground truth</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Rez yield optimization</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Server performance score</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Integrated supply chain</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Labor schedule enforcement</td><td class="no">&mdash;</td><td class="no">Suggest</td><td class="no">&mdash;</td><td class="no">Suggest</td><td class="no">&mdash;</td><td class="yes">Block</td></tr>
-        <tr><td>Procurement automation</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">Partial</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Nightly attestation</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Multi-venue benchmarking</td><td class="no">Basic</td><td class="no">Partial</td><td class="no">Basic</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
-      </tbody>
-    </table>
-    <p style="margin-top: 1rem;">Nory is a dashboard with $63M. R365 is accounting with AI features.<br><strong>KevaOS is an enforcement engine with integrated fulfillment.</strong></p>
-  </div>
-
-  <!-- 15: Results -->
+  <!-- 10: Results -->
   <div class="slide">
     <div class="slide-label">Results</div>
     <h2>Results</h2>
@@ -1180,50 +1040,34 @@
     <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-dim);"><span style="color: var(--green);">Green border</span> = validated in production. <span style="color: var(--charcoal);">Gray border</span> = modeled from live venue data, pending full deployment.</p>
   </div>
 
-  <!-- 16: The Moat -->
+  <!-- 11: Competition & Moat -->
   <div class="slide">
-    <div class="slide-label">Defensibility</div>
-    <h2>The Moat</h2>
-    <p class="lead">Software + supply chain + ground truth. Nobody else owns all three.</p>
-    <div class="moats" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 1.5rem;">
-      <div class="moat">
-        <img src="/deck-assets/image-4-1.png" alt="" class="section-icon">
-        <h3 class="hl">Software</h3>
-        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">KevaOS Enforcement Engine</p>
-        <ul>
-          <li>Labor rails</li>
-          <li>Comp enforcement</li>
-          <li>Procurement agent</li>
-          <li>Rez-yield optimization</li>
-          <li>Nightly attestation</li>
-          <li>Multi-venue benchmarks</li>
-        </ul>
+    <div class="slide-label">Competition &amp; Moat</div>
+    <h2>Why Nobody Else Can Do This</h2>
+    <table class="comp-table" style="margin-top: 1rem;">
+      <thead><tr><th>Capability</th><th>Toast</th><th>Nory ($63M)</th><th>R365</th><th>KevaOS</th></tr></thead>
+      <tbody>
+        <tr><td>Enforcement (not advisory)</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>AI comp review</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Camera-based ground truth</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Rez yield + server score</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Integrated supply chain</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Labor schedule enforcement</td><td class="no">&mdash;</td><td class="no">Suggest</td><td class="no">&mdash;</td><td class="yes">Block</td></tr>
+        <tr><td>Nightly attestation</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+      </tbody>
+    </table>
+    <div class="moats" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 1.25rem;">
+      <div class="moat" style="padding: 1rem;">
+        <h3 class="hl" style="font-size: 0.85rem;">Software</h3>
+        <p style="font-size: 0.72rem;">Labor rails, comp enforcement, rez-yield, attestation, server score, benchmarking.</p>
       </div>
-      <div class="moat">
-        <img src="/deck-assets/image-4-13.png" alt="" class="section-icon">
-        <h3 class="hl">Supply Chain</h3>
-        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">The Binyan Group Entities</p>
-        <ul>
-          <li>SHW (B2B distributor)</li>
-          <li>Shureprint (packaging)</li>
-          <li>E&amp;E Mercantile (FF&amp;E/sourcing)</li>
-          <li>GroundOps (facilities mgmt)</li>
-          <li>Procurement auto-routes here</li>
-          <li>Margin on every PO</li>
-        </ul>
+      <div class="moat" style="padding: 1rem;">
+        <h3 class="hl" style="font-size: 0.85rem;">Supply Chain</h3>
+        <p style="font-size: 0.72rem;">SHW, Shureprint, E&amp;E Mercantile, GroundOps. Margin on every PO.</p>
       </div>
-      <div class="moat">
-        <img src="/deck-assets/image-2-3.png" alt="" class="section-icon">
-        <h3 class="hl">Ground Truth</h3>
-        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">Verification Layer</p>
-        <ul>
-          <li>AI camera vision (UniFi)</li>
-          <li>Greeting time detection</li>
-          <li>POS real-time sync</li>
-          <li>7shifts labor data</li>
-          <li>Keva Pin (UWB + audio)</li>
-          <li>Server score from real data</li>
-        </ul>
+      <div class="moat" style="padding: 1rem;">
+        <h3 class="hl" style="font-size: 0.85rem;">Ground Truth</h3>
+        <p style="font-size: 0.72rem;">AI camera vision, greeting detection, Keva Pin, POS sync, server score from real data.</p>
       </div>
     </div>
     <div class="callout">
@@ -1231,7 +1075,7 @@
     </div>
   </div>
 
-  <!-- 17: Revenue Model -->
+  <!-- 12: Revenue Model -->
   <div class="slide">
     <div class="slide-label">Revenue</div>
     <h2>Revenue Model</h2>
@@ -1267,33 +1111,7 @@
     <p style="margin-top: 1.25rem;"><strong>Nory gets one revenue event. KevaOS gets three.</strong> On every transaction. At every venue.</p>
   </div>
 
-  <!-- 18: Integration Layer -->
-  <div class="slide">
-    <div class="slide-label">Integrations</div>
-    <h2>Integration Layer</h2>
-    <p class="lead">Plugs into what venues already run. No rip-and-replace.</p>
-    <div class="int-grid">
-      <div>
-        <h3>POS Systems</h3>
-        <div class="int-item"><div><div class="int-name">Toast</div><div class="int-desc">Direct API. Intra-day summaries.</div></div><div class="int-status ready">Ready</div></div>
-        <div class="int-item"><div><div class="int-name">Oracle Simphony</div><div class="int-desc">Via TipSee + BI API.</div></div><div class="int-status live">Live</div></div>
-        <div class="int-item"><div><div class="int-name">Upserve</div><div class="int-desc">Via TipSee. Real-time checks.</div></div><div class="int-status live">Live</div></div>
-        <div class="int-item"><div><div class="int-name">Square / Lightspeed</div><div class="int-desc">Available for new venues.</div></div><div class="int-status ready">Ready</div></div>
-      </div>
-      <div>
-        <h3>Operations</h3>
-        <div class="int-item"><div><div class="int-name">7shifts</div><div class="int-desc">Punches, wages via TipSee.</div></div><div class="int-status live">Live</div></div>
-        <div class="int-item"><div><div class="int-name">SevenRooms</div><div class="int-desc">Reservations + schedules.</div></div><div class="int-status live">Live</div></div>
-        <div class="int-item"><div><div class="int-name">Restaurant365</div><div class="int-desc">GL accounts, COGS.</div></div><div class="int-status live">Live</div></div>
-        <div class="int-item"><div><div class="int-name">UniFi Protect</div><div class="int-desc">Camera &rarr; AI vision.</div></div><div class="int-status live">Live</div></div>
-      </div>
-    </div>
-    <div class="callout" style="margin-top: 1.25rem;">
-      <p><strong>KevaOS wraps existing infrastructure.</strong> Venues keep their POS &mdash; we add the enforcement layer on top.</p>
-    </div>
-  </div>
-
-  <!-- 19: Roadmap -->
+  <!-- 13: Roadmap -->
   <div class="slide">
     <div class="slide-label">Roadmap</div>
     <h2>Roadmap</h2>
@@ -1342,7 +1160,7 @@
     </div>
   </div>
 
-  <!-- 20: Closing -->
+  <!-- 14: Closing -->
   <div class="slide closing-slide">
     <img src="/deck-assets/image-1-1.png" alt="KevaOS" class="closing-logo">
     <div class="slide-label">KevaOS</div>
