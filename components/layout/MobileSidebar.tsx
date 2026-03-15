@@ -105,7 +105,7 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
       >
         {/* Logo — matches topbar height (h-16) */}
         <div className="h-16 flex-shrink-0 flex items-center justify-center px-4 border-b border-keva-slate-700 bg-white">
-          <KevaOSLogo size="md" />
+          <KevaOSLogo size="lg" monogramOnly />
         </div>
 
         {/* Navigation */}

@@ -20,7 +20,7 @@ export function Sidebar({ user, userRole }: SidebarProps) {
   return (
     <aside className="w-64 border-r border-brass bg-keva-slate-800">
       <div className="flex h-16 items-center px-6 border-b border-keva-slate-700 bg-white">
-        <KevaOSLogo size="md" />
+        <KevaOSLogo size="lg" monogramOnly />
       </div>
 
       <nav className="p-3 space-y-0.5">
