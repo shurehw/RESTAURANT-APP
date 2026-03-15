@@ -1,7 +1,7 @@
-// Relay PWA Service Worker v8
+// Relay PWA Service Worker v9 — cache-bust for icon/branding update
 // Network-first for API (live data), stale-while-revalidate for shell, offline fallback
 
-const CACHE_VERSION = 'relay-v1';
+const CACHE_VERSION = 'relay-v2';
 const API_CACHE = 'relay-api-v1';
 const MAX_API_ENTRIES = 50;
 const OFFLINE_URL = '/offline.html';
