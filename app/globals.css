@@ -381,3 +381,29 @@
     transform: scale(1.04);
   }
 }
+
+/* ═══ Print Styles ══════════════════════════════════════════════════════════ */
+@media print {
+  /* Hide chrome: sidebar, topbar, nav, chat widget */
+  [data-pwa-hide],
+  nav,
+  header,
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Clean page layout */
+  body {
+    font-size: 11pt;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove card shadows & borders for clean print */
+  .print\\:border-0 {
+    border: 0 !important;
+  }
+  .print\\:shadow-none {
+    box-shadow: none !important;
+  }
+}

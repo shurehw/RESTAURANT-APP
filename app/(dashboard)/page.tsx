@@ -23,6 +23,7 @@ import { FollowThroughRate } from '@/components/home/FollowThroughRate';
 import { CommandScoreTrend } from '@/components/home/CommandScoreTrend';
 import { ShieldAlert } from 'lucide-react';
 import { getServiceClient } from '@/lib/supabase/service';
+import { KpiHeroRow } from '@/components/home/KpiHeroRow';
 
 export default async function DashboardPage() {
   const { user, profile } = await requireUser();
@@ -138,6 +139,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      {/* KPI Hero Row — venue-specific, client-side */}
+      <KpiHeroRow />
+
       {/* Operator Intelligence — owner/admin only */}
       {isOperator && intelligence.length > 0 && (
         <div>
