@@ -10,6 +10,8 @@ const publicRoutes = [
   '/vendor/login',
   '/host-stand/login',
   '/coming-soon',
+  '/deck',
+  '/api/deck',
   '/api/landing',
   '/share',
   '/api/share',
