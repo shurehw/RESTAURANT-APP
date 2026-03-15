@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
 
     if (vendorOrgError) throw vendorOrgError;
 
-    const organizationSlug = vendorOrg?.organization?.slug;
+    const org = vendorOrg?.organization as unknown as { slug: string } | null;
+    const organizationSlug = org?.slug;
     if (!organizationSlug) {
       throw new Error('Vendor organization slug not found');
     }
