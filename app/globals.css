@@ -406,10 +406,10 @@
   }
 
   /* Remove card shadows & borders for clean print */
-  .print\\:border-0 {
+  [class*="print:border-0"] {
     border: 0 !important;
   }
-  .print\\:shadow-none {
+  [class*="print:shadow-none"] {
     box-shadow: none !important;
   }
 }
