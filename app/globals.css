@@ -64,7 +64,7 @@
     --accent-foreground: 40 50% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 40 50% 100%;
-    --border: 30 18% 88%;
+    --border: 30 12% 85%;
     --input: 30 15% 82%;
     --ring: 17 67% 50%;
     --radius: 0.5rem;
@@ -192,11 +192,11 @@
   }
 
   .table-keva thead {
-    @apply bg-muted border-b-2 border-brass;
+    @apply bg-muted border-b border-keva-slate-300;
   }
 
   .table-keva th {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground;
   }
 
   .table-keva td {
@@ -213,17 +213,17 @@
 
   /* Card with Accent Shadow */
   .card-brass {
-    @apply bg-card border border-border rounded-md p-6 shadow-brass-sm hover:shadow-brass-md transition-shadow duration-base;
+    @apply bg-card border border-border rounded-md p-5 shadow-brass-sm hover:shadow-brass-md transition-shadow duration-base;
   }
 
   /* Section Header */
   .section-header {
-    @apply text-h3 font-bold text-foreground mb-6;
+    @apply text-h3 font-bold text-foreground mb-6 tracking-tight;
   }
 
   /* Page Header */
   .page-header {
-    @apply text-h1 font-bold text-foreground mb-2;
+    @apply text-h1 font-bold text-foreground mb-2 tracking-tight;
   }
 
   /* Focus Rings */
@@ -237,7 +237,7 @@
 
   /* Status Indicators */
   .status-dot {
-    @apply inline-block w-2 h-2 rounded-full;
+    @apply inline-block w-1.5 h-1.5 rounded-full;
   }
 
   .status-dot-success {
@@ -258,7 +258,7 @@
   }
 
   .stat-card-value {
-    @apply text-4xl font-bold text-foreground tabular-nums;
+    @apply text-3xl font-bold text-foreground tabular-nums tracking-tight;
   }
 
   .stat-card-label {
@@ -301,15 +301,16 @@
 
   /* Sidebar Nav */
   .nav-link {
-    @apply flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-fast text-keva-fog-100;
+    @apply flex items-center gap-3 px-3 py-1.5 rounded-md text-sm font-medium transition-colors duration-fast text-keva-fog-200;
   }
 
   .nav-link.active {
-    @apply bg-brass text-white border-l-4 border-brass pl-[8px] font-semibold;
+    @apply text-brass border-l-[3px] border-brass pl-[9px] font-semibold;
+    background-color: rgb(var(--color-brass) / 0.15);
   }
 
   .nav-link:not(.active) {
-    @apply hover:bg-keva-sage-700 hover:text-white;
+    @apply hover:bg-white/[0.08] hover:text-keva-fog-100;
   }
 }
 

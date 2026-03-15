@@ -169,6 +169,77 @@ export async function saveServerCoachingActions(
 }
 
 /**
+ * Save drill-through insights as manager actions.
+ * Deduplicates by title + venue + date to avoid creating duplicates on repeat views.
+ */
+export async function saveDrillInsightActions(
+  venueId: string,
+  businessDate: string,
+  venueName: string,
+  section: string,
+  insights: Array<{ pattern: string; detail: string; action: string; severity: 'high' | 'medium' | 'low' }>
+): Promise<{ actionsCreated: number }> {
+  const supabase = getServiceClient();
+  let actionsCreated = 0;
+
+  const SEVERITY_TO_PRIORITY: Record<string, 'urgent' | 'high' | 'medium' | 'low'> = {
+    high: 'high', medium: 'medium', low: 'low',
+  };
+  const SECTION_TO_CATEGORY: Record<string, 'violation' | 'training' | 'process' | 'policy' | 'positive'> = {
+    comps: 'violation', servers: 'training', labor: 'process', items: 'process', categories: 'process',
+  };
+
+  for (const insight of insights) {
+    // Dedup check: same venue + date + title → skip
+    const { data: existing } = await (supabase as any)
+      .from('manager_actions')
+      .select('id')
+      .eq('venue_id', venueId)
+      .eq('business_date', businessDate)
+      .eq('title', insight.pattern)
+      .eq('source_type', 'ai_drill_insight')
+      .maybeSingle();
+
+    if (existing) continue;
+
+    const expiresAt = insight.severity === 'low'
+      ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      : insight.severity === 'medium'
+      ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const action: ManagerAction = {
+      venue_id: venueId,
+      business_date: businessDate,
+      source_report: `nightly_drill_${section}_${businessDate}`,
+      source_type: 'ai_drill_insight',
+      priority: SEVERITY_TO_PRIORITY[insight.severity] || 'medium',
+      category: SECTION_TO_CATEGORY[section] || 'process',
+      title: insight.pattern,
+      description: insight.detail,
+      action: insight.action,
+      assigned_to: extractAssignedTo(insight.action),
+      related_employees: extractEmployeeNames(insight.detail),
+      metadata: {
+        venue_name: venueName,
+        ai_generated: true,
+        drill_section: section,
+      },
+      status: 'pending',
+      expires_at: expiresAt || undefined,
+    };
+
+    const { error } = await (supabase as any)
+      .from('manager_actions')
+      .insert(action);
+
+    if (!error) actionsCreated++;
+  }
+
+  return { actionsCreated };
+}
+
+/**
  * Extract manager/employee name from action text
  * Examples:
  * - "Manager John should review..." → "John"

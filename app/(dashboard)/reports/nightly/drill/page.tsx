@@ -13,13 +13,18 @@ import Link from 'next/link';
 import { Loader2, AlertTriangle, Info, CheckCircle2, Sparkles } from 'lucide-react';
 import { useVenue } from '@/components/providers/VenueProvider';
 
-// ── Insight types ─────────────────────────────────────────────────
+// ── Action Center types ───────────────────────────────────────────
 
-interface DrillInsight {
-  pattern: string;
-  detail: string;
+interface ActionItem {
+  id: string;
+  title: string;
+  description: string;
   action: string;
-  severity: 'high' | 'medium' | 'low';
+  priority: 'urgent' | 'high' | 'medium' | 'low';
+  category: string;
+  source_type: string;
+  status: string;
+  related_employees?: string[];
 }
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -83,23 +88,39 @@ const SECTION_TITLES: Record<string, string> = {
   categories: 'Category Mix',
 };
 
-const DRILL_SEVERITY_STYLES = {
+// ── Section → source_type mapping for filtering Action Center items ──
+
+const SECTION_SOURCE_TYPES: Record<string, string[]> = {
+  comps: ['ai_comp_review', 'ai_drill_insight'],
+  servers: ['ai_server_coaching', 'ai_drill_insight'],
+  labor: ['ai_drill_insight'],
+  items: ['ai_drill_insight'],
+  categories: ['ai_drill_insight'],
+};
+
+function filterActionsBySection(actions: ActionItem[], section: string): ActionItem[] {
+  const sourceTypes = SECTION_SOURCE_TYPES[section] || [];
+  return actions.filter(a => sourceTypes.includes(a.source_type));
+}
+
+const PRIORITY_STYLES = {
+  urgent: { border: 'border-red-300 dark:border-red-800', bg: 'bg-red-50/50 dark:bg-red-950/20', icon: AlertTriangle, iconColor: 'text-red-500' },
   high: { border: 'border-red-300 dark:border-red-800', bg: 'bg-red-50/50 dark:bg-red-950/20', icon: AlertTriangle, iconColor: 'text-red-500' },
   medium: { border: 'border-amber-300 dark:border-amber-800', bg: 'bg-amber-50/50 dark:bg-amber-950/20', icon: Info, iconColor: 'text-amber-500' },
   low: { border: 'border-green-300 dark:border-green-800', bg: 'bg-green-50/50 dark:bg-green-950/20', icon: CheckCircle2, iconColor: 'text-green-500' },
 } as const;
 
-function DrillInsightsPanel({ insights, loading }: { insights: DrillInsight[]; loading: boolean }) {
+function ActionItemsPanel({ actions, loading }: { actions: ActionItem[]; loading: boolean }) {
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
         <Sparkles className="h-3.5 w-3.5 animate-pulse" />
-        <span>Analyzing patterns...</span>
+        <span>Loading action items...</span>
       </div>
     );
   }
 
-  if (insights.length === 0) return null;
+  if (actions.length === 0) return null;
 
   return (
     <div className="space-y-2.5">
@@ -107,20 +128,20 @@ function DrillInsightsPanel({ insights, loading }: { insights: DrillInsight[]; l
         <Sparkles className="h-3.5 w-3.5" />
         Action Items
       </div>
-      {insights.map((insight, i) => {
-        const style = DRILL_SEVERITY_STYLES[insight.severity];
+      {actions.map((item) => {
+        const style = PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.medium;
         const Icon = style.icon;
         return (
-          <div key={i} className={`rounded-lg border ${style.border} ${style.bg} p-3 space-y-1.5`}>
+          <div key={item.id} className={`rounded-lg border ${style.border} ${style.bg} p-3 space-y-1.5`}>
             <div className="flex items-start gap-2">
               <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${style.iconColor}`} />
               <div className="min-w-0">
-                <div className="text-xs font-semibold">{insight.pattern}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{insight.detail}</div>
+                <div className="text-xs font-semibold">{item.title}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{item.description}</div>
               </div>
             </div>
             <div className="text-xs font-medium pl-6 text-foreground">
-              &rarr; {insight.action}
+              &rarr; {item.action}
             </div>
           </div>
         );
@@ -146,8 +167,8 @@ export default function DrillPage() {
   const [labor, setLabor] = useState<LaborData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [insights, setInsights] = useState<DrillInsight[]>([]);
-  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [actions, setActions] = useState<ActionItem[]>([]);
+  const [actionsLoading, setActionsLoading] = useState(false);
 
   useEffect(() => {
     if (!date || !venueId) { setLoading(false); setError('Missing date or venue'); return; }
@@ -173,36 +194,22 @@ export default function DrillPage() {
     fetchData();
   }, [date, venueId, section]);
 
-  // Fetch AI insights after report loads
+  // Fetch existing Action Center items for this venue
   useEffect(() => {
-    if (!report || !section || !date) return;
+    if (!venueId || !section) return;
 
-    const sectionData: Record<string, unknown> = { summary: report.summary };
-    if (section === 'comps') {
-      sectionData.discounts = report.discounts;
-      sectionData.detailedComps = report.detailedComps;
-    } else if (section === 'servers') {
-      sectionData.servers = report.servers;
-      sectionData.detailedComps = report.detailedComps;
-    } else if (section === 'items') {
-      sectionData.menuItems = report.menuItems;
-    } else if (section === 'labor' && labor) {
-      sectionData.labor = labor;
-    } else if (section === 'categories') {
-      sectionData.salesByCategory = report.salesByCategory;
-    }
-
-    setInsightsLoading(true);
-    fetch('/api/ai/drill-insights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ section, venueName, date, data: sectionData }),
-    })
+    setActionsLoading(true);
+    fetch(`/api/control-plane/actions?venue_id=${venueId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(res => { if (res?.insights) setInsights(res.insights); })
+      .then(res => {
+        if (res?.actions) {
+          const relevant = filterActionsBySection(res.actions, section);
+          setActions(relevant);
+        }
+      })
       .catch(() => {})
-      .finally(() => setInsightsLoading(false));
-  }, [report, labor, section, date, venueName]);
+      .finally(() => setActionsLoading(false));
+  }, [venueId, section]);
 
   if (loading) {
     return (
@@ -255,8 +262,8 @@ export default function DrillPage() {
         ))}
       </div>
 
-      {/* AI Insights */}
-      <DrillInsightsPanel insights={insights} loading={insightsLoading} />
+      {/* Action Center Items */}
+      <ActionItemsPanel actions={actions} loading={actionsLoading} />
 
       {/* Section Content */}
       {section === 'comps' && <CompsSection report={report} reason={reason} />}
