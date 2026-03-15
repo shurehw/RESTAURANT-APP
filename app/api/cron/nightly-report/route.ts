@@ -321,6 +321,20 @@ async function processManagerEmailNotes(
           totalComps: s.total_comps,
           laborCost: labor?.labor_cost || 0,
           laborPct: labor?.labor_pct || 0,
+          // Comp breakdown by reason (from discounts array)
+          compBreakdown: (report.discounts || []).map(d => ({
+            reason: d.reason,
+            qty: d.qty,
+            amount: d.amount,
+          })),
+          // Per-check comp details with item-level info
+          compDetails: (report.detailedComps || []).map(c => ({
+            server: c.server,
+            compTotal: c.comp_total,
+            checkTotal: c.check_total,
+            reason: c.reason,
+            items: c.comped_items || [],
+          })),
         };
       }
 

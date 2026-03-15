@@ -100,6 +100,10 @@ async function generateFallbackSummaries(
       avg_check: Math.round(avgCheck),
       total_comps: Math.round(s.total_comps),
       comp_pct: Math.round(compPct * 10) / 10,
+      comp_reasons: (v.report.discounts || [])
+        .filter((d) => d.amount > 0)
+        .slice(0, 5)
+        .map((d) => ({ reason: d.reason, amount: Math.round(d.amount) })),
       categories: (v.report.salesByCategory || []).map((c) => ({
         category: c.category,
         net_sales: Math.round(c.net_sales),

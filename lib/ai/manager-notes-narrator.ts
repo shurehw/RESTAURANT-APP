@@ -6,12 +6,28 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 
+interface CompBreakdown {
+  reason: string;
+  qty: number;
+  amount: number;
+}
+
+interface CompDetail {
+  server: string;
+  compTotal: number;
+  checkTotal: number;
+  reason: string;
+  items: string[]; // e.g. "Truffle Fries ($18.00)", "Cocktail x2 ($36.00)"
+}
+
 interface KpiData {
   netSales: number;
   covers: number;
   totalComps: number;
   laborCost: number;
   laborPct: number;
+  compBreakdown?: CompBreakdown[];
+  compDetails?: CompDetail[];
 }
 
 /**
@@ -39,11 +55,35 @@ export async function generateNarrativeFromNotes(
   const compPct = hasFullKpi && kpiData!.totalComps > 0
     ? ((kpiData!.totalComps / kpiData!.netSales) * 100).toFixed(1)
     : null;
+  // Build comp breakdown context
+  let compBreakdownContext = '';
+  if (hasFullKpi && kpiData!.totalComps > 0 && kpiData!.compBreakdown && kpiData!.compBreakdown.length > 0) {
+    const lines = kpiData!.compBreakdown
+      .filter(c => c.amount > 0)
+      .map(c => `  ${c.reason}: $${Math.round(c.amount).toLocaleString()} (${c.qty} check${c.qty !== 1 ? 's' : ''})`);
+    if (lines.length > 0) {
+      compBreakdownContext = `\nComp Breakdown by Reason:\n${lines.join('\n')}`;
+    }
+  }
+
+  // Build comp detail context (top comps with item-level detail)
+  let compDetailContext = '';
+  if (hasFullKpi && kpiData!.compDetails && kpiData!.compDetails.length > 0) {
+    const topComps = kpiData!.compDetails
+      .sort((a, b) => b.compTotal - a.compTotal)
+      .slice(0, 8); // Top 8 comps by dollar amount
+    const lines = topComps.map(c => {
+      const itemStr = c.items.length > 0 ? ` — Items: ${c.items.join(', ')}` : '';
+      return `  $${Math.round(c.compTotal)} comp on $${Math.round(c.checkTotal)} check | ${c.reason} | Server: ${c.server}${itemStr}`;
+    });
+    compDetailContext = `\nComp Details (top ${topComps.length} by amount):\n${lines.join('\n')}`;
+  }
+
   const kpiContext = hasFullKpi
     ? `KPI DATA (full-day totals from POS):
 Net Sales: $${Math.round(kpiData!.netSales).toLocaleString()}
 Covers: ${kpiData!.covers}
-${kpiData!.totalComps > 0 ? `Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()} (${compPct}% of net sales)` : ''}
+${kpiData!.totalComps > 0 ? `Total Comps: $${Math.round(kpiData!.totalComps).toLocaleString()} (${compPct}% of net sales)${compBreakdownContext}${compDetailContext}` : ''}
 ${kpiData!.laborCost > 0 ? `Labor Cost: $${Math.round(kpiData!.laborCost).toLocaleString()} (${kpiData!.laborPct.toFixed(1)}%)` : ''}
 `
     : '';
@@ -86,6 +126,13 @@ RULES:
 - If labor cost is $0 or not provided, do not mention labor at all
 - If comps are $0 or not provided, do not mention comps at all — do NOT say "no comps" or "zero comps"
 - If comp % is above 3%, flag it in REVENUE & COMPS as elevated and note the dollar amount
+- If Comp Breakdown by Reason is provided, mention the top 1-2 reasons by dollar amount in REVENUE & COMPS (e.g. "Comps led by VIP/Owner ($X) and Kitchen Error ($Y)")
+- If Comp Details are provided, look for patterns worth flagging in ACTION ITEMS:
+  - Multiple comps by the same server (possible training issue or abuse)
+  - Food items comped repeatedly (possible kitchen/quality issue — name the item)
+  - Large single comps (>$200) without a clear reason
+  - Beverage-heavy comps (possible service recovery or unauthorized pours)
+- When mentioning comped items, name the specific menu items — this helps operators identify recurring quality or service problems
 - Use manager notes for QUALITATIVE context: guest names, operational observations, kitchen notes, action items
 - In the COVER COUNT and top checks data, names followed by "Server" (e.g., "Irvin Serrano Server") are STAFF (servers/waiters), NOT guests. Do NOT list them as notable guests. Only list names from PEOPLE WE KNOW as notable guests.
 - Names in SPENDERS OVER sections are real guest names (high spenders) — include them in GUEST section as notable spenders
