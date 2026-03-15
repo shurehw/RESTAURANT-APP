@@ -23,7 +23,7 @@ import {
   getVenueTipseeMappings,
   logReportRun,
 } from '@/lib/database/nightly-subscribers';
-import { fetchNightlyReportFromFacts } from '@/lib/database/tipsee';
+import { fetchNightlyReportFromFacts, fetchSimphonyNightlyReport, getPosTypeForLocations } from '@/lib/database/tipsee';
 import { sendNightlyReportForOrg } from '@/lib/email/send-nightly-report';
 import type { NightlyReportData } from '@/lib/database/tipsee';
 import type { VenueReport } from '@/lib/email/nightly-report-template';
@@ -389,6 +389,9 @@ async function processManagerEmailNotes(
 /**
  * Fetch nightly report data for a venue. Cache-first from tipsee_nightly_cache,
  * then fallback to venue_day_facts.
+ *
+ * For Simphony venues (e.g. Dallas): if cache has $0 or no data, try the live
+ * Simphony path which fetches comp breakdown from the BI API.
  */
 async function fetchVenueReport(
   supabase: any,
@@ -405,7 +408,26 @@ async function fetchVenueReport(
     .maybeSingle();
 
   if (cached?.report_data) {
-    return cached.report_data as NightlyReportData;
+    const summary = cached.report_data.summary;
+    // Skip $0 cache — either stale or venue was closed (live will confirm)
+    if (summary && summary.net_sales > 0) {
+      return cached.report_data as NightlyReportData;
+    }
+  }
+
+  // For Simphony venues, try live path with BI API comp breakdown
+  if (tipseeLocationUuid) {
+    try {
+      const posType = await getPosTypeForLocations([tipseeLocationUuid]);
+      if (posType === 'simphony') {
+        const report = await fetchSimphonyNightlyReport(businessDate, tipseeLocationUuid, venueId);
+        if (report && report.summary.net_sales > 0) {
+          return report;
+        }
+      }
+    } catch {
+      // Fall through to venue_day_facts
+    }
   }
 
   // Fallback to venue_day_facts
