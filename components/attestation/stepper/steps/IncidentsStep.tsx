@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { IncidentLog } from '@/components/attestation/IncidentLog';
+import { AINarrativePanel } from '../context/AINarrativePanel';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertOctagon } from 'lucide-react';
 import type {
@@ -18,6 +19,10 @@ interface Props {
   disabled: boolean;
   attestation?: NightlyAttestation | null;
   onUpdate?: (fields: Partial<NightlyAttestation>) => void;
+  // AI narrative
+  aiNarrative?: string | null;
+  aiNarrativeLoading?: boolean;
+  aiNarrativeError?: string | null;
 }
 
 export function IncidentsStep({
@@ -27,6 +32,9 @@ export function IncidentsStep({
   disabled,
   attestation,
   onUpdate,
+  aiNarrative,
+  aiNarrativeLoading = false,
+  aiNarrativeError,
 }: Props) {
   const notesLen = attestation?.incident_notes?.length ?? 0;
   const hasNotes = notesLen >= 10;
@@ -56,6 +64,13 @@ export function IncidentsStep({
           </CardContent>
         </Card>
       )}
+
+      <AINarrativePanel
+        narrative={aiNarrative}
+        loading={aiNarrativeLoading}
+        label="Incident Analysis"
+        error={aiNarrativeError}
+      />
 
       {onUpdate && (
         <>

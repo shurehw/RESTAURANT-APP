@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { CompResolutionPanel } from '@/components/attestation/CompResolutionPanel';
 import { CompContextCard } from '../context/CompContextCard';
+import { AINarrativePanel } from '../context/AINarrativePanel';
 import { Checkbox } from '@/components/ui/checkbox';
 import type {
   CompResolution,
@@ -48,6 +49,10 @@ interface Props {
   compsByReason?: Array<{ reason: string; qty: number; amount: number }>;
   attestation?: NightlyAttestation | null;
   onUpdate?: (fields: Partial<NightlyAttestation>) => void;
+  // AI narrative
+  aiNarrative?: string | null;
+  aiNarrativeLoading?: boolean;
+  aiNarrativeError?: string | null;
 }
 
 function PromptField({
@@ -117,6 +122,9 @@ export function CompsStep({
   compsByReason = [],
   attestation,
   onUpdate,
+  aiNarrative,
+  aiNarrativeLoading = false,
+  aiNarrativeError,
 }: Props) {
   const allPromptsFilled = COMP_PROMPT_KEYS.every(
     (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
@@ -131,6 +139,13 @@ export function CompsStep({
         exceptionSummary={exceptionSummary}
         reviewSummary={reviewSummary}
         compsByReason={compsByReason}
+      />
+
+      <AINarrativePanel
+        narrative={aiNarrative}
+        loading={aiNarrativeLoading}
+        label="Comp Analysis"
+        error={aiNarrativeError}
       />
 
       {onUpdate && (

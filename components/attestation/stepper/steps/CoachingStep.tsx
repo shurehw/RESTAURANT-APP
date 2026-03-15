@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { CoachingQueue } from '@/components/attestation/CoachingQueue';
+import { AINarrativePanel } from '../context/AINarrativePanel';
 import { Checkbox } from '@/components/ui/checkbox';
 import type {
   CoachingAction,
@@ -23,6 +24,10 @@ interface Props {
   disabled: boolean;
   attestation?: NightlyAttestation | null;
   onUpdate?: (fields: Partial<NightlyAttestation>) => void;
+  // AI narrative
+  aiNarrative?: string | null;
+  aiNarrativeLoading?: boolean;
+  aiNarrativeError?: string | null;
 }
 
 function PromptField({
@@ -86,6 +91,9 @@ export function CoachingStep({
   disabled,
   attestation,
   onUpdate,
+  aiNarrative,
+  aiNarrativeLoading = false,
+  aiNarrativeError,
 }: Props) {
   const allPromptsFilled = COACHING_PROMPT_KEYS.every(
     (k) => ((attestation?.[k] as string)?.length ?? 0) >= STRUCTURED_PROMPT_MIN_LENGTH,
@@ -94,6 +102,13 @@ export function CoachingStep({
 
   return (
     <div className="space-y-4">
+      <AINarrativePanel
+        narrative={aiNarrative}
+        loading={aiNarrativeLoading}
+        label="Coaching Insights"
+        error={aiNarrativeError}
+      />
+
       {onUpdate && (
         <>
           {/* FOH Coaching */}

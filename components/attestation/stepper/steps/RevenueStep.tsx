@@ -2,6 +2,7 @@
 
 import { RevenueAttestation } from '@/components/attestation/RevenueAttestation';
 import { RevenueContextCard } from '../context/RevenueContextCard';
+import { AINarrativePanel } from '../context/AINarrativePanel';
 import type { NightlyAttestation, TriggerResult } from '@/lib/attestation/types';
 
 interface Props {
@@ -25,6 +26,10 @@ interface Props {
   foodSales?: number;
   beverageSales?: number;
   beveragePct?: number;
+  // AI narrative
+  aiNarrative?: string | null;
+  aiNarrativeLoading?: boolean;
+  aiNarrativeError?: string | null;
 }
 
 export function RevenueStep({
@@ -40,6 +45,9 @@ export function RevenueStep({
   foodSales,
   beverageSales,
   beveragePct,
+  aiNarrative,
+  aiNarrativeLoading = false,
+  aiNarrativeError,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -52,6 +60,13 @@ export function RevenueStep({
         foodSales={foodSales}
         beverageSales={beverageSales}
         beveragePct={beveragePct}
+      />
+
+      <AINarrativePanel
+        narrative={aiNarrative}
+        loading={aiNarrativeLoading}
+        label="Revenue Analysis"
+        error={aiNarrativeError}
       />
 
       <RevenueAttestation

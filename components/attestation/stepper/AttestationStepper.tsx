@@ -19,6 +19,7 @@ import {
   Music,
   UtensilsCrossed,
 } from 'lucide-react';
+import { useAttestationNarratives } from '@/hooks/useAttestationNarratives';
 import { StepIndicator, type StepConfig } from './StepIndicator';
 import { StepNavigation } from './StepNavigation';
 import { RevenueStep } from './steps/RevenueStep';
@@ -293,6 +294,67 @@ export function AttestationStepper({
   const culinaryComplete = !!culinaryLog?.overall_rating;
 
   // ---------------------------------------------------------------------------
+  // AI Narratives — fetch once when stepper opens with data available
+  // ---------------------------------------------------------------------------
+  const {
+    narratives: aiNarratives,
+    loading: aiNarrativesLoading,
+    error: aiNarrativesError,
+    fetchNarratives,
+  } = useAttestationNarratives();
+
+  useEffect(() => {
+    if (!open || !venueId || !date || !factsSummary) return;
+
+    // Only fetch if we have meaningful data (net_sales > 0 or food+bev > 0)
+    const netSales = factsSummary.net_sales ?? reportSummary?.net_sales ?? 0;
+    const foodSales = factsSummary.food_sales ?? 0;
+    const beverageSales = factsSummary.beverage_sales ?? 0;
+    if (netSales === 0 && foodSales === 0 && beverageSales === 0) return;
+
+    fetchNarratives({
+      venueId,
+      date,
+      venueName,
+      netSales: netSales || (foodSales + beverageSales),
+      totalCovers: factsSummary.total_covers ?? reportSummary?.total_covers ?? 0,
+      foodSales,
+      beverageSales,
+      beveragePct: factsSummary.beverage_pct ?? 0,
+      forecastNetSales: factsSummary.forecast?.net_sales ?? null,
+      forecastCovers: factsSummary.forecast?.covers ?? null,
+      vsForecastPct: factsSummary.variance?.vs_forecast_pct ?? null,
+      vsSdlwPct: factsSummary.variance?.vs_sdlw_pct ?? null,
+      vsSdlyPct: factsSummary.variance?.vs_sdly_pct ?? null,
+      laborCost: factsSummary.labor?.labor_cost ?? 0,
+      laborPct: factsSummary.labor?.labor_pct ?? 0,
+      splh: factsSummary.labor?.splh ?? 0,
+      otHours: factsSummary.labor?.ot_hours ?? 0,
+      totalLaborHours: factsSummary.labor?.total_hours ?? 0,
+      employeeCount: factsSummary.labor?.employee_count ?? 0,
+      coversPerLaborHour: factsSummary.labor?.covers_per_labor_hour ?? null,
+      fohHours: factsSummary.labor?.foh?.hours ?? null,
+      fohCost: factsSummary.labor?.foh?.cost ?? null,
+      bohHours: factsSummary.labor?.boh?.hours ?? null,
+      bohCost: factsSummary.labor?.boh?.cost ?? null,
+      totalComps: factsSummary.total_comps ?? reportSummary?.total_comps ?? 0,
+      compPct: compExceptions?.summary?.comp_pct ?? 0,
+      compExceptionCount: compExceptions?.summary?.exception_count ?? 0,
+      compCriticalCount: compExceptions?.summary?.critical_count ?? 0,
+      compOverallAssessment: compReview?.summary?.overallAssessment ?? null,
+      healthScore: healthData?.health_score ?? null,
+      incidentTriggers: triggers?.incident_triggers ?? [],
+      hasEntertainment,
+      entertainmentCost: null,
+      entertainmentPct: null,
+      hasCulinary,
+      eightysixedCount: 0,
+      culinaryRating: null,
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, venueId, date]);
+
+  // ---------------------------------------------------------------------------
   // Build step configs — all modules always required, flagged when triggered
   // ---------------------------------------------------------------------------
   const steps: StepConfig[] = useMemo(() => [
@@ -536,6 +598,9 @@ export function AttestationStepper({
                         foodSales={factsSummary?.food_sales || undefined}
                         beverageSales={factsSummary?.beverage_sales || undefined}
                         beveragePct={factsSummary?.beverage_pct}
+                        aiNarrative={aiNarratives?.revenue_narrative}
+                        aiNarrativeLoading={aiNarrativesLoading}
+                        aiNarrativeError={aiNarrativesError}
                       />
                     )}
                     {activeStep.id === 'comps' && (
@@ -551,6 +616,9 @@ export function AttestationStepper({
                         compsByReason={compsByReason}
                         attestation={attestation}
                         onUpdate={updateField}
+                        aiNarrative={aiNarratives?.comp_narrative}
+                        aiNarrativeLoading={aiNarrativesLoading}
+                        aiNarrativeError={aiNarrativesError}
                       />
                     )}
                     {activeStep.id === 'foh' && (
@@ -563,6 +631,9 @@ export function AttestationStepper({
                         netSales={factsSummary?.net_sales ?? reportSummary?.net_sales ?? 0}
                         covers={factsSummary?.total_covers ?? reportSummary?.total_covers ?? 0}
                         laborExceptions={laborExceptions}
+                        aiNarrative={aiNarratives?.labor_narrative}
+                        aiNarrativeLoading={aiNarrativesLoading}
+                        aiNarrativeError={aiNarrativesError}
                       />
                     )}
                     {activeStep.id === 'entertainment' && (
@@ -594,6 +665,9 @@ export function AttestationStepper({
                         netSales={factsSummary?.net_sales ?? reportSummary?.net_sales ?? 0}
                         covers={factsSummary?.total_covers ?? reportSummary?.total_covers ?? 0}
                         laborExceptions={laborExceptions}
+                        aiNarrative={aiNarratives?.labor_narrative}
+                        aiNarrativeLoading={aiNarrativesLoading}
+                        aiNarrativeError={aiNarrativesError}
                       />
                     )}
                     {activeStep.id === 'culinary' && (
@@ -613,6 +687,9 @@ export function AttestationStepper({
                         disabled={isLocked}
                         attestation={attestation}
                         onUpdate={updateField}
+                        aiNarrative={aiNarratives?.incident_narrative}
+                        aiNarrativeLoading={aiNarrativesLoading}
+                        aiNarrativeError={aiNarrativesError}
                       />
                     )}
                     {activeStep.id === 'coaching' && (
@@ -622,6 +699,9 @@ export function AttestationStepper({
                         disabled={isLocked}
                         attestation={attestation}
                         onUpdate={updateField}
+                        aiNarrative={aiNarratives?.coaching_narrative}
+                        aiNarrativeLoading={aiNarrativesLoading}
+                        aiNarrativeError={aiNarrativesError}
                       />
                     )}
                     {activeStep.id === 'guest' && (

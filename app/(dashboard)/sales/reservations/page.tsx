@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { PacingControlPanel } from '@/components/reservations/PacingControlPanel';
 import { RecommendationBanner } from '@/components/reservations/RecommendationBanner';
+import { DemandCalendarCard } from '@/components/reservations/DemandCalendarCard';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -621,6 +622,12 @@ export default function ReservationsPage() {
 
               {/* Booking Manager Action Panel */}
               <BookingActionPanel outlook={outlook} />
+
+              {/* Demand Calendar Context */}
+              <DemandCalendarCard
+                venueId={selectedVenue.id}
+                date={selectedDate}
+              />
 
               {/* AI Pacing Recommendations */}
               <RecommendationBanner

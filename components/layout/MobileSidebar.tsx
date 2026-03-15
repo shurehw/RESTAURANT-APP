@@ -129,16 +129,8 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
               Nightly Report
             </NavLink>
           )}
-          {permissions.pulse && (
-            <NavLink href="/sales/pace" icon={<Zap className="w-5 h-5" />}>
-              Live Pulse
-            </NavLink>
-          )}
-          {permissions.laborBriefing && (
-            <NavLink href="/labor/briefing" icon={<Calendar className="w-5 h-5" />}>
-              Daily Briefing
-            </NavLink>
-          )}
+          {/* Live Pulse (/sales/pace) is PWA-only — no sidebar link needed */}
+          {/* Daily Briefing removed — content merges into Preshift */}
           {permissions.preshift && (
             <NavLink href="/preshift" icon={<ClipboardList className="w-5 h-5" />}>
               Preshift
@@ -240,6 +232,20 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
           </NavSection>
           )}
 
+          {permissions.agents && (
+            <NavSection title="Agents">
+              <NavLink href="/admin/menu-agent" icon={<UtensilsCrossed className="w-5 h-5" />}>
+                Menu Agent
+              </NavLink>
+              <NavLink href="/admin/procurement-agent" icon={<ShoppingCart className="w-5 h-5" />}>
+                Procurement Agent
+              </NavLink>
+              <NavLink href="/admin/rez-yield-agent" icon={<CalendarCheck className="w-5 h-5" />}>
+                Revenue Agent
+              </NavLink>
+            </NavSection>
+          )}
+
           <div className="pt-4 mt-4 border-t border-keva-sage-500">
             <NavLink href="/research" icon={<Search className="w-5 h-5" />}>
               Research
@@ -247,11 +253,6 @@ export function MobileSidebar({ criticalViolationCount, organizationSlug, userRo
             {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
               <NavLink href="/admin/settings" icon={<Settings className="w-5 h-5" />}>
                 Settings
-              </NavLink>
-            )}
-            {(permissions.orgSettings || permissions.compSettings || permissions.procurementSettings) && (
-              <NavLink href="/admin/mockups" icon={<Search className="w-5 h-5" />}>
-                Mockups Admin
               </NavLink>
             )}
           </div>

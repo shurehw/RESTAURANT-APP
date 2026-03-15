@@ -44,6 +44,7 @@ import {
   ClipboardPen,
   ChefHat,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { useAttestation } from '@/components/attestation/useAttestation';
 import { AttestationStepper } from '@/components/attestation/stepper/AttestationStepper';
@@ -75,6 +76,27 @@ function isFoodCategory(cat: string) {
          lower.includes('salad') || lower.includes('soup') ||
          lower.includes('side') || lower === '';
 }
+
+// Classify TipSee employee roles — returns null for non-scoreable roles (managers, admin, etc.)
+function classifyRole(role: string | null): string | null {
+  if (!role) return 'server';
+  const r = role.toLowerCase();
+  if (r.includes('manager') || r.includes('admin') || r.includes('valet') ||
+      r.includes('event') || r.includes('cover charge')) return null;
+  if (r.includes('bartend') || r.includes('bar back') || r.includes('barback') ||
+      r.includes('service bar')) return 'bartender';
+  if (r.includes('host') || r.includes('maitre')) return 'host';
+  if (r.includes('server') || r.includes('waiter') || r.includes('waitress') ||
+      r.includes('captain')) return 'server';
+  if (r.includes('busser') || r.includes('runner') || r.includes('sommelier')) return 'other';
+  return 'server';
+}
+
+// Auto-grat venue IDs: tip % from payments is meaningless (automatic service charges)
+const AUTO_GRAT_VENUE_IDS = new Set([
+  'a7da18a4-a70b-4492-abed-c9fed5851c9e', // Bird Streets Club
+  '288b7f22-ffdc-4701-a396-a6b415aff0f1', // Delilah Miami
+]);
 
 interface NightlyReportData {
   date: string;
@@ -524,6 +546,12 @@ export default function NightlyReportPage() {
   const [compNotes, setCompNotes] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [compExceptions, setCompExceptions] = useState<CompExceptionsData | null>(null);
+  const [compReview, setCompReview] = useState<{
+    summary: { totalReviewed: number; approved: number; needsFollowup: number; urgent: number; overallAssessment: string };
+    recommendations: Array<{ priority: string; category: string; title: string; description: string; action: string; relatedComps?: string[] }>;
+    insights: string[];
+  } | null>(null);
+  const [loadingCompReview, setLoadingCompReview] = useState(false);
   const [selectedServer, setSelectedServer] = useState<NightlyReportData['servers'][0] | null>(null);
   const [serverModalOpen, setServerModalOpen] = useState(false);
   const [laborExceptions, setLaborExceptions] = useState<any | null>(null);
@@ -538,11 +566,18 @@ export default function NightlyReportPage() {
     forecast: any;
     pace: any;
   } | null>(null);
+  const [serverScores, setServerScores] = useState<Record<string, { score: number; tier: string; weakAreas?: string[] }>>({});
   const [attestStepperOpen, setAttestStepperOpen] = useState(false);
   const [attestInitialStep, setAttestInitialStep] = useState<string | undefined>(undefined);
   const [selectedCheckId, setSelectedCheckId] = useState<string | null>(null);
   const [checkDetailOpen, setCheckDetailOpen] = useState(false);
   const [reservationsSheetOpen, setReservationsSheetOpen] = useState(false);
+
+  // Closing Narrative (AI-generated summary)
+  const [narrativeText, setNarrativeText] = useState<string | null>(null);
+  const [narrativeLoading, setNarrativeLoading] = useState(false);
+  const [narrativeError, setNarrativeError] = useState<string | null>(null);
+  const [narrativeExpanded, setNarrativeExpanded] = useState(false);
 
   // Group view state (when "All Venues" is selected)
   const [groupData, setGroupData] = useState<{
@@ -596,13 +631,15 @@ export default function NightlyReportPage() {
 
   // Compute team averages for server comparison (based on active view mode)
   const serverTeamAverages = React.useMemo(() => {
-    const servers = viewMode === 'nightly'
+    const raw = viewMode === 'nightly'
       ? report?.servers
       : viewMode === 'wtd'
         ? factsSummary?.servers_wtd
         : viewMode === 'ptd'
           ? factsSummary?.servers_ptd
           : factsSummary?.servers_ytd;
+    // Filter out managers from team averages
+    const servers = (raw || []).filter(s => classifyRole(s.employee_role_name) !== null);
     if (!servers?.length) return null;
     const count = servers.length;
     const withTips = servers.filter((s) => s.tip_pct != null && s.tip_pct !== undefined);
@@ -782,6 +819,88 @@ export default function NightlyReportPage() {
     createIfMissing: canCreateAttestation,
   });
 
+  // ---------------------------------------------------------------------------
+  // Closing Narrative — on-demand AI-generated summary
+  // ---------------------------------------------------------------------------
+  const fetchNarrative = React.useCallback(async () => {
+    if (!selectedVenue?.id || !date) return;
+    const summary = report?.summary;
+    if (!summary && !factsSummary) return;
+
+    setNarrativeLoading(true);
+    setNarrativeError(null);
+
+    try {
+      const netSales = factsSummary?.net_sales ?? summary?.net_sales ?? 0;
+      const totalCovers = factsSummary?.total_covers ?? summary?.total_covers ?? 0;
+      const avgCheck = totalCovers > 0 ? netSales / totalCovers : 0;
+
+      const res = await fetch('/api/ai/closing-narrative', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          date,
+          venueName: selectedVenue.name,
+          venue_id: selectedVenue.id,
+          net_sales: netSales,
+          total_covers: totalCovers,
+          avg_check: avgCheck,
+          food_sales: factsSummary?.food_sales ?? 0,
+          beverage_sales: factsSummary?.beverage_sales ?? 0,
+          beverage_pct: factsSummary?.beverage_pct ?? 0,
+          forecast_net_sales: factsSummary?.forecast?.net_sales ?? null,
+          vs_forecast_pct: factsSummary?.variance?.vs_forecast_pct ?? null,
+          vs_sdlw_pct: factsSummary?.variance?.vs_sdlw_pct ?? null,
+          vs_sdly_pct: factsSummary?.variance?.vs_sdly_pct ?? null,
+          labor_cost: factsSummary?.labor?.labor_cost ?? 0,
+          labor_pct: factsSummary?.labor?.labor_pct ?? 0,
+          splh: factsSummary?.labor?.splh ?? 0,
+          ot_hours: factsSummary?.labor?.ot_hours ?? 0,
+          total_labor_hours: factsSummary?.labor?.total_hours ?? 0,
+          employee_count: factsSummary?.labor?.employee_count ?? 0,
+          total_comps: summary?.total_comps ?? factsSummary?.total_comps ?? 0,
+          comp_pct: compExceptions?.summary?.comp_pct ?? 0,
+          comp_exception_count: compExceptions?.summary?.exception_count ?? 0,
+          voids_total: summary?.total_voids ?? 0,
+          discounts_total: report?.discounts?.reduce((sum, d) => sum + (d.amount || 0), 0) ?? 0,
+          checks_count: summary?.total_checks ?? factsSummary?.total_checks ?? 0,
+          avg_party_size: (summary?.total_checks ?? 0) > 0
+            ? (summary?.total_covers ?? 0) / (summary?.total_checks ?? 1)
+            : 0,
+          health_score: healthData?.health_score ?? null,
+          top_items: (report?.menuItems ?? []).slice(0, 10).map(i => ({
+            name: i.name,
+            revenue: i.net_total,
+            quantity: i.qty,
+          })),
+          servers: (report?.servers ?? []).map(s => ({
+            name: s.employee_name,
+            net_sales: s.net_sales,
+            covers: s.covers,
+            checks: s.tickets,
+            avg_check: s.avg_ticket,
+            tip_pct: s.tip_pct ?? 0,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(err.error || `Request failed (${res.status})`);
+      }
+
+      const data = await res.json();
+      setNarrativeText(data.narrative);
+      setNarrativeExpanded(true);
+    } catch (err: any) {
+      console.error('[nightly] Narrative fetch failed:', err);
+      setNarrativeError(err.message || 'Failed to generate narrative');
+    } finally {
+      setNarrativeLoading(false);
+    }
+  }, [selectedVenue, date, report, factsSummary, compExceptions, healthData]);
+
   // Note: date is initialized to yesterday via useState initializer
 
   // Fetch venue mappings on mount
@@ -816,9 +935,13 @@ export default function NightlyReportPage() {
         setReport(null);
         setGroupData(null);
         setCompExceptions(null);
+        setCompReview(null);
         setEnrichment(null);
         setPaceData(null);
         setHealthData(null);
+        setNarrativeText(null);
+        setNarrativeError(null);
+        setNarrativeExpanded(false);
         try {
           const res = await fetch(
             `/api/nightly/facts?date=${date}&venue_id=all&view=${viewMode}`,
@@ -884,7 +1007,11 @@ export default function NightlyReportPage() {
       setError(null);
       setGroupData(null);
       setCompExceptions(null);
+      setCompReview(null);
       setCompNotes({});
+      setNarrativeText(null);
+      setNarrativeError(null);
+      setNarrativeExpanded(false);
 
       // ---------------------------------------------------------------
       // PARALLEL: Fire ALL independent fetches at once.
@@ -968,6 +1095,26 @@ export default function NightlyReportPage() {
         .then(data => { if (data) setEnrichment({ labor: data.labor, comps: data.comps }); })
         .catch(err => { console.error('[nightly] Enrichment fetch failed:', err); });
 
+      // Server performance scores (composite score + tier from rolling 30-day window)
+      setServerScores({});
+      fetch(`/api/servers/scores?venue_id=${selectedVenue.id}`, { credentials: 'include' })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.success && data.data?.length) {
+            const map: Record<string, { score: number; tier: string; weakAreas?: string[] }> = {};
+            for (const s of data.data) {
+              const weakAreas: string[] = [];
+              if (s.revenue_per_cover_score != null && s.revenue_per_cover_score < 40) weakAreas.push('avg/cover');
+              if (s.tip_pct_score != null && s.tip_pct_score < 40) weakAreas.push('tip %');
+              if (s.turn_time_score != null && s.turn_time_score < 40) weakAreas.push('turn time');
+              if (s.consistency_score != null && s.consistency_score < 40) weakAreas.push('consistency');
+              map[s.server_name] = { score: s.composite_score, tier: s.score_tier, weakAreas };
+            }
+            setServerScores(map);
+          }
+        })
+        .catch(err => { console.error('[nightly] Server scores fetch failed:', err); });
+
       // Sales Pace: same data source as Pulse gauge cards
       setPaceData(null);
       fetch(`/api/sales/pace?venue_id=${selectedVenue.id}&date=${date}`, { credentials: 'include' })
@@ -1005,6 +1152,30 @@ export default function NightlyReportPage() {
             .then(data => {
               const parsedExceptions = data?.success ? data.data : null;
               if (parsedExceptions) setCompExceptions(parsedExceptions);
+
+              // 4) AI comp review — POST with pre-fetched data (only when comps exist)
+              if (liveData.detailedComps?.length > 0) {
+                setLoadingCompReview(true);
+                fetch('/api/ai/comp-review', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    date,
+                    venue_id: selectedVenue.id,
+                    venue_name: selectedVenue.name,
+                    detailedComps: liveData.detailedComps,
+                    exceptions: parsedExceptions,
+                    summary: liveData.summary,
+                  }),
+                })
+                  .then(res => res.ok ? res.json() : null)
+                  .then(reviewData => {
+                    if (reviewData?.success) setCompReview(reviewData.data);
+                  })
+                  .catch(err => console.error('AI comp review error:', err))
+                  .finally(() => setLoadingCompReview(false));
+              }
             })
             .catch(err => console.error('Comp exceptions error:', err));
         }
@@ -1660,6 +1831,78 @@ export default function NightlyReportPage() {
                   />
                 </div>
 
+                {/* Closing Narrative — AI-generated summary (nightly only) */}
+                {viewMode === 'nightly' && !isAllVenues && (
+                  <Card>
+                    <CardHeader
+                      className="border-b border-brass/20 py-3 cursor-pointer select-none"
+                      onClick={() => {
+                        if (narrativeText) {
+                          setNarrativeExpanded(!narrativeExpanded);
+                        } else if (!narrativeLoading) {
+                          fetchNarrative();
+                        }
+                      }}
+                    >
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-brass" />
+                        Closing Narrative
+                        <span className="ml-auto flex items-center gap-2">
+                          {narrativeLoading && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                          {!narrativeText && !narrativeLoading && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-xs text-muted-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                fetchNarrative();
+                              }}
+                            >
+                              Generate
+                            </Button>
+                          )}
+                          {narrativeText && (
+                            narrativeExpanded
+                              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                              : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </span>
+                      </CardTitle>
+                    </CardHeader>
+                    {narrativeExpanded && narrativeText && (
+                      <CardContent className="p-4">
+                        <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap text-sm leading-relaxed">
+                          {narrativeText}
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-muted-foreground"
+                            onClick={() => fetchNarrative()}
+                            disabled={narrativeLoading}
+                          >
+                            {narrativeLoading ? (
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            ) : (
+                              <Sparkles className="h-3 w-3 mr-1" />
+                            )}
+                            Regenerate
+                          </Button>
+                        </div>
+                      </CardContent>
+                    )}
+                    {narrativeError && (
+                      <CardContent className="p-4">
+                        <p className="text-sm text-error">{narrativeError}</p>
+                      </CardContent>
+                    )}
+                  </Card>
+                )}
+
                 {/* Labor + Comps — only render when data exists */}
                 {(laborData || compCardData) && (
                   <div className="grid gap-4 md:grid-cols-2">
@@ -2106,14 +2349,28 @@ export default function NightlyReportPage() {
                     );
                   }
 
-                  const serverData = viewMode === 'nightly'
+                  const rawServerData = viewMode === 'nightly'
                     ? (report?.servers?.length ? report.servers : factsSummary?.servers || [])
                     : viewMode === 'wtd'
                       ? factsSummary?.servers_wtd || []
                       : viewMode === 'ptd'
                         ? factsSummary?.servers_ptd || []
                         : factsSummary?.servers_ytd || [];
+                  // Filter out managers/admin/valet from live TipSee data (facts API already filters)
+                  const serverData = rawServerData.filter(
+                    (s) => classifyRole(s.employee_role_name) !== null
+                  );
                   const showDays = viewMode !== 'nightly';
+                  const isAutoGrat = selectedVenue?.id ? AUTO_GRAT_VENUE_IDS.has(selectedVenue.id) : false;
+
+                  // Compute team averages for coaching indicators
+                  const teamAvgPerCover = serverData.length > 0
+                    ? serverData.reduce((sum, s) => sum + (s.avg_per_cover || 0), 0) / serverData.length
+                    : 0;
+                  const serversWithTips = serverData.filter(s => s.tip_pct != null && s.tip_pct !== undefined);
+                  const teamAvgTipPct = serversWithTips.length > 0
+                    ? serversWithTips.reduce((sum, s) => sum + s.tip_pct!, 0) / serversWithTips.length
+                    : null;
 
                   if (serverData.length === 0) {
                     return (
@@ -2133,39 +2390,120 @@ export default function NightlyReportPage() {
                           <th className="text-right">Covers</th>
                           <th className="text-right">Sales</th>
                           <th className="text-right">Avg/Cover</th>
-                          <th className="text-right">Tip %</th>
+                          <th className="text-right">{isAutoGrat ? 'Tips' : 'Tip %'}</th>
                           {showDays && <th className="text-right">Days</th>}
+                          <th className="text-right w-8"></th>
                         </tr>
                       </thead>
                       <tbody>
-                        {serverData.slice(0, 15).map((server, i) => (
+                        {serverData.slice(0, 15).map((server, i) => {
+                          const roleCat = (server as any).role_category || classifyRole(server.employee_role_name) || 'server';
+                          const roleBadge = roleCat === 'bartender' ? 'Bar' : roleCat === 'host' ? 'Host' : 'Srv';
+                          const roleBadgeColor = roleCat === 'bartender'
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                            : roleCat === 'host'
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                              : 'bg-sage/10 text-sage';
+
+                          // Composite score from rolling 30-day scoring
+                          const scoreData = serverScores[server.employee_name];
+                          const scoreTier = scoreData?.tier;
+                          const tierColor = scoreTier === 'exceptional' ? 'text-emerald-600 dark:text-emerald-400'
+                            : scoreTier === 'strong' ? 'text-emerald-600/70 dark:text-emerald-400/70'
+                            : scoreTier === 'at_risk' ? 'text-red-500'
+                            : scoreTier === 'developing' ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-muted-foreground';
+
+                          // Coaching flags: prefer scored weak areas, fall back to simple threshold checks
+                          const coachingFlags: string[] = [];
+                          if (scoreData?.weakAreas?.length) {
+                            coachingFlags.push(...scoreData.weakAreas.map(a => `Low ${a}`));
+                          } else {
+                            if (teamAvgPerCover > 0 && (server.avg_per_cover || 0) < teamAvgPerCover * 0.75) {
+                              coachingFlags.push('Low avg/cover');
+                            }
+                            if (!isAutoGrat && teamAvgTipPct && server.tip_pct != null && server.tip_pct < teamAvgTipPct * 0.7) {
+                              coachingFlags.push('Low tip %');
+                            }
+                          }
+                          // Scored coaching actions
+                          const needsCoaching = scoreTier === 'at_risk' || scoreTier === 'developing';
+
+                          return (
                           <tr
                             key={i}
-                            className="cursor-pointer hover:bg-muted/50 transition-colors"
+                            className={`cursor-pointer hover:bg-muted/50 transition-colors ${needsCoaching ? 'bg-amber-50/30 dark:bg-amber-900/5' : ''}`}
                             onClick={() => {
                               setSelectedServer(server);
                               setServerModalOpen(true);
                             }}
                           >
                             <td>
-                              <div className="font-medium">{server.employee_name}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {server.employee_role_name}
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium">{server.employee_name}</span>
+                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${roleBadgeColor}`}>
+                                  {roleBadge}
+                                </span>
+                                {scoreData && (
+                                  <span className={`text-[10px] font-semibold ${tierColor}`} title={`30-day composite score: ${scoreData.score}/100`}>
+                                    {scoreData.score}
+                                  </span>
+                                )}
                               </div>
+                              {(coachingFlags.length > 0 || needsCoaching) && (
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0" />
+                                  <span className="text-[10px] text-amber-600 dark:text-amber-400">
+                                    {needsCoaching && !coachingFlags.length
+                                      ? `${scoreTier === 'at_risk' ? 'Schedule 1-on-1' : 'Pre-shift coaching'}`
+                                      : coachingFlags.join(' · ')}
+                                    {needsCoaching && coachingFlags.length > 0
+                                      ? ` · ${scoreTier === 'at_risk' ? 'Schedule 1-on-1' : 'Pre-shift coaching'}`
+                                      : ''}
+                                  </span>
+                                </div>
+                              )}
                             </td>
                             <td className="text-right">{server.covers}</td>
                             <td className="text-right">{formatCurrency(server.net_sales || 0)}</td>
-                            <td className="text-right">{formatCurrency(server.avg_per_cover || 0)}</td>
                             <td className="text-right">
-                              {server.tip_pct != null ? `${server.tip_pct}%` : '---'}
+                              <span className={teamAvgPerCover > 0 && (server.avg_per_cover || 0) < teamAvgPerCover * 0.75 ? 'text-amber-600 dark:text-amber-400' : ''}>
+                                {formatCurrency(server.avg_per_cover || 0)}
+                              </span>
+                            </td>
+                            <td className="text-right">
+                              {isAutoGrat || (server as any).is_auto_grat
+                                ? <span className="text-xs text-muted-foreground">auto-grat</span>
+                                : server.tip_pct != null
+                                  ? <span className={teamAvgTipPct && server.tip_pct < teamAvgTipPct * 0.7 ? 'text-amber-600 dark:text-amber-400' : ''}>
+                                      {server.tip_pct}%
+                                    </span>
+                                  : <span className="text-muted-foreground">---</span>
+                              }
                             </td>
                             {showDays && (
                               <td className="text-right">
                                 {(server as any).days_worked ?? '---'}
                               </td>
                             )}
+                            <td className="text-right">
+                              {needsCoaching ? (
+                                <span className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[10px] font-bold ${
+                                  scoreTier === 'at_risk'
+                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                                    : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                                }`} title={`${scoreTier === 'at_risk' ? 'At Risk' : 'Developing'}: ${scoreData?.score}/100 — ${coachingFlags.join(', ')}`}>
+                                  !
+                                </span>
+                              ) : coachingFlags.length > 0 ? (
+                                <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold" title={`Coaching: ${coachingFlags.join(', ')}`}>
+                                  !
+                                </span>
+                              ) : null}
+                            </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   );
@@ -2352,9 +2690,13 @@ export default function NightlyReportPage() {
                     {/* Only show tab switcher when both views have data */}
                     {(report?.detailedComps?.length ?? 0) > 0 && (
                       <div className="px-4 pt-3">
-                        <TabsList className="w-full grid grid-cols-2">
+                        <TabsList className="w-full grid grid-cols-3">
                           <TabsTrigger value="by-reason">By Reason</TabsTrigger>
                           <TabsTrigger value="all-comps">All Comps ({report?.detailedComps?.length})</TabsTrigger>
+                          <TabsTrigger value="ai-insights" className="gap-1">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            AI Review
+                          </TabsTrigger>
                         </TabsList>
                       </div>
                     )}
@@ -2451,6 +2793,80 @@ export default function NightlyReportPage() {
                       ) : (
                         <div className="empty-state py-8">
                           <p className="text-muted-foreground">No detailed comps</p>
+                        </div>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="ai-insights" className="mt-0">
+                      {loadingCompReview ? (
+                        <div className="empty-state py-8 flex items-center justify-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-brass" />
+                          <p className="text-muted-foreground">Analyzing comp patterns...</p>
+                        </div>
+                      ) : compReview ? (
+                        <div className="divide-y divide-border">
+                          {/* Summary bar */}
+                          <div className="px-4 py-3 bg-muted/30">
+                            <p className="text-sm font-medium mb-2">{compReview.summary.overallAssessment}</p>
+                            <div className="flex gap-4 text-xs text-muted-foreground">
+                              <span>{compReview.summary.totalReviewed} reviewed</span>
+                              <span className="text-green-600">{compReview.summary.approved} approved</span>
+                              {compReview.summary.needsFollowup > 0 && (
+                                <span className="text-amber-600">{compReview.summary.needsFollowup} follow-up</span>
+                              )}
+                              {compReview.summary.urgent > 0 && (
+                                <span className="text-error">{compReview.summary.urgent} urgent</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Recommendations */}
+                          {compReview.recommendations.length > 0 && (
+                            <div className="p-4 space-y-3">
+                              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Recommendations</h4>
+                              {compReview.recommendations.map((rec, i) => {
+                                const priorityColor = rec.priority === 'urgent' ? 'border-l-red-500 bg-red-500/5'
+                                  : rec.priority === 'high' ? 'border-l-amber-500 bg-amber-500/5'
+                                  : rec.priority === 'medium' ? 'border-l-blue-500 bg-blue-500/5'
+                                  : 'border-l-green-500 bg-green-500/5';
+                                const categoryLabel = rec.category === 'violation' ? 'Violation'
+                                  : rec.category === 'training' ? 'Training'
+                                  : rec.category === 'process' ? 'Process'
+                                  : rec.category === 'policy' ? 'Policy'
+                                  : 'Positive';
+                                return (
+                                  <div key={i} className={`border-l-4 rounded-r-md p-3 ${priorityColor}`}>
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{rec.priority}</span>
+                                      <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{categoryLabel}</span>
+                                    </div>
+                                    <p className="text-sm font-medium">{rec.title}</p>
+                                    <p className="text-sm text-muted-foreground mt-1">{rec.description}</p>
+                                    <p className="text-sm mt-2 font-medium text-foreground/80">Action: {rec.action}</p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          {/* Insights */}
+                          {compReview.insights.length > 0 && (
+                            <div className="p-4 space-y-2">
+                              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Insights</h4>
+                              <ul className="space-y-1.5">
+                                {compReview.insights.map((insight, i) => (
+                                  <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0 text-brass" />
+                                    {insight}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="empty-state py-8">
+                          <p className="text-muted-foreground">No AI review available</p>
                         </div>
                       )}
                     </TabsContent>
@@ -2762,7 +3178,7 @@ export default function NightlyReportPage() {
             reportSummary={report ? report.summary : null}
             factsSummary={stepperFacts}
             compExceptions={compExceptions}
-            compReview={null}
+            compReview={compReview}
             laborExceptions={laborExceptions}
             healthData={healthData}
             attestation={att.attestation}

@@ -41,6 +41,9 @@ export interface NavPermissions {
   // Optional Modules
   entertainment: boolean; // h.wood only
 
+  // Agent Dashboards (admin-level)
+  agents: boolean;
+
   // Operator Intelligence (owner/director only — not visible to managers)
   managerIntelligence: boolean;
 }
@@ -78,6 +81,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: true,
         procurementSettings: true,
         entertainment: true,
+        agents: true,
         managerIntelligence: true,
       };
 
@@ -107,6 +111,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: true,
         procurementSettings: true,
         entertainment: true,
+        agents: true,
         managerIntelligence: false,
       };
 
@@ -136,6 +141,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: true,
         entertainment: true,
+        agents: false,
         managerIntelligence: false,
       };
 
@@ -165,6 +171,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: true,
+        agents: false,
         managerIntelligence: false,
       };
 
@@ -194,6 +201,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        agents: false,
         managerIntelligence: false,
       };
 
@@ -223,6 +231,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        agents: false,
         managerIntelligence: false,
       };
 
@@ -252,6 +261,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: true,
+        agents: false,
         managerIntelligence: false,
       };
 
@@ -281,6 +291,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        agents: false,
         managerIntelligence: false,
       };
 
@@ -311,6 +322,7 @@ export function getNavPermissions(role: UserRole): NavPermissions {
         compSettings: false,
         procurementSettings: false,
         entertainment: false,
+        agents: false,
         managerIntelligence: false,
       };
 

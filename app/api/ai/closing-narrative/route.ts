@@ -1,9 +1,6 @@
 /**
  * AI Closing Narrative API
- * POST /api/ai/closing-narrative
- *
- * Generates a unified closing summary incorporating raw data + manager inputs.
- * Not cached — manager inputs change as they work through the attestation.
+ * POST /api/ai/closing-narrative — generate on-demand closing narrative
  */
 
 import { NextRequest, NextResponse } from 'next/server';

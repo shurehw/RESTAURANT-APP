@@ -2,6 +2,7 @@
 
 import { BOHAttestation } from '@/components/attestation/BOHAttestation';
 import { BOHContextCard } from '../context/BOHContextCard';
+import { AINarrativePanel } from '../context/AINarrativePanel';
 import type { NightlyAttestation, TriggerResult } from '@/lib/attestation/types';
 
 interface LaborData {
@@ -26,6 +27,10 @@ interface Props {
   netSales: number;
   covers: number;
   laborExceptions?: any | null;
+  // AI narrative
+  aiNarrative?: string | null;
+  aiNarrativeLoading?: boolean;
+  aiNarrativeError?: string | null;
 }
 
 export function BOHStep({
@@ -36,6 +41,9 @@ export function BOHStep({
   labor,
   netSales,
   laborExceptions,
+  aiNarrative,
+  aiNarrativeLoading = false,
+  aiNarrativeError,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -46,6 +54,13 @@ export function BOHStep({
         totalLaborCost={labor?.labor_cost ?? 0}
         totalLaborPct={labor?.labor_pct ?? 0}
         laborExceptions={laborExceptions}
+      />
+
+      <AINarrativePanel
+        narrative={aiNarrative}
+        loading={aiNarrativeLoading}
+        label="Labor Analysis"
+        error={aiNarrativeError}
       />
 
       <BOHAttestation
