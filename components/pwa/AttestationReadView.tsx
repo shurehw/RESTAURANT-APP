@@ -127,22 +127,22 @@ export function AttestationReadView({
 }: Props) {
   const revenueHasContent = REVENUE_PROMPT_KEYS.some(
     (k) => ((attestation[k] as string)?.length ?? 0) > 0,
-  );
+  ) || !!attestation.revenue_notes;
   const compHasContent = COMP_PROMPT_KEYS.some(
     (k) => ((attestation[k] as string)?.length ?? 0) > 0,
-  );
+  ) || !!attestation.comp_notes;
   const fohHasContent = FOH_PROMPT_KEYS.some(
     (k) => ((attestation[k] as string)?.length ?? 0) > 0,
-  );
+  ) || !!attestation.labor_notes || !!attestation.labor_foh_notes;
   const bohHasContent = BOH_PROMPT_KEYS.some(
     (k) => ((attestation[k] as string)?.length ?? 0) > 0,
-  );
+  ) || !!attestation.labor_boh_notes;
   const coachingHasContent = COACHING_PROMPT_KEYS.some(
     (k) => ((attestation[k] as string)?.length ?? 0) > 0,
-  );
+  ) || !!attestation.coaching_notes;
   const guestHasContent = GUEST_PROMPT_KEYS.some(
     (k) => ((attestation[k] as string)?.length ?? 0) > 0,
-  );
+  ) || !!attestation.guest_notes;
 
   return (
     <div className="space-y-5">
@@ -189,6 +189,9 @@ export function AttestationReadView({
         ) : (
           <NothingToReport />
         )}
+        {attestation.revenue_notes && (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.revenue_notes}</div>
+        )}
         <TagBadges tags={attestation.revenue_tags} labelMap={REVENUE_TAG_LABELS} />
       </section>
 
@@ -205,6 +208,9 @@ export function AttestationReadView({
           </div>
         ) : (
           <NothingToReport />
+        )}
+        {attestation.comp_notes && (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.comp_notes}</div>
         )}
         <TagBadges tags={attestation.comp_tags} labelMap={COMP_TAG_LABELS} />
 
@@ -255,6 +261,15 @@ export function AttestationReadView({
         ) : (
           <NothingToReport />
         )}
+        {attestation.labor_foh_notes && (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.labor_foh_notes}</div>
+        )}
+        {attestation.labor_notes && (
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground">Labor Notes</div>
+            <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.labor_notes}</div>
+          </div>
+        )}
         <TagBadges tags={attestation.labor_tags} labelMap={LABOR_TAG_LABELS} />
       </section>
 
@@ -271,6 +286,9 @@ export function AttestationReadView({
           </div>
         ) : (
           <NothingToReport />
+        )}
+        {attestation.labor_boh_notes && (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.labor_boh_notes}</div>
         )}
       </section>
 
@@ -339,6 +357,9 @@ export function AttestationReadView({
         ) : (
           <NothingToReport />
         )}
+        {attestation.coaching_notes && (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.coaching_notes}</div>
+        )}
         <TagBadges tags={attestation.coaching_tags} labelMap={COACHING_TAG_LABELS} />
 
         {coachingActions.length > 0 && (
@@ -405,28 +426,39 @@ export function AttestationReadView({
         ) : (
           <NothingToReport />
         )}
+        {attestation.guest_notes && (
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.guest_notes}</div>
+        )}
         <TagBadges tags={attestation.guest_tags} labelMap={GUEST_TAG_LABELS} />
       </section>
 
-      {/* Entertainment (if present) */}
-      {attestation.entertainment_notes && (
+      {/* Entertainment */}
+      {(attestation.entertainment_notes || (attestation.entertainment_tags?.length ?? 0) > 0) && (
         <>
           <div className="border-t border-border" />
           <section className="space-y-3">
             <SectionHeader icon={Music} label="Entertainment" />
-            <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.entertainment_notes}</div>
+            {attestation.entertainment_notes ? (
+              <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.entertainment_notes}</div>
+            ) : (
+              <NothingToReport />
+            )}
             <TagBadges tags={attestation.entertainment_tags} labelMap={ENTERTAINMENT_TAG_LABELS} />
           </section>
         </>
       )}
 
-      {/* Culinary (if present) */}
-      {attestation.culinary_notes && (
+      {/* Culinary */}
+      {(attestation.culinary_notes || (attestation.culinary_tags?.length ?? 0) > 0) && (
         <>
           <div className="border-t border-border" />
           <section className="space-y-3">
             <SectionHeader icon={CulinaryIcon} label="Culinary" />
-            <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.culinary_notes}</div>
+            {attestation.culinary_notes ? (
+              <div className="text-sm leading-relaxed whitespace-pre-wrap">{attestation.culinary_notes}</div>
+            ) : (
+              <NothingToReport />
+            )}
             <TagBadges tags={attestation.culinary_tags} labelMap={CULINARY_TAG_LABELS} />
           </section>
         </>
