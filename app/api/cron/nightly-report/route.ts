@@ -28,6 +28,10 @@ import { sendNightlyReportForOrg } from '@/lib/email/send-nightly-report';
 import type { NightlyReportData } from '@/lib/database/tipsee';
 import type { VenueReport } from '@/lib/email/nightly-report-template';
 import { generateVenueSummaries } from '@/lib/ai/nightly-summarizer';
+import { reviewComps, type CompReviewInput } from '@/lib/ai/comp-reviewer';
+import { generateDrillInsights } from '@/lib/ai/drill-insights';
+import { saveCompReviewActions, saveDrillInsightActions } from '@/lib/database/control-plane';
+import { getCompSettingsForVenue } from '@/lib/database/comp-settings';
 import { fetchManagerDigestEmails } from '@/lib/email/outlook-digest-fetcher';
 import {
   parseLightspeedDigest,
@@ -200,7 +204,12 @@ async function processOrg(
   // 4.5. Process manager email notes (Lightspeed/Wynn → parsed → AI narrative)
   const { venuesWithNoNotes } = await processManagerEmailNotes(org.id, orgVenues, businessDate, reportCache, laborCache);
 
-  // 5. Generate AI summaries per venue (multi-venue only)
+  // 5. Run AI comp review + drill insights → Action Center (before email send)
+  if (process.env.ANTHROPIC_API_KEY) {
+    await generateActionItems(orgVenues, businessDate, reportCache, laborCache, tipseeMappings);
+  }
+
+  // 6. Generate AI summaries per venue (multi-venue only)
   let aiSummaries: Map<string, string> | undefined;
   if (reportCache.size > 1) {
     const venueReports: VenueReport[] = orgVenues
@@ -215,7 +224,7 @@ async function processOrg(
     aiSummaries = await generateVenueSummaries(venueReports, businessDate);
   }
 
-  // 6. Send emails
+  // 7. Send emails
   const result = await sendNightlyReportForOrg({
     orgId: org.id,
     orgName: org.name,
@@ -435,6 +444,178 @@ async function processManagerEmailNotes(
   }
 
   return { venuesWithNoNotes };
+}
+
+// ── Action Item Generation ───────────────────────────────────────
+
+/**
+ * Run AI comp review + drill insights for each venue and save to Action Center.
+ * This ensures action items exist BEFORE the nightly email links are clicked.
+ */
+async function generateActionItems(
+  orgVenues: Array<{ id: string; name: string }>,
+  businessDate: string,
+  reportCache: Map<string, NightlyReportData>,
+  laborCache: Map<string, VenueReport['laborData']>,
+  tipseeMappings: Map<string, string>
+): Promise<void> {
+  let compActions = 0;
+  let drillActions = 0;
+
+  await Promise.allSettled(
+    orgVenues
+      .filter((v) => reportCache.has(v.id))
+      .map(async (venue) => {
+        const report = reportCache.get(venue.id)!;
+        const labor = laborCache.get(venue.id);
+
+        // ── Comp Review ──────────────────────────────────────
+        // Only run if there are comps to review
+        if (report.detailedComps && report.detailedComps.length > 0) {
+          try {
+            const compSettings = await getCompSettingsForVenue(venue.id);
+
+            // Build review input (same structure as POST /api/ai/comp-review)
+            const reviewInput: CompReviewInput = {
+              date: businessDate,
+              venueName: venue.name,
+              allComps: (report.detailedComps || []).map((comp: any) => ({
+                check_id: comp.check_id,
+                table_name: comp.table_name,
+                server: comp.server,
+                comp_total: comp.comp_total,
+                check_total: comp.check_total,
+                reason: comp.reason,
+                comped_items: (comp.comped_items || []).map((itemStr: any) => {
+                  if (typeof itemStr === 'string') {
+                    const amountMatch = itemStr.match(/\(\$([0-9.]+)\)$/);
+                    const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+                    const namePart = amountMatch
+                      ? itemStr.substring(0, itemStr.lastIndexOf('($')).trim()
+                      : itemStr;
+                    const qtyMatch = namePart.match(/^(.+?)\s+x(\d+)$/);
+                    const name = qtyMatch ? qtyMatch[1].trim() : namePart;
+                    const quantity = qtyMatch ? parseInt(qtyMatch[2], 10) : 1;
+                    return { name, quantity, amount };
+                  }
+                  return itemStr;
+                }),
+              })),
+              exceptions: {
+                summary: {
+                  date: businessDate,
+                  total_comps: report.summary.total_comps,
+                  net_sales: report.summary.net_sales,
+                  comp_pct: report.summary.net_sales > 0
+                    ? (report.summary.total_comps / report.summary.net_sales) * 100 : 0,
+                  comp_pct_status: 'ok' as const,
+                  exception_count: 0,
+                  critical_count: 0,
+                  warning_count: 0,
+                },
+                exceptions: [],
+              },
+              summary: {
+                total_comps: report.summary.total_comps,
+                net_sales: report.summary.net_sales,
+                comp_pct: report.summary.net_sales > 0
+                  ? (report.summary.total_comps / report.summary.net_sales) * 100 : 0,
+                total_checks: report.summary.total_checks,
+              },
+            };
+
+            // Fetch historical data if TipSee mapping exists
+            const tipseeUuid = tipseeMappings.get(venue.id);
+            if (tipseeUuid) {
+              try {
+                const { getTipseePool } = await import('@/lib/database/tipsee');
+                const pool = getTipseePool();
+                const result = await pool.query(
+                  `SELECT
+                    AVG(CASE WHEN revenue_total > 0 THEN (comp_total / revenue_total) * 100 ELSE 0 END) as avg_comp_pct,
+                    AVG(comp_total) as avg_comp_total,
+                    SUM(comp_total) as total_comps,
+                    SUM(revenue_total) as total_revenue
+                  FROM public.tipsee_checks
+                  WHERE location_uuid = $1
+                    AND trading_day < $2
+                    AND trading_day >= (DATE($2) - INTERVAL '7 days')::date`,
+                  [tipseeUuid, businessDate]
+                );
+                const row = result.rows[0];
+                reviewInput.historical = {
+                  avg_daily_comp_pct: parseFloat(row?.avg_comp_pct || '0'),
+                  avg_daily_comp_total: parseFloat(row?.avg_comp_total || '0'),
+                  previous_week_comp_pct: parseFloat(row?.total_revenue || '0') > 0
+                    ? (parseFloat(row?.total_comps || '0') / parseFloat(row?.total_revenue || '0')) * 100
+                    : 0,
+                };
+              } catch {
+                reviewInput.historical = { avg_daily_comp_pct: 0, avg_daily_comp_total: 0, previous_week_comp_pct: 0 };
+              }
+            }
+
+            const review = await reviewComps(reviewInput, compSettings ?? undefined);
+
+            if (review.recommendations.length > 0) {
+              const saved = await saveCompReviewActions(venue.id, businessDate, venue.name, review.recommendations);
+              compActions += saved.actionsCreated;
+            }
+          } catch (err: any) {
+            console.error(`[nightly-report-cron] Comp review failed for ${venue.name}:`, err.message);
+          }
+        }
+
+        // ── Drill Insights (comps, servers, labor) ───────────
+        const sections = ['comps', 'servers', 'labor'];
+        for (const section of sections) {
+          try {
+            let sectionData: any;
+            if (section === 'comps') {
+              sectionData = {
+                discounts: report.discounts,
+                detailedComps: report.detailedComps,
+                summary: report.summary,
+              };
+            } else if (section === 'servers') {
+              sectionData = {
+                servers: report.servers,
+                summary: report.summary,
+              };
+            } else if (section === 'labor' && labor) {
+              sectionData = {
+                labor,
+                summary: report.summary,
+              };
+            } else {
+              continue;
+            }
+
+            const insights = await generateDrillInsights({
+              section,
+              venueName: venue.name,
+              date: businessDate,
+              data: sectionData,
+            });
+
+            if (insights.length > 0) {
+              const saved = await saveDrillInsightActions(
+                venue.id, businessDate, venue.name, section, insights
+              );
+              drillActions += saved.actionsCreated;
+            }
+          } catch (err: any) {
+            console.error(`[nightly-report-cron] Drill insights (${section}) failed for ${venue.name}:`, err.message);
+          }
+        }
+      })
+  );
+
+  if (compActions > 0 || drillActions > 0) {
+    console.log(
+      `[nightly-report-cron] Action Center: ${compActions} comp actions, ${drillActions} drill insights created`
+    );
+  }
 }
 
 // ── Data Fetchers ────────────────────────────────────────────────
