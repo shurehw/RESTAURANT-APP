@@ -58,6 +58,12 @@ interface OrgVenue {
   name: string;
 }
 
+interface NightlySub {
+  id: string;
+  user_id: string;
+  is_active: boolean;
+}
+
 // ── Role Config ──────────────────────────────────────────────────
 
 const ROLES = [
@@ -85,6 +91,7 @@ export default function TeamManager() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [venues, setVenues] = useState<OrgVenue[]>([]);
+  const [nightlySubs, setNightlySubs] = useState<NightlySub[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Dialog state
@@ -94,12 +101,14 @@ export default function TeamManager() {
 
   const loadData = useCallback(async () => {
     try {
-      const [membersRes, invitesRes] = await Promise.all([
+      const [membersRes, invitesRes, subsRes] = await Promise.all([
         fetch('/api/settings/team/members'),
         fetch('/api/settings/team/invites'),
+        fetch('/api/settings/nightly-subscribers'),
       ]);
       const membersData = await membersRes.json();
       const invitesData = await invitesRes.json();
+      const subsData = await subsRes.json();
 
       if (membersData.success) {
         setMembers(membersData.members.filter((m: TeamMember) => m.is_active));
@@ -107,6 +116,9 @@ export default function TeamManager() {
       }
       if (invitesData.success) {
         setInvites(invitesData.invites);
+      }
+      if (subsData.success) {
+        setNightlySubs(subsData.subscribers);
       }
     } catch (err) {
       console.error('Failed to load team data:', err);
@@ -219,6 +231,58 @@ export default function TeamManager() {
     }
   };
 
+  // ── Nightly Email Toggle ───────────────────────────────────────
+
+  const getNightlySub = (userId: string) =>
+    nightlySubs.find((s) => s.user_id === userId);
+
+  const handleToggleNightly = async (member: TeamMember) => {
+    const existing = getNightlySub(member.user_id);
+
+    try {
+      if (!existing) {
+        // Subscribe
+        const res = await fetch('/api/settings/nightly-subscribers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: member.user_id, venue_scope: 'auto' }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNightlySubs((prev) => [...prev, data.subscriber]);
+        }
+      } else if (existing.is_active) {
+        // Deactivate
+        const res = await fetch(`/api/settings/nightly-subscribers/${existing.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: false }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNightlySubs((prev) =>
+            prev.map((s) => (s.id === existing.id ? { ...s, is_active: false } : s))
+          );
+        }
+      } else {
+        // Reactivate
+        const res = await fetch(`/api/settings/nightly-subscribers/${existing.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: true }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setNightlySubs((prev) =>
+            prev.map((s) => (s.id === existing.id ? { ...s, is_active: true } : s))
+          );
+        }
+      }
+    } catch {
+      alert('Error updating nightly email subscription');
+    }
+  };
+
   // ── Venue Badges ───────────────────────────────────────────────
 
   const getVenueBadges = (venueIds: string[] | null) => {
@@ -280,6 +344,7 @@ export default function TeamManager() {
                   <th className="text-left px-4 py-2 font-medium text-gray-600">Email</th>
                   <th className="text-left px-4 py-2 font-medium text-gray-600">Role</th>
                   <th className="text-left px-4 py-2 font-medium text-gray-600">Venues</th>
+                  <th className="text-center px-4 py-2 font-medium text-gray-600">Nightly Email</th>
                   <th className="text-center px-4 py-2 font-medium text-gray-600">Active</th>
                   <th className="text-right px-4 py-2 font-medium text-gray-600"></th>
                 </tr>
@@ -296,6 +361,27 @@ export default function TeamManager() {
                     </td>
                     <td className="px-4 py-3">
                       {getVenueBadges(member.venue_ids)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {(() => {
+                        const sub = getNightlySub(member.user_id);
+                        const isOn = sub?.is_active ?? false;
+                        return (
+                          <button
+                            onClick={() => handleToggleNightly(member)}
+                            className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                              isOn ? 'bg-keva-sage-600' : 'bg-gray-200'
+                            }`}
+                            title={isOn ? 'Receiving nightly email' : 'Not subscribed to nightly email'}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                isOn ? 'translate-x-4' : 'translate-x-0'
+                              }`}
+                            />
+                          </button>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
