@@ -349,3 +349,70 @@ export async function getPreviousNight86Items(
 
   return data.eightysixed_items;
 }
+
+/**
+ * Get tonight's entertainment bookings.
+ */
+export interface EntertainmentBooking {
+  entertainment_type: string;
+  config: string | null;
+  artist_name: string | null;
+  time_start: string | null;
+  time_end: string | null;
+  status: string;
+  notes: string | null;
+}
+
+export async function getEntertainmentBookings(
+  venueId: string,
+  date: string,
+): Promise<EntertainmentBooking[]> {
+  const supabase = getServiceClient();
+  const { data, error } = await (supabase as any)
+    .from('entertainment_bookings')
+    .select('entertainment_type, config, artist_name, time_start, time_end, status, notes')
+    .eq('venue_id', venueId)
+    .eq('booking_date', date)
+    .neq('status', 'cancelled')
+    .order('time_start', { ascending: true });
+
+  if (error) {
+    console.error('[preshift] Failed to fetch entertainment:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+/**
+ * Get tonight's private events from Tripleseat.
+ */
+export interface TripleseatEvent {
+  event_name: string;
+  event_type: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  guest_count: number | null;
+  room_name: string | null;
+  is_buyout: boolean;
+  status: string;
+}
+
+export async function getTripleseatEvents(
+  venueId: string,
+  date: string,
+): Promise<TripleseatEvent[]> {
+  const supabase = getServiceClient();
+  const { data, error } = await (supabase as any)
+    .from('tripleseat_events')
+    .select('event_name, event_type, start_time, end_time, guest_count, room_name, is_buyout, status')
+    .eq('venue_id', venueId)
+    .eq('event_date', date)
+    .in('status', ['definite', 'tentative'])
+    .order('start_time', { ascending: true });
+
+  if (error) {
+    console.error('[preshift] Failed to fetch tripleseat events:', error.message);
+    return [];
+  }
+  return data || [];
+}

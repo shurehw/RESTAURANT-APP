@@ -13,10 +13,13 @@ import { requireUser } from '@/lib/auth';
 import {
   getPreshiftNotes,
   getCoversForecast,
+  getStaffingSummary,
   getVipReservations,
   getLargeParties,
   getRecentReviews,
   getPreviousNight86Items,
+  getEntertainmentBookings,
+  getTripleseatEvents,
 } from '@/lib/database/preshift';
 import { getDemandCalendarEntry } from '@/lib/database/demand-calendar';
 import { getPreshiftSummary } from '@/lib/enforcement/carry-forward';
@@ -53,19 +56,25 @@ export async function GET(request: NextRequest) {
     const [
       notes,
       coversForecast,
+      staffing,
       vipReservations,
       largeParties,
       recentReviews,
       eightySixedItems,
+      entertainment,
+      tripleseatEvents,
       demandCalendar,
       enforcementSummary,
     ] = await Promise.all([
       getPreshiftNotes(venueId, businessDate),
       getCoversForecast(venueId, businessDate),
+      getStaffingSummary(venueId, businessDate),
       getVipReservations(venueId, businessDate),
       getLargeParties(venueId, businessDate),
       getRecentReviews(venueId),
       getPreviousNight86Items(venueId, businessDate),
+      getEntertainmentBookings(venueId, businessDate).catch(() => []),
+      getTripleseatEvents(venueId, businessDate).catch(() => []),
       getDemandCalendarEntry(venueId, businessDate).catch(() => null),
       getPreshiftSummary(venueId, businessDate).catch(() => null),
     ]);
@@ -75,10 +84,13 @@ export async function GET(request: NextRequest) {
       business_date: businessDate,
       notes,
       covers_forecast: coversForecast,
+      staffing,
       vip_reservations: vipReservations,
       large_parties: largeParties,
       recent_reviews: recentReviews,
       eighty_sixed_items: eightySixedItems,
+      entertainment,
+      tripleseat_events: tripleseatEvents,
       demand_calendar: demandCalendar,
       enforcement_summary: enforcementSummary,
     });

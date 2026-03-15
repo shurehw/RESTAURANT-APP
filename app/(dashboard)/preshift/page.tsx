@@ -25,6 +25,7 @@ import {
 import { useVenue } from '@/components/providers/VenueProvider';
 import { PreshiftHeader } from '@/components/preshift/PreshiftHeader';
 import { PreshiftEditableSection } from '@/components/preshift/PreshiftEditableSection';
+import { StaffingSection } from '@/components/preshift/StaffingSection';
 import { EightySixSection } from '@/components/preshift/EightySixSection';
 import type { EightySixedItem } from '@/components/preshift/EightySixSection';
 import { ReviewsSection } from '@/components/preshift/ReviewsSection';
@@ -50,6 +51,11 @@ interface PreshiftFullData {
     eightysixed: EightySixedItem[];
   } | null;
   covers_forecast: number | null;
+  staffing: Array<{
+    position: string;
+    count: number;
+    names: string[];
+  }>;
   vip_reservations: Array<{
     time: string;
     party_size: number;
@@ -72,6 +78,25 @@ interface PreshiftFullData {
     count_last_7d: number;
   };
   eighty_sixed_items: string[];
+  entertainment: Array<{
+    entertainment_type: string;
+    config: string | null;
+    artist_name: string | null;
+    time_start: string | null;
+    time_end: string | null;
+    status: string;
+    notes: string | null;
+  }>;
+  tripleseat_events: Array<{
+    event_name: string;
+    event_type: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    guest_count: number | null;
+    room_name: string | null;
+    is_buyout: boolean;
+    status: string;
+  }>;
   demand_calendar: {
     narrative: string | null;
     is_holiday: boolean;
@@ -336,6 +361,9 @@ export default function PreshiftPage() {
           readonly={readonly}
         />
 
+        {/* Staffing — auto from schedule */}
+        <StaffingSection staffing={data.staffing || []} />
+
         {/* Zone Cleaning */}
         <PreshiftEditableSection
           title="Zone Cleaning"
@@ -381,8 +409,26 @@ export default function PreshiftPage() {
         {/* Events & Large Parties — auto */}
         <EventsSection
           largeParties={data.large_parties}
-          events={data.demand_calendar?.has_private_event ? data.demand_calendar.private_event_type : null}
-          entertainment={null}
+          events={data.tripleseat_events?.length > 0
+            ? data.tripleseat_events.map(e => ({
+                name: e.event_name,
+                type: e.event_type,
+                guest_count: e.guest_count,
+                room: e.room_name,
+                is_buyout: e.is_buyout,
+                start_time: e.start_time,
+              }))
+            : (data.demand_calendar?.has_private_event ? data.demand_calendar.private_event_type : null)
+          }
+          entertainment={data.entertainment?.length > 0
+            ? data.entertainment.map(e => ({
+                name: e.artist_name || e.config || e.entertainment_type,
+                time: e.time_start ? `${e.time_start}${e.time_end ? '–' + e.time_end : ''}` : null,
+                type: e.entertainment_type,
+                config: e.config,
+              }))
+            : null
+          }
         />
 
         {/* Enforcement — collapsible, auto */}
