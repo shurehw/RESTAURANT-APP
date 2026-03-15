@@ -46,16 +46,16 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "KevaOS",
-    startupImage: "/icons/pulse-512.png",
+    startupImage: "/icons/kevaos-512.png",
   },
   icons: {
     icon: [
       { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icons/pulse-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/pulse-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/kevaos-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/kevaos-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/pulse-192.png", sizes: "180x180", type: "image/png" },
+      { url: "/icons/kevaos-192.png", sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {

@@ -1,16 +1,16 @@
 // KevaOS PWA Service Worker v7
 // Network-first for API (live data), stale-while-revalidate for shell, offline fallback
 
-const CACHE_VERSION = 'kevaos-v7';
-const API_CACHE = 'kevaos-api-v7';
+const CACHE_VERSION = 'kevaos-v8';
+const API_CACHE = 'kevaos-api-v8';
 const MAX_API_ENTRIES = 50;
 const OFFLINE_URL = '/offline.html';
 
 // Only precache assets that don't require auth (no /sales/pace — it's behind login)
 const SHELL_ASSETS = [
   '/offline.html',
-  '/icons/pulse-192.png',
-  '/icons/pulse-512.png',
+  '/icons/kevaos-192.png',
+  '/icons/kevaos-512.png',
   '/manifest.json',
 ];
 
