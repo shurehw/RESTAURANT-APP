@@ -53,10 +53,23 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = validate(addSubscriberSchema, body);
 
-    // Resolve email from auth.users
+    // Resolve email from auth.users, fallback to legacy users table
     const supabase = getServiceClient();
+    let email: string | undefined;
+
     const { data: userData } = await supabase.auth.admin.getUserById(validated.user_id);
-    if (!userData?.user?.email) {
+    email = userData?.user?.email || undefined;
+
+    if (!email) {
+      const { data: legacyUser } = await (supabase as any)
+        .from('users')
+        .select('email')
+        .eq('id', validated.user_id)
+        .maybeSingle();
+      email = legacyUser?.email || undefined;
+    }
+
+    if (!email) {
       throw {
         status: 400,
         code: 'USER_NOT_FOUND',
@@ -67,7 +80,7 @@ export async function POST(request: NextRequest) {
     const subscriber = await addSubscriber({
       orgId,
       userId: validated.user_id,
-      email: userData.user.email,
+      email,
       venueScope: validated.venue_scope,
       venueIds: validated.venue_ids || null,
       createdBy: user.id,
