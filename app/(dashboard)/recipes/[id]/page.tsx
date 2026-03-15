@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { RecipeBuilder } from '@/components/recipes/RecipeBuilder';
+import { RecipeChat, type ExistingRecipeContext } from '@/components/recipes/RecipeChat';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, MessageSquare, Wrench } from 'lucide-react';
 
 interface RecipeData {
   id: string;
@@ -30,6 +32,7 @@ export default function EditRecipePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recipe, setRecipe] = useState<RecipeData | null>(null);
+  const [mode, setMode] = useState<'builder' | 'rethink'>('builder');
 
   useEffect(() => {
     async function fetchRecipe() {
@@ -78,22 +81,65 @@ export default function EditRecipePage() {
     );
   }
 
+  // Build context for rethink mode
+  const existingRecipeContext: ExistingRecipeContext = {
+    id: recipeId,
+    name: recipe.name,
+    recipe_type: recipe.recipe_type,
+    item_category: recipe.item_category,
+    category: recipe.category || '',
+    yield_qty: recipe.yield_qty,
+    yield_uom: recipe.yield_uom,
+    labor_minutes: recipe.labor_minutes || 0,
+    menu_price: recipe.menu_price,
+    food_cost_target: recipe.food_cost_target || 28,
+    cost_per_unit: recipe.cost_per_unit,
+    components: (recipe.components || []).map((c: any) => ({
+      type: c.type,
+      name: c.name,
+      qty: c.qty,
+      uom: c.uom,
+      cost: c.cost || 0,
+      itemId: c.itemId,
+      subRecipeId: c.subRecipeId,
+    })),
+  };
+
+  if (mode === 'rethink') {
+    return <RecipeChat existingRecipe={existingRecipeContext} />;
+  }
+
   return (
-    <RecipeBuilder
-      recipeId={recipeId}
-      initialData={{
-        name: recipe.name,
-        recipe_type: recipe.recipe_type,
-        item_category: recipe.item_category,
-        category: recipe.category || '',
-        yield_qty: recipe.yield_qty,
-        yield_uom: recipe.yield_uom,
-        labor_minutes: recipe.labor_minutes || 0,
-        menu_price: recipe.menu_price,
-        pos_sku: recipe.pos_sku,
-        food_cost_target: recipe.food_cost_target || 28,
-        components: recipe.components || [],
-      }}
-    />
+    <>
+      {/* Mode toggle */}
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setMode('rethink')}
+          className="gap-1.5"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Rethink with AI
+        </Button>
+      </div>
+
+      <RecipeBuilder
+        recipeId={recipeId}
+        initialData={{
+          name: recipe.name,
+          recipe_type: recipe.recipe_type,
+          item_category: recipe.item_category,
+          category: recipe.category || '',
+          yield_qty: recipe.yield_qty,
+          yield_uom: recipe.yield_uom,
+          labor_minutes: recipe.labor_minutes || 0,
+          menu_price: recipe.menu_price,
+          pos_sku: recipe.pos_sku,
+          food_cost_target: recipe.food_cost_target || 28,
+          components: recipe.components || [],
+        }}
+      />
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/server';
 import { guard } from '@/lib/route-guard';
 import { requireUser } from '@/lib/auth';
 import { getUserOrgAndVenues, assertRole } from '@/lib/tenant';
@@ -13,16 +13,17 @@ export async function GET(
   return guard(async () => {
     rateLimit(request, ':recipes-get');
     const user = await requireUser();
-    await getUserOrgAndVenues(user.id);
+    const { venueIds } = await getUserOrgAndVenues(user.id);
     
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
-    // Fetch recipe with components
+    // Fetch recipe with explicit venue scoping to avoid broken local RLS recursion.
     const { data: recipe, error: recipeError } = await supabase
       .from('recipes')
       .select('*')
       .eq('id', id)
+      .in('venue_id', venueIds)
       .single();
 
     if (recipeError) {
@@ -140,7 +141,7 @@ export async function PATCH(
       components,
     } = body;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check recipe exists and user has access
     const { data: existingRecipe, error: fetchError } = await supabase
@@ -253,7 +254,7 @@ export async function DELETE(
     assertRole(role, ['owner', 'admin', 'manager']);
 
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check recipe exists and user has access
     const { data: existingRecipe, error: fetchError } = await supabase

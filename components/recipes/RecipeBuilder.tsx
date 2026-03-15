@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, ArrowLeft, Save, Search } from 'lucide-react';
+import { Plus, X, ArrowLeft, Save, Search, Loader2, Sparkles, Clock, Flame, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface RecipeComponent {
@@ -66,6 +66,16 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Method section
+  const [rawMethod, setRawMethod] = useState('');
+  const [structuredMethod, setStructuredMethod] = useState<{
+    prep_ahead: string[];
+    a_la_minute: string[];
+    method: string[];
+  } | null>(null);
+  const [structuring, setStructuring] = useState(false);
+  const [showMethodSection, setShowMethodSection] = useState(true);
 
   // Component search
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,6 +149,36 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
 
   const handleRemoveComponent = (id: string) => {
     setComponents(components.filter(c => c.id !== id));
+  };
+
+  const handleStructureMethod = async () => {
+    if (!rawMethod.trim() || structuring) return;
+    setStructuring(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/recipes/structure-method', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raw_method: rawMethod,
+          recipe_name: name || undefined,
+          recipe_type: recipeType,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Failed to structure method' }));
+        throw new Error(err.message);
+      }
+
+      const data = await res.json();
+      setStructuredMethod(data.structured);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to structure method');
+    } finally {
+      setStructuring(false);
+    }
   };
 
   const handleSave = async () => {
@@ -374,6 +414,111 @@ export function RecipeBuilder({ recipeId, initialData, laborRatePerHour = 15 }: 
                 No components added yet
                 <br />
                 <span className="text-xs">Add ingredients or sub-recipes to build your recipe</span>
+              </div>
+            )}
+          </Card>
+
+          {/* Method */}
+          <Card className="p-6">
+            <button
+              onClick={() => setShowMethodSection(!showMethodSection)}
+              className="flex items-center justify-between w-full"
+            >
+              <h3 className="font-semibold">Method</h3>
+              {showMethodSection ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+
+            {showMethodSection && (
+              <div className="mt-4 space-y-4">
+                {/* Free-form input */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Write your method however you want
+                  </label>
+                  <textarea
+                    value={rawMethod}
+                    onChange={(e) => setRawMethod(e.target.value)}
+                    placeholder="e.g. season duck breast skin side, score the skin. hot pan medium-high, skin side down 6-7 min until rendered and crispy. flip, 2 min. rest 5 min, slice on bias. for the gastrique — sugar in saucepan until amber, deglaze with red wine vinegar, add cherries, reduce by half, mount with cold butter..."
+                    rows={5}
+                    className="w-full px-3 py-2 border border-keva-sage-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brass resize-y text-sm"
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Write naturally — AI will structure into prep-ahead and à la minute steps
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleStructureMethod}
+                      disabled={!rawMethod.trim() || rawMethod.trim().length < 10 || structuring}
+                      className="gap-1.5"
+                    >
+                      {structuring ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-3.5 h-3.5" />
+                      )}
+                      {structuring ? 'Structuring...' : 'AI Structure'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Structured output */}
+                {structuredMethod && (
+                  <div className="space-y-4 pt-2 border-t">
+                    {structuredMethod.prep_ahead.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-keva-sage-700 mb-2 flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5" /> Prep Ahead (Mise en Place)
+                        </h4>
+                        <ol className="space-y-2 ml-1">
+                          {structuredMethod.prep_ahead.map((step, i) => (
+                            <li key={i} className="flex gap-3 text-sm">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-keva-sage-100 text-keva-sage-700 flex items-center justify-center text-xs font-semibold">
+                                {i + 1}
+                              </span>
+                              <span className="pt-0.5">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {structuredMethod.a_la_minute.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-brass mb-2 flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5" /> À La Minute (During Service)
+                        </h4>
+                        <ol className="space-y-2 ml-1">
+                          {structuredMethod.a_la_minute.map((step, i) => (
+                            <li key={i} className="flex gap-3 text-sm">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-brass/10 text-brass flex items-center justify-center text-xs font-semibold">
+                                {i + 1}
+                              </span>
+                              <span className="pt-0.5">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {structuredMethod.method.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-muted-foreground mb-2">Full Method</h4>
+                        <ol className="space-y-2 ml-1">
+                          {structuredMethod.method.map((step, i) => (
+                            <li key={i} className="flex gap-3 text-sm">
+                              <span className="flex-shrink-0 w-5 h-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-xs font-semibold">
+                                {i + 1}
+                              </span>
+                              <span className="pt-0.5">{step}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </Card>
