@@ -2,8 +2,10 @@
  * lib/ai/nightly-summarizer.ts
  * Provides per-venue summaries for the nightly report email.
  *
- * Primary: closing_narrative from nightly_attestations (already AI-generated at attestation time).
- * Fallback: generates a summary from KPI data via Claude for venues without attestation.
+ * Three-tier resolution:
+ * 1. closing_narrative from nightly_attestations (attestation flow)
+ * 2. closing_narrative from manager_email_notes (parsed from Lightspeed/Wynn emails)
+ * 3. AI fallback: generates a short summary from KPI data via Claude
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -31,6 +33,34 @@ async function fetchAttestationNarratives(
     .in('venue_id', venueIds)
     .eq('business_date', businessDate)
     .eq('status', 'submitted')
+    .not('closing_narrative', 'is', null);
+
+  if (error || !data) return map;
+
+  for (const row of data) {
+    if (row.closing_narrative?.trim()) {
+      map.set(row.venue_id, row.closing_narrative.trim());
+    }
+  }
+
+  return map;
+}
+
+/**
+ * Fetch closing_narrative from manager_email_notes (parsed from nightly digest emails).
+ */
+async function fetchManagerEmailNarratives(
+  venueIds: string[],
+  businessDate: string
+): Promise<Map<string, string>> {
+  const supabase = getServiceClient();
+  const map = new Map<string, string>();
+
+  const { data, error } = await (supabase as any)
+    .from('manager_email_notes')
+    .select('venue_id, closing_narrative')
+    .in('venue_id', venueIds)
+    .eq('business_date', businessDate)
     .not('closing_narrative', 'is', null);
 
   if (error || !data) return map;
@@ -150,7 +180,24 @@ export async function generateVenueSummaries(
     `[nightly-summarizer] ${attestNarratives.size}/${venues.length} venues have attestation narratives`
   );
 
-  // 2. AI fallback for venues without attestation
+  // 2. Pull closing_narrative from manager_email_notes for remaining venues
+  const missingAfterAttest = venues.filter((v) => !summaryMap.has(v.venueId));
+  if (missingAfterAttest.length > 0) {
+    const emailNarratives = await fetchManagerEmailNarratives(
+      missingAfterAttest.map((v) => v.venueId),
+      businessDate
+    );
+    for (const [venueId, narrative] of emailNarratives) {
+      summaryMap.set(venueId, narrative);
+    }
+    if (emailNarratives.size > 0) {
+      console.log(
+        `[nightly-summarizer] ${emailNarratives.size} venues have manager email narratives`
+      );
+    }
+  }
+
+  // 3. AI fallback for venues still without narrative
   const missing = venues.filter((v) => !summaryMap.has(v.venueId));
   if (missing.length > 0) {
     const fallback = await generateFallbackSummaries(missing, businessDate);

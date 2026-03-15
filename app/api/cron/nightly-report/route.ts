@@ -28,6 +28,13 @@ import { sendNightlyReportForOrg } from '@/lib/email/send-nightly-report';
 import type { NightlyReportData } from '@/lib/database/tipsee';
 import type { VenueReport } from '@/lib/email/nightly-report-template';
 import { generateVenueSummaries } from '@/lib/ai/nightly-summarizer';
+import { fetchManagerDigestEmails } from '@/lib/email/outlook-digest-fetcher';
+import {
+  parseLightspeedDigest,
+  parseWynnShiftReport,
+  resolveVenueName,
+} from '@/lib/email/manager-notes-parser';
+import { generateNarrativeFromNotes } from '@/lib/ai/manager-notes-narrator';
 
 // ── Auth ─────────────────────────────────────────────────────────
 
@@ -187,6 +194,9 @@ async function processOrg(
     })
   );
 
+  // 4.5. Process manager email notes (Lightspeed/Wynn → parsed → AI narrative)
+  await processManagerEmailNotes(org.id, orgVenues, businessDate, reportCache, laborCache);
+
   // 5. Generate AI summaries per venue (multi-venue only)
   let aiSummaries: Map<string, string> | undefined;
   if (reportCache.size > 1) {
@@ -215,6 +225,138 @@ async function processOrg(
   });
 
   return { ...result, venueCount: reportCache.size };
+}
+
+// ── Manager Email Notes ──────────────────────────────────────────
+
+/**
+ * Fetch manager nightly emails from Outlook, parse them, generate AI narratives,
+ * and store in manager_email_notes. Idempotent via email_message_id.
+ */
+async function processManagerEmailNotes(
+  orgId: string,
+  orgVenues: Array<{ id: string; name: string }>,
+  businessDate: string,
+  reportCache: Map<string, NightlyReportData>,
+  laborCache: Map<string, VenueReport['laborData']>
+): Promise<void> {
+  const supabase = getServiceClient();
+
+  // Build venue lookup by KevaOS name → venue record
+  const venueByName = new Map<string, { id: string; name: string }>();
+  for (const v of orgVenues) {
+    venueByName.set(v.name.toLowerCase(), v);
+  }
+
+  let emails;
+  try {
+    emails = await fetchManagerDigestEmails(businessDate);
+  } catch (err: any) {
+    console.error('[nightly-report-cron] Failed to fetch manager emails:', err.message);
+    return;
+  }
+
+  if (emails.length === 0) {
+    console.log('[nightly-report-cron] No manager digest emails found');
+    return;
+  }
+
+  let processed = 0;
+
+  for (const email of emails) {
+    try {
+      // Parse based on format
+      const parsed =
+        email.format === 'wynn'
+          ? parseWynnShiftReport(email.htmlBody, email.subject)
+          : parseLightspeedDigest(email.htmlBody, email.subject);
+
+      if (!parsed) continue;
+
+      // Resolve venue name → KevaOS venue name
+      const kevaosName = resolveVenueName(parsed.venueName);
+      if (!kevaosName) {
+        console.log(`[nightly-report-cron] Unknown venue from email: "${parsed.venueName}"`);
+        continue;
+      }
+
+      // Find venue in this org
+      const venue = venueByName.get(kevaosName.toLowerCase());
+      if (!venue) {
+        // Venue exists in alias map but not in this org — skip
+        continue;
+      }
+
+      // Check if already processed (idempotent)
+      const { data: existing } = await (supabase as any)
+        .from('manager_email_notes')
+        .select('id')
+        .eq('venue_id', venue.id)
+        .eq('business_date', businessDate)
+        .eq('email_message_id', email.messageId)
+        .maybeSingle();
+
+      if (existing) continue;
+
+      // Build KPI data from report cache for the AI narrator
+      let kpiData = null;
+      const report = reportCache.get(venue.id);
+      const labor = laborCache.get(venue.id);
+      if (report) {
+        const s = report.summary;
+        kpiData = {
+          netSales: s.net_sales,
+          covers: s.total_covers,
+          totalComps: s.total_comps,
+          laborCost: labor?.labor_cost || 0,
+          laborPct: labor?.labor_pct || 0,
+        };
+      }
+
+      // Generate AI narrative from notes + KPIs
+      const narrative = await generateNarrativeFromNotes(
+        venue.name,
+        businessDate,
+        parsed.sections,
+        kpiData
+      );
+
+      // Store in manager_email_notes
+      const { error: insertError } = await (supabase as any)
+        .from('manager_email_notes')
+        .insert({
+          venue_id: venue.id,
+          business_date: businessDate,
+          org_id: orgId,
+          source_email: email.fromEmail,
+          source_subject: email.subject,
+          email_message_id: email.messageId,
+          received_at: email.receivedAt,
+          raw_sections: parsed.sections,
+          closing_narrative: narrative,
+        });
+
+      if (insertError) {
+        console.error(
+          `[nightly-report-cron] Failed to store notes for ${venue.name}:`,
+          insertError.message
+        );
+      } else {
+        processed++;
+      }
+    } catch (err: any) {
+      console.error(
+        `[nightly-report-cron] Error processing email "${email.subject}":`,
+        err.message
+      );
+    }
+  }
+
+  if (processed > 0) {
+    console.log(
+      `[nightly-report-cron] Processed ${processed} manager email note(s) for ${businessDate}`
+    );
+  }
 }
 
 // ── Data Fetchers ────────────────────────────────────────────────
