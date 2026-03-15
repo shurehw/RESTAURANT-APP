@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, DollarSign, Users, Calendar } from 'lucide-react';
 import { ForecastTable } from './ForecastTable';
+import { ForecastAccuracy } from './ForecastAccuracy';
 
 export default async function ForecastsPage({
   searchParams,
@@ -92,7 +93,7 @@ export default async function ForecastsPage({
       />
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-keva-sage-600" />
@@ -157,6 +158,9 @@ export default async function ForecastsPage({
           <p className="text-sm">Click &ldquo;Generate New Forecasts&rdquo; to run the AI forecaster</p>
         </Card>
       )}
+
+      {/* Accuracy Metrics (from historical forecast vs actuals) */}
+      <ForecastAccuracy venueId={selectedVenue || ''} />
 
       {/* Detailed Table with Override capability */}
       {forecasts && forecasts.length > 0 && (

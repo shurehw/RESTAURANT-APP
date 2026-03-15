@@ -104,14 +104,16 @@ export default async function ForecastsPage({
           </div>
         </div>
 
-        <Button variant="brass" className="ml-auto">
-          <Calendar className="w-4 h-4 mr-2" />
-          Generate New Forecasts
+        <Button variant="brass" className="ml-auto" asChild>
+          <Link href={`/labor/forecasts?venue=${selectedVenue}&days=${daysAhead}&generate=1`}>
+            <Calendar className="w-4 h-4 mr-2" />
+            Generate New Forecasts
+          </Link>
         </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-keva-sage-600" />

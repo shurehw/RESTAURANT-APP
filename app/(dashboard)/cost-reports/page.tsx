@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import { BudgetChart } from '@/components/budget/BudgetChart';
 import { BudgetFilters } from '@/components/budget/BudgetFilters';
 import {
   TrendingUp, TrendingDown, DollarSign, Calendar, Package, Link2,
@@ -64,27 +63,38 @@ export default async function CostReportsPage({
 async function BudgetTab() {
   const supabase = await createClient();
 
-  const { data: budgets } = await supabase
+  // Fetch the most recent budget period
+  const { data: budget } = await supabase
     .from('budgets')
     .select('*')
-    .eq('period_start', '2024-01-01')
+    .order('period_start', { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  const chartData = [
-    { day: 'Mon', budget: 10000, actual: 0, remaining: 10000 },
-    { day: 'Tue', budget: 10000, actual: 1500, remaining: 8500 },
-    { day: 'Wed', budget: 10000, actual: 3200, remaining: 6800 },
-    { day: 'Thu', budget: 10000, actual: 4900, remaining: 5100 },
-    { day: 'Fri', budget: 10000, actual: 7200, remaining: 2800 },
-    { day: 'Sat', budget: 10000, actual: 9500, remaining: 500 },
-    { day: 'Sun', budget: 10000, actual: 10200, remaining: -200 },
-  ];
+  if (!budget) {
+    return (
+      <Card className="p-12 text-center">
+        <DollarSign className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-20" />
+        <p className="text-muted-foreground mb-2">No budget configured</p>
+        <p className="text-sm text-muted-foreground">
+          Set up a weekly or monthly budget to track food &amp; beverage spend against targets.
+        </p>
+      </Card>
+    );
+  }
 
-  const weeklyBudget = budgets?.initial_budget || 10000;
-  const actualSpend = 10200;
+  const weeklyBudget = budget.initial_budget || 0;
+
+  // Fetch actual spend from invoices in the budget period
+  const { data: invoiceSpend } = await supabase
+    .from('invoices')
+    .select('total_amount')
+    .gte('invoice_date', budget.period_start)
+    .lte('invoice_date', budget.period_end || budget.period_start);
+
+  const actualSpend = (invoiceSpend || []).reduce((sum: number, inv: any) => sum + (Number(inv.total_amount) || 0), 0);
   const remaining = weeklyBudget - actualSpend;
-  const percentUsed = (actualSpend / weeklyBudget) * 100;
+  const percentUsed = weeklyBudget > 0 ? (actualSpend / weeklyBudget) * 100 : 0;
   const isOverBudget = remaining < 0;
 
   return (
@@ -92,7 +102,7 @@ async function BudgetTab() {
       <BudgetFilters />
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
-          <CardHeader><CardTitle className="text-overline">Weekly Budget</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-overline">Budget</CardTitle></CardHeader>
           <CardContent>
             <div className="stat-card-value">${weeklyBudget.toLocaleString()}</div>
             <div className="flex items-center gap-2 mt-2">
@@ -118,15 +128,11 @@ async function BudgetTab() {
               {isOverBudget ? '-' : ''}${Math.abs(remaining).toLocaleString()}
             </div>
             <div className={`stat-card-change ${isOverBudget ? 'negative' : 'positive'} mt-2`}>
-              {isOverBudget ? 'Over budget' : `${Math.abs((remaining / weeklyBudget) * 100).toFixed(1)}% left`}
+              {isOverBudget ? 'Over budget' : weeklyBudget > 0 ? `${((remaining / weeklyBudget) * 100).toFixed(1)}% left` : '—'}
             </div>
           </CardContent>
         </Card>
       </div>
-      <Card>
-        <CardHeader><CardTitle>Daily Budget Trend</CardTitle></CardHeader>
-        <CardContent><BudgetChart data={chartData} /></CardContent>
-      </Card>
     </>
   );
 }

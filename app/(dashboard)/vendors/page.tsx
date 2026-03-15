@@ -82,9 +82,11 @@ export default async function VendorsPage() {
           </p>
         </div>
 
-        <Button variant="brass">
-          <Plus className="w-4 h-4" />
-          Add Vendor
+        <Button variant="brass" asChild>
+          <Link href="/vendors/new">
+            <Plus className="w-4 h-4" />
+            Add Vendor
+          </Link>
         </Button>
       </div>
 
@@ -160,9 +162,11 @@ export default async function VendorsPage() {
           <p className="empty-state-description">
             Add your first vendor to start ordering
           </p>
-          <Button variant="brass">
-            <Plus className="w-4 h-4" />
-            Add Vendor
+          <Button variant="brass" asChild>
+            <Link href="/vendors/new">
+              <Plus className="w-4 h-4" />
+              Add Vendor
+            </Link>
           </Button>
         </div>
       )}
