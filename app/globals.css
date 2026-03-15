@@ -394,7 +394,7 @@
   [data-pwa-hide],
   nav,
   header,
-  .print\\:hidden {
+  [class*="print:hidden"] {
     display: none !important;
   }
 
