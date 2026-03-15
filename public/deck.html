@@ -19,6 +19,8 @@
     --gold: #D4622B;
     --gold-dim: rgba(212,98,43,0.10);
     --charcoal: #2A2A32;
+    --green: #22C55E;
+    --green-dim: rgba(34,197,94,0.12);
   }
 
   html, body {
@@ -125,6 +127,7 @@
   /* --- Layouts --- */
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; margin-top: 1.5rem; }
   .cols-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+  .cols-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
 
   /* --- Cards --- */
   .card {
@@ -132,6 +135,12 @@
     border: 1px solid var(--border);
     border-radius: 2px;
     padding: 1.5rem;
+  }
+  .card-green {
+    border-left: 2px solid var(--green);
+  }
+  .card-gray {
+    border-left: 2px solid var(--charcoal);
   }
 
   /* --- Callouts --- */
@@ -183,14 +192,25 @@
     white-space: nowrap;
     color: var(--text-dim);
     transition: color 0.3s, border-color 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .loop-step .loop-num {
+    font-size: 0.55rem;
+    color: var(--gold);
+    font-weight: 600;
   }
   .slide.active .loop-step { animation: loopScan 4s ease-in-out infinite; }
   .slide.active .loop-step:nth-child(1) { animation-delay: 0s; }
-  .slide.active .loop-step:nth-child(3) { animation-delay: 0.6s; }
-  .slide.active .loop-step:nth-child(5) { animation-delay: 1.2s; }
-  .slide.active .loop-step:nth-child(7) { animation-delay: 1.8s; }
-  .slide.active .loop-step:nth-child(9) { animation-delay: 2.4s; }
-  .slide.active .loop-step:nth-child(11) { animation-delay: 3.0s; }
+  .slide.active .loop-step:nth-child(3) { animation-delay: 0.5s; }
+  .slide.active .loop-step:nth-child(5) { animation-delay: 1.0s; }
+  .slide.active .loop-step:nth-child(7) { animation-delay: 1.5s; }
+  .slide.active .loop-step:nth-child(9) { animation-delay: 2.0s; }
+  .slide.active .loop-step:nth-child(11) { animation-delay: 2.5s; }
+  .slide.active .loop-step:nth-child(13) { animation-delay: 3.0s; }
+  .slide.active .loop-step:nth-child(15) { animation-delay: 3.5s; }
 
   @keyframes loopScan {
     0%, 75%, 100% { border-color: var(--border); color: var(--text-dim); }
@@ -204,7 +224,7 @@
     font-family: 'JetBrains Mono', monospace;
   }
 
-  /* --- Comparison --- */
+  /* --- Compare --- */
   .compare {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
@@ -259,6 +279,22 @@
   }
   .module p { font-size: 0.75rem; line-height: 1.55; }
 
+  /* --- Status badge --- */
+  .badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 2px;
+    margin-left: 0.5rem;
+  }
+  .badge-live { background: rgba(34,197,94,0.15); color: #22C55E; }
+  .badge-beta { background: rgba(212,98,43,0.15); color: var(--gold); }
+  .badge-q2 { background: rgba(232,228,221,0.08); color: var(--text-dim); }
+
   /* --- Competitor table --- */
   .comp-table {
     width: 100%;
@@ -292,7 +328,7 @@
   .comp-table tr.us td:first-child { color: var(--gold); font-weight: 600; }
 
   /* --- Moats --- */
-  .moats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 1.5rem; background: var(--border); border: 1px solid var(--border); }
+  .moats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; margin-top: 1.5rem; background: var(--border); border: 1px solid var(--border); }
   .moat {
     background: var(--bg);
     padding: 1.4rem;
@@ -300,21 +336,24 @@
   .moat h3 { font-size: 0.9rem; margin-bottom: 0.35rem; }
   .moat p { font-size: 0.8rem; line-height: 1.6; }
 
-  /* --- Timeline --- */
-  .timeline { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.5rem; }
-  .timeline-item { display: flex; gap: 1.5rem; align-items: flex-start; }
-  .timeline-date {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--gold);
-    white-space: nowrap;
-    min-width: 7rem;
-    padding-top: 0.1rem;
+  /* --- Timeline / Roadmap --- */
+  .roadmap { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 1px; margin-top: 1.5rem; background: var(--border); border: 1px solid var(--border); }
+  .roadmap-phase {
+    background: var(--bg);
+    padding: 1.4rem;
   }
-  .timeline-content { border-left: 1px solid var(--border); padding-left: 1.25rem; }
-  .timeline-content h3 { font-size: 0.9rem; margin-bottom: 0.25rem; }
-  .timeline-content p { font-size: 0.8rem; }
+  .roadmap-phase .phase-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+  .roadmap-phase h3 { font-size: 0.88rem; margin-bottom: 0.35rem; }
+  .roadmap-phase p { font-size: 0.75rem; line-height: 1.6; }
 
   /* --- Lists --- */
   ul { list-style: none; margin-top: 0.6rem; }
@@ -338,90 +377,80 @@
   }
   blockquote p { color: rgba(232,228,221,0.7); font-size: 0.95rem; }
 
-  /* --- Fund bars --- */
-  .fund-bars { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem; }
-  .fund-bar { display: flex; align-items: center; gap: 1rem; }
-  .fund-bar-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    min-width: 7.5rem;
-    color: var(--text-dim);
-  }
-  .fund-bar-track {
-    flex: 1;
-    height: 24px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    overflow: hidden;
-  }
-  .fund-bar-fill {
-    height: 100%;
+  /* --- Flow diagram --- */
+  .flow-row {
     display: flex;
     align-items: center;
-    padding-left: 0.6rem;
+    gap: 0;
+    margin: 0.5rem 0;
+    flex-wrap: wrap;
+  }
+  .flow-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .flow-box.highlight {
+    border-color: var(--gold);
+    color: var(--gold);
+    font-weight: 600;
+  }
+  .flow-arrow {
+    color: rgba(232,228,221,0.15);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0 0.5rem;
+  }
+
+  /* --- Revenue tiers --- */
+  .tier-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+  .tier {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+  }
+  .tier-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .tier h3 { margin-bottom: 0.35rem; }
+  .tier .tier-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gold);
+    margin-top: 0.75rem;
+    font-weight: 500;
+  }
+
+  /* --- Integration grid --- */
+  .int-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.5rem; }
+  .int-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .int-item .int-name { font-weight: 500; color: var(--text); font-size: 0.9rem; }
+  .int-item .int-status {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.6rem;
     font-weight: 600;
-    color: var(--bg);
-    width: 0;
-    transition: width 0.8s ease;
-    background: var(--gold);
-  }
-  .slide.active .fund-bar-fill { width: var(--w); }
-
-  /* --- Screenshots --- */
-  .screenshots { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin-top: 1.5rem; background: var(--border); border: 1px solid var(--border); }
-  .screenshot {
-    background: var(--bg);
-    aspect-ratio: 16/10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .screenshot img { width: 100%; height: 100%; object-fit: cover; }
-  .screenshot-placeholder { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 1.5rem; }
-  .screenshot-title {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: var(--text-dim);
-    letter-spacing: 0.05em;
-  }
-  .screenshot-desc { font-size: 0.65rem; color: rgba(232,228,221,0.25); text-align: center; line-height: 1.5; max-width: 180px; }
-
-  /* --- Vision --- */
-  .vision-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; margin-top: 1.5rem; background: var(--border); border: 1px solid var(--border); }
-  .vision-card { background: var(--bg); padding: 1.3rem; }
-  .vision-card .vision-tag {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.5rem;
-    font-weight: 600;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 0.6rem;
-    display: block;
   }
-  .vision-card h3 { font-size: 0.88rem; margin-bottom: 0.35rem; }
-  .vision-card p { font-size: 0.75rem; line-height: 1.6; }
+  .int-item .int-status.live { color: #22C55E; }
+  .int-item .int-status.ready { color: var(--text-dim); }
+  .int-item .int-desc { font-size: 0.72rem; color: var(--text-dim); margin-top: 0.15rem; }
 
-  /* --- Raise --- */
-  .raise-hero { display: flex; gap: 4.5rem; margin: 1.75rem 0; align-items: baseline; }
-  .raise-stat { display: flex; flex-direction: column; }
-  .raise-value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: clamp(2.8rem, 4.5vw, 4rem);
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    line-height: 1;
-    color: var(--text);
-  }
-  .raise-value.gold { color: var(--gold); }
-  .raise-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 0.5rem; }
-
-  /* --- Progress --- */
+  /* --- Progress bar --- */
   .progress-bar {
     position: fixed;
     top: 0;
@@ -539,27 +568,97 @@
     color: var(--text);
   }
   .closing-slide h1 span { font-weight: 400; letter-spacing: 0.12em; opacity: 0.5; }
-  .closing-lines { margin-top: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
-  .closing-lines p { font-size: 1rem; color: rgba(232,228,221,0.4); text-align: center; }
-  .final-line { margin-top: 2.5rem; font-size: 1.1rem !important; color: var(--text) !important; font-weight: 600; }
+  .closing-lines { margin-top: 2.5rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .closing-lines p { font-size: 1.05rem; color: rgba(232,228,221,0.4); text-align: center; line-height: 1.8; }
+  .final-line { margin-top: 2.5rem; font-size: 1.15rem !important; color: var(--text) !important; font-weight: 600; }
+
+  /* --- Procurement flow --- */
+  .proc-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.75rem 1.5rem; margin-top: 1.5rem; align-items: center; }
+  .proc-trigger { font-size: 0.85rem; color: var(--text-dim); text-align: right; }
+  .proc-arrow { color: var(--gold); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+  .proc-entity { font-weight: 600; color: var(--text); font-size: 0.85rem; }
+  .proc-desc { font-size: 0.72rem; color: var(--text-dim); }
+
+  /* --- Revenue flow top bar --- */
+  .revenue-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+  }
+  .revenue-flow span {
+    padding: 0.5rem 1rem;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+  .revenue-flow .rf-arrow {
+    color: rgba(232,228,221,0.15);
+    padding: 0 0.25rem;
+  }
+
+  /* --- Icons --- */
+  .slide-icon {
+    width: 28px;
+    height: 28px;
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+  }
+  .card-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 0.75rem;
+    opacity: 0.85;
+  }
+  .module-icon {
+    width: 22px;
+    height: 22px;
+    margin-bottom: 0.5rem;
+    opacity: 0.85;
+  }
+  .loop-icon {
+    width: 18px;
+    height: 18px;
+    margin-bottom: 0.15rem;
+    opacity: 0.7;
+  }
+  .section-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 0.5rem;
+    opacity: 0.85;
+  }
+  .title-logo {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1.5rem;
+  }
+  .closing-logo {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1.5rem;
+  }
 
   /* --- Responsive --- */
   @media (max-width: 900px) {
     .slide { padding: 4vh 6vw; }
     .cols, .moats { grid-template-columns: 1fr; }
-    .cols-3 { grid-template-columns: 1fr; }
+    .cols-3, .cols-4 { grid-template-columns: 1fr 1fr; }
     .modules { grid-template-columns: 1fr 1fr; }
-    .vision-grid { grid-template-columns: 1fr; }
-    .screenshots { grid-template-columns: 1fr; }
     .minimap { display: none; }
     .stats { gap: 2rem; }
-    .raise-hero { gap: 2.5rem; flex-wrap: wrap; }
+    .roadmap { grid-template-columns: 1fr 1fr; }
+    .tier-grid { grid-template-columns: 1fr; }
+    .int-grid { grid-template-columns: 1fr; }
+    .proc-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+    .proc-trigger, .proc-entity { text-align: left; }
     .compare { gap: 0 1rem; }
-    .fund-bar-label { min-width: 5rem; }
   }
   @media (max-width: 600px) {
     .modules { grid-template-columns: 1fr; }
     .loop-step { padding: 0.45rem 0.7rem; font-size: 0.65rem; }
+    .cols-3, .cols-4, .roadmap { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -572,617 +671,666 @@
 
   <!-- 1: Title -->
   <div class="slide title-slide active">
-    <div class="slide-label">Investor Deck</div>
+    <img src="/deck-assets/image-1-1.png" alt="KevaOS" class="title-logo">
+    <div class="slide-label">KevaOS</div>
     <h1>Nothing slips.</h1>
     <p style="font-family: 'JetBrains Mono', monospace; font-size: clamp(1rem, 2vw, 1.4rem); letter-spacing: 0.08em; color: var(--gold); margin-bottom: 1.5rem;">The AI-Enforced Control Plane for Hospitality</p>
     <p class="lead">Catching what your managers miss and enforcing the fix<br>across every location, every night.</p>
-    <div class="confidential">Keva<span style="color: var(--gold); opacity: 1;">OS</span> &middot; The Binyan Group &middot; Confidential &middot; 2026</div>
+    <p style="margin-top: 2rem; font-size: 0.85rem; color: rgba(232,228,221,0.3); font-style: italic;">Keva &mdash; permanence, fixity, establishment.</p>
+    <div class="confidential">KevaOS &middot; The Binyan Group &middot; Confidential &middot; 2026</div>
   </div>
 
-  <!-- 2: Problem -->
+  <!-- 2: Every Restaurant Runs on Trust -->
   <div class="slide">
     <div class="slide-label">The Problem</div>
-    <h2>Restaurants don't fail because they lack data.<br><span class="hl">They fail because nothing forces problems to get fixed.</span></h2>
-    <p class="lead">Every operator already has reports, dashboards, weekly meetings, and explanations. And still: labor drifts, food cost leaks, comps repeat, and the same conversations happen again next week.</p>
-    <div class="callout">
-      <p><strong>Real example:</strong> A single high-volume venue had 24 staff arriving at 4:30 PM despite minimal early evening sales &mdash; with <strong class="hl">$621K in annual labor savings</strong> sitting in plain sight for months. The data was always there. No one was forced to act on it.</p>
+    <h2>Every Restaurant Runs on Trust.<br><span class="hl">Trust breaks. Every night.</span></h2>
+    <div class="cols-4" style="margin-top: 1.5rem;">
+      <div class="card">
+        <img src="/deck-assets/image-2-1.png" alt="" class="card-icon">
+        <h3>Advisory, Not Enforced</h3>
+        <p>Every ops platform gives recommendations. Managers ignore them. Nory says "you're overstaffed." Manager schedules the same way.</p>
+      </div>
+      <div class="card">
+        <img src="/deck-assets/image-2-2.png" alt="" class="card-icon">
+        <h3>Self-Reported Data</h3>
+        <p>Comp logs, cleaning checklists, inventory counts &mdash; all self-reported by the people with incentive to lie.</p>
+      </div>
+      <div class="card">
+        <img src="/deck-assets/image-2-3.png" alt="" class="card-icon">
+        <h3>No Ground Truth</h3>
+        <p>No sensor data. No verification layer. No way to confirm what actually happened on the floor vs. what the manager says.</p>
+      </div>
+      <div class="card">
+        <img src="/deck-assets/image-2-4.png" alt="" class="card-icon">
+        <h3>Fragmented Stack</h3>
+        <p>POS, scheduling, inventory, payroll, reservations &mdash; six vendors, no enforcement layer connecting them.</p>
+      </div>
     </div>
-    <p style="margin-top: 1.25rem; color: var(--text);">The issue isn't visibility. <strong>It's accountability.</strong></p>
+    <div class="callout">
+      <p><strong>Result: $1M+ in annual operational waste per high-volume venue.</strong> Controllable. Currently uncontrolled.</p>
+    </div>
   </div>
 
-  <!-- 3: Solution -->
+  <!-- 3: KevaOS Is an Enforcement Engine -->
   <div class="slide">
     <div class="slide-label">The Solution</div>
-    <h2>A daily operational control system.</h2>
-    <p class="lead">KevaOS ingests what already happened &mdash; sales, labor, purchasing &mdash; and forces ownership of deviations through required feedback, attestations, and verification.</p>
+    <h2>KevaOS Is an Enforcement Engine</h2>
     <div class="compare" style="margin-top: 2rem;">
-      <div class="compare-left">Dashboards</div>
+      <div class="compare-left">Shows you a chart of labor cost</div>
       <div class="compare-arrow">&rarr;</div>
-      <div class="compare-right">Feedback</div>
-      <div class="compare-left">Reports</div>
+      <div class="compare-right">Blocks schedule publication if rails breached</div>
+      <div class="compare-left">Suggests a schedule</div>
       <div class="compare-arrow">&rarr;</div>
-      <div class="compare-right">Required responses</div>
-      <div class="compare-left">Planning</div>
+      <div class="compare-right">Auto-fires procurement through your supply chain</div>
+      <div class="compare-left">Alerts you to high food cost</div>
       <div class="compare-arrow">&rarr;</div>
-      <div class="compare-right">Commitments</div>
-      <div class="compare-left" style="border:none;">Analytics</div>
+      <div class="compare-right">AI reviews every comp against policy nightly</div>
+      <div class="compare-left">Displays a dashboard</div>
+      <div class="compare-arrow">&rarr;</div>
+      <div class="compare-right">Requires nightly attestation to close out</div>
+      <div class="compare-left" style="border:none;">Manager decides whether to act</div>
       <div class="compare-arrow" style="border:none;">&rarr;</div>
-      <div class="compare-right" style="border:none;">Verification</div>
+      <div class="compare-right" style="border:none;">System enforces. Manager complies.</div>
     </div>
-    <p style="margin-top: 1.5rem;">If a problem repeats, KevaOS escalates it automatically. If it's resolved, KevaOS proves it.<br><strong>That's the difference between software and a system.</strong></p>
+    <div class="callout">
+      <p><strong>Keva: the fixed framework.</strong> The venue doesn't get a suggestion &mdash; it gets permanence.</p>
+    </div>
   </div>
 
-  <!-- 4: How It Works -->
+  <!-- 4: System Architecture -->
   <div class="slide">
-    <div class="slide-label">How It Works</div>
-    <h2>Every day, the same closed loop.</h2>
-    <div class="loop">
-      <div class="loop-step">Ingest</div>
-      <div class="loop-arrow">&rarr;</div>
-      <div class="loop-step">Detect</div>
-      <div class="loop-arrow">&rarr;</div>
-      <div class="loop-step">Translate</div>
-      <div class="loop-arrow">&rarr;</div>
-      <div class="loop-step">Require</div>
-      <div class="loop-arrow">&rarr;</div>
-      <div class="loop-step">Carry Forward</div>
-      <div class="loop-arrow">&rarr;</div>
-      <div class="loop-step">Verify</div>
-    </div>
-    <div class="cols">
-      <div>
+    <div class="slide-label">Architecture</div>
+    <h2>System Architecture</h2>
+    <p class="lead">Integrations &rarr; data lake &rarr; enforcement engine &rarr; action.</p>
+    <div class="moats" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="moat">
+        <img src="/deck-assets/image-4-3.png" alt="" class="section-icon">
+        <h3 class="hl">Input Layer</h3>
         <ul>
-          <li><strong>Ingest</strong> &mdash; Pull actual results from POS, labor, and invoices</li>
-          <li><strong>Detect</strong> &mdash; Identify deviations from standards and prior commitments</li>
-          <li><strong>Translate</strong> &mdash; Convert deviations into plain-language feedback</li>
+          <li>Toast / Simphony / Upserve</li>
+          <li>7shifts (via TipSee)</li>
+          <li>SevenRooms / Tripleseat</li>
+          <li>Restaurant365</li>
+          <li>UniFi Protect (cameras)</li>
         </ul>
       </div>
-      <div>
+      <div class="moat">
+        <img src="/deck-assets/image-4-1.png" alt="" class="section-icon">
+        <h3 class="hl">Enforcement Engine</h3>
         <ul>
-          <li><strong>Require</strong> &mdash; Managers must acknowledge, explain, or correct</li>
-          <li><strong>Carry Forward</strong> &mdash; Unresolved issues flow into preshift automatically</li>
-          <li><strong>Verify</strong> &mdash; Confirm whether behavior actually changed the next day</li>
+          <li>Labor Rails</li>
+          <li>Comp Enforcement</li>
+          <li>Procurement Agent</li>
+          <li>Rez-Yield Agent</li>
+          <li>Nightly Attestation</li>
+          <li>Anomaly Detection</li>
+        </ul>
+      </div>
+      <div class="moat">
+        <img src="/deck-assets/image-4-14.png" alt="" class="section-icon">
+        <h3 class="hl">Action Layer</h3>
+        <ul>
+          <li>Block / Escalate</li>
+          <li>Auto-Order PO</li>
+          <li>Violation Created</li>
+          <li>Score Update</li>
+          <li>Manager Alert</li>
         </ul>
       </div>
     </div>
-    <p style="margin-top: 1.25rem;"><strong>Nothing is silent. Nothing is optional. Nothing disappears without ownership.</strong></p>
+    <p style="margin-top: 1.25rem;"><strong>Fail-closed architecture.</strong> The fixed framework doesn't ask &mdash; it enforces.</p>
   </div>
 
-  <!-- 5: Modules -->
+  <!-- 5: Autonomous AI Agents -->
   <div class="slide">
-    <div class="slide-label">Product</div>
-    <h2>Eight modules. One closed loop.</h2>
-    <div class="modules">
+    <div class="slide-label">AI Agents</div>
+    <h2>Autonomous AI Agents</h2>
+    <p class="lead">Not dashboards with AI labels. Agents that observe, decide, and act.</p>
+    <p style="margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--text-dim);">Every agent follows the same loop: <span class="hl">Observe &rarr; Evaluate &rarr; Act &rarr; Enforce</span></p>
+    <div class="modules" style="grid-template-columns: repeat(3, 1fr); margin-top: 1.25rem;">
       <div class="module">
-        <div class="module-name">Sales Pace</div>
-        <p>Real-time 5-min revenue monitoring. Pace alerts when projected EOD falls below forecast.</p>
+        <img src="/deck-assets/image-5-1.png" alt="" class="module-icon">
+        <div class="module-name">Scheduling Agent <span class="badge badge-live">Live</span></div>
+        <p>Recommends cuts/call-ins mid-service. Blocks schedule if rails breached.</p>
       </div>
       <div class="module">
-        <div class="module-name">Comp Control</div>
-        <p>AI-reviewed comps against approved reasons. Every unapproved comp requires documented resolution.</p>
+        <img src="/deck-assets/image-5-1.png" alt="" class="module-icon">
+        <div class="module-name">Comp Agent <span class="badge badge-live">Live</span></div>
+        <p>AI reviews against policy. Creates violations. Escalates automatically.</p>
       </div>
       <div class="module">
-        <div class="module-name">Labor Control</div>
-        <p>Schedule efficiency, CPLH, shift-level variance. Deviations generate mandatory attestation items.</p>
+        <img src="/deck-assets/image-5-1.png" alt="" class="module-icon">
+        <div class="module-name">Attestation Agent <span class="badge badge-live">Live</span></div>
+        <p>Requires structured nightly sign-off. Generates violations from variances.</p>
       </div>
       <div class="module">
-        <div class="module-name">Invoice &amp; Cost</div>
-        <p>OCR ingestion, vendor scoring, cost spike detection. Anomalies block approval workflows.</p>
+        <img src="/deck-assets/image-5-1.png" alt="" class="module-icon">
+        <div class="module-name">Rez-Yield Agent <span class="badge badge-beta">Beta</span></div>
+        <p>Owns the booking decision. Channels are pipes &mdash; KevaOS decides who sits where.</p>
       </div>
       <div class="module">
-        <div class="module-name">Inventory</div>
-        <p>Count variance, recipe costing, shrink tracking. Variance exceeding threshold requires explanation.</p>
+        <img src="/deck-assets/image-4-5.png" alt="" class="module-icon">
+        <div class="module-name">Vision Agent <span class="badge badge-beta">Beta</span></div>
+        <p>Detects occupancy from camera snapshots, measures greet times, feeds server scores.</p>
       </div>
       <div class="module">
-        <div class="module-name">Camera Vision</div>
-        <p>Table greeting detection via computer vision. Service time violations surface as action items.</p>
-      </div>
-      <div class="module">
-        <div class="module-name">Menu Agent</div>
-        <p>Autonomous margin enforcement. Detects cost breaches, researches comp set pricing, creates price fixes within policy rails.</p>
-      </div>
-      <div class="module">
-        <div class="module-name">Nightly Attestation</div>
-        <p>Manager sign-off linking all deviations. Cannot be skipped. Digital signature. Permanent record.</p>
+        <img src="/deck-assets/image-4-13.png" alt="" class="module-icon">
+        <div class="module-name">Procurement Agent <span class="badge badge-q2">Q2</span></div>
+        <p>Builds POs, routes to Binyan entities, auto-executes under $500.</p>
       </div>
     </div>
+    <p style="margin-top: 1rem;">These aren't features with AI sprinkled on top. <strong>They're autonomous agents that take action without waiting for a human.</strong></p>
   </div>
 
-  <!-- 5b: Screenshots -->
+  <!-- 6: Labor Rails -->
   <div class="slide">
-    <div class="slide-label">Product in Action</div>
-    <h2>This isn't a roadmap. <span class="hl">It's running tonight.</span></h2>
-    <div class="screenshots">
-      <div class="screenshot">
-        <div class="screenshot-placeholder">
-          <div class="screenshot-title">Live Pulse &mdash; Sales Pace</div>
-          <div class="screenshot-desc">Real-time hero gauges, progress bars, and cumulative chart during service</div>
-        </div>
-      </div>
-      <div class="screenshot">
-        <div class="screenshot-placeholder">
-          <div class="screenshot-title">Nightly Attestation</div>
-          <div class="screenshot-desc">Manager sign-off with revenue, labor, and comp variance review</div>
-        </div>
-      </div>
-      <div class="screenshot">
-        <div class="screenshot-placeholder">
-          <div class="screenshot-title">Comp Enforcement</div>
-          <div class="screenshot-desc">AI-reviewed exceptions with org-approved reason codes</div>
-        </div>
-      </div>
-      <div class="screenshot">
-        <div class="screenshot-placeholder">
-          <div class="screenshot-title">Labor Scheduling</div>
-          <div class="screenshot-desc">Shift calendar with CPLH optimization and coverage forecasting</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 6: Live Pulse -->
-  <div class="slide">
-    <div class="slide-label">Live During Service</div>
-    <h2>Not end-of-night regret. <span class="hl">Real-time operational awareness.</span></h2>
-    <div class="cols">
-      <div>
-        <h3>What operators see during service</h3>
-        <ul>
-          <li><strong>Revenue vs forecast</strong> &mdash; updated every 5 minutes</li>
-          <li><strong>Covers, avg check, category mix</strong> &mdash; food/bev in real time</li>
-          <li><strong>EOD projection</strong> &mdash; based on current velocity</li>
-          <li><strong>Same-day-last-week</strong> &mdash; instant context</li>
-          <li><strong>Group-wide view</strong> &mdash; all venues on one screen</li>
-        </ul>
-      </div>
-      <div>
-        <h3>How it works</h3>
-        <ul>
-          <li>Standalone PWA &mdash; works on any device, no app install</li>
-          <li>Multi-POS support (Toast, Square, Simphony)</li>
-          <li>Auto-detects POS type per venue</li>
-          <li>Timezone-aware business date logic</li>
-        </ul>
-        <div class="callout" style="margin-top: 1rem;">
-          <p>By the time a nightly report arrives, the shift is over. <strong>Pace monitoring turns mid-service awareness into mid-service action.</strong></p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 6b: Spec & Pricing -->
-  <div class="slide">
-    <div class="slide-label">Purchasing Enforcement</div>
-    <h2>Right product. Right vendor. Right price.<br><span class="hl">No workarounds. No wrong buys.</span></h2>
-    <p class="lead">Most inventory systems track what was ordered. KevaOS enforces what's allowed to be ordered.</p>
+    <div class="slide-label">Labor</div>
+    <h2>Labor Rails</h2>
+    <p class="lead">The schedule doesn't publish unless it's within bounds.</p>
     <div class="cols" style="margin-top: 1.5rem;">
       <div>
-        <h3>What the system enforces</h3>
-        <ul>
-          <li><strong>Approved specs only</strong> &mdash; every item locked to an approved product spec. Can't substitute a cheaper cut, a different brand, or an off-list vendor.</li>
-          <li><strong>Approved vendors only</strong> &mdash; each item tied to approved vendor tiers. The system won't process an order from a non-approved source.</li>
-          <li><strong>Price ceilings</strong> &mdash; cost spikes detected automatically via z-score analysis. If a vendor raises a price above the ceiling, the invoice gets flagged before approval.</li>
-          <li><strong>UOM consistency</strong> &mdash; pack configs, unit conversions, and base UOM enforced at the item level. No confusion between cases and eaches.</li>
-        </ul>
+        <h3 class="hl">The 4:30 PM Pile-Up Problem</h3>
+        <p>Modeled on real high-volume restaurant data: all servers scheduled to arrive at the same time. Three hours of excess labor before the dining room fills.</p>
+        <div class="stats" style="margin-top: 1.25rem;">
+          <div class="stat"><div class="stat-value gold">$625K</div><div class="stat-label">savings per venue / year (validated)</div></div>
+        </div>
       </div>
       <div>
-        <h3>What this prevents</h3>
-        <div class="callout">
-          <p><strong class="hl">The $40K problem:</strong> A kitchen manager switches to a cheaper protein without telling anyone. Plate cost looks good. Guest complaints spike. Reviews drop. Revenue follows. Nobody connects the dots until it's too late.</p>
-        </div>
-        <div style="margin-top: 1rem;">
-          <ul>
-            <li><strong>Rogue purchasing</strong> &mdash; buying off-spec from unapproved vendors</li>
-            <li><strong>Silent price creep</strong> &mdash; vendors raising prices without detection</li>
-            <li><strong>Spec drift</strong> &mdash; gradual substitution that degrades quality</li>
-            <li><strong>Invoice fraud</strong> &mdash; charges for products that don't match specs</li>
-          </ul>
-        </div>
+        <h3>How Labor Rails Work</h3>
+        <ul>
+          <li>Max SPLH by daypart from 7shifts data</li>
+          <li>Staggered start times enforced</li>
+          <li>Staff-to-cover ratio by section</li>
+          <li>Mid-service cut/call-in recommendations</li>
+          <li>OT threshold alerts before approval</li>
+          <li><strong>Schedule blocked until rails pass</strong></li>
+        </ul>
       </div>
     </div>
-    <p style="margin-top: 1.25rem;"><strong>The item catalog isn't a reference list. It's a set of rails.</strong> If it's not in the system, it doesn't get ordered. If the price is wrong, it doesn't get paid.</p>
+    <div class="callout">
+      <p><strong>Portfolio-wide labor savings: $1M+ annually</strong> across a multi-venue operator.</p>
+    </div>
   </div>
 
-  <!-- 6c: Menu Agent -->
+  <!-- 7: Comp Enforcement -->
   <div class="slide">
-    <div class="slide-label">Revenue Enforcement</div>
-    <h2>Purchasing enforces input costs.<br><span class="hl">The Menu Agent enforces output pricing.</span></h2>
-    <p class="lead">Most menu engineering tools show you a Boston matrix and wait for you to act. KevaOS detects the margin breach, researches competitor pricing, creates the fix, and queues it to the next reprint window &mdash; autonomously, within calibrated policy rails.</p>
+    <div class="slide-label">Comps</div>
+    <h2>Comp Enforcement</h2>
+    <p class="lead">Every comp reviewed by AI against policy. Every night. No exceptions.</p>
     <div class="cols" style="margin-top: 1.5rem;">
       <div>
-        <h3>What the agent does</h3>
+        <h3>How It Works</h3>
         <ul>
-          <li><strong>Margin enforcement</strong> &mdash; flags food cost breaches at item level. Critical vs. warning severity. Suggests price correction capped at comp set median.</li>
-          <li><strong>Comp set intelligence</strong> &mdash; AI fuzzy-matches your menu items against competitor menus. Builds per-item price positioning. Detects when competitors move.</li>
-          <li><strong>Cannibalization detection</strong> &mdash; identifies same-category items competing for the same guest, diluting category revenue.</li>
-          <li><strong>Reprint-aware execution</strong> &mdash; knows which items are on printed menus vs. digital vs. verbal. Batches price changes to the next print window. Tracks margin bleed while waiting.</li>
+          <li><strong class="hl">1.</strong> POS data syncs in real time</li>
+          <li><strong class="hl">2.</strong> Every comp flagged against venue policy</li>
+          <li><strong class="hl">3.</strong> AI reviews patterns: same server, same reason, consecutive</li>
+          <li><strong class="hl">4.</strong> Violations created in control plane</li>
+          <li><strong class="hl">5.</strong> Manager must attest nightly &mdash; can't skip</li>
         </ul>
       </div>
       <div>
-        <h3>How it differs from menu engineering</h3>
-        <div class="callout">
-          <p>Menu engineering tools generate a <strong>report</strong>. KevaOS generates a <strong>fix</strong> &mdash; with approval tiers (auto / manager / executive), sacred-item protections, and hard caps on single price increases.</p>
-        </div>
-        <div style="margin-top: 1rem;">
-          <ul>
-            <li><strong>Not a dashboard</strong> &mdash; violations ARE the reports</li>
-            <li><strong>Not advisory</strong> &mdash; auto-executes within approved price bands</li>
-            <li><strong>Not retrospective</strong> &mdash; runs daily, catches drift before it compounds</li>
-            <li><strong>Not isolated</strong> &mdash; comp set data feeds back into pricing decisions</li>
-          </ul>
-        </div>
+        <h3>Policy Controls</h3>
+        <ul>
+          <li>Approved comp reasons with max amounts</li>
+          <li>Daily comp % warning/critical thresholds</li>
+          <li>Server-level comp dollar limits</li>
+          <li>Manager authority tiers</li>
+          <li>High-value comp auto-escalation</li>
+          <li>Immutable audit trail (version control)</li>
+        </ul>
       </div>
     </div>
-    <p style="margin-top: 1.25rem;"><strong>The menu isn't a document. It's a revenue surface that drifts every time costs move.</strong> KevaOS keeps it aligned.</p>
-  </div>
-
-  <!-- 7: AI -->
-  <div class="slide">
-    <div class="slide-label">AI Architecture</div>
-    <h2>AI powers the system. <span class="hl">Humans own the decisions.</span></h2>
-    <p class="lead" style="margin-bottom: 1.25rem;">AI makes the loop faster and smarter &mdash; but never replaces the accountability it creates.</p>
-    <div class="modules" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-      <div class="module">
-        <div class="module-name">Comp Review</div>
-        <p>Analyzes comps against org rules, flags severity. <strong>Never auto-approves.</strong></p>
-      </div>
-      <div class="module">
-        <div class="module-name">Invoice OCR</div>
-        <p>Extracts vendor, items, amounts from PDFs. <strong>Never auto-pays.</strong></p>
-      </div>
-      <div class="module">
-        <div class="module-name">Camera Vision</div>
-        <p>Detects seated customers, measures greeting time. <strong>Surfaces metrics only.</strong></p>
-      </div>
-      <div class="module">
-        <div class="module-name">Feedback</div>
-        <p>Converts deviations into plain-language preshift notes. <strong>Never replaces judgment.</strong></p>
-      </div>
-      <div class="module">
-        <div class="module-name">Menu Agent</div>
-        <p>Detects margin breaches, cannibalization, comp set gaps. Creates price fixes autonomously. <strong>Never exceeds approved bands.</strong></p>
-      </div>
-      <div class="module">
-        <div class="module-name">Chatbot</div>
-        <p>Natural-language queries about sales, labor, cost data. <strong>Information only.</strong></p>
-      </div>
+    <div class="callout">
+      <p><strong>Industry benchmark: 2&ndash;5% of gross revenue</strong> lost to ungoverned comps. At $10M revenue, that's <strong class="hl">$200&ndash;500K/year.</strong></p>
     </div>
-    <p style="margin-top: 1.25rem;">As AI commoditizes dashboards, <strong>the enforcement layer remains defensible.</strong></p>
   </div>
 
-  <!-- 8: Camera Vision -->
+  <!-- 8: Booking Engine -->
   <div class="slide">
-    <div class="slide-label">Proprietary Technology</div>
-    <h2>Camera Vision &mdash; <span class="hl">service quality becomes measurable.</span></h2>
+    <div class="slide-label">Reservations</div>
+    <h2>KevaOS Is the Booking Engine</h2>
+    <p class="lead">Resy, OpenTable, SevenRooms become channels. KevaOS owns the decision.</p>
+    <div class="flow-row" style="margin: 1.25rem 0;">
+      <div class="flow-box">Resy</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">OpenTable</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">SevenRooms</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Walk-ins</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box">Phone</div>
+      <div class="flow-arrow">&rarr;</div>
+      <div class="flow-box highlight">KevaOS Rez-Yield Agent</div>
+    </div>
     <div class="cols">
       <div>
-        <h3>From snapshot to enforcement metric</h3>
+        <h3>Floor Plan Management</h3>
         <ul>
-          <li>Camera captures snapshot via UniFi Cloud Connector</li>
-          <li>Scene change detection skips redundant frames <span class="hl">(60-80% cost reduction)</span></li>
-          <li>Claude Vision analyzes against custom polygon zones</li>
-          <li>Events correlate: seated &rarr; approach &rarr; greeted</li>
-          <li>Metrics compute: avg greeting time, P90, compliance</li>
+          <li>Drag-and-drop table layout editor</li>
+          <li>Section management with staff assignment</li>
+          <li>Real-time table state machine (7 states)</li>
+          <li>Turn tracking with duration forecasting</li>
+          <li>Table combos for large parties</li>
         </ul>
       </div>
       <div>
-        <h3>Expansion roadmap</h3>
+        <h3>Yield Optimization</h3>
         <ul>
-          <li>Table turn time detection</li>
-          <li>Plate clearance timing</li>
-          <li>Staff positioning analysis</li>
-          <li>Queue and wait time monitoring</li>
-          <li>Kitchen window ticket aging</li>
+          <li>Per-slot demand + duration forecasting</li>
+          <li>Stress scoring blocks overbooking</li>
+          <li>VIP table protection by level</li>
+          <li>Value delta vs. slot demand (RevPASH)</li>
+          <li>Backtest policy changes before deploy</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top: 1rem;"><strong>The booking platforms become dumb pipes.</strong> KevaOS decides who sits where, when, and at what price.</p>
+  </div>
+
+  <!-- 9: Procurement Agent -->
+  <div class="slide">
+    <div class="slide-label">Procurement</div>
+    <h2>Procurement Agent</h2>
+    <p class="lead">Monitors consumption. Builds the PO. Routes through your supply chain. Auto-executes.</p>
+    <p style="margin-top: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--gold);">One trigger. Three revenue events: SaaS fee + Product margin + Fulfillment margin</p>
+    <div class="proc-grid" style="margin-top: 1.25rem;">
+      <div class="proc-trigger">Menu item depletion (POS)</div>
+      <div class="proc-arrow">&rarr;</div>
+      <div><span class="proc-entity">SHW</span><br><span class="proc-desc">Ingredient restock</span></div>
+
+      <div class="proc-trigger">Packaging burn rate</div>
+      <div class="proc-arrow">&rarr;</div>
+      <div><span class="proc-entity">Shureprint</span><br><span class="proc-desc">Custom packaging</span></div>
+
+      <div class="proc-trigger">Cleaning SLA trigger</div>
+      <div class="proc-arrow">&rarr;</div>
+      <div><span class="proc-entity">GroundOps</span><br><span class="proc-desc">Consumables</span></div>
+
+      <div class="proc-trigger">Equipment wear / opening</div>
+      <div class="proc-arrow">&rarr;</div>
+      <div><span class="proc-entity">E&amp;E Mercantile</span><br><span class="proc-desc">FF&amp;E, uniforms, OS&amp;E</span></div>
+    </div>
+    <p style="margin-top: 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim);">Decision tiers: <span class="hl">Auto (&lt;$500)</span> &middot; Manager ($500&ndash;$2.5K) &middot; Exec ($2.5K+)</p>
+    <p style="margin-top: 0.5rem;">Anomaly detection: AI-reviewed &mdash; consumption spikes, price variance, waste patterns.</p>
+  </div>
+
+  <!-- 10: Attestation & Control Plane -->
+  <div class="slide">
+    <div class="slide-label">Attestation</div>
+    <h2>Attestation &amp; Control Plane</h2>
+    <p class="lead">The shift doesn't close until the manager explains every variance.</p>
+    <div class="cols" style="margin-top: 1.5rem;">
+      <div>
+        <h3 class="hl">Attestation Domains</h3>
+        <ul>
+          <li>Revenue variance (vs. forecast)</li>
+          <li>Labor cost vs. rails</li>
+          <li>Comp exceptions</li>
+          <li>Incidents (guest, equipment, safety)</li>
+          <li>Coaching notes</li>
+          <li>Entertainment quality</li>
+          <li>Culinary (86s, quality, prep)</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="hl">Control Plane</h3>
+        <p>Every signal flows into a violation state machine with escalation.</p>
+        <ul>
+          <li>Violations created automatically</li>
+          <li>State machine: open &rarr; acknowledged &rarr; resolved</li>
+          <li>Escalation flows (manager &rarr; exec &rarr; platform)</li>
+          <li>Carry-forward compliance tracking</li>
+          <li>AI-generated narrative summaries</li>
+          <li>Nightly email briefing to subscribers</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <p><strong>Variance isn't punished &mdash; it's explained.</strong> But the requirement to explain is permanent.</p>
+    </div>
+  </div>
+
+  <!-- 11: Demand Forecasting & Sensors -->
+  <div class="slide">
+    <div class="slide-label">Intelligence</div>
+    <h2>Demand Forecasting &amp; Sensors</h2>
+    <p class="lead">Predict demand. Verify execution. Feed the loop.</p>
+    <div class="cols" style="margin-top: 1.5rem;">
+      <div>
+        <img src="/deck-assets/image-11-1.png" alt="" class="section-icon">
+        <h3>Demand Forecasting</h3>
+        <p style="margin-bottom: 0.5rem;">Covers, revenue, and ingredient demand &mdash; predicted daily. Drives labor scheduling, procurement, and prep lists.</p>
+        <ul>
+          <li>Daily cover &amp; revenue predictions</li>
+          <li>Hourly demand curves (day-of-week + events)</li>
+          <li>Ingredient demand from forecast + recipes</li>
+          <li>MAPE accuracy tracking per venue</li>
+          <li>Manager override with reason coding</li>
+          <li>Auto-generated prep lists from forecast</li>
+          <li>Rez pacing feeds real-time demand adjustments</li>
+        </ul>
+      </div>
+      <div>
+        <img src="/deck-assets/image-4-5.png" alt="" class="section-icon">
+        <h3>Sensor Layer</h3>
+        <p style="margin-bottom: 0.5rem;">Physical verification inputs that feed the enforcement engine.</p>
+        <ul>
+          <li>Camera occupancy snapshots</li>
+          <li>Greeting time measurement</li>
+          <li>Keva Pin (UWB + audio)</li>
+          <li>Plating scale integration</li>
+          <li>POS real-time transaction sync</li>
         </ul>
         <div class="callout" style="margin-top: 1rem;">
-          <p>Camera vision opens an <strong>entirely new enforcement surface</strong> that no competitor has.</p>
+          <p>Sensors provide ground truth. They're one input &mdash; not the product.</p>
         </div>
       </div>
     </div>
+    <p style="margin-top: 1rem;"><strong>Forecasting is the brain. Sensors are the eyes.</strong> The enforcement engine connects them.</p>
   </div>
 
-  <!-- 8b: Vision -->
+  <!-- 12: Server Score & Host Stand -->
   <div class="slide">
-    <div class="slide-label">The Vision</div>
-    <h2>From daily control to <span class="hl">autonomous operational intelligence.</span></h2>
-    <div class="vision-grid">
-      <div class="vision-card">
-        <div class="vision-tag">Camera V2</div>
-        <h3>Full Service Quality Monitoring</h3>
-        <p>Table turns, plate clearance, staff positioning heat maps, kitchen ticket aging &mdash; every measurable service moment becomes an enforcement metric.</p>
-      </div>
-      <div class="vision-card">
-        <div class="vision-tag">Mobile</div>
-        <h3>Preshift in Your Pocket</h3>
-        <p>Carry-forward items, attestation completion, real-time alerts &mdash; managers get their preshift briefing on their phone before the shift starts.</p>
-      </div>
-      <div class="vision-card">
-        <div class="vision-tag">Predictive</div>
-        <h3>Exception Before It Happens</h3>
-        <p>Pattern recognition across venue history predicts tomorrow's variance. KevaOS flags the problem before it costs money &mdash; not after.</p>
-      </div>
-      <div class="vision-card">
-        <div class="vision-tag">Benchmarks</div>
-        <h3>Cross-Org Intelligence</h3>
-        <p>Anonymous, aggregated operational benchmarks across the KevaOS network. Know where you stand vs. comparable venues without guessing.</p>
-      </div>
-      <div class="vision-card">
-        <div class="vision-tag">Vendor</div>
-        <h3>Purchasing Leverage</h3>
-        <p>Cross-org purchasing data creates negotiation intelligence. See what others pay for the same products and surface savings opportunities.</p>
-      </div>
-      <div class="vision-card">
-        <div class="vision-tag">Verticals</div>
-        <h3>Beyond Restaurants</h3>
-        <p>Hotels, stadiums, corporate dining, ghost kitchens &mdash; any high-volume food operation where variance kills margin and accountability is scarce.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 9: Positioning -->
-  <div class="slide">
-    <div class="slide-label">Positioning</div>
-    <h2>The control plane. Not another point solution.</h2>
-    <div class="cols">
+    <div class="slide-label">Performance</div>
+    <h2>Server Score &amp; Host Stand</h2>
+    <div class="cols" style="margin-top: 1.5rem;">
       <div>
-        <h3 class="hl">KevaOS replaces</h3>
+        <img src="/deck-assets/image-12-1.png" alt="" class="section-icon">
+        <h3>Server Score</h3>
+        <p style="margin-bottom: 0.5rem;">A 0&ndash;100 composite from real data &mdash; not manager opinion.</p>
+        <h3 style="font-size: 0.85rem; margin-top: 1rem;">Performance Inputs</h3>
         <ul>
-          <li>Scheduling tools that plan but don't enforce</li>
-          <li>Food cost tools that report but don't change behavior</li>
-          <li>Nightly reports no one acts on</li>
-          <li>Weekly meetings about last week's problems</li>
-          <li>Spreadsheets tracking who said what</li>
+          <li>Revenue per cover</li>
+          <li>Tip % vs. team average</li>
+          <li>Turn time vs. team average</li>
+          <li>Comp rate and frequency</li>
+          <li>Guest review sentiment</li>
+          <li>Manager attestation notes</li>
+          <li>Shift-to-shift consistency</li>
         </ul>
+        <p style="margin-top: 0.75rem; font-size: 0.8rem;">Weights tuned per venue from live data. Model improves with each service.</p>
       </div>
       <div>
-        <h3>KevaOS does not replace</h3>
-        <ul>
-          <li>POS systems (Toast, Square, Simphony)</li>
-          <li>Payroll and time clocks</li>
-          <li>Accounting software (R365, QuickBooks)</li>
-          <li>Inventory management hardware</li>
-        </ul>
-        <p style="margin-top: 1.25rem;"><strong>KevaOS sits above these systems.</strong> It ingests their data, detects deviations, and forces follow-through that the underlying tools never will.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 10: Market -->
-  <div class="slide">
-    <div class="slide-label">Target Market</div>
-    <h2>Operators managing 3+ locations who need <span class="hl">consistency without adding headcount.</span></h2>
-    <div class="cols-3">
-      <div class="card">
-        <h3>Owners</h3>
-        <p>Fewer surprises. Verified accountability without more meetings.</p>
-      </div>
-      <div class="card">
-        <h3>Operators</h3>
-        <p>Fewer repeat issues. Problems close instead of recurring.</p>
-      </div>
-      <div class="card">
-        <h3>Investors</h3>
-        <p>Real accountability without additional management headcount.</p>
-      </div>
-    </div>
-    <p style="margin-top: 1.5rem;">If your portfolio is growing and your ops team isn't scaling with it, <strong>KevaOS is the layer that closes the gap.</strong></p>
-    <div class="stats" style="margin-top: 1.5rem;">
-      <div class="stat"><div class="stat-value gold" data-count="7200">0</div><div class="stat-label">Multi-unit groups in the US</div></div>
-      <div class="stat"><div class="stat-value" data-count="3" data-suffix="+">0</div><div class="stat-label">Venues where enforcement becomes essential</div></div>
-      <div class="stat"><div class="stat-value" data-count="4" data-suffix="x">0</div><div class="stat-label">Accountability gaps at 2x venues</div></div>
-    </div>
-  </div>
-
-  <!-- 11: Financial Case -->
-  <div class="slide">
-    <div class="slide-label">Financial Impact</div>
-    <h2><span class="hl">6&ndash;12% labor cost reductions</span> within 90 days &mdash; without cutting service levels.</h2>
-    <p class="lead">For a 5-location group doing $25M in revenue:</p>
-    <div class="stats" style="margin-top: 1.5rem;">
-      <div class="stat"><div class="stat-value gold">$500K&ndash;$1M</div><div class="stat-label">Annual labor savings</div></div>
-      <div class="stat"><div class="stat-value">$75K&ndash;$200K</div><div class="stat-label">Food cost reduction</div></div>
-      <div class="stat"><div class="stat-value">$50K&ndash;$150K</div><div class="stat-label">Menu margin recovery *</div></div>
-      <div class="stat"><div class="stat-value">$25K&ndash;$75K</div><div class="stat-label">Comp enforcement</div></div>
-    </div>
-    <div class="callout" style="margin-top: 1.5rem;">
-      <p><strong>Total margin improvement: $650K&ndash;$1.4M/year.</strong></p>
-      <p>KevaOS cost: ~$75K&ndash;$150K/yr. <strong class="hl">ROI: 4&ndash;10x. Payback: &lt; 90 days.</strong></p>
-    </div>
-    <p style="margin-top: 0.75rem; font-size: 0.7rem; color: rgba(232,228,221,0.3);">* Modeled from live menu cost data. Labor savings validated in production.</p>
-    <p style="margin-top: 0.5rem;">KevaOS doesn't just provide visibility into savings. <strong>It creates the mechanism that makes them stick.</strong></p>
-  </div>
-
-  <!-- 12: Business Model -->
-  <div class="slide">
-    <div class="slide-label">Business Model</div>
-    <h2>Platform subscription + <span class="hl">verified savings participation.</span></h2>
-    <div class="cols">
-      <div>
-        <h3>Revenue streams</h3>
-        <div class="fund-bars">
-          <div class="fund-bar"><div class="fund-bar-label">Platform fee</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:60%;">$750&ndash;1,500/venue/mo</div></div></div>
-          <div class="fund-bar"><div class="fund-bar-label">Savings share</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:75%;">10&ndash;15% of verified</div></div></div>
-          <div class="fund-bar"><div class="fund-bar-label">Vision add-on</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:35%;">$200&ndash;400/cam/mo</div></div></div>
-          <div class="fund-bar"><div class="fund-bar-label">Implementation</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:22%;">$10K&ndash;15K</div></div></div>
+        <img src="/deck-assets/image-12-2.png" alt="" class="section-icon">
+        <h3>Host Stand Platform</h3>
+        <p style="margin-bottom: 0.75rem;">The only screen at the front door. Prime real estate.</p>
+        <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
+          <h3 style="font-size: 0.85rem;">Floor State Machine</h3>
+          <p>Real-time table status from POS + camera. Available, seated, check dropped, bussing &mdash; tracked automatically.</p>
+        </div>
+        <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
+          <h3 style="font-size: 0.85rem;">Waitlist Management</h3>
+          <p>Full waitlist with wait time estimation, SMS notifications, and seating preference tracking.</p>
+        </div>
+        <div class="card" style="margin-bottom: 0.75rem; padding: 1rem;">
+          <h3 style="font-size: 0.85rem;">Rez-Yield Integration</h3>
+          <p>Seat candidate scoring with operational + predictive adjustments.</p>
+        </div>
+        <div class="card" style="padding: 1rem;">
+          <h3 style="font-size: 0.85rem;">Walk-in Capture</h3>
+          <p>Every walk-in tracked. Party size, preferences, wait time. Feeds demand forecasting.</p>
         </div>
       </div>
-      <div>
-        <h3>Target unit economics</h3>
-        <div class="stats" style="flex-direction: column; gap: 1.25rem;">
-          <div class="stat"><div class="stat-value" style="font-size: 1.8rem;">80%+</div><div class="stat-label">Gross margin</div></div>
-          <div class="stat"><div class="stat-value" style="font-size: 1.8rem;">130%+</div><div class="stat-label">Net revenue retention</div></div>
-          <div class="stat"><div class="stat-value" style="font-size: 1.8rem;">&gt; 5x</div><div class="stat-label">LTV / CAC</div></div>
-        </div>
-        <p style="margin-top: 1rem;">Savings participation aligns incentives. <strong>We only win when they save.</strong></p>
-      </div>
     </div>
   </div>
 
-  <!-- 13: Competition -->
+  <!-- 13: The Signal Loop -->
   <div class="slide">
-    <div class="slide-label">Competitive Landscape</div>
-    <h2>Most tools stop at insight. <span class="hl">KevaOS goes to intervention.</span></h2>
+    <div class="slide-label">The Loop</div>
+    <h2>The Signal Loop</h2>
+    <p class="lead">Every module feeds the next. The loop tightens with every service.</p>
+    <div class="loop" style="margin-top: 2rem;">
+      <div class="loop-step"><img src="/deck-assets/image-4-3.png" alt="" class="loop-icon"><span class="loop-num">1</span>Reservations</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-11-1.png" alt="" class="loop-icon"><span class="loop-num">2</span>Demand Forecast</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-4-2.png" alt="" class="loop-icon"><span class="loop-num">3</span>Labor Scheduling</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-4-13.png" alt="" class="loop-icon"><span class="loop-num">4</span>Procurement</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-4-15.png" alt="" class="loop-icon"><span class="loop-num">5</span>Floor Plan</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-12-1.png" alt="" class="loop-icon"><span class="loop-num">6</span>Server Mapping</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-4-5.png" alt="" class="loop-icon"><span class="loop-num">7</span>Service Execution</div>
+      <div class="loop-arrow">&rarr;</div>
+      <div class="loop-step"><img src="/deck-assets/image-2-2.png" alt="" class="loop-icon"><span class="loop-num">8</span>Nightly Close</div>
+    </div>
+    <div class="callout">
+      <p><strong>Pre-shift briefs are generated from real signals &mdash; not yesterday's guesses.</strong> The loop gets tighter every night.</p>
+    </div>
+  </div>
+
+  <!-- 14: Competitive Landscape -->
+  <div class="slide">
+    <div class="slide-label">Competition</div>
+    <h2>Competitive Landscape</h2>
     <table class="comp-table">
-      <thead><tr><th>Capability</th><th>Toast / Square</th><th>Nory ($63M)</th><th>R365</th><th>7shifts</th><th>KevaOS</th></tr></thead>
+      <thead><tr><th>Capability</th><th>Toast</th><th>Nory ($63M)</th><th>R365</th><th>7shifts</th><th>BarVision</th><th>KevaOS</th></tr></thead>
       <tbody>
-        <tr><td>Enforcement (not advisory)</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Menu agent (autonomous pricing)</td><td class="no">&#10005;</td><td class="no">Report</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Comp set price intelligence</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>AI comp review</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Camera-based ground truth</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Nightly attestation</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Labor schedule enforcement</td><td class="no">&#10005;</td><td class="no">Suggest</td><td class="no">&#10005;</td><td class="no">Suggest</td><td class="yes">Block</td></tr>
-        <tr><td>Procurement automation</td><td class="no">&#10005;</td><td class="no">&#10005;</td><td class="no">Partial</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
-        <tr><td>Multi-venue benchmarking</td><td class="no">Basic</td><td class="no">Partial</td><td class="no">Basic</td><td class="no">&#10005;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Enforcement (not advisory)</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>AI comp review</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Camera-based ground truth</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Rez yield optimization</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Server performance score</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Integrated supply chain</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Labor schedule enforcement</td><td class="no">&mdash;</td><td class="no">Suggest</td><td class="no">&mdash;</td><td class="no">Suggest</td><td class="no">&mdash;</td><td class="yes">Block</td></tr>
+        <tr><td>Procurement automation</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">Partial</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Nightly attestation</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
+        <tr><td>Multi-venue benchmarking</td><td class="no">Basic</td><td class="no">Partial</td><td class="no">Basic</td><td class="no">&mdash;</td><td class="no">&mdash;</td><td class="yes">&#10003;</td></tr>
       </tbody>
     </table>
-    <p style="margin-top: 1rem;">Nory is a dashboard with $63M. R365 is accounting with AI features.<br><strong>KevaOS is an enforcement engine with integrated fulfillment. The difference is in the verb: they report. We act.</strong></p>
+    <p style="margin-top: 1rem;">Nory is a dashboard with $63M. R365 is accounting with AI features.<br><strong>KevaOS is an enforcement engine with integrated fulfillment.</strong></p>
   </div>
 
-  <!-- 14: Moats -->
+  <!-- 15: Results -->
   <div class="slide">
-    <div class="slide-label">Defensibility</div>
-    <h2>Four reinforcing moats.</h2>
-    <div class="moats">
-      <div class="moat">
-        <h3>Behavioral Lock-In</h3>
-        <p>KevaOS becomes the nightly operating record. Removing it means losing accountability infrastructure &mdash; not just a dashboard. The system becomes organizational muscle memory.</p>
-      </div>
-      <div class="moat">
-        <h3>Data Compounding</h3>
-        <p>Every night of attestation data improves exception detection. Cross-venue patterns emerge. Historical audit trails become irreplaceable institutional knowledge.</p>
-      </div>
-      <div class="moat">
-        <h3>Integration Depth</h3>
-        <p>Multi-POS canonical model with check-item-level detail. Accounting export. Labor integration. Months of work competitors would need to replicate.</p>
-      </div>
-      <div class="moat">
-        <h3>Proprietary Vision</h3>
-        <p>Custom polygon detection pipeline. Scene change optimization. No dependency on camera vendor AI. Expanding to full service quality monitoring.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 15: Traction -->
-  <div class="slide">
-    <div class="slide-label">Traction</div>
-    <h2>Built by operators. Live in production. <span class="hl">Verified outcomes.</span></h2>
-    <div class="cols">
-      <div>
-        <h3>Deployment</h3>
-        <ul>
-          <li>Live across <strong>h.wood Group</strong> venues</li>
-          <li>Multiple POS integrations operational</li>
-          <li>Nightly attestation loop running every night</li>
-          <li>Real-time sales pace in daily use</li>
-          <li>Camera vision deployed and collecting metrics</li>
-        </ul>
-      </div>
-      <div>
-        <h3>Verified outcomes</h3>
-        <ul>
-          <li><strong class="hl">$621K</strong> annual labor savings identified at a single venue</li>
-          <li><strong class="hl">6&ndash;12%</strong> labor cost reductions within 90 days</li>
-          <li>Every unapproved comp surfaced and resolved</li>
-          <li>End-of-night surprises replaced with mid-service awareness</li>
-        </ul>
-      </div>
-    </div>
-    <div class="stats" style="margin-top: 1.5rem;">
-      <div class="stat"><div class="stat-value" data-count="232">0</div><div class="stat-label">Database migrations</div></div>
-      <div class="stat"><div class="stat-value" data-count="166">0</div><div class="stat-label">API endpoints</div></div>
-      <div class="stat"><div class="stat-value" data-count="60" data-suffix="+">0</div><div class="stat-label">Tables with RLS</div></div>
-      <div class="stat"><div class="stat-value" data-count="3">0</div><div class="stat-label">POS integrations</div></div>
-    </div>
-  </div>
-
-  <!-- 16: Roadmap -->
-  <div class="slide">
-    <div class="slide-label">Roadmap</div>
-    <h2>Expanding the control surface.</h2>
-    <div class="timeline">
-      <div class="timeline-item">
-        <div class="timeline-date">Now &rarr; Q2 2026</div>
-        <div class="timeline-content"><h3>Scale &amp; Mobile</h3><p>Multi-tenant onboarding. Mobile-native attestation and preshift. Expanded camera vision (table turns, plate clearance). Additional POS integrations (Aloha, Micros).</p></div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-date">Q3&ndash;Q4 2026</div>
-        <div class="timeline-content"><h3>Intelligence &amp; Pricing</h3><p>Verified savings dashboard. Predictive exception detection. Vendor negotiation intelligence. White-label partner program.</p></div>
-      </div>
-      <div class="timeline-item">
-        <div class="timeline-date">2027+</div>
-        <div class="timeline-content"><h3>Expand &amp; Multiply</h3><p>Full autonomous service quality monitoring. Cross-org benchmarking. International expansion. Adjacent verticals (hotels, stadiums, corporate dining).</p></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 17: Team -->
-  <div class="slide">
-    <div class="slide-label">Team</div>
-    <h2>Built by the operators who live with the problem every night.</h2>
+    <div class="slide-label">Results</div>
+    <h2>Results</h2>
     <div class="cols" style="margin-top: 1.5rem;">
       <div>
-        <h3>Jacob Shrue <span style="color: var(--text-dim); font-weight: 400;">&mdash; Founder &amp; CEO</span></h3>
-        <ul>
-          <li>Operator at <strong>h.wood Group</strong> &mdash; one of the most recognized hospitality groups in the US</li>
-          <li>Built KevaOS to solve his own operational pain across multiple high-volume venues</li>
-          <li>Deep domain expertise: nightlife, fine dining, multi-venue operations</li>
-        </ul>
-        <blockquote>
-          <p>"I built this because I was tired of hearing about problems the next day that should have been caught in real time."</p>
-        </blockquote>
-      </div>
-      <div>
-        <h3>Why operator-founders win</h3>
-        <ul>
-          <li>They know which problems actually matter &mdash; not just which ones demo well</li>
-          <li>They understand operators don't need more data &mdash; they need more accountability</li>
-          <li>They build for enforcement because they've lived what happens without it</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- 18: The Ask -->
-  <div class="slide">
-    <div class="slide-label">The Ask</div>
-    <h2>Raising $2M to scale daily operational control.</h2>
-    <div class="raise-hero">
-      <div class="raise-stat"><div class="raise-value gold">$2M</div><div class="raise-label">Seed round</div></div>
-      <div class="raise-stat"><div class="raise-value">$20M</div><div class="raise-label">Pre-money valuation</div></div>
-      <div class="raise-stat"><div class="raise-value" style="font-size: clamp(1.8rem, 3vw, 2.8rem);">10%</div><div class="raise-label">Dilution</div></div>
-    </div>
-    <div class="cols">
-      <div>
-        <h3>Use of funds</h3>
-        <div class="fund-bars">
-          <div class="fund-bar"><div class="fund-bar-label">Engineering</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:90%;">45%</div></div></div>
-          <div class="fund-bar"><div class="fund-bar-label">Go-to-Market</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:60%;">30%</div></div></div>
-          <div class="fund-bar"><div class="fund-bar-label">Customer Ops</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:30%;">15%</div></div></div>
-          <div class="fund-bar"><div class="fund-bar-label">G&amp;A</div><div class="fund-bar-track"><div class="fund-bar-fill" style="--w:20%;">10%</div></div></div>
+        <h3 style="color: var(--green);">Validated in Production</h3>
+        <div class="card card-green" style="margin-top: 0.75rem; margin-bottom: 1rem;">
+          <div class="stat"><div class="stat-value gold" style="font-size: 2rem;">$625K</div><div class="stat-label">Labor savings per venue / year</div></div>
+          <p style="margin-top: 0.75rem;">Staggered scheduling eliminates the pre-service pile-up. Measured across multiple high-volume venues.</p>
+        </div>
+        <div class="card card-green">
+          <div class="stat"><div class="stat-value gold" style="font-size: 2rem;">$2M+</div><div class="stat-label">Total annual savings identified</div></div>
+          <p style="margin-top: 0.75rem;">Labor staggering, comp enforcement, CC processing, software consolidation across portfolio.</p>
         </div>
       </div>
       <div>
-        <h3>This raise enables</h3>
+        <h3 style="color: var(--text-dim);">Modeled from Live Data</h3>
+        <div class="card card-gray" style="margin-top: 0.75rem; margin-bottom: 1rem;">
+          <div class="stat"><div class="stat-value" style="font-size: 2rem;">15&ndash;30%</div><div class="stat-label">Missed revenue per seat-hour</div></div>
+          <p style="margin-top: 0.75rem;">Suboptimal seating decisions, undertimed turns, and unpriced walk-in demand leave money on the table.</p>
+        </div>
+        <div class="card card-gray">
+          <div class="stat"><div class="stat-value" style="font-size: 2rem;">8&ndash;15%</div><div class="stat-label">Procurement savings potential</div></div>
+          <p style="margin-top: 0.75rem;">Anomaly detection, vendor consolidation, and auto-routing through preferred supply chain.</p>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-dim);"><span style="color: var(--green);">Green border</span> = validated in production. <span style="color: var(--charcoal);">Gray border</span> = modeled from live venue data, pending full deployment.</p>
+  </div>
+
+  <!-- 16: The Moat -->
+  <div class="slide">
+    <div class="slide-label">Defensibility</div>
+    <h2>The Moat</h2>
+    <p class="lead">Software + supply chain + ground truth. Nobody else owns all three.</p>
+    <div class="moats" style="grid-template-columns: 1fr 1fr 1fr; margin-top: 1.5rem;">
+      <div class="moat">
+        <img src="/deck-assets/image-4-1.png" alt="" class="section-icon">
+        <h3 class="hl">Software</h3>
+        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">KevaOS Enforcement Engine</p>
         <ul>
-          <li><strong>10+</strong> multi-unit restaurant groups (100+ venues)</li>
-          <li><strong>3</strong> additional POS integrations</li>
-          <li>Outcome-based pricing with verified savings</li>
-          <li>Camera vision V2 &mdash; table turns, kitchen monitoring</li>
-          <li>SOC 2 Type II certification</li>
+          <li>Labor rails</li>
+          <li>Comp enforcement</li>
+          <li>Procurement agent</li>
+          <li>Rez-yield optimization</li>
+          <li>Nightly attestation</li>
+          <li>Multi-venue benchmarks</li>
+        </ul>
+      </div>
+      <div class="moat">
+        <img src="/deck-assets/image-4-13.png" alt="" class="section-icon">
+        <h3 class="hl">Supply Chain</h3>
+        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">The Binyan Group Entities</p>
+        <ul>
+          <li>SHW (B2B distributor)</li>
+          <li>Shureprint (packaging)</li>
+          <li>E&amp;E Mercantile (FF&amp;E/sourcing)</li>
+          <li>GroundOps (facilities mgmt)</li>
+          <li>Procurement auto-routes here</li>
+          <li>Margin on every PO</li>
+        </ul>
+      </div>
+      <div class="moat">
+        <img src="/deck-assets/image-2-3.png" alt="" class="section-icon">
+        <h3 class="hl">Ground Truth</h3>
+        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem;">Verification Layer</p>
+        <ul>
+          <li>AI camera vision (UniFi)</li>
+          <li>Greeting time detection</li>
+          <li>POS real-time sync</li>
+          <li>7shifts labor data</li>
+          <li>Keva Pin (UWB + audio)</li>
+          <li>Server score from real data</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">
+      <p><strong>Replacing KevaOS means replacing your distributor, print vendor, facilities company, AND operating system.</strong> That's permanence.</p>
+    </div>
+  </div>
+
+  <!-- 17: Revenue Model -->
+  <div class="slide">
+    <div class="slide-label">Revenue</div>
+    <h2>Revenue Model</h2>
+    <div class="revenue-flow">
+      <span>Book</span><span class="rf-arrow">&rarr;</span>
+      <span>Staff</span><span class="rf-arrow">&rarr;</span>
+      <span>Serve</span><span class="rf-arrow">&rarr;</span>
+      <span>Close</span><span class="rf-arrow">&rarr;</span>
+      <span>Restock</span>
+    </div>
+    <p class="lead" style="margin-bottom: 1.5rem;">Revenue captured at every stage. No other platform manages the full lifecycle.</p>
+    <h3 style="margin-bottom: 1rem;">Three Revenue Layers Per Venue</h3>
+    <div class="tier-grid">
+      <div class="tier">
+        <div class="tier-num">1</div>
+        <h3>SaaS</h3>
+        <p>KevaOS platform fee per venue/month. Enforcement engine, attestation, scoring, dashboards.</p>
+        <div class="tier-price">$2&ndash;5K/mo per venue</div>
+      </div>
+      <div class="tier">
+        <div class="tier-num">2</div>
+        <h3>Procurement Margin</h3>
+        <p>Every PO routed through Binyan entities generates product margin. SHW, Shureprint, E&amp;E, GroundOps.</p>
+        <div class="tier-price">15&ndash;35% on flow-through</div>
+      </div>
+      <div class="tier">
+        <div class="tier-num">3</div>
+        <h3>Hardware</h3>
+        <p>Sensor mesh, cameras, scales, Keva Pins &mdash; sold or leased. Ongoing replacement and expansion.</p>
+        <div class="tier-price">$1&ndash;3K initial + ongoing</div>
+      </div>
+    </div>
+    <p style="margin-top: 1.25rem;"><strong>Nory gets one revenue event. KevaOS gets three.</strong> On every transaction. At every venue.</p>
+  </div>
+
+  <!-- 18: Integration Layer -->
+  <div class="slide">
+    <div class="slide-label">Integrations</div>
+    <h2>Integration Layer</h2>
+    <p class="lead">Plugs into what venues already run. No rip-and-replace.</p>
+    <div class="int-grid">
+      <div>
+        <h3>POS Systems</h3>
+        <div class="int-item"><div><div class="int-name">Toast</div><div class="int-desc">Direct API. Intra-day summaries.</div></div><div class="int-status ready">Ready</div></div>
+        <div class="int-item"><div><div class="int-name">Oracle Simphony</div><div class="int-desc">Via TipSee + BI API.</div></div><div class="int-status live">Live</div></div>
+        <div class="int-item"><div><div class="int-name">Upserve</div><div class="int-desc">Via TipSee. Real-time checks.</div></div><div class="int-status live">Live</div></div>
+        <div class="int-item"><div><div class="int-name">Square / Lightspeed</div><div class="int-desc">Available for new venues.</div></div><div class="int-status ready">Ready</div></div>
+      </div>
+      <div>
+        <h3>Operations</h3>
+        <div class="int-item"><div><div class="int-name">7shifts</div><div class="int-desc">Punches, wages via TipSee.</div></div><div class="int-status live">Live</div></div>
+        <div class="int-item"><div><div class="int-name">SevenRooms</div><div class="int-desc">Reservations + schedules.</div></div><div class="int-status live">Live</div></div>
+        <div class="int-item"><div><div class="int-name">Restaurant365</div><div class="int-desc">GL accounts, COGS.</div></div><div class="int-status live">Live</div></div>
+        <div class="int-item"><div><div class="int-name">UniFi Protect</div><div class="int-desc">Camera &rarr; AI vision.</div></div><div class="int-status live">Live</div></div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top: 1.25rem;">
+      <p><strong>KevaOS wraps existing infrastructure.</strong> Venues keep their POS &mdash; we add the enforcement layer on top.</p>
+    </div>
+  </div>
+
+  <!-- 19: Roadmap -->
+  <div class="slide">
+    <div class="slide-label">Roadmap</div>
+    <h2>Roadmap</h2>
+    <div class="roadmap">
+      <div class="roadmap-phase">
+        <span class="phase-tag">Now &middot; Live</span>
+        <h3>Enforcement Engine</h3>
+        <ul>
+          <li>Labor rails deployed</li>
+          <li>Comp enforcement live</li>
+          <li>Nightly attestation</li>
+          <li>Camera vision pipeline</li>
+          <li>Rez-yield agent (beta)</li>
+        </ul>
+      </div>
+      <div class="roadmap-phase">
+        <span class="phase-tag">Q2 2026</span>
+        <h3>Hardware + Procurement</h3>
+        <ul>
+          <li>Keva Pin V1 (UWB)</li>
+          <li>Radar mesh pilot</li>
+          <li>Plating scale pilots</li>
+          <li>Procurement agent live</li>
+        </ul>
+      </div>
+      <div class="roadmap-phase">
+        <span class="phase-tag">Q3 2026</span>
+        <h3>Voice + Scoring</h3>
+        <ul>
+          <li>Keva Pin V2 (audio + POS)</li>
+          <li>Voice-to-POS pipeline</li>
+          <li>Server score network</li>
+          <li>Recipe auto-generation</li>
+        </ul>
+      </div>
+      <div class="roadmap-phase">
+        <span class="phase-tag">2027</span>
+        <h3>External Expansion</h3>
+        <ul>
+          <li>First external customer</li>
+          <li>Benchmarking product</li>
+          <li>Server reputation network</li>
+          <li>Series A</li>
         </ul>
       </div>
     </div>
   </div>
 
-  <!-- 19: Closing -->
+  <!-- 20: Closing -->
   <div class="slide closing-slide">
-    <h1>Nothing slips.</h1>
+    <img src="/deck-assets/image-1-1.png" alt="KevaOS" class="closing-logo">
+    <div class="slide-label">KevaOS</div>
+    <h1>Keva</h1>
+    <p style="font-size: 1rem; color: rgba(232,228,221,0.4); font-style: italic; margin-bottom: 2rem;">permanence, fixity, establishment.</p>
     <div class="closing-lines">
-      <p>Catch the leak. Assign the owner. Enforce the close.</p>
-      <p>Every location. Every night.</p>
+      <p>Every month KevaOS runs,</p>
+      <p>the venue loses muscle memory</p>
+      <p>for doing things manually.</p>
+      <p style="margin-top: 1.5rem; color: rgba(232,228,221,0.25);">That's not lock-in through a contract.</p>
+      <p style="color: rgba(232,228,221,0.25);">That's lock-in through permanence.</p>
     </div>
-    <p class="final-line">KevaOS doesn't make operations perfect.<br>It makes them correctable.</p>
+    <p class="final-line">The fixed framework becomes the way the venue operates.<br>And permanence is the only moat that deepens with time.</p>
     <div style="margin-top: 3.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.45rem; letter-spacing: 0.35em; text-transform: uppercase; color: rgba(232,228,221,0.08);">KevaOS &middot; The Binyan Group &middot; Confidential</div>
   </div>
 
