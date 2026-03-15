@@ -23,7 +23,7 @@ import {
   getVenueTipseeMappings,
   logReportRun,
 } from '@/lib/database/nightly-subscribers';
-import { fetchNightlyReportFromFacts, fetchSimphonyNightlyReport, getPosTypeForLocations } from '@/lib/database/tipsee';
+import { fetchNightlyReportFromFacts, fetchSimphonyNightlyReport, getPosTypeForLocations, fetchCompsByReason, fetchCompDetails } from '@/lib/database/tipsee';
 import { sendNightlyReportForOrg } from '@/lib/email/send-nightly-report';
 import type { NightlyReportData } from '@/lib/database/tipsee';
 import type { VenueReport } from '@/lib/email/nightly-report-template';

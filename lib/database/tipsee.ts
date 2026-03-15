@@ -1107,10 +1107,11 @@ export async function fetchSimphonyNightlyReport(
     if (bev > 0) salesByCategory.push({ category: 'Beverage', gross_sales: bev, comps: 0, voids: 0, net_sales: bev });
   }
 
-  // Fetch server performance from Simphony BI API if venueId available
-  const servers = venueId
-    ? await fetchSimphonyServerPerformance(venueId, date)
-    : [];
+  // Fetch server performance + comp breakdown from Simphony BI API if venueId available
+  const [servers, compData] = await Promise.all([
+    venueId ? fetchSimphonyServerPerformance(venueId, date) : Promise.resolve([]),
+    venueId ? fetchSimphonyCompBreakdown(venueId, date) : Promise.resolve(null),
+  ]);
 
   return {
     date,
@@ -1124,12 +1125,108 @@ export async function fetchSimphonyNightlyReport(
       net_total: r.net_total,
       parent_category: r.parent_category,
     })),
-    discounts: [],
-    detailedComps: [],
+    discounts: compData?.discounts ?? [],
+    detailedComps: compData?.detailedComps ?? [],
     logbook: null,
     notableGuests: [],
     peopleWeKnow: [],
   };
+}
+
+/**
+ * Fetch comp breakdown for Simphony venues via BI API.
+ * Returns discount-type breakdown (discounts) and per-item comp detail (detailedComps).
+ * Since Simphony has no per-check data, we synthesize detailedComps from item-level
+ * discount data — each comped menu item becomes a "comp entry" with the item name,
+ * discount amount, and category.
+ */
+async function fetchSimphonyCompBreakdown(
+  venueId: string,
+  businessDate: string
+): Promise<{
+  discounts: NightlyReportData['discounts'];
+  detailedComps: NightlyReportData['detailedComps'];
+} | null> {
+  try {
+    const { getCachedDiscountDimensions, getSimphonyLocationMapping, getValidIdToken, getSimphonyConfig } =
+      await import('@/lib/database/simphony-tokens');
+    const { getDiscountDailyTotals, getMenuItemDailyTotals, getMenuItemDimensions } =
+      await import('@/lib/integrations/simphony-bi');
+
+    const mapping = await getSimphonyLocationMapping(venueId);
+    if (!mapping) return null;
+
+    const [idToken, config, discountDimMap] = await Promise.all([
+      getValidIdToken(mapping.org_identifier),
+      getSimphonyConfig(mapping.org_identifier),
+      getCachedDiscountDimensions(venueId),
+    ]);
+
+    const barRvcs = new Set(mapping.bar_revenue_centers || [2]);
+
+    // Fetch discount totals + menu item totals + menu item names in parallel
+    const [discountTotals, menuItemTotals, menuItemDims] = await Promise.all([
+      getDiscountDailyTotals(config, idToken, mapping.loc_ref, businessDate),
+      getMenuItemDailyTotals(config, idToken, mapping.loc_ref, businessDate),
+      getMenuItemDimensions(config, idToken, mapping.loc_ref),
+    ]);
+
+    // ── Build discounts array (by discount type) ──
+    const byDiscount = new Map<number, { ttl: number; cnt: number }>();
+    for (const rc of discountTotals.revenueCenters || []) {
+      for (const d of rc.discounts || []) {
+        const existing = byDiscount.get(d.dscNum) || { ttl: 0, cnt: 0 };
+        existing.ttl += Math.abs(d.ttl || 0);
+        existing.cnt += d.cnt || 0;
+        byDiscount.set(d.dscNum, existing);
+      }
+    }
+
+    const discounts: NightlyReportData['discounts'] = [];
+    for (const [dscNum, { ttl, cnt }] of byDiscount) {
+      const name = discountDimMap?.get(dscNum) || `Discount #${dscNum}`;
+      discounts.push({ reason: name, qty: cnt, amount: ttl });
+    }
+    discounts.sort((a, b) => b.amount - a.amount);
+
+    // ── Build detailedComps from menu item discount data ──
+    // Since Simphony has no per-check comp detail, we synthesize entries from
+    // items that had discounts applied. Each comped item becomes a comp entry.
+    const itemNameMap = new Map<number, { name: string; majGrp: string; famGrp: string }>();
+    for (const mi of (menuItemDims as any).menuItems || menuItemDims || []) {
+      itemNameMap.set(mi.num, { name: mi.name, majGrp: mi.majGrpName || '', famGrp: mi.famGrpName || '' });
+    }
+
+    const detailedComps: NightlyReportData['detailedComps'] = [];
+    for (const rc of (menuItemTotals as any).revenueCenters || []) {
+      const rcLabel = barRvcs.has(rc.rvcNum) ? 'Bar' : 'Food';
+      for (const mi of rc.menuItems || []) {
+        if (mi.dscTtl && mi.dscTtl < 0) {
+          const info = itemNameMap.get(mi.miNum);
+          const itemName = info?.name || `Item #${mi.miNum}`;
+          const category = info?.famGrp || info?.majGrp || rcLabel;
+          const discAmt = Math.abs(mi.dscTtl);
+
+          detailedComps.push({
+            check_id: `simphony-item-${mi.miNum}-rvc${rc.rvcNum}`,
+            table_name: rcLabel,
+            server: 'Simphony Aggregate',
+            comp_total: discAmt,
+            check_total: (mi.slsTtl || 0) + discAmt,
+            reason: category,
+            comped_items: [`${itemName} ($${discAmt.toFixed(2)})`],
+            cardholder_name: null,
+          });
+        }
+      }
+    }
+    detailedComps.sort((a, b) => b.comp_total - a.comp_total);
+
+    return { discounts, detailedComps };
+  } catch (err: any) {
+    console.warn(`[simphony-comps] Failed to fetch comp breakdown for ${venueId}: ${err.message}`);
+    return null;
+  }
 }
 
 /**
@@ -1327,6 +1424,92 @@ export async function fetchCompsByReason(
     reason: r.reason,
     count: parseInt(r.count) || 0,
     total: parseFloat(r.total) || 0,
+  }));
+}
+
+// ============================================================================
+// COMP DETAILS — Per-check comp data with comped item names for AI narrator
+// ============================================================================
+
+export interface CompDetailRow {
+  server: string;
+  compTotal: number;
+  checkTotal: number;
+  reason: string;
+  items: string[]; // e.g. ["Truffle Fries ($18.00)", "Cocktail x2 ($36.00)"]
+}
+
+/**
+ * Fetch per-check comp details with comped item names.
+ * Returns top N checks by comp amount, with the specific items that were comped.
+ * Only works for Upserve (TipSee) venues.
+ */
+export async function fetchCompDetails(
+  locationUuids: string[],
+  date: string,
+  limit = 10
+): Promise<CompDetailRow[]> {
+  if (locationUuids.length === 0) return [];
+
+  const posType = await getPosTypeForLocations(locationUuids);
+  if (posType !== 'upserve') return []; // Only Upserve has item-level comp data
+
+  const pool = getTipseePool();
+
+  const result = await pool.query(
+    `WITH comped_checks AS (
+      SELECT
+        c.id as check_id,
+        c.employee_name as server,
+        GREATEST(c.comp_total, COALESCE((
+          SELECT SUM(ci.comp_total) FROM public.tipsee_check_items ci
+          WHERE ci.check_id = c.id AND ci.comp_total > 0
+        ), 0)) as comp_total,
+        c.revenue_total + GREATEST(c.comp_total, 0) as check_total,
+        COALESCE(NULLIF(TRIM(c.voidcomp_reason_text), ''), 'No Reason') as reason
+      FROM public.tipsee_checks c
+      WHERE c.location_uuid = ANY($1) AND c.trading_day = $2
+        AND (c.comp_total > 0 OR EXISTS (
+          SELECT 1 FROM public.tipsee_check_items ci
+          WHERE ci.check_id = c.id AND ci.comp_total > 0
+        ))
+      ORDER BY GREATEST(c.comp_total, 0) DESC
+      LIMIT $3
+    ),
+    comped_items AS (
+      SELECT
+        ci.check_id,
+        COALESCE(m.menu_item_name, 'Item #' || ci.menu_item_number) as item_name,
+        ci.quantity,
+        ci.comp_total as item_comp,
+        ci.price
+      FROM public.tipsee_check_items ci
+      LEFT JOIN public.tipsee_menu_items m
+        ON m.location_uuid = ci.location_uuid AND m.menu_item_number = ci.menu_item_number
+      WHERE ci.check_id IN (SELECT check_id FROM comped_checks)
+        AND ci.comp_total > 0
+    )
+    SELECT
+      cc.check_id, cc.server, cc.comp_total, cc.check_total, cc.reason,
+      COALESCE(json_agg(
+        json_build_object('name', ci.item_name, 'qty', ci.quantity, 'comp', ci.item_comp, 'price', ci.price)
+      ) FILTER (WHERE ci.item_name IS NOT NULL), '[]'::json) as items
+    FROM comped_checks cc
+    LEFT JOIN comped_items ci ON ci.check_id = cc.check_id
+    GROUP BY cc.check_id, cc.server, cc.comp_total, cc.check_total, cc.reason
+    ORDER BY cc.comp_total DESC`,
+    [locationUuids, date, limit]
+  );
+
+  return result.rows.map(r => ({
+    server: r.server || 'Unknown',
+    compTotal: parseFloat(r.comp_total) || 0,
+    checkTotal: parseFloat(r.check_total) || 0,
+    reason: r.reason,
+    items: (r.items || []).map((i: any) => {
+      const qtyStr = i.qty > 1 ? ` x${i.qty}` : '';
+      return `${i.name}${qtyStr} ($${parseFloat(i.comp).toFixed(2)})`;
+    }),
   }));
 }
 
@@ -1590,12 +1773,13 @@ export async function fetchCompExceptions(
     high_comp_pct_threshold?: number;
     daily_comp_pct_warning?: number;
     daily_comp_pct_critical?: number;
-  }
+  },
+  venueId?: string
 ): Promise<CompExceptionsResult> {
-  // Route Simphony venues to aggregate-only exception detection
+  // Route Simphony venues to per-discount-type exception detection via BI API
   const posType = await getPosTypeForLocations([locationUuid]);
   if (posType === 'simphony') {
-    return fetchSimphonyCompExceptions(date, locationUuid, settings);
+    return fetchSimphonyCompExceptions(date, locationUuid, settings, venueId);
   }
 
   const pool = getTipseePool();
@@ -1803,7 +1987,8 @@ async function fetchSimphonyCompExceptions(
     high_comp_pct_threshold?: number;
     daily_comp_pct_warning?: number;
     daily_comp_pct_critical?: number;
-  }
+  },
+  venueId?: string
 ): Promise<CompExceptionsResult> {
   const pool = getTipseePool();
 
@@ -1829,8 +2014,75 @@ async function fetchSimphonyCompExceptions(
 
   const exceptions: CompException[] = [];
 
-  // Only aggregate-level checks are possible for Simphony
-  if (totalComps >= thresholds.highValue) {
+  // Try BI API for per-discount-type breakdown
+  if (venueId && totalComps > 0) {
+    try {
+      const { getCachedDiscountDimensions, getSimphonyLocationMapping, getValidIdToken, getSimphonyConfig } =
+        await import('@/lib/database/simphony-tokens');
+      const { getDiscountDailyTotals } = await import('@/lib/integrations/simphony-bi');
+
+      const mapping = await getSimphonyLocationMapping(venueId);
+      if (mapping) {
+        const [idToken, config, discountDimMap] = await Promise.all([
+          getValidIdToken(mapping.org_identifier),
+          getSimphonyConfig(mapping.org_identifier),
+          getCachedDiscountDimensions(venueId),
+        ]);
+
+        const totals = await getDiscountDailyTotals(config, idToken, mapping.loc_ref, date);
+
+        // Build per-discount-type exceptions
+        for (const rc of totals.revenueCenters || []) {
+          for (const d of rc.discounts || []) {
+            const amt = Math.abs(d.ttl || 0);
+            const name = discountDimMap?.get(d.dscNum) || `Discount #${d.dscNum}`;
+
+            // Flag high-value discount types
+            if (amt >= thresholds.highValue) {
+              exceptions.push({
+                type: 'high_value',
+                severity: 'warning',
+                check_id: `simphony-dsc-${d.dscNum}-rvc${rc.rvcNum}`,
+                table_name: `RVC ${rc.rvcNum}`,
+                server: 'Simphony Aggregate',
+                comp_total: amt,
+                check_total: netSales,
+                reason: name,
+                comped_items: [],
+                message: `${name}: $${amt.toFixed(2)} (${d.cnt || 0} applied)`,
+                details: `Discount type "${name}" exceeds $${thresholds.highValue} threshold`,
+              });
+            }
+
+            // Flag unapproved discount reasons if approved_reasons configured
+            if (settings?.approved_reasons && settings.approved_reasons.length > 0) {
+              if (!isApprovedReason(name, settings.approved_reasons) && amt > 0) {
+                exceptions.push({
+                  type: 'unapproved_reason',
+                  severity: 'warning',
+                  check_id: `simphony-dsc-${d.dscNum}-rvc${rc.rvcNum}`,
+                  table_name: `RVC ${rc.rvcNum}`,
+                  server: 'Simphony Aggregate',
+                  comp_total: amt,
+                  check_total: netSales,
+                  reason: name,
+                  comped_items: [],
+                  message: `Unapproved discount reason: "${name}" ($${amt.toFixed(2)})`,
+                  details: `Discount type "${name}" is not in the approved reasons list`,
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[simphony-comps] BI API exception detection failed for ${venueId}: ${err.message}`);
+      // Fall through to aggregate-only
+    }
+  }
+
+  // Aggregate-level high value fallback (if no per-type exceptions were generated)
+  if (exceptions.length === 0 && totalComps >= thresholds.highValue) {
     exceptions.push({
       type: 'high_value',
       severity: 'warning',
