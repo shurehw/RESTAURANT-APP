@@ -566,8 +566,8 @@ async function generateActionItems(
           }
         }
 
-        // ── Drill Insights (comps, servers, labor) ───────────
-        const sections = ['comps', 'servers', 'labor'];
+        // ── Drill Insights (all email-linked sections) ───────
+        const sections = ['comps', 'servers', 'items', 'labor', 'categories'];
         for (const section of sections) {
           try {
             let sectionData: any;
@@ -577,14 +577,24 @@ async function generateActionItems(
                 detailedComps: report.detailedComps,
                 summary: report.summary,
               };
-            } else if (section === 'servers') {
+            } else if (section === 'servers' && report.servers?.length > 0) {
               sectionData = {
                 servers: report.servers,
+                summary: report.summary,
+              };
+            } else if (section === 'items' && report.menuItems?.length > 0) {
+              sectionData = {
+                menuItems: report.menuItems,
                 summary: report.summary,
               };
             } else if (section === 'labor' && labor) {
               sectionData = {
                 labor,
+                summary: report.summary,
+              };
+            } else if (section === 'categories' && report.salesByCategory?.length > 0) {
+              sectionData = {
+                salesByCategory: report.salesByCategory,
                 summary: report.summary,
               };
             } else {

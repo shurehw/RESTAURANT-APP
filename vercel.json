@@ -157,7 +157,7 @@
     },
     {
       "path": "/api/cron/server-scores",
-      "schedule": "0 15 * * *"
+      "schedule": "30 13 * * *"
     },
     {
       "path": "/api/cron/rollup",
