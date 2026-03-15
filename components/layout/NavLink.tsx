@@ -14,7 +14,8 @@ export function NavLink({
   children: React.ReactNode;
   badge?: number;
 }) {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname ?? '';
   const isActive =
     pathname === href || (href !== '/' && pathname.startsWith(href));
 
