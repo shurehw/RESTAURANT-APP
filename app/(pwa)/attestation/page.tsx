@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, Loader2, FileX } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Loader2, FileX, Building2, Check } from 'lucide-react';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { AttestationReadView } from '@/components/pwa/AttestationReadView';
 import { Button } from '@/components/ui/button';
@@ -172,25 +172,13 @@ export default function PwaAttestationPage() {
         </Button>
       </div>
 
-      {/* Venue selector (only if multi-venue) — compact inline select */}
+      {/* Venue selector (only if multi-venue) — styled popover */}
       {venues.filter((v) => v.id !== 'all').length > 1 && (
-        <div className="flex items-center justify-center">
-          <select
-            aria-label="Select venue"
-            value={selectedVenue?.id || ''}
-            onChange={(e) => {
-              const venue = venues.find((v) => v.id === e.target.value);
-              if (venue) setSelectedVenue(venue);
-            }}
-            className="text-sm font-medium bg-transparent border border-border rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brass"
-          >
-            {venues
-              .filter((v) => v.id !== 'all')
-              .map((v) => (
-                <option key={v.id} value={v.id}>{v.name}</option>
-              ))}
-          </select>
-        </div>
+        <VenueSelector
+          venues={venues.filter((v) => v.id !== 'all')}
+          selectedId={selectedVenue?.id}
+          onSelect={(v) => setSelectedVenue(v)}
+        />
       )}
 
       {/* Content */}
@@ -222,6 +210,59 @@ export default function PwaAttestationPage() {
           date={date}
         />
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Venue Selector — styled popover (no native <select>)
+// ---------------------------------------------------------------------------
+
+type Venue = { id: string; name: string; location?: string | null; city?: string | null; state?: string | null };
+
+function VenueSelector({
+  venues,
+  selectedId,
+  onSelect,
+}: {
+  venues: Venue[];
+  selectedId?: string;
+  onSelect: (v: Venue) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const current = venues.find((v) => v.id === selectedId);
+
+  return (
+    <div className="flex items-center justify-center">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors"
+          >
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span>{current?.name ?? 'Select venue'}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56 p-1" align="center">
+          <div className="flex flex-col">
+            {venues.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => { onSelect(v); setOpen(false); }}
+                className={`flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
+                  v.id === selectedId
+                    ? 'bg-brass/10 text-brass font-medium'
+                    : 'hover:bg-muted text-foreground'
+                }`}
+              >
+                <span>{v.name}</span>
+                {v.id === selectedId && <Check className="h-4 w-4 text-brass" />}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
