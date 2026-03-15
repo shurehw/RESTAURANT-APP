@@ -5,7 +5,7 @@
  * Lets installed-app users pull the final submission for any venue/date.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, Loader2, FileX } from 'lucide-react';
 import { useVenue } from '@/components/providers/VenueProvider';
 import { AttestationReadView } from '@/components/pwa/AttestationReadView';
@@ -125,6 +125,7 @@ export default function PwaAttestationPage() {
   }, [fetchAttestation]);
 
   const venueName = selectedVenue?.name ?? 'Select Venue';
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -133,38 +134,46 @@ export default function PwaAttestationPage() {
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => shiftDate(d, -1))}>
           <ChevronLeft className="h-5 w-5" />
         </Button>
-        <div className="flex items-center gap-2 text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => dateInputRef.current?.showPicker?.()}
+          className="flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md hover:bg-muted transition-colors relative"
+        >
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <span>{formatDateShort(date)}</span>
+          {/* Hidden native date input — only opens on tap */}
           <input
+            ref={dateInputRef}
             type="date"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="bg-transparent border-none text-sm font-medium text-center focus:outline-none"
+            onChange={(e) => e.target.value && setDate(e.target.value)}
+            className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            tabIndex={-1}
           />
-        </div>
+        </button>
         <Button variant="ghost" size="icon" onClick={() => setDate((d) => shiftDate(d, 1))}>
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
 
-      {/* Venue selector (only if multi-venue) */}
-      {venues.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {venues
-            .filter((v) => v.id !== 'all')
-            .map((v) => (
-              <button
-                key={v.id}
-                onClick={() => setSelectedVenue(v)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  v.id === selectedVenue?.id
-                    ? 'bg-brass text-white'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                {v.name}
-              </button>
-            ))}
+      {/* Venue selector (only if multi-venue) — compact inline select */}
+      {venues.filter((v) => v.id !== 'all').length > 1 && (
+        <div className="flex items-center justify-center">
+          <select
+            aria-label="Select venue"
+            value={selectedVenue?.id || ''}
+            onChange={(e) => {
+              const venue = venues.find((v) => v.id === e.target.value);
+              if (venue) setSelectedVenue(venue);
+            }}
+            className="text-sm font-medium bg-transparent border border-border rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brass"
+          >
+            {venues
+              .filter((v) => v.id !== 'all')
+              .map((v) => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+          </select>
         </div>
       )}
 
